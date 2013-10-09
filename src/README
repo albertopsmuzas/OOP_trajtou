@@ -1,0 +1,9 @@
+# INFO !
+
+- This folder contains a collection of folders. Each one contains
+  specific subroutines and functions that belong to an specific
+  class. These folders MUST have the exact name of the class whom this
+  files belong to.
+
+- "headers" folder contains files with the definitions of each object and
+  type-link processes.

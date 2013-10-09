@@ -1,0 +1,5 @@
+# INFO!
+
+- This folder contains those module files ( *.mod ) that Makefile
+  will produce.
+- FORTRAN compiler needs these files!
