@@ -1,8 +1,0 @@
-# INFO !
-
-- This directory contains a collection of folders, one for each
-  object defined in the program.
-
-- These folders MUST contain a source file with the same name as the folder, inside
-  of which it will be placed a generic type definition with its subroutines. Subtypes
-  should be placed in different files.
