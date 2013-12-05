@@ -1,9 +1,8 @@
 # INFO !
 
-- This folder contains a collection of folders. Each one contains
-  specific subroutines and functions that belong to an specific
-  class. These folders MUST have the exact name of the class whom this
-  files belong to.
+- This directory contains a collection of folders, one for each
+  object defined in the program.
 
-- "headers" folder contains files with the definitions of each object and
-  type-link processes.
+- These folders MUST contain a source file with the same name as the folder, inside
+  of which it will be placed a generic type definition with its subroutines. Subtypes
+  should be placed in different files.

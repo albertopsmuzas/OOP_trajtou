@@ -1,4 +1,4 @@
 # INFO !
 
-- This folder contains all executable binaries that Makefile
-  will produce
+- This folder contains all binaries (linked or not) that Makefile
+  produces
