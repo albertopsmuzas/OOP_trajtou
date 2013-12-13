@@ -1,9 +1,8 @@
 PROGRAM TEST
-USE PES_MOD
+USE SURFACE_MOD 
 IMPLICIT NONE
-TYPE(PES) :: crap
-CALL crap%INITIALIZE()
-WRITE(*,*) "Alias:", crap%get_alias()
-WRITE(*,*) "Dimensions:", crap%get_dimensions()
-WRITE(*,*) "Is initialized?: ", crap%is_initialized()
+TYPE(Surface) :: newsurf
+CALL newsurf%INITIALIZE("LiF(001)","Surface.in")
+WRITE(*,*) "Is the surface initialized?"
+WRITE(*,*) newsurf%is_initialized()
 END PROGRAM TEST

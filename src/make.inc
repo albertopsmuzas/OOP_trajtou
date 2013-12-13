@@ -1,8 +1,8 @@
 # Compile options
 
 F = gfortran
-FFLAGS = -cpp -J ../mod -I ../mod -c
-LFFLAGS = -I ../mod 
+CF = $(F) -cpp -J ../mod -I ../mod -c
+LF = $(F) -I ../mod 
 
 # Where to find compiled but not yet linked binaries
 vpath %.o ../bin
@@ -14,4 +14,4 @@ endif
 
 # General rules
 %.o : %.f90
-	$(F) $(FFLAGS) $< -o ../bin/$@
+	$(CF) $< -o ../bin/$@

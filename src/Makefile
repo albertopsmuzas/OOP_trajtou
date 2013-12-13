@@ -1,19 +1,29 @@
 # Include general rules
 include make.inc
-
+.PHONY: clean
 # Add here all folder names in src
-folder_list= debug constants units PES surfaces
+folderlist= debug constants units surface lapackcontrol
 
 # Object list. There should be a rule for each object in this list
-object_list= debug.o constants.o units.o 
+objectlist= debug.o constants.o lapackcontrol.o units.o surface.o 
 
 # Where to find fortran files:
-vpath %.f90 $(folder_list)
+vpath %.f90 $(folderlist)
 
 # DEPENDENCIES SECTION ###################################################
-testing : $(object_list)
-build : $(object_list)
 
-debug.o : 
-constants.o : 
+# Main rules
+testing: $(objectlist)
+build: $(objectlist)
+	cd ../bin; ar rvs libtrajtou.a $(objectlist); mv libtrajtou.a ../lib/.
+
+# Each object file dependencies
+debug.o:
+constants.o:
+lapackcontrol.o: 
 units.o : debug.o constants.o
+surface.o: debug.o units.o constants.o lapackcontrol.o
+
+# Clean rule
+clean:
+	rm -f ../bin/*.o ../mod/*.mod ../lib/*.a

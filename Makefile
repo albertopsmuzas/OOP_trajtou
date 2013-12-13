@@ -1,14 +1,19 @@
 ##################################################
 # MAKE_FILE FOR  OOP TRAJTOU #####################
 ##################################################
+include make.inc
 .PHONY : clean
-.PHONY : all
 .PHONY : build
 .PHONY : testing
+.PHONY : jobs
+joblist = test.x
 
-build :
+# Rules 
+jobs: $(joblist)
+build: libtrajtou.a jobs
+libtrajtou.a: 
 	cd src && $(MAKE) build
-testing : 
+testing: 
 	cd src && $(MAKE) testing
-clean :
+clean:
 	rm -f mod/*.mod lib/*.a bin/*.x bin/*.o
