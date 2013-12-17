@@ -1,0 +1,9 @@
+# LiF001 centered in Li   <--------  Dummy line
+angst # Units
+2.8805D0	0.0000D0	 # S1 (surface vector)
+0.0000D0	2.8805D0	 # S2 (surface vector)
+2    #<------- Number of different atoms in the surface.
+1  Li  1  #<------- Number of non-equivalent atoms of type 1.
+2  F   1  #<------- Number of non-equivalent atoms of type 2.
+1 	0.0D0	0.0D0  #<--- Type 1: Coordinates (in unit cell basis)
+2 	0.5D0	0.5D0  #<--- Type 2: Coordinates (in unit cell basis)
