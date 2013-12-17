@@ -1,9 +1,9 @@
 # Compile options
 
 F = gfortran
-CF = $(F) -J mod -I mod -c
-LF = $(F) -I mod 
-Lapack = /usr/lib/liblapack.so.3 
+CF = $(F) -cpp -J mod -I mod -c -Wall
+LF = $(F) -cpp -I mod -Wall
+Lapack = -llapack -lblas
 
 # Some paths to find files 
 vpath %.o bin
@@ -11,7 +11,9 @@ vpath %.f90 jobs
 vpath %.a lib
 
 # General rules
-%.o : %.f90
+
+%.x: %.o libtrajtou.a
+	$(LF) -o bin/$@ $< lib/libtrajtou.a $(Lapack)
+
+%.o: %.f90
 	$(CF) $< -o bin/$@
-%.x : %.f90
-	$(LF) -o bin/@ $(Lapack) lib/libtrajtou.a $< 

@@ -1,17 +1,16 @@
 # Compile options
 
 F = gfortran
-CF = $(F) -cpp -J ../mod -I ../mod -c
-LF = $(F) -I ../mod 
+CF = $(F) -cpp -J ../mod -I ../mod -c -Wall -fbacktrace -ffixed-line-length-none -Wtabs -W -fbounds-check
+LF = $(F) -I ../mod -Wall -fbounds-check -Wtabs -ffixed-line-length-none -fbacktrace -W 
 
 # Where to find compiled but not yet linked binaries
 vpath %.o ../bin
 
-# Some conditionals
-ifdef DEBUG
-	FFLAGS =  -DDEBUG $(FFLAGS)
-endif
-
 # General rules
 %.o : %.f90
+ifeq ($(debugmode),on)
+	$(CF) -DDEBUG $< -o ../bin/$@
+else
 	$(CF) $< -o ../bin/$@
+endif

@@ -91,23 +91,23 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
    ! Local variables ---------------------------------------------
    INTEGER :: i,j ! Counters
    INTEGER :: control
-   CHARACTER(LEN=11), PARAMETER :: routinename = "READ_SURF: "
+   CHARACTER(LEN=17), PARAMETER :: routinename = "INITIALIZE_SURF: "
    TYPE(length) :: len
    REAL(KIND=8), DIMENSION(2,2) :: aux_r
-   TYPE(Quantity) :: quant1,quant2
    ! Lapack variables
    INTEGER(KIND=4) :: work
    REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: lwork
    INTEGER(KIND=4) :: info
    INTEGER, DIMENSION(:), ALLOCATABLE :: ipiv
    ! Run section --------------------------------------------
+      surf%alias=alias
+      surf%filename=filename
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Initializing a new surface")
    CALL VERBOSE_WRITE(routinename,"Name: ",surf%alias)
+   CALL VERBOSE_WRITE(routinename,"File: ",surf%filename)
 #endif
    IF (.NOT.surf%is_initialized()) THEN
-      surf%filename=filename
-      surf%alias=alias
       surf%initialized=.FALSE.
       OPEN(10,FILE=surf%filename,STATUS="old")
       READ(10,*) ! Should be a dummy line, just with some aclarations
@@ -118,12 +118,12 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
       ! Store results in a.u.
       ! Set surface coordinates to cartesian change matrix and metadata
       DO i=1,2
-         DO j = 1, 2
-            READ(10,*)  aux_r(i,j)
-            CALL len%GET(aux_r(i,j),surf%units)
-            CALL len%TO_STD()
-            aux_r(i,j)=len%mag
-         END DO   
+            READ(10,*)  aux_r(i,:)
+            DO j = 1, 2
+               CALL len%GET(aux_r(i,j),surf%units)
+               CALL len%TO_STD()
+               aux_r(i,j)=len%mag
+            END DO
       END DO
       aux_r=transpose(aux_r)
       surf%surf2cart_mtrx=aux_r
@@ -166,7 +166,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #ifdef DEBUG
           CALL VERBOSE_WRITE(routinename,"Surface metric matrix calculated:")
           DO i = 1,2
-            CALL DEBUG_WRITE(routinename, surf%metricsurf_mtrx(1), surf%metricsurf_mtrx(2)) 
+            CALL DEBUG_WRITE(routinename, surf%metricsurf_mtrx(i,1), surf%metricsurf_mtrx(i,2)) 
           END DO
 #endif
       ! Setting lapack work variables
@@ -187,8 +187,8 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
       surf%norm_s1=DSQRT(DOT_PRODUCT(surf%surf2cart_mtrx(1:2,1),surf%surf2cart_mtrx(1:2,1)))
       surf%norm_s2=DSQRT(DOT_PRODUCT(surf%surf2cart_mtrx(1:2,2),surf%surf2cart_mtrx(1:2,2)))
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Modulus U1: ", surf%modul_u1)
-         CALL VERBOSE_WRITE(routinename,"Modulus U2: ", surf%modul_u2)
+         CALL VERBOSE_WRITE(routinename,"Modulus U1: ", surf%norm_s1)
+         CALL VERBOSE_WRITE(routinename,"Modulus U2: ", surf%norm_s2)
 #endif
       ! Set Matrix: from normalized surface coordinates to auxiliar cartesian coordinates
       FORALL(i=1:2) surf%surfunit2cart_mtrx(i,1)=surf%surf2cart_mtrx(i,1)/surf%norm_s1
@@ -196,7 +196,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Surfunit2cart matrix calculated:")
          DO i = 1, 2
-            CALL DEBUG_WRITE(routinename,surf%surfunit2cart_mtrx(i,1),surfunit2cart_mtrx(i,2)
+            CALL DEBUG_WRITE(routinename,surf%surfunit2cart_mtrx(i,1),surf%surfunit2cart_mtrx(i,2))
          END DO
 #endif
       ! Set Matrix: from auxiliar cartesian coordinates to normalized surface coordinates
@@ -206,7 +206,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Cart2surfunit matrix calculated:")
          DO i = 1, 2
-            CALL DEBUG_WRITE(routinename,surf%cart2surfunit_mtrx(i,1),surf%cart2surfunit_mtrx(i,2)
+            CALL DEBUG_WRITE(routinename,surf%cart2surfunit_mtrx(i,1),surf%cart2surfunit_mtrx(i,2))
          END DO
 #endif
       ! Set Matrix: form reciprocal space to auxiliar cartesian coordinates
@@ -216,7 +216,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Recip2cart matrix calculated:")
          DO i = 1, 2
-            CALL DEBUG_WRITE(routinename,surf%recip2cart_mtrx(i,1),surf%recip2cart_mtrx(i,2)
+            CALL DEBUG_WRITE(routinename,surf%recip2cart_mtrx(i,1),surf%recip2cart_mtrx(i,2))
          END DO
 #endif
       ! Set Matrix: from auxiliar cartesian coordinates to reciprocal space
@@ -226,7 +226,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Cart2recip matrix calculated:")
          DO i = 1, 2
-            CALL DEBUG_WRITE(routinename,surf%cart2recip_mtrx(i,1),surf%cart2recip_mtrx(i,2)
+            CALL DEBUG_WRITE(routinename,surf%cart2recip_mtrx(i,1),surf%cart2recip_mtrx(i,2))
          END DO
 #endif
       

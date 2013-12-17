@@ -1,6 +1,6 @@
 # Include general rules
+debugmode=on
 include make.inc
-.PHONY: clean
 # Add here all folder names in src
 folderlist= debug constants units surface lapackcontrol
 
@@ -13,8 +13,7 @@ vpath %.f90 $(folderlist)
 # DEPENDENCIES SECTION ###################################################
 
 # Main rules
-testing: $(objectlist)
-build: $(objectlist)
+libtrajtou.a: $(objectlist)
 	cd ../bin; ar rvs libtrajtou.a $(objectlist); mv libtrajtou.a ../lib/.
 
 # Each object file dependencies
@@ -25,5 +24,6 @@ units.o : debug.o constants.o
 surface.o: debug.o units.o constants.o lapackcontrol.o
 
 # Clean rule
+.PHONY: clean
 clean:
 	rm -f ../bin/*.o ../mod/*.mod ../lib/*.a
