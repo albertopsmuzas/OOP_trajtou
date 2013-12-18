@@ -6,14 +6,13 @@ LF = $(F) -cpp -I mod -Wall
 Lapack = -llapack -lblas
 
 # Some paths to find files 
-vpath %.o bin
 vpath %.f90 jobs
 vpath %.a lib
 
 # General rules
 
 %.x: %.o libtrajtou.a
-	$(LF) -o bin/$@ $< lib/libtrajtou.a $(Lapack)
+	$(LF) -o bin/$@ bin/$< lib/libtrajtou.a $(Lapack)
 
 %.o: %.f90
 	$(CF) $< -o bin/$@

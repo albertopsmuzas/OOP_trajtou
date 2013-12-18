@@ -2,10 +2,10 @@
 debugmode=on
 include make.inc
 # Add here all folder names in src
-folderlist= debug constants units surface lapackcontrol
+folderlist= debug constants units surface lapackcontrol PES
 
 # Object list. There should be a rule for each object in this list
-objectlist= debug.o constants.o lapackcontrol.o units.o surface.o 
+objectlist= debug.o constants.o lapackcontrol.o units.o surface.o PES.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)

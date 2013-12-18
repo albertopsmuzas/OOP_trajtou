@@ -46,7 +46,7 @@ SUBROUTINE INITIALIZE(this,alias,dimensions)
 		CALL this%SET_DIMENSIONS(dimensions)
 		this%initialized=.TRUE.
 	END IF
-	! This PES is initialized
+   RETURN
 END SUBROUTINE INITIALIZE
 !###############################################################
 ! SUBROUTINE: SET_ALIAS ########################################
@@ -146,7 +146,7 @@ END FUNCTION get_dimensions
 !##########################################################
 ! FUNCTION: get_last_value ################################
 !##########################################################
-REAL(KIND=8), FUNCTION get_last_value(this)
+REAL(KIND=8) FUNCTION get_last_value(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables

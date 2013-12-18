@@ -95,10 +95,10 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
    TYPE(length) :: len
    REAL(KIND=8), DIMENSION(2,2) :: aux_r
    ! Lapack variables
-   INTEGER(KIND=4) :: work
-   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: lwork
+   INTEGER(KIND=4) :: lwork
+   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: work
    INTEGER(KIND=4) :: info
-   INTEGER, DIMENSION(:), ALLOCATABLE :: ipiv
+   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipiv
    ! Run section --------------------------------------------
       surf%alias=alias
       surf%filename=filename
@@ -138,7 +138,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
       ! Read number of different atom types in the surface
       READ(10,*) surf%diff_atoms
 #ifdef DEBUG
-         CALL DEBUG_WRITE(routinename,"Different atoms found: ", surf%diff_atoms)
+         CALL DEBUG_WRITE(routinename,"Different atoms found in the basis: ",surf%diff_atoms)
 #endif
       ! Set the the atomic basis, i.e., coordinates for non equivalent  atoms inside
       ! the unit cell
@@ -153,11 +153,15 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
       END DO
       DO i=1, surf%diff_atoms
             DO j=1, surf%atomtype(i)%n
-               READ(10,*) control, surf%atomtype(i)%atom(j)%x, surf%atomtype(i)%atom(j)%y
+               READ(10,*) control,surf%atomtype(i)%atom(j)%x,surf%atomtype(i)%atom(j)%y
                IF (control.NE.i) THEN
                   WRITE(0,*) "INITIALIZE_SURF ERR: Atom type definitions are not in the correct order"
                   CALL EXIT(1)
                END IF
+#ifdef DEBUG
+               CALL DEBUG_WRITE(routinename,"Atom type: (surf. coord.)",i)
+               CALL DEBUG_WRITE(routinename,surf%atomtype(i)%atom(j)%x,surf%atomtype(i)%atom(j)%y)
+#endif
             END DO
       END DO
       CLOSE(10)
@@ -171,11 +175,12 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #endif
       ! Setting lapack work variables
       lwork=3
-      ALLOCATE(lwork(work))
+      ALLOCATE(work(lwork))
       ALLOCATE(ipiv(2))
+      FORALL(i=1:2) ipiv(i)=i
       ! Set Matrix: from auxiliar cartesian coordinates to surface coordinates
       surf%cart2surf_mtrx=surf%surf2cart_mtrx
-      CALL DGETRI(2,surf%cart2surf_mtrx,ipiv,work,lwork,info)
+      CALL DGETRI(2,surf%cart2surf_mtrx,2,ipiv,work,lwork,info)
       CALL LAPACK_CHECK("DGETRI",info)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Cart2surf matrix calculated:")
@@ -187,8 +192,8 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
       surf%norm_s1=DSQRT(DOT_PRODUCT(surf%surf2cart_mtrx(1:2,1),surf%surf2cart_mtrx(1:2,1)))
       surf%norm_s2=DSQRT(DOT_PRODUCT(surf%surf2cart_mtrx(1:2,2),surf%surf2cart_mtrx(1:2,2)))
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Modulus U1: ", surf%norm_s1)
-         CALL VERBOSE_WRITE(routinename,"Modulus U2: ", surf%norm_s2)
+         CALL VERBOSE_WRITE(routinename,"Modulus S1: ", surf%norm_s1)
+         CALL VERBOSE_WRITE(routinename,"Modulus S2: ", surf%norm_s2)
 #endif
       ! Set Matrix: from normalized surface coordinates to auxiliar cartesian coordinates
       FORALL(i=1:2) surf%surfunit2cart_mtrx(i,1)=surf%surf2cart_mtrx(i,1)/surf%norm_s1
@@ -229,7 +234,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
             CALL DEBUG_WRITE(routinename,surf%cart2recip_mtrx(i,1),surf%cart2recip_mtrx(i,2))
          END DO
 #endif
-      
+      surf%initialized=.TRUE. 
    ELSE
       WRITE(0,*) "INITIALIZE_SURF ERR: surface already initialized"
       CALL EXIT(1)
