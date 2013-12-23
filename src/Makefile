@@ -5,7 +5,7 @@ include make.inc
 folderlist= debug constants units surface lapackcontrol PES
 
 # Object list. There should be a rule for each object in this list
-objectlist= debug.o constants.o lapackcontrol.o units.o surface.o PES.o
+objectlist= debug.o constants.o lapackcontrol.o units.o surface.o PES.o PES_CRP.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)

@@ -13,7 +13,7 @@ PRIVATE
 	LOGICAL :: initialized = .FALSE.
 CONTAINS
 	! Set block
-	PROCEDURE, PUBLIC :: INITIALIZE ! very simple one, SHOULD be overridden by child objects
+   PROCEDURE, PUBLIC :: INITIALIZE => INIT_PES! very simple one, SHOULD be overridden by child types
 	PROCEDURE, PUBLIC :: SET_ALIAS
 	PROCEDURE, PUBLIC :: SET_DIMENSIONS
 	! Get block
@@ -26,13 +26,13 @@ END TYPE PES
 ! MODULE CONTAINS:
 CONTAINS
 !###############################################################
-! SUBROUTINE: INITIALIZE #######################################
+! SUBROUTINE: INIT_PES #########################################
 !###############################################################
 ! - Gives initial values to some variables.
 ! - Some important arrays are allocated as well
 ! - If no argument is given, default initialization will be loaded.
 !---------------------------------------------------------------
-SUBROUTINE INITIALIZE(this,alias,dimensions)
+SUBROUTINE INIT_PES(this,alias,dimensions)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
@@ -47,7 +47,7 @@ SUBROUTINE INITIALIZE(this,alias,dimensions)
 		this%initialized=.TRUE.
 	END IF
    RETURN
-END SUBROUTINE INITIALIZE
+END SUBROUTINE INIT_PES
 !###############################################################
 ! SUBROUTINE: SET_ALIAS ########################################
 !###############################################################
