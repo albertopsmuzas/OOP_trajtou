@@ -7,21 +7,21 @@ TYPE PES
 PRIVATE
 	CHARACTER(LEN=30) :: alias ! Just an alias for the PES
 	INTEGER :: dimensions ! number of coordinates which this PES depends on
-	REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: r ! last point where the potential was calculated
-	REAL(KIND=8),DIMENSION(:), ALLOCATABLE :: dvdu ! last calculated derivatives
+	REAL(KIND=8), DIMENSION(:),ALLOCATABLE :: r ! last point where the potential was calculated
+	REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dvdu ! last calculated derivatives
 	REAL(KIND=8) :: v ! last value of the potential (obviously at point r)
 	LOGICAL :: initialized = .FALSE.
 CONTAINS
 	! Set block
-   PROCEDURE, PUBLIC :: INITIALIZE => INIT_PES! very simple one, SHOULD be overridden by child types
-	PROCEDURE, PUBLIC :: SET_ALIAS
-	PROCEDURE, PUBLIC :: SET_DIMENSIONS
+   PROCEDURE,PUBLIC :: INITIALIZE => INIT_PES! very simple one, SHOULD be overridden by child types
+	PROCEDURE,PUBLIC :: SET_ALIAS
+	PROCEDURE,PUBLIC :: SET_DIMENSIONS
 	! Get block
-	PROCEDURE, PUBLIC :: get_alias
-	PROCEDURE, PUBLIC :: get_dimensions
-	PROCEDURE, PUBLIC :: get_last_value
+	PROCEDURE,PUBLIC :: get_alias
+	PROCEDURE,PUBLIC :: get_dimensions
+	PROCEDURE,PUBLIC :: get_last_value
 	! Enquire block
-	PROCEDURE, PUBLIC :: is_initialized
+	PROCEDURE,PUBLIC :: is_initialized
 END TYPE PES
 ! MODULE CONTAINS:
 CONTAINS
