@@ -168,7 +168,8 @@ SUBROUTINE READ_QUANTITY_FROM_ARGUMENTS(quant,mag,units)
    ! Check variable type
    SELECT TYPE (quant)
    TYPE IS (Quantity)
-      WRITE(0,*) "READ_QUANT_FROM_ARGUMENTS ERR: Pure Quantities're not allowed. Declare it with a specific sub-type instead (length, time, etc.)"
+      WRITE(0,*) "READ_QUANT_FROM_ARGUMENTS ERR: Pure Quantities're not allowed. &
+      & Declare it with a specific sub-type instead (length, time, etc.)"
       CALL EXIT(1)
    END SELECT
    quant%mag=mag
@@ -194,7 +195,7 @@ END FUNCTION get_magnitude_quantity
 !###########################################################
 ! - Typical get function
 !-----------------------------------------------------------
-CHARACTER(KIND=10) FUNCTION get_units_quantity(quant) 
+CHARACTER(LEN=10) FUNCTION get_units_quantity(quant) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables

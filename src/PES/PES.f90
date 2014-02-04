@@ -13,7 +13,6 @@ PRIVATE
 	LOGICAL :: initialized = .FALSE.
 CONTAINS
 	! Set block
-   PROCEDURE,PUBLIC :: INITIALIZE => INIT_PES! very simple one, SHOULD be overridden by child types
 	PROCEDURE,PUBLIC :: SET_ALIAS
 	PROCEDURE,PUBLIC :: SET_DIMENSIONS
 	! Get block
@@ -25,29 +24,6 @@ CONTAINS
 END TYPE PES
 ! MODULE CONTAINS:
 CONTAINS
-!###############################################################
-! SUBROUTINE: INIT_PES #########################################
-!###############################################################
-! - Gives initial values to some variables.
-! - Some important arrays are allocated as well
-! - If no argument is given, default initialization will be loaded.
-!---------------------------------------------------------------
-SUBROUTINE INIT_PES(this,alias,dimensions)
-	! Initial declarations
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(PES), INTENT(INOUT) :: this
-	CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: alias
-	INTEGER, INTENT(IN), OPTIONAL :: dimensions
-	! Local variables
-	! Run section
-	IF(.NOT.this%is_initialized()) THEN
-		CALL this%SET_ALIAS(alias)
-		CALL this%SET_DIMENSIONS(dimensions)
-		this%initialized=.TRUE.
-	END IF
-   RETURN
-END SUBROUTINE INIT_PES
 !###############################################################
 ! SUBROUTINE: SET_ALIAS ########################################
 !###############################################################
@@ -64,7 +40,7 @@ SUBROUTINE SET_ALIAS(this,alias)
 	IF (PRESENT(alias)) THEN
 		this%alias=alias
 	ELSE
-		this%alias="Testing PES (1D)"
+		this%alias="Mysterious PES"
 	END IF
 	RETURN
 END SUBROUTINE SET_ALIAS

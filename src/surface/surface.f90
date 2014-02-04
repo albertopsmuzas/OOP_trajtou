@@ -1,57 +1,85 @@
 !#########################################################
-! RAISON D'ÊTRE:
-! - Manages everything related with periodic 2D surfaces
-! UPDATES:
-! - 1st stable version 13/Dec/2013 ---> Alberto Muzas
-! FUNCTIONALITY:
-! - Initialize a surface from an input file
-! IDEAS FOR THE FUTURE:
-! - None
+! MODULE SURFACE_MOD
+!
+!> @brief 
+!! Should contain everything related with periodic 2D surfaces
 !##########################################################
 MODULE SURFACE_MOD
 IMPLICIT NONE
-!===============================================================================
-! Point 2D
-TYPE, PRIVATE :: Point_2D
-   REAL(KIND=8) :: x,y
-END TYPE Point_2D
-!===============================================================================
-! Atom_listderived data
-TYPE, PRIVATE :: Atom_list
+!/////////////////////////////////////////////////////////////////////////////////////
+! TYPE : Atom_list
+!> @brief
+!! Auxiliary type data that contains info about a list of atoms of the same type
+!
+!> @param n - Number of atoms in this list
+!> @param alias - Its periodic table symbol
+!> @param atom - Matrix of positions of each atom in this list
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 03/Feb/2014
+!> @version 1.1
+!-------------------------------------------------------------------------------------
+TYPE,PRIVATE :: Atom_list
 	INTEGER(KIND=4) :: n ! number of atoms in this list
 	CHARACTER(LEN=2) :: alias ! atom name, periodic table
-	TYPE(Point_2D), DIMENSION(:), ALLOCATABLE :: atom
+	REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: atom
 END TYPE
-!=====================================================================================================
-! Surface characteristics derived data 
+!/////////////////////////////////////////////////////////////////////////////////////
+! TYPE: Surface
+!> @brief
+!! Class that contains all data needed from a 2D periodic surface
+!
+!> @param alias - Human-fiendly name for this surface
+!> @param filename - Input file that contains all surface information
+!> @param symmetry_alias - Name for the symmetry group of this surface
+!> @param units -  Units in which distances are stored
+!> @param initialized - Controls if this class was initialized or not
+!> @param symmetry - Integer that stores standard symmetry group ID
+!> @param norm_s1, norm_s2 - Norms of surface vectors s1 & s2
+!> @param surf2cart_mtrx - Transformation matrix from surface coordinates to auxiliary cartesian
+!> @param cart2surf_mtrx - Transformation matrix from auxiliary cartesian coordinates to surface
+!> @param surfunit2cart_mtrx - Transformation matrix from unit surface corrdinates to auxiliary cartesians
+!> @param cart2surfunit_mtrx - Transformation matrix from auxiliary cartesians to unit surface coordinates
+!> @param recip2cart_mtrx - Transformation matrix from reciprocal lattice coordinates to auxiliary cartesians
+!> @param cart2recip_mtrx - Transformation matrix from auxiliary cartesian coordinates to reciprocal lattice
+!> @param metricsurf_mtrx - Metric matrix for surface coordinates
+!> @param diff_atoms - Number of different types of atoms in the surface
+!> @param atomtype - Array of lists of atoms
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 03/Feb/2014
+!> @version 1.0
+! 
+!> @see atom_list
+!-------------------------------------------------------------------------------------
 TYPE Surface
 PRIVATE
-	CHARACTER(LEN=30) :: alias ! name of this surface
-	CHARACTER(LEN=30) :: filename ! file that contains all surface information.
-	CHARACTER(LEN=10) :: symmetry_alias ! name of the symmetry
+	CHARACTER(LEN=30) :: alias
+	CHARACTER(LEN=30) :: filename
+	CHARACTER(LEN=10) :: symmetry_alias
    CHARACTER(LEN=10) :: units
 	LOGICAL :: initialized=.FALSE.
-	INTEGER(KIND=4) :: symmetry ! standard id for the symmetry
-	REAL(KIND=8) :: norm_s1, norm_s2 ! 2-norm of surface vectors s1&s2.
-	REAL(KIND=8), DIMENSION(2,2) :: surf2cart_mtrx ! surface coord to cartesians
-	REAL(KIND=8), DIMENSION(2,2) :: cart2surf_mtrx ! Cartesian to surface coord.
-	REAL(KIND=8), DIMENSION(2,2) :: surfunit2cart_mtrx ! Unit surface coord. to cartesians.
-	REAL(KIND=8), DIMENSION(2,2) :: cart2surfunit_mtrx ! Cartesian to unit surface coord.
-	REAL(KIND=8), DIMENSION(2,2) :: recip2cart_mtrx ! Reciprocal to cartesian coord.
-	REAL(KIND=8), DIMENSION(2,2) :: cart2recip_mtrx ! Cartesian to reciprocal coord.
-	REAL(KIND=8), DIMENSION(2,2) :: metricsurf_mtrx ! Metric matrix for surface coord.
-	INTEGER(KIND=4) :: diff_atoms ! Number of different atoms in the surface
-	TYPE(Atom_list), DIMENSION(:), ALLOCATABLE :: atomtype ! List of atoms
+	INTEGER(KIND=4) :: symmetry
+	REAL(KIND=8) :: norm_s1, norm_s2 
+	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx 
+	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx 
+	REAL(KIND=8),DIMENSION(2,2) :: cart2surf_mtrx
+	REAL(KIND=8),DIMENSION(2,2) :: surfunit2cart_mtrx 
+	REAL(KIND=8),DIMENSION(2,2) :: cart2surfunit_mtrx 
+	REAL(KIND=8),DIMENSION(2,2) :: recip2cart_mtrx 
+	REAL(KIND=8),DIMENSION(2,2) :: cart2recip_mtrx 
+	INTEGER(KIND=4) :: diff_atoms 
+	TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype 
 CONTAINS
 	! Initiallize
 	PROCEDURE, PUBLIC :: INITIALIZE
 	! Operations block
-	PROCEDURE, PUBLIC :: surf2cart
-	PROCEDURE, PUBLIC :: cart2surf
-	PROCEDURE, PUBLIC :: surfunit2cart
-	PROCEDURE, PUBLIC :: cart2surfunit
-	PROCEDURE, PUBLIC :: recip2cart
-	PROCEDURE, PUBLIC :: cart2recip
+	PROCEDURE,PUBLIC :: surf2cart
+	PROCEDURE,PUBLIC :: cart2surf
+	PROCEDURE,PUBLIC :: surfunit2cart
+	PROCEDURE,PUBLIC :: cart2surfunit
+	PROCEDURE,PUBLIC :: recip2cart
+	PROCEDURE,PUBLIC :: cart2recip
    ! Enquire block
    PROCEDURE, PUBLIC :: is_initialized
 END TYPE
@@ -120,9 +148,9 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
       DO i=1,2
             READ(10,*)  aux_r(i,:)
             DO j = 1, 2
-               CALL len%GET(aux_r(i,j),surf%units)
+               CALL len%READ(aux_r(i,j),surf%units)
                CALL len%TO_STD()
-               aux_r(i,j)=len%mag
+               aux_r(i,j)=len%getvalue()
             END DO
       END DO
       aux_r=transpose(aux_r)
@@ -149,18 +177,18 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
             WRITE(0,*) "INITIALIZE_SURF ERR: Atom type definitions are not in the correct order"
             CALL EXIT(1)
          END IF
-         ALLOCATE(surf%atomtype(i)%atom(1:surf%atomtype(i)%n))
+         ALLOCATE(surf%atomtype(i)%atom(surf%atomtype(i)%n,2))
       END DO
       DO i=1, surf%diff_atoms
             DO j=1, surf%atomtype(i)%n
-               READ(10,*) control,surf%atomtype(i)%atom(j)%x,surf%atomtype(i)%atom(j)%y
+               READ(10,*) control,surf%atomtype(i)%atom(j,1),surf%atomtype(i)%atom(j,2)
                IF (control.NE.i) THEN
                   WRITE(0,*) "INITIALIZE_SURF ERR: Atom type definitions are not in the correct order"
                   CALL EXIT(1)
                END IF
 #ifdef DEBUG
                CALL DEBUG_WRITE(routinename,"Atom type: (surf. coord.)",i)
-               CALL DEBUG_WRITE(routinename,surf%atomtype(i)%atom(j)%x,surf%atomtype(i)%atom(j)%y)
+               CALL DEBUG_WRITE(routinename,surf%atomtype(i)%atom(j,1),surf%atomtype(i)%atom(j,2))
 #endif
             END DO
       END DO
