@@ -140,6 +140,7 @@ TYPE, EXTENDS(PES) :: CRP
 CONTAINS
    PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_CRP_PES
    PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP
+   PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP
 END TYPE CRP
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -528,42 +529,106 @@ SUBROUTINE EXTRACT_VASINT_CRP(thispes)
    RETURN
 END SUBROUTINE EXTRACT_VASINT_CRP
 !############################################################
-! SUBROUTINE: RED_CORR_SITIO ################################
+! SUBROUTINE: SMOOTH_CRP ####################################
 !############################################################
-! Program to extract the corrugation from a 3D atomic calculation
-! derived from a pair-potential.
-! Site and pairpot shoul have been defined before.
-! Vasint should have been extracted before
+!> @brief
+!! Substracts to all sitio potentials the pair-potential interactions 
+!! with all atoms of the surface inside an environment of order @b
+!! max order
+! 
+!> @param[in,out] thispes - CRP PES variable to be smoothed (only it's sites)
+!
+!> @warning
+!! - Vasint should've  been extracted before
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 05/Feb/2014
+!> @version 1.0
+!
+!> @see extract_vasint_crp, initialize_crp_pes
 !-----------------------------------------------------------
 SUBROUTINE SMOOTH_CRP(thispes)
    ! Initial declaraitons
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
    IMPLICIT NONE
    CLASS(CRP),INTENT(INOUT) :: thispes
    ! Local variables
+   REAL(KIND=8),DIMENSION(3) :: A,aux
+   REAL(KIND=8) :: dummy
+   INTEGER(KIND=4) :: i,j,k,l ! counters
+   INTEGER(KIND=4) :: npairpots,nsites
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: interac,dvdzr ! collects interactions and corrections to
+   CHARACTER(LEN=12) :: routinename="SMOOTH_CRP: "
    ! Run section ----------
-
+   nsites = size(thispes%all_sites)
+   npairpots = size(thispes%all_pairpots)
+   ALLOCATE(interac(0:thispes%max_order))
+   ALLOCATE(dvdzr(0:thispes%max_order))
+   DO i = 1, nsites ! loop over sites
+      aux(1) = thispes%all_sites(i)%x
+      aux(2) = thispes%all_sites(i)%y
+      DO j = 1, thispes%all_sites(i)%n ! loop over pairs v,z
+         aux(3)=thispes%all_sites(i)%z(j)
+         A=aux
+         A(1:2)=thispes%surf%cart2surf(aux(1:2))
+         DO l = 1, npairpots ! loop over pairpots
+            DO k = 0, thispes%max_order ! loop over environment orders
+               CALL INTERACTION_AENV(k,A,thispes%surf,thispes%all_pairpots(l),interac(k),dvdzr(k),dummy,dummy)
+            END DO
+            thispes%all_sites(i)%v(j)=thispes%all_sites(i)%v(j)-sum(interac)
+         END DO
+         IF (j.EQ.1) THEN
+            thispes%all_sites(i)%dz1=thispes%all_sites(i)%dz1-SUM(dvdzr) ! correct first derivative
+         ELSE IF (j.EQ.thispes%all_sites(i)%n) THEN
+            thispes%all_sites(i)%dz2=thispes%all_sites(i)%dz2-SUM(dvdzr) ! correct first derivative
+         END IF
+      END DO
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Site smoothed: ",i)
+#endif
+   END DO
+   RETURN
 END SUBROUTINE SMOOTH_CRP
 !############################################################
 ! SUBROUTINE: INTERPOL_Z_CRP ################################
 !############################################################
-! - Program to extract the corrugation from 3D atomic calculations
-!   derived from its pair-potential interactions and interpolate them.
-! - Sites and pairpots shoul have been defined before and linked into 
-!   all_sites and all_pairpots allocatable arrays.
-! - Vasint is extracted here. 
-! - Surface should have been defined before.
-! - Useful for jobs in which input files have been proven to be correct.
+!> @brief
+!! Interpolates all sitios and pairpot potentials that belong
+!! to an specific CRP PES. Sitio potentials are smoothed
+!
+!> @param[in,out] thispes - CRP PES to be interpolated 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 05/Feb/2014
+!> @version 1.0
 !-----------------------------------------------------------
 SUBROUTINE INTERPOL_Z_CRP(thispes)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(CRP) :: thispes
+   CLASS(CRP),TARGET :: thispes
    ! Local variables
    INTEGER(KIND=4) :: nsites,npairpots
+   REAL(KIND=8),POINTER :: dz1,dz2
+   INTEGER(KIND=4) :: i ! counters
    ! Run secton------------------------
    nsites=size(thispes%all_sites)
    npairpots=size(thispes%all_pairpots)
+   CALL thispes%EXTRACT_VASINT()
+   DO i = 1, npairpots ! loop pairpots
+      dz1 => thispes%all_pairpots(i)%dz1
+      dz2 => thispes%all_pairpots(i)%dz2
+      CALL thispes%all_pairpots(i)%interz%INTERPOL(dz1,1,dz2,1)
+   END DO
+   CALL thispes%SMOOTH()
+   DO i = 1, nsites
+      dz1 => thispes%all_sites(i)%dz1
+      dz2 => thispes%all_sites(i)%dz2
+      CALL thispes%all_sites(i)%interz%INTERPOL(dz1,1,dz2,2) 
+   END DO
+   RETURN
 END SUBROUTINE INTERPOL_Z_CRP
 !##################################################################
 !# SUBROUTINE: INTERACTION_AP #####################################
