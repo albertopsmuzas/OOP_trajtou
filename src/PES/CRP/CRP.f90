@@ -11,7 +11,8 @@
 MODULE CRP_MOD
    USE PES_MOD
    USE SURFACE_MOD
-   USE INTERPOL1D_MOD
+   USE CUBICSPLINES_MOD
+   USE FOURIER2D_MOD
 ! Initial declarations
 IMPLICIT NONE
 !///////////////////////////////////////////////////////////////////////////////
@@ -54,6 +55,8 @@ TYPE :: Symmpoint
    CONTAINS
       PROCEDURE,PUBLIC :: READ_RAW => READ_SYMMPOINT_RAW
       PROCEDURE,PUBLIC :: GEN_SYMM_RAW => GEN_SYMMETRIZED_RAW_INPUT
+      PROCEDURE,PUBLIC :: PLOT_DATA => PLOT_DATA_SYMMPOINT
+      PROCEDURE,PUBLIC :: PLOT_INTERPOL => PLOT_INTERPOL_SYMMPOINT
 END TYPE Symmpoint
 !///////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Pair potential  
@@ -141,6 +144,8 @@ CONTAINS
    PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_CRP_PES
    PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP
    PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP
+   PROCEDURE,PUBLIC :: INTERPOL_Z => INTERPOL_Z_CRP
+   PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP
 END TYPE CRP
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -292,7 +297,7 @@ SUBROUTINE READ_STANDARD_PAIRPOT (pairpot,alias,filename)
       READ(10,*) pairpot%z(i), pairpot%v(i)
    END DO
    CLOSE(10)
-      ! Status message
+   CALL pairpot%interz%READ(pairpot%z,pairpot%v)
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename, pairpot%filename, "Done")
 #endif
@@ -357,6 +362,7 @@ SUBROUTINE READ_STANDARD_SITIO(site,alias,filename)
       READ(10,*) site%z(i), site%v(i)
    END DO
    CLOSE(10)
+   CALL site%interz%READ(site%z,site%v)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,site%filename," -----> Done.")
 #endif
@@ -670,12 +676,12 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A, P
    TYPE(Surface),INTENT(IN) :: surf
    TYPE(Pair_pot),INTENT(IN) :: pairpot
-   REAL*8,INTENT(OUT) :: interac,dvdz_corr,dvdx_corr,dvdy_corr
+   REAL(KIND=8),INTENT(OUT) :: interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! Local variables ------------------------------------------
-   REAL*8 :: r ! distance
-   REAL*8 :: modA ! A modulus
-   REAL*8 :: modP_plus ! P modulus plus other term
-   REAL*8, DIMENSION(3) :: vect, vect2
+   REAL(KIND=8) :: r ! distance
+   REAL(KIND=8) :: modA ! A modulus
+   REAL(KIND=8) :: modP_plus ! P modulus plus other term
+   REAL(KIND=8), DIMENSION(3) :: vect, vect2
    CHARACTER(LEN=16), PARAMETER :: routinename = "INTERACTION_AP: "
    INTEGER :: i ! Counter
    ! GABBA, GABBA HEY! ----------------------------------------
@@ -765,15 +771,15 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    IMPLICIT NONE
    ! I/O VAriables ------------------------------------------
    INTEGER,INTENT(IN) :: n
-   REAL*8,DIMENSION(3), INTENT(IN) :: A
+   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN), TARGET :: pairpot
    TYPE(Surface),INTENT(IN), TARGET :: surf
    LOGICAL,INTENT(IN),OPTIONAL :: gnp
-   REAL*8,INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
+   REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
-   REAL*8,DIMENSION(3) :: P
-   REAL*8 :: dummy1, dummy2, dummy3, dummy4
-   REAL*8,POINTER :: atomx, atomy
+   REAL(KIND=8),DIMENSION(3) :: P
+   REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
+   REAL(KIND=8),POINTER :: atomx, atomy
    INTEGER,POINTER :: pairid
    INTEGER :: i, k ! Counters
    CHARACTER(LEN=18), PARAMETER :: routinename = "INTERACTION_AENV: "
@@ -851,7 +857,160 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
       CALL EXIT(1)
    END IF
 END SUBROUTINE INTERACTION_AENV
-
-
-
+!############################################################
+!# SUBROUTINE: GET_V_AND_DERIVS_CRP #########################
+!############################################################
+!> @brief
+!! Subroutine that calculates the 3D potential for a point A and
+!! its derivatives in cartesian coordinates.
+!
+!> @param[in] thispes - CRP PES
+!> @param[in] X - Point in space to calculate the potential and it's derivatives. Cartesian's
+!> @param[out] v - Value of the potential at X
+!> @param[out] dvdu - derivatives, cartesian coordinates 
+!
+!> @warning
+!! - All sitios should have been interpolated in Z direction previously. It
+!!   is optinal to extract "vasint".
+!! - Corrugation, MUST have been extracted from sitios previously (smoothed) 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 06/Feb/2014
+!> @version 1.0
+!------------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_CRP(thispes,X,v,dvdu)
+	IMPLICIT NONE
+	! I/O variables
+   CLASS(CRP),TARGET,INTENT(IN) :: thispes
+	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
+	REAL(KIND=8),INTENT(OUT) :: v
+	REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
+	! Local variables
+	TYPE(Fourier2d) :: interpolxy
+   INTEGER(KIND=4) :: nsites,npairpots
+	REAL(KIND=8),DIMENSION(3) :: A, deriv
+	REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f, dfdz ! arguments to the xy interpolation
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
+	INTEGER :: i, j,k ! counters
+	! Pointers
+	REAL(KIND=8), POINTER :: zmax
+	TYPE(Pair_pot),POINTER :: pairpot
+	zmax => thispes%all_sites(1)%z(thispes%all_sites(1)%n)
+   npairpots = size(thispes%all_pairpots)
+   nsites = size(thispes%all_sites)
+	! GABBA, GABBA HEY! ----------------------
+	IF (X(3).GT.zmax) THEN
+		dvdu = 0.D0
+		v = 0.D0
+		RETURN
+	END IF
+	! For the corrugation addition, we need to project upon IWS cell
+	A = X
+   A(1:2) = thispes%surf%project_unitcell(X(1:2))
+   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
+	!
+	pot = 0.D0 ! Initialization value
+	v = 0.D0 ! Initialization value
+	FORALL(i=1:3) 
+		dvdu(i) = 0.D0 ! Initialization value
+		deriv(i) = 0.D0 ! Initialization value
+	END FORALL 
+	DO j=1, npairpots
+		pairpot => thispes%all_pairpots(j)
+		DO k=0,thispes%max_order
+			CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+			v = v + pot
+			FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
+		END DO
+	END DO
+	! Now, we have all the repulsive interaction and corrections to the derivarives
+	! stored in v(:) and dvdu(:) respectively.
+	! Let's get v and derivatives from xy interpolation of the corrugationless function
+   ALLOCATE(f(nsites))
+   ALLOCATE(xy(nsites,2))
+   ALLOCATE(dfdz(nsites))
+   DO i=1,nsites
+      xy(i,1)=thispes%all_sites(i)%x
+      xy(i,2)=thispes%all_sites(i)%y
+      f(i)=thispes%all_sites(i)%interz%getvalue(X(3))
+      dfdz(i)=thispes%all_sites(i)%interz%getderiv(X(3))
+   END DO
+	CALL interpolxy%READ(xy,f,dfdz)
+   CALL interpolxy%SET_COEFF(thispes%surf)
+   CALL GET_F_AND_DERIV(thispes%surf,X,pot,deriv)
+	! Corrections from the smoothing procedure
+	v = v + pot
+	FORALL(i=1:3) dvdu(i) = dvdu(i) + deriv(i)
+	RETURN
+END SUBROUTINE GET_V_AND_DERIVS_CRP
+!######################################################################
+! SUBROUTINE: PLOT_DATA_SYMMPOINT #####################################
+!######################################################################
+!> @brief
+!! Creates a data file called "filename" with the data z(i) and v(i) 
+!! for a Symmpoint type variable
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_DATA_SYMMPOINT(this, filename)
+   IMPLICIT NONE
+   ! I/O Variables ----------------------
+   CLASS(Symmpoint), INTENT(IN) :: this
+   CHARACTER(LEN=*), INTENT(IN) :: filename
+   ! Local variables --------------------
+   INTEGER :: i ! Counter
+   ! GABBA GABBA HEY!! ------------------
+   OPEN(11, FILE=filename, STATUS="replace")
+   DO i=1,this%n
+      WRITE(11,*) this%z(i), this%v(i)
+   END DO
+   CLOSE (11)
+   WRITE(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
+END SUBROUTINE PLOT_DATA_SYMMPOINT
+!######################################################################
+! SUBROUTINE: PLOT_INTERPOL_SYMMPOINT #################################
+!######################################################################
+!> @brief
+!! Creates a data file called "filename" with the interpolation of a
+!! specific Symmpoint and its z-derivative. The number of points in that graphic is defined
+!! by @b npoints. Cannot be less than two.
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_INTERPOL_SYMMPOINT(this,npoints,filename)
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   INTEGER,INTENT(IN) :: npoints
+   CLASS(Symmpoint),INTENT(IN),TARGET :: this
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL*8 :: delta, interval, x
+   INTEGER :: i ! Counter
+   CHARACTER(LEN=22), PARAMETER :: routinename = "GRAPH_INTERPOL_SITIO: " 
+   ! Pointers ------------------------------------
+   REAL*8, POINTER :: xmin, xmax
+   INTEGER, POINTER :: n
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "GRAPH_INTERPOL_SITIO ERR: Less than 2 points"
+      STOP
+   END IF
+   !
+   n => this%n
+   xmin => this%z(1)
+   xmax => this%z(n)
+   !
+   interval=xmax-xmin
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=interval/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   WRITE(11,*) xmin, this%v(1), this%dz1
+   DO i=1, inpoints
+      x=xmin+(dfloat(i)*delta)
+      WRITE(11,*) x, this%interz%getvalue(x), this%interz%getderiv(x)
+   END DO
+   WRITE(11,*) xmax,this%v(n),this%dz2
+   WRITE(*,*) routinename, this%alias, filename," file created"
+   CLOSE(11)
+END SUBROUTINE PLOT_INTERPOL_SYMMPOINT
 END MODULE CRP_MOD

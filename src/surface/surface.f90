@@ -60,8 +60,6 @@ PRIVATE
    CHARACTER(LEN=10) :: units
 	LOGICAL :: initialized=.FALSE.
 	INTEGER(KIND=4) :: symmetry
-	REAL(KIND=8) :: norm_s1, norm_s2 
-	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx 
 	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx 
 	REAL(KIND=8),DIMENSION(2,2) :: cart2surf_mtrx
 	REAL(KIND=8),DIMENSION(2,2) :: surfunit2cart_mtrx 
@@ -70,6 +68,8 @@ PRIVATE
 	REAL(KIND=8),DIMENSION(2,2) :: cart2recip_mtrx 
 	INTEGER(KIND=4) :: diff_atoms 
 	TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype 
+	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx 
+	REAL(KIND=8),PUBLIC :: norm_s1, norm_s2 
 CONTAINS
 	! Initiallize
 	PROCEDURE, PUBLIC :: INITIALIZE
@@ -80,6 +80,7 @@ CONTAINS
 	PROCEDURE,PUBLIC :: cart2surfunit
 	PROCEDURE,PUBLIC :: recip2cart
 	PROCEDURE,PUBLIC :: cart2recip
+   PROCEDURE,PUBLIC :: project_unitcell
    ! Enquire block
    PROCEDURE, PUBLIC :: is_initialized
 END TYPE
@@ -103,7 +104,8 @@ END FUNCTION is_initialized
 !###############################################################################
 !# SUBROUTINE: INITIALIZE ######################################################
 !###############################################################################
-! - Initializes surface from file filename
+!> @brief
+!! Initializes surface from file @b filename
 !-------------------------------------------------------------------------------
 SUBROUTINE INITIALIZE(surf,alias,filename)
    USE UNITS_MOD
@@ -279,7 +281,7 @@ FUNCTION cart2surf(surf,r)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
-   REAL(KIND=8), DIMENSION(2), INTENT(INOUT) :: r
+   REAL(KIND=8), DIMENSION(2), INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8),DIMENSION(2) :: cart2surf
    ! Run section
@@ -296,7 +298,7 @@ FUNCTION surf2cart(surf,r)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
-   REAL(KIND=8), DIMENSION(2) :: r
+   REAL(KIND=8), DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8),DIMENSION(2) :: surf2cart
    ! Run section
@@ -313,7 +315,7 @@ FUNCTION surfunit2cart(surf,r)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
-   REAL(KIND=8), DIMENSION(2) :: r
+   REAL(KIND=8), DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8),DIMENSION(2) :: surfunit2cart
    ! Run section
@@ -330,7 +332,7 @@ FUNCTION cart2surfunit(surf,r)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
-   REAL(KIND=8), DIMENSION(2), INTENT(INOUT) :: r
+   REAL(KIND=8), DIMENSION(2), INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8),DIMENSION(2) :: cart2surfunit
    ! Run section
@@ -347,7 +349,7 @@ FUNCTION cart2recip(surf,r)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
-   REAL(KIND=8), DIMENSION(2) :: r
+   REAL(KIND=8), DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8),DIMENSION(2) :: cart2recip
    ! Run section
@@ -364,11 +366,38 @@ FUNCTION recip2cart(surf,r)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
-   REAL(KIND=8), DIMENSION(2), INTENT(INOUT) :: r
+   REAL(KIND=8), DIMENSION(2), INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8),DIMENSION(2) :: recip2cart
    ! Run section
    recip2cart=matmul(surf%recip2cart_mtrx,r)
    RETURN
 END FUNCTION recip2cart
+!################################################################
+!# SUBROUTINE: PROJECT_UNITCELL #################################
+!################################################################
+!> @brief
+!! Projects 2D point into the C4v unit cell
+!
+!> @warning
+!! - Input/output in cartesian coordinates (r)
+!----------------------------------------------------------------
+FUNCTION project_unitcell(surf,r)
+	IMPLICIT NONE
+	! I/O variables
+	CLASS(Surface),INTENT(IN) :: surf
+	REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
+	! Local variables
+   REAL(KIND=8),DIMENSION(2) :: project_unitcell
+	REAL(KIND=8), DIMENSION(2) :: aux
+	INTEGER :: i ! counters
+	! HEY, HO! LET'S GO !!! ----------------------
+   project_unitcell = surf%cart2surf(r)
+	FORALL (i=1:2) 
+		aux(i)=DFLOAT(INT(project_unitcell(i)))
+		project_unitcell(i)=project_unitcell(i)-aux(i)
+	END FORALL
+   project_unitcell = surf%surf2cart(project_unitcell)
+	RETURN
+END FUNCTION project_unitcell
 END MODULE SURFACE_MOD
