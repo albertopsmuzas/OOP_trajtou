@@ -51,12 +51,11 @@ TYPE :: Symmpoint
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: v
    REAL(KIND=8) :: dz1
    REAL(KIND=8) :: dz2
-   TYPE(Csplines) :: interz 
+   TYPE(Csplines),PUBLIC :: interz 
    CONTAINS
       PROCEDURE,PUBLIC :: READ_RAW => READ_SYMMPOINT_RAW
       PROCEDURE,PUBLIC :: GEN_SYMM_RAW => GEN_SYMMETRIZED_RAW_INPUT
       PROCEDURE,PUBLIC :: PLOT_DATA => PLOT_DATA_SYMMPOINT
-      PROCEDURE,PUBLIC :: PLOT_INTERPOL => PLOT_INTERPOL_SYMMPOINT
 END TYPE Symmpoint
 !///////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Pair potential  
@@ -135,17 +134,18 @@ END TYPE Sitio
 !> @see newinput
 !------------------------------------------------------------------------------
 TYPE, EXTENDS(PES) :: CRP
-   PRIVATE
    INTEGER(KIND=4) :: max_order
    TYPE(Pair_pot),DIMENSION(:),ALLOCATABLE :: all_pairpots
    TYPE(Sitio),DIMENSION(:),ALLOCATABLE :: all_sites
    TYPE(Surface) :: surf
-CONTAINS
-   PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_CRP_PES
-   PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP
-   PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP
-   PROCEDURE,PUBLIC :: INTERPOL_Z => INTERPOL_Z_CRP
-   PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP
+   CONTAINS
+      PROCEDURE,PUBLIC :: READ => READ_CRP
+      PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP
+      PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP
+      PROCEDURE,PUBLIC :: INTERPOL_Z => INTERPOL_Z_CRP
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP
+      PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP
+      PROCEDURE,PUBLIC :: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP
 END TYPE CRP
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -240,7 +240,6 @@ END SUBROUTINE READ_SYMMPOINT_RAW
 !! an standard input file, i.e. one written in a.u.
 !
 !> @param[in,out] pairpot - Pair_pot subtype variable to be initialized
-!> @param[in] alias - Human-friendly alias
 !> @param[in] filename - String with the name of the standard pairpot
 !!                        file to be loaded
 !
@@ -266,7 +265,7 @@ END SUBROUTINE READ_SYMMPOINT_RAW
 !> @see 
 !! debug_mod
 !-----------------------------------------------------------
-SUBROUTINE READ_STANDARD_PAIRPOT (pairpot,alias,filename)
+SUBROUTINE READ_STANDARD_PAIRPOT (pairpot,filename)
       ! Initial declarations
 #ifdef DEBUG
    USE DEBUG_MOD
@@ -274,14 +273,12 @@ SUBROUTINE READ_STANDARD_PAIRPOT (pairpot,alias,filename)
    IMPLICIT NONE
    ! I/O variables ------------------------------
    CLASS(Pair_pot), INTENT(INOUT) :: pairpot
-   CHARACTER(LEN=*),INTENT(IN) :: alias
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables ----------------------------
    INTEGER :: i
    CHARACTER(LEN=14), PARAMETER :: routinename = "READ_PAIRPOT: "
    ! Run section ---------------------------------
    pairpot%filename=filename
-   pairpot%alias=alias
    OPEN(10,FILE=pairpot%filename,STATUS='OLD')
    READ(10,*) ! dummy line
    READ(10,*) ! dummy line
@@ -299,7 +296,7 @@ SUBROUTINE READ_STANDARD_PAIRPOT (pairpot,alias,filename)
    CLOSE(10)
    CALL pairpot%interz%READ(pairpot%z,pairpot%v)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename, pairpot%filename, "Done")
+      CALL VERBOSE_WRITE(routinename,pairpot%filename,pairpot%alias)
 #endif
    RETURN
 END SUBROUTINE READ_STANDARD_PAIRPOT
@@ -311,7 +308,6 @@ END SUBROUTINE READ_STANDARD_PAIRPOT
 !! an standard input file, i.e. one written in a.u.
 !
 !> @param[in,out] site - Sitio subtype variable to be initialized
-!> @param[in] alias - Human-friendly alias
 !> @param[in] filename - String with the name of the standard site
 !!                        file to be loaded
 !
@@ -333,21 +329,19 @@ END SUBROUTINE READ_STANDARD_PAIRPOT
 !!    -# line 8~8+N: @b real(kind=8),@b real(kind=8); couples @f$(Z_{i},V(Z_{i})), Z_{i}<Z_{i+1}@f$ in a.u.
 !
 !-----------------------------------------------------------
-SUBROUTINE READ_STANDARD_SITIO(site,alias,filename)
+SUBROUTINE READ_STANDARD_SITIO(site,filename)
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(Sitio),INTENT(INOUT) :: site
-   CHARACTER(LEN=*),INTENT(IN) :: alias
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables
    INTEGER :: i ! counter
    CHARACTER(LEN=12) , PARAMETER :: routinename = "READ_SITIO: "
    !
    site%filename=filename
-   site%alias=alias
    OPEN (10,file=site%filename,status="old")
    READ(10,*) ! dummy line
    READ(10,*) ! dummy line
@@ -364,7 +358,7 @@ SUBROUTINE READ_STANDARD_SITIO(site,alias,filename)
    CLOSE(10)
    CALL site%interz%READ(site%z,site%v)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,site%filename," -----> Done.")
+   CALL VERBOSE_WRITE(routinename,site%filename,site%alias)
 #endif
    RETURN
 END SUBROUTINE READ_STANDARD_SITIO
@@ -444,35 +438,71 @@ END SUBROUTINE GEN_SYMMETRIZED_RAW_INPUT
 !# SUBROUTINE: INITIALIZE_CRP_PES ######################################
 !#######################################################################
 !> @brief
-!! Just to store all interesting data for a CRP PES from standard input
-!! files
+!! Read from file useful data to initialize a CRP PES files
+!
+!> @param[in,out] this - CRP to be initializated
+!> @param[in] filename - Name of the input file
+!
+!> @warning
+!! - Input file structure:
+!!    -# line 1: dummy line
+!!    -# line 2: character(len=30),character(len=30); surface filename, surface alias
+!!    -# line 3: integer(kind=4); max order environment to smooth sitios
+!!    -# line 4: integer(kind=4); Number of pair potentials (N)
+!!    -# line 5~5+N: character(kind=30),character(len=30); pairpot filename, pairpot alias
+!!    -# line 5+N+1: integer(kind=4); number of sitios (M)
+!!    -# lines 5N+2~5N+2+M: character(len=30),character(len=30); sitio filename, sitio alias
 !-----------------------------------------------------------------------
-SUBROUTINE INITIALIZE_CRP_PES(this,n_pairpots,files_pairpots,aliases_pairpots, &
-		      n_sites,files_sites,aliases_sites,file_surf,alias_surf,max_order)
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(CRP),INTENT(OUT) :: this 
-	INTEGER,INTENT(IN) :: n_pairpots,n_sites,max_order
-	CHARACTER(LEN=*),DIMENSION(n_sites),INTENT(IN) :: files_sites, aliases_sites
-	CHARACTER(LEN=*),DIMENSION(n_pairpots),INTENT(IN) :: files_pairpots, aliases_pairpots
-	CHARACTER(LEN=*),INTENT(IN) :: file_surf, alias_surf
+SUBROUTINE READ_CRP(this,filename)
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP),INTENT(OUT) :: this 
+   CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables
+   INTEGER(KIND=4) :: n_pairpots,n_sites,max_order
+   CHARACTER(LEN=30) :: file_surf
+   CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_sites
+   CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_pairpots
+   CHARACTER(LEN=10),PARAMETER :: routinename="READ_CRP: "
    INTEGER(KIND=4) :: i ! Counter
-	! HEY HO!, LET'S GO!! ------------------
+   ! HEY HO!, LET'S GO!! ------------------
    CALL this%SET_DIMENSIONS(3)
    CALL this%SET_ALIAS("CRP PES")
+   ! Read input file
+   OPEN(11,FILE=filename,STATUS="old")
+   READ(11,*) !dummy line
+   READ(11,*) file_surf
+   WRITE(*,*) routinename, file_surf
+   READ(11,*) max_order
+   WRITE(*,*) routinename,"Max order: ",max_order
+   READ(11,*) n_pairpots
+   WRITE(*,*) routinename,"Pairpots: ",n_pairpots
+   ALLOCATE(files_pairpots(n_pairpots))
+   DO i = 1, n_pairpots
+      READ(11,*) files_pairpots(i)
+      WRITE(*,*) routinename,files_pairpots(i)
+   END DO
+   READ(11,*) n_sites
+   WRITE(*,*) routinename,"Sitios: ",n_sites
+   ALLOCATE(files_sites(n_sites))
+   DO i = 1, n_sites
+      READ(11,*) files_sites(i)
+      WRITE(*,*) routinename,files_sites(i)
+   END DO
+   CLOSE(11)
+   ! Initialize CRP
    ALLOCATE(this%all_pairpots(n_pairpots))
    DO i = 1,n_pairpots
-      CALL this%all_pairpots(i)%READ(aliases_pairpots(i),files_pairpots(i)) 
+      CALL this%all_pairpots(i)%READ(files_pairpots(i)) 
    END DO
    ALLOCATE(this%all_sites(n_sites))
    DO i = 1, n_sites
-     CALL this%all_sites(i)%READ(aliases_sites(i),files_sites(i)) 
+     CALL this%all_sites(i)%READ(files_sites(i)) 
    END DO
-	CALL this%surf%INITIALIZE(alias_surf,file_surf)
-	this%max_order = max_order
-	RETURN
-END SUBROUTINE INITIALIZE_CRP_PES
+   CALL this%surf%INITIALIZE(file_surf)
+   this%max_order = max_order
+   RETURN
+END SUBROUTINE READ_CRP
 !#######################################################################
 !# SUBROUTINE: EXTRACT_VASINT_CRP ######################################
 !#######################################################################
@@ -488,6 +518,7 @@ END SUBROUTINE INITIALIZE_CRP_PES
 !!   pair potentials, read from files previously
 !! - At least one pair potential should've defined in the CRP variable
 !! - Obviously, @ thispes should contain reliable data
+!! - Only modifies things inside @b interz
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 04/Feb/2014
@@ -517,7 +548,7 @@ SUBROUTINE EXTRACT_VASINT_CRP(thispes)
          CALL EXIT(1)
       END IF
       DO j = 1, thispes%all_pairpots(i)%n
-         thispes%all_pairpots(i)%v(j)=thispes%all_pairpots(i)%v(j)-thispes%all_pairpots(i)%vasint
+         thispes%all_pairpots(i)%interz%f(j)=thispes%all_pairpots(i)%interz%f(j)-thispes%all_pairpots(i)%vasint
       END DO
 #ifdef DEBUG
       CALL DEBUG_WRITE(routinename,"Vasint extracted from pair potential ",i)
@@ -526,7 +557,7 @@ SUBROUTINE EXTRACT_VASINT_CRP(thispes)
    nsites=size(thispes%all_sites)
    DO i = 1, nsites
       DO j = 1, thispes%all_sites(i)%n
-         thispes%all_sites(i)%v(j)=thispes%all_sites(i)%v(j)-thispes%all_pairpots(1)%vasint
+         thispes%all_sites(i)%interz%f(j)=thispes%all_sites(i)%interz%f(j)-thispes%all_pairpots(1)%vasint
       END DO
 #ifdef DEBUG
       CALL DEBUG_WRITE(routinename,"Vasint extracted from pair site ",i)
@@ -546,6 +577,7 @@ END SUBROUTINE EXTRACT_VASINT_CRP
 !
 !> @warning
 !! - Vasint should've  been extracted before
+!! - Only afects values stored in @b interz variable
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 05/Feb/2014
@@ -583,7 +615,7 @@ SUBROUTINE SMOOTH_CRP(thispes)
             DO k = 0, thispes%max_order ! loop over environment orders
                CALL INTERACTION_AENV(k,A,thispes%surf,thispes%all_pairpots(l),interac(k),dvdzr(k),dummy,dummy)
             END DO
-            thispes%all_sites(i)%v(j)=thispes%all_sites(i)%v(j)-sum(interac)
+            thispes%all_sites(i)%interz%f(j)=thispes%all_sites(i)%interz%f(j)-sum(interac)
          END DO
          IF (j.EQ.1) THEN
             thispes%all_sites(i)%dz1=thispes%all_sites(i)%dz1-SUM(dvdzr) ! correct first derivative
@@ -632,7 +664,7 @@ SUBROUTINE INTERPOL_Z_CRP(thispes)
    DO i = 1, nsites
       dz1 => thispes%all_sites(i)%dz1
       dz2 => thispes%all_sites(i)%dz2
-      CALL thispes%all_sites(i)%interz%INTERPOL(dz1,1,dz2,2) 
+      CALL thispes%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
    END DO
    RETURN
 END SUBROUTINE INTERPOL_Z_CRP
@@ -784,7 +816,6 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    INTEGER :: i, k ! Counters
    CHARACTER(LEN=18), PARAMETER :: routinename = "INTERACTION_AENV: "
    ! SUSY IS A HEADBANGER !!!! -------------------
-   CALL VERBOSE_WRITE(routinename,"Executing for ORDER: ", n)
    ! Defining some aliases to make the program simpler:
    pairid => pairpot%id
    P(3) = pairpot%rumpling ! rumpling associated with pairpot
@@ -938,7 +969,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP(thispes,X,v,dvdu)
    END DO
 	CALL interpolxy%READ(xy,f,dfdz)
    CALL interpolxy%SET_COEFF(thispes%surf)
-   CALL GET_F_AND_DERIV(thispes%surf,X,pot,deriv)
+   CALL interpolxy%GET_F_AND_DERIV(thispes%surf,X,pot,deriv)
 	! Corrections from the smoothing procedure
 	v = v + pot
 	FORALL(i=1:3) dvdu(i) = dvdu(i) + deriv(i)
@@ -951,7 +982,7 @@ END SUBROUTINE GET_V_AND_DERIVS_CRP
 !! Creates a data file called "filename" with the data z(i) and v(i) 
 !! for a Symmpoint type variable
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_DATA_SYMMPOINT(this, filename)
+SUBROUTINE PLOT_DATA_SYMMPOINT(this,filename)
    IMPLICIT NONE
    ! I/O Variables ----------------------
    CLASS(Symmpoint), INTENT(IN) :: this
@@ -961,56 +992,188 @@ SUBROUTINE PLOT_DATA_SYMMPOINT(this, filename)
    ! GABBA GABBA HEY!! ------------------
    OPEN(11, FILE=filename, STATUS="replace")
    DO i=1,this%n
-      WRITE(11,*) this%z(i), this%v(i)
+      WRITE(11,*) this%z(i),this%v(i)
    END DO
    CLOSE (11)
    WRITE(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
 END SUBROUTINE PLOT_DATA_SYMMPOINT
-!######################################################################
-! SUBROUTINE: PLOT_INTERPOL_SYMMPOINT #################################
-!######################################################################
+!#######################################################################
+! SUBROUTINE: GRAPH_V3D_POTMAP_XY
+!#######################################################################
 !> @brief
-!! Creates a data file called "filename" with the interpolation of a
-!! specific Symmpoint and its z-derivative. The number of points in that graphic is defined
-!! by @b npoints. Cannot be less than two.
+!! Creates a file with name "filename" with a 2D cut (X,Y) of the PES. 
+!
+!> @param[in] thispes - CRP PES used
+!> @param[in] filename - Name of the file to print the output
+!> @param[in] init_xyz - Initial position to start the scan (a.u.)
+!> @param[in] nxpoints - Number of points in X axis (auxiliar cartesian coordinates)
+!> @param[in] nypoints - Number of points in Y axis (auxiliar cartesian coordinates)
+!> @param[in] Lx - Length of X axis (a.u.)
+!> @param[in] Ly - Length of Y axis (a.u.)
+!
+!> @warning
+!! - Z parameter is taken from @b init_xyz and is constant
+!
+!> @author A.S. Muzas
+!> @date 08/Feb/2014
+!> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_INTERPOL_SYMMPOINT(this,npoints,filename)
+SUBROUTINE PLOT_XYMAP_CRP(thispes,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+   IMPLICIT NONE
+   CLASS(CRP),INTENT(IN) :: thispes
+   REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
+   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
+   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
+   REAL*8,INTENT(IN) :: Lx ! Length of X axis 
+   REAL*8,INTENT(IN) :: Ly ! Length of X axis 
+   ! Local variables
+   REAL*8 :: xmin, ymin, xmax, ymax, z
+   REAL*8, DIMENSION(3) :: r, dvdu
+   REAL*8 :: xdelta, ydelta
+   INTEGER :: xinpoints, nxdelta
+   INTEGER :: yinpoints, nydelta
+   INTEGER :: i, j ! counters
+   REAL*8 :: v ! potential
+	! GABBA, GABBA HEY! ---------
+   xmin = init_xyz(1)
+   ymin = init_xyz(2)
+   z = init_xyz(3)
+   xmax = init_xyz(1)+Lx
+   ymax = init_xyz(2)+Ly
+   ! For X, grid parameters
+   xinpoints=nxpoints-2
+   nxdelta=nxpoints-1
+   xdelta=Lx/DFLOAT(nxdelta)
+   ! For Y, grid parameters
+   yinpoints=nypoints-2
+   nydelta=nypoints-1
+   ydelta=(ymax-ymin)/DFLOAT(nydelta)
+   ! Let's go! 
+   ! 1st XY point
+   OPEN(11,file=filename,status="replace")
+   r(1) = xmin
+   r(2) = ymin
+   r(3) = z
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   ! inpoints in XY
+   DO i = 1, xinpoints
+      r(1) = xmin+DFLOAT(i)*xdelta
+      r(2) = ymin
+      r(3) = z
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+      DO j = 1, yinpoints
+         r(2) = ymin + DFLOAT(j)*ydelta
+         CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+         WRITE(11,*) r(1), r(2), v
+      END DO
+      r(2) = ymax
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   ! Last point in XY plane
+   r(1) = xmax
+   r(2) = ymax
+   r(3) = z
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   CLOSE(11)
+   RETURN
+END SUBROUTINE PLOT_XYMAP_CRP
+!#######################################################################
+! SUBROUTINE: PLOT_DIRECTION1D #########################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the PES. To define 
+!! the direction, the angle alpha is given. 
+!
+!> @param[in] thispes - CRP PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] angle - Angle between the surface vector S1 and the direction of the
+!!                    cut. It should be given in degrees.
+!> @param[in] z - Distance to the surface. All points have the same z.
+!> @param[in] L - Length of the graphic
+!
+!> @warning
+!! - The graph starts always at 0,0
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 09/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_DIRECTION1D_CRP(thispes,filename,npoints,angle,z,L)
+   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
-   INTEGER,INTENT(IN) :: npoints
-   CLASS(Symmpoint),INTENT(IN),TARGET :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CLASS(CRP),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*), INTENT(IN) :: filename
+   REAL*8, INTENT(IN) :: z, angle
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL*8 :: delta, interval, x
+   INTEGER :: nspace, inpoints, ndelta
+   REAL*8 :: delta,L,v,s,alpha
+   REAL*8 :: xmax, xmin, ymax, ymin 
+   REAL*8, DIMENSION(3) :: r, dvdu
    INTEGER :: i ! Counter
-   CHARACTER(LEN=22), PARAMETER :: routinename = "GRAPH_INTERPOL_SITIO: " 
-   ! Pointers ------------------------------------
-   REAL*8, POINTER :: xmin, xmax
-   INTEGER, POINTER :: n
+   CHARACTER(LEN=22), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "GRAPH_INTERPOL_SITIO ERR: Less than 2 points"
-      STOP
+      WRITE(0,*) "PLOT_DIRECTION1D_CRP ERR: Less than 2 points"
+      CALL EXIT(1)
    END IF
+   ! Change alpha to radians
+   alpha = angle * PI / 180.D0
    !
-   n => this%n
-   xmin => this%z(1)
-   xmax => this%z(n)
+   xmin = 0.D0
+   ymin = 0.D0
+   xmax = L*DCOS(alpha)
+   ymax = L*DSIN(alpha)
+   r(3) = z
    !
-   interval=xmax-xmin
    inpoints=npoints-2
    ndelta=npoints-1
-   delta=interval/dfloat(ndelta)
+   delta=L/dfloat(ndelta)
    !
    OPEN(11,file=filename,status="replace")
-   WRITE(11,*) xmin, this%v(1), this%dz1
+   ! Initial value
+   r(1) = xmin
+   r(2) = ymin
+   s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   ! cycle for inpoints
    DO i=1, inpoints
-      x=xmin+(dfloat(i)*delta)
-      WRITE(11,*) x, this%interz%getvalue(x), this%interz%getderiv(x)
+      r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
+      r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
+      s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
    END DO
-   WRITE(11,*) xmax,this%v(n),this%dz2
-   WRITE(*,*) routinename, this%alias, filename," file created"
+   ! Final value
+   r(1) = xmax
+   r(2) = ymax
+   s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
-END SUBROUTINE PLOT_INTERPOL_SYMMPOINT
+END SUBROUTINE PLOT_DIRECTION1D_CRP
 END MODULE CRP_MOD

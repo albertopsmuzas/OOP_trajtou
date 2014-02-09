@@ -100,6 +100,7 @@ SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
         ! HEY, HO! LET'S GO!
         !=============================
         n => cubicspl%n
+        ALLOCATE(cubicspl%d2fdx(1:n))
         x => cubicspl%x(1:n)
         y => cubicspl%f(1:n)
         d2sdx => cubicspl%d2fdx(1:n)
@@ -372,13 +373,13 @@ END SUBROUTINE INTERPOL_CUBIC_SPLINES
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION get_csplines_value(this,x,shift) 
    ! I/O Variables
-   CLASS(Csplines),INTENT(IN),TARGET :: this 
+   CLASS(Csplines),INTENT(IN),TARGET :: this
    REAL(KIND=8),INTENT(IN) :: x
    REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
    ! Local variables
    INTEGER,POINTER :: n
    REAL(KIND=8),DIMENSION(:),POINTER :: z,v
-   REAL(KIND=8), POINTER :: z1, z2, a, b, c, d
+   REAL(KIND=8),POINTER :: z1, z2, a, b, c, d
    INTEGER :: i ! Counter
    REAL(KIND=8) :: margen, r
    ! MAY THE FORCE BE WITH YOU --------------------------------------
@@ -434,51 +435,51 @@ END FUNCTION get_csplines_value
 !> @version 1.0
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
-        ! Initial declaration
-        IMPLICIT NONE
-        ! I/O variables
-        CLASS(Csplines),INTENT(IN),TARGET :: this
-        REAL(KIND=8),INTENT(IN) :: x
-        REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
-        ! Local variables
-        INTEGER :: i ! Counter
-        REAL(KIND=8) :: margen, r
-        ! Pointers 
-        INTEGER,POINTER :: n
-        REAL(KIND=8),POINTER :: z1,z2,a,b,c,d
-        REAL(KIND=8),DIMENSION(:),POINTER :: z,v
-        ! Run section -----------------------------------
-        n => this%n
-        z => this%x(1:n)
-        v => this%f(1:n)
-        margen=1D-6
-        r=x
-        IF(present(shift)) r=r+shift
-        !
-        IF ((r.lt.this%x(1)).or.(r.gt.this%x(n))) THEN
-                WRITE(0,*) "get_csplines_dfdx_value ERR: r outside interpolation interval"
-                WRITE(0,*) "get_csplines_dfdx_value ERR: r = ", r
-                WRITE(0,*) "get_csplines_dfdx_value ERR: range from ", z(1)-margen, "to", z(n)+margen
-                STOP
-        ELSE IF ((r.LE.(z(n)+margen)).AND.(r.GT.z(n))) THEN
-           get_csplines_dfdx_value=z(n)
-           RETURN
-        ELSE IF ((r.GE.(z(n)+margen)).AND.(r.LT.z(n))) THEN
-           get_csplines_dfdx_value=z(1)
-           RETURN
-        END IF
-        !
-        DO i=1,n-1
-                z1 => this%x(i)
-                z2 => this%x(i+1)
-                a => this%coeff(i,1)
-                b => this%coeff(i,2)
-                c => this%coeff(i,3)
-                d => this%coeff(i,4)
-                IF ((r.le.z2).and.(r.ge.z1)) EXIT
-        END DO
-        ! Now, counter i has the correct label
-        get_csplines_dfdx_value=3.D0*(a*((r-z1)**2.D0))+2.D0*b*(r-z1)+c
-        RETURN
+   ! Initial declaration
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Csplines),INTENT(IN),TARGET :: this
+   REAL(KIND=8),INTENT(IN) :: x
+   REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
+   ! Local variables
+   INTEGER :: i ! Counter
+   REAL(KIND=8) :: margen, r
+   ! Pointers 
+   INTEGER,POINTER :: n
+   REAL(KIND=8),POINTER :: z1,z2,a,b,c,d
+   REAL(KIND=8),DIMENSION(:),POINTER :: z,v
+   ! Run section -----------------------------------
+   n => this%n
+   z => this%x(1:n)
+   v => this%f(1:n)
+   margen=1D-6
+   r=x
+   IF(present(shift)) r=r+shift
+   !
+   IF ((r.lt.this%x(1)).or.(r.gt.this%x(n))) THEN
+      WRITE(0,*) "get_csplines_dfdx_value ERR: r outside interpolation interval"
+      WRITE(0,*) "get_csplines_dfdx_value ERR: r = ", r
+      WRITE(0,*) "get_csplines_dfdx_value ERR: range from ", z(1)-margen, "to", z(n)+margen
+      STOP
+   ELSE IF ((r.LE.(z(n)+margen)).AND.(r.GT.z(n))) THEN
+      get_csplines_dfdx_value=z(n)
+      RETURN
+   ELSE IF ((r.GE.(z(n)+margen)).AND.(r.LT.z(n))) THEN
+      get_csplines_dfdx_value=z(1)
+      RETURN
+   END IF
+   !
+   DO i=1,n-1
+      z1 => this%x(i)
+      z2 => this%x(i+1)
+      a => this%coeff(i,1)
+      b => this%coeff(i,2)
+      c => this%coeff(i,3)
+      d => this%coeff(i,4)
+      IF ((r.le.z2).and.(r.ge.z1)) EXIT
+   END DO
+   ! Now, counter i has the correct label
+   get_csplines_dfdx_value=3.D0*(a*((r-z1)**2.D0))+2.D0*b*(r-z1)+c
+   RETURN
 END FUNCTION get_csplines_dfdx_value
 END MODULE CUBICSPLINES_MOD

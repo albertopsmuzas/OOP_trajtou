@@ -1,51 +1,57 @@
 PROGRAM CRP_TEST
 ! Initial declarations
 USE DEBUG_MOD
-USE CRP_PES
+USE CRP_MOD
+USE UNITS_MOD
 IMPLICIT NONE
 ! Variables
 TYPE(CRP) :: crp_pes
-CHARACTER(LEN=30), DIMENSION(:), ALLOCATABLE :: site_aliases, site_filenames, pp_aliases, pp_filenames
-CHARACTER(LEN=30) :: surf_filename, surf_alias, filename
-INTEGER(KIND=4) :: max_order
+CHARACTER(LEN=40) :: filename1,filename2,filename3
+INTEGER(KIND=4) :: nsites, npairpots
+REAL(KIND=8),DIMENSION(3) :: r
+TYPE(Length) :: aux
+REAL(KIND=8) :: l
 INTEGER(KIND=4) :: i ! counters
 ! Run section===================================================================================0
-! STEP 0: HELLO!
+CALL SET_DEBUG_MODE(.TRUE.)
+! STEP 1: HELLO!
 WRITE(*,*) "***************************************" 
-WRITE(*,*) "TEST_PES program executed"
+WRITE(*,*) "CRP_PES program executed"
 WRITE(*,*) "***************************************" 
-WRITE(*,*) "Set max_order: (INTEGER)"
-READ(*,*) max_order
-CALL SET_DEBUG_MODE(.FALSE.)
-CALL SET_VERBOSE_MODE(.FALSE.)
-! STEP 1: INITIALIZE FILENAMES AND ALIASES -------------------------------------------------------
-npairpots=2
-nsites=6
-ALLOCATE (site_aliases(1:nsites))
-ALLOCATE (site_filenames(1:nsites))
-ALLOCATE (pp_aliases(1:npairpots))
-ALLOCATE (pp_filenames(1:npairpots))
-site_aliases = [CHARACTER(LEN=30) :: "Top_Li","Top_F","Hollow","Bridge","Half_hollow-F","Half_hollow-Li"]
-site_filenames = [CHARACTER(LEN=30) :: "Sitio1.dat","Sitio2.dat","Sitio3.dat","Sitio4.dat","Sitio5.dat","Sitio6.dat"]
-pp_aliases = [CHARACTER(LEN=30) :: "Li_repul","F_repul"]
-pp_filenames = [CHARACTER(LEN=30) :: "intrep1.dat", "intrep2.dat"]
+
 ! STEP 2: INITIALIZE CRP PES:
-CALL crp_pes%INITIALIZE(npairpots,pp_filenames,pp_aliases,nsites,site_filenames,site_aliases,surf_filename,surf_alias,max_order)
+CALL crp_pes%READ("crp.inp")
+
 ! STEP 3: DO Z INTERPOLATION EXTRACTING VASINT AND SMOOTHING SITES
-CALL crp_pes%EXTRACT_VASINT()
-CALL crp_pes%SMOOTH()
 CALL crp_pes%INTERPOL_Z()
+
 ! STEP 4: PLOT SOME GRAPHS
-DO i = 1, nsites
-   WRITE(filename,'(I2)') i
-   filename=trim(filename)
-   filename="Site_data_"//filename//".dat"
-   CALL crp_pes%all_sites(i)%PLOT_DATA(filename)
-END DO
-DO i = 1, npairpots
-   WRITE(filename,'(I2)') i
-   filename=trim(filename)
-   filename="Pairpot_data_"//filename//".dat"
-   CALL crp_pes%all_sites(i)%PLOT_DATA(filename)
-END DO
+nsites=size(crp_pes%all_sites)
+npairpots=size(crp_pes%all_pairpots)
+!DO i = 1, nsites
+   !WRITE(filename1,'(A7,I1,A4)') "Siteraw",i,".dat"
+   !WRITE(filename2,'(A18,I1,A4)') "Sitenovasint_dense",i,".dat"
+   !WRITE(filename3,'(A12,I1,A4)') "Siteinterpol",i,".dat"
+   !CALL crp_pes%all_sites(i)%PLOT_DATA(filename1)
+   !CALL crp_PES%all_sites(i)%interz%PLOT_INTERPOL(1000,filename2)
+   !CALL crp_PES%all_sites(i)%interz%PLOT_DATA(filename3)
+!END DO
+!
+!DO i = 1, npairpots
+   !WRITE(filename1,'(A10,I1,A4)') "Pairpotraw",i,".dat"
+   !WRITE(filename2,'(A21,I1,A4)') "Pairpotnovasint_dense",i,".dat"
+   !WRITE(filename3,'(A15,I1,A4)') "Pairpotinterpol",i,".dat"
+   !CALL crp_pes%all_pairpots(i)%PLOT_DATA(filename1)
+   !CALL crp_PES%all_pairpots(i)%interz%PLOT_INTERPOL(1000,filename2)
+   !CALL crp_PES%all_pairpots(i)%interz%PLOT_DATA(filename3)
+!END DO
+!
+!CALL aux%READ(3.34D0,"angst")
+!CALL aux%TO_STD()
+r=(/0.D0,0.D0,3.34D0/)
+CALL aux%READ(2.8805D0,"angst")
+CALL aux%TO_STD()
+l=aux%getvalue()
+!CALL crp_pes%PLOT_XYMAP("xymap.dat",r,10,10,l,l)
+CALL crp_pes%PLOT_DIRECTION1D("zscan.dat",50,0.D0,r(3),l)
 END PROGRAM CRP_TEST

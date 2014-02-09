@@ -31,9 +31,9 @@ TYPE,EXTENDS(Interpol2d) :: Fourier2d
    PRIVATE
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff_dfdz
-CONTAINS
-   PROCEDURE,PUBLIC :: SET_COEFF => SET_FOURIER2D_COEFF
-   PROCEDURE,PUBLIC :: GET_F_AND_DERIV => GET_F_AND_DFDZ_FOURIER2D
+   CONTAINS
+      PROCEDURE,PUBLIC :: SET_COEFF => SET_FOURIER2D_COEFF
+      PROCEDURE,PUBLIC :: GET_F_AND_DERIV => GET_F_AND_DFDZ_FOURIER2D
 END TYPE Fourier2d
 !////////////////////////////////////////////////////////////
 CONTAINS
@@ -143,14 +143,28 @@ SUBROUTINE SET_FOURIER2D_COEFF(this,surf)
 		END DO
 	END DO
    ! Lapack variables
-   lwork=3
+   lwork=this%n
    ALLOCATE(work(lwork))
-   ALLOCATE(ipiv(3))
-   FORALL(i=1:3) ipiv(i)=i
+   ALLOCATE(ipiv(this%n))
+   FORALL(i=1:this%n) ipiv(i)=i
    ! Calculate inverse matrix
+#ifdef DEBUG
+   CALL DEBUG_WRITE(routinename,"T matrix:")
+   DO i = 1, this%n
+      CALL DEBUG_WRITE(routinename,T(i,:))
+   END DO
+#endif
    inv_T=T
-   CALL DGETRI(3,inv_T,3,ipiv,work,lwork,info)
+   CALL DGETRF(this%n,this%n,inv_T,this%n,ipiv,info) ! LU factorization
+   CALL LAPACK_CHECK("DGETRF",info) 
+   CALL DGETRI(this%n,inv_T,this%n,ipiv,work,lwork,info) ! inverse matrix
    CALL LAPACK_CHECK("DGETRI",info)
+#ifdef DEBUG
+   CALL DEBUG_WRITE(routinename,"inverse T matrix:")
+   DO i = 1, this%n
+      CALL DEBUG_WRITE(routinename,inv_T(i,:))
+   END DO
+#endif
    ! Get coefficients
    this%coeff = matmul(inv_T,this%f)
    this%coeff_dfdz = matmul(inv_T,this%dfdz)

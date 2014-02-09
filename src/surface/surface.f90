@@ -107,7 +107,7 @@ END FUNCTION is_initialized
 !> @brief
 !! Initializes surface from file @b filename
 !-------------------------------------------------------------------------------
-SUBROUTINE INITIALIZE(surf,alias,filename)
+SUBROUTINE INITIALIZE(surf,filename)
    USE UNITS_MOD
    USE LAPACKCONTROL_MOD
    USE CONSTANTS_MOD
@@ -117,7 +117,7 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
    IMPLICIT NONE
    ! I/O Variables -----------------------------------------------
    CLASS(Surface), INTENT(INOUT) :: surf
-   CHARACTER(LEN=*), INTENT(IN) :: filename, alias
+   CHARACTER(LEN=*), INTENT(IN) :: filename
    ! Local variables ---------------------------------------------
    INTEGER :: i,j ! Counters
    INTEGER :: control
@@ -130,38 +130,45 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
    INTEGER(KIND=4) :: info
    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipiv
    ! Run section --------------------------------------------
-      surf%alias=alias
       surf%filename=filename
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Initializing a new surface")
-   CALL VERBOSE_WRITE(routinename,"Name: ",surf%alias)
    CALL VERBOSE_WRITE(routinename,"File: ",surf%filename)
 #endif
    IF (.NOT.surf%is_initialized()) THEN
       surf%initialized=.FALSE.
       OPEN(10,FILE=surf%filename,STATUS="old")
-      READ(10,*) ! Should be a dummy line, just with some aclarations
-      ! Read surface units
+      READ(10,*) ! dummy line
+      READ(10,*) surf%alias
       READ(10,*) surf%units
       ! Read surface basis vectors in cartesian coordinates.
       ! They should be written horizontally
       ! Store results in a.u.
       ! Set surface coordinates to cartesian change matrix and metadata
       DO i=1,2
-            READ(10,*)  aux_r(i,:)
-            DO j = 1, 2
-               CALL len%READ(aux_r(i,j),surf%units)
-               CALL len%TO_STD()
-               aux_r(i,j)=len%getvalue()
-            END DO
+         READ(10,*)  aux_r(i,:)
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Surface vector: ",i)
+         CALL VERBOSE_WRITE(routinename,"Units: ",surf%units)
+         CALL VERBOSE_WRITE(routinename,aux_r(i,:))
+#endif
+         DO j = 1, 2
+            CALL len%READ(aux_r(i,j),surf%units)
+            CALL len%TO_STD()
+            aux_r(i,j)=len%getvalue()
+         END DO
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Units: a.u.")
+         CALL VERBOSE_WRITE(routinename,aux_r(i,:))
+#endif
       END DO
       aux_r=transpose(aux_r)
       surf%surf2cart_mtrx=aux_r
 #ifdef DEBUG
-         CALL DEBUG_WRITE(routinename,"Surf2cart matrix calculated: ")
-         DO i=1,2
-            CALL DEBUG_WRITE(routinename,surf%surf2cart_mtrx(i,1),surf%surf2cart_mtrx(i,2))
-         END DO
+      CALL DEBUG_WRITE(routinename,"Surf2cart matrix calculated: ")
+      DO i=1,2
+         CALL DEBUG_WRITE(routinename,surf%surf2cart_mtrx(i,:))
+      END DO
 #endif
       ! Storing actual surface units (now, everything is in atomic units)
       surf%units = "au"
@@ -210,6 +217,8 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
       FORALL(i=1:2) ipiv(i)=i
       ! Set Matrix: from auxiliar cartesian coordinates to surface coordinates
       surf%cart2surf_mtrx=surf%surf2cart_mtrx
+      CALL DGETRF(2,2,surf%cart2surf_mtrx,2,ipiv,info)
+      CALL LAPACK_CHECK("DGETRF",info)
       CALL DGETRI(2,surf%cart2surf_mtrx,2,ipiv,work,lwork,info)
       CALL LAPACK_CHECK("DGETRI",info)
 #ifdef DEBUG
@@ -236,6 +245,8 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #endif
       ! Set Matrix: from auxiliar cartesian coordinates to normalized surface coordinates
       surf%cart2surfunit_mtrx=surf%surfunit2cart_mtrx
+      CALL DGETRF(2,2,surf%cart2surfunit_mtrx,2,ipiv,info)
+      CALL LAPACK_CHECK("DGETRF",info)
       CALL DGETRI(2,surf%cart2surfunit_mtrx,2,ipiv,work,lwork,info)
       CALL LAPACK_CHECK("DGETRI",info)
 #ifdef DEBUG
@@ -256,6 +267,8 @@ SUBROUTINE INITIALIZE(surf,alias,filename)
 #endif
       ! Set Matrix: from auxiliar cartesian coordinates to reciprocal space
       surf%cart2recip_mtrx=surf%recip2cart_mtrx
+      CALL DGETRF(2,2,surf%cart2recip_mtrx,2,ipiv,info)
+      CALL LAPACK_CHECK("DGETRF",info)
       CALL DGETRI(2,surf%cart2recip_mtrx,2,ipiv,work,lwork,info)
       CALL LAPACK_CHECK("DGETRI",info)
 #ifdef DEBUG

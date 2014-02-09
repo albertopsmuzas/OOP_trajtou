@@ -185,7 +185,7 @@ REAL(KIND=8) FUNCTION get_magnitude_quantity(quant)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Quantity),INTENT(OUT) :: quant
+   CLASS(Quantity),INTENT(IN) :: quant
    ! Run section
    get_magnitude_quantity=quant%mag
    RETURN
@@ -199,7 +199,7 @@ CHARACTER(LEN=10) FUNCTION get_units_quantity(quant)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Quantity),INTENT(OUT) :: quant
+   CLASS(Quantity),INTENT(IN) :: quant
    ! Run section
    get_units_quantity=quant%units
    RETURN
