@@ -616,12 +616,12 @@ SUBROUTINE SMOOTH_CRP(thispes)
                CALL INTERACTION_AENV(k,A,thispes%surf,thispes%all_pairpots(l),interac(k),dvdzr(k),dummy,dummy)
             END DO
             thispes%all_sites(i)%interz%f(j)=thispes%all_sites(i)%interz%f(j)-sum(interac)
+            IF (j.EQ.1) THEN
+               thispes%all_sites(i)%dz1=thispes%all_sites(i)%dz1-SUM(dvdzr) ! correct first derivative
+            ELSE IF (j.EQ.thispes%all_sites(i)%n) THEN
+               thispes%all_sites(i)%dz2=thispes%all_sites(i)%dz2-SUM(dvdzr) ! correct first derivative
+            END IF
          END DO
-         IF (j.EQ.1) THEN
-            thispes%all_sites(i)%dz1=thispes%all_sites(i)%dz1-SUM(dvdzr) ! correct first derivative
-         ELSE IF (j.EQ.thispes%all_sites(i)%n) THEN
-            thispes%all_sites(i)%dz2=thispes%all_sites(i)%dz2-SUM(dvdzr) ! correct first derivative
-         END IF
       END DO
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Site smoothed: ",i)
@@ -751,7 +751,7 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
       vect = A
       vect(1:2) = surf%surf2cart(A(1:2))
       vect2 = P
-      vect(1:2) = surf%surf2cart(P(1:2))
+      vect2(1:2) = surf%surf2cart(P(1:2))
 #ifdef DEBUG
       CALL DEBUG_WRITE(routinename, "A vector: (In cartesian coordinates)")
       CALL DEBUG_WRITE(routinename,"A_1: ",vect(1))
@@ -910,6 +910,9 @@ END SUBROUTINE INTERACTION_AENV
 !> @version 1.0
 !------------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_CRP(thispes,X,v,dvdu)
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
 	IMPLICIT NONE
 	! I/O variables
    CLASS(CRP),TARGET,INTENT(IN) :: thispes
@@ -927,7 +930,8 @@ SUBROUTINE GET_V_AND_DERIVS_CRP(thispes,X,v,dvdu)
 	! Pointers
 	REAL(KIND=8), POINTER :: zmax
 	TYPE(Pair_pot),POINTER :: pairpot
-	zmax => thispes%all_sites(1)%z(thispes%all_sites(1)%n)
+   CHARACTER(LEN=22),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP: "
+	zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
    npairpots = size(thispes%all_pairpots)
    nsites = size(thispes%all_sites)
 	! GABBA, GABBA HEY! ----------------------
@@ -947,13 +951,30 @@ SUBROUTINE GET_V_AND_DERIVS_CRP(thispes,X,v,dvdu)
 		dvdu(i) = 0.D0 ! Initialization value
 		deriv(i) = 0.D0 ! Initialization value
 	END FORALL 
+#ifdef DEBUG   
+	CALL VERBOSE_WRITE(routinename,"Proceeding to calculate repulsive interactions")
+	CALL VERBOSE_WRITE(routinename,"Max_order: ", thispes%max_order)
+#endif
 	DO j=1, npairpots
 		pairpot => thispes%all_pairpots(j)
 		DO k=0,thispes%max_order
+#ifdef DEBUG
+			CALL VERBOSE_WRITE(routinename, "---> Invoking order", k)
+#endif
 			CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
 			v = v + pot
 			FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
 		END DO
+#ifdef DEBUG
+		CALL VERBOSE_WRITE(routinename, "Repulsive interaction: ", pot)
+		CALL VERBOSE_WRITE(routinename, "Cumulative repulsive interaction:", v )
+		CALL VERBOSE_WRITE(routinename, "dvdx: ",deriv(1))
+		CALL VERBOSE_WRITE(routinename, "dvdy: ",deriv(2))
+		CALL VERBOSE_WRITE(routinename, "dvdz: ",deriv(3))
+		CALL VERBOSE_WRITE(routinename, "Cumulative dvdx: ",dvdu(1))
+		CALL VERBOSE_WRITE(routinename, "Cumulative dvdy: ",dvdu(2))
+		CALL VERBOSE_WRITE(routinename, "Cumulative dvdz: ",dvdu(3))
+#endif
 	END DO
 	! Now, we have all the repulsive interaction and corrections to the derivarives
 	! stored in v(:) and dvdu(:) respectively.

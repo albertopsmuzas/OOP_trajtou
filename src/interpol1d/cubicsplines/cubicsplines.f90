@@ -460,7 +460,7 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
       WRITE(0,*) "get_csplines_dfdx_value ERR: r outside interpolation interval"
       WRITE(0,*) "get_csplines_dfdx_value ERR: r = ", r
       WRITE(0,*) "get_csplines_dfdx_value ERR: range from ", z(1)-margen, "to", z(n)+margen
-      STOP
+      CALL EXIT(1)
    ELSE IF ((r.LE.(z(n)+margen)).AND.(r.GT.z(n))) THEN
       get_csplines_dfdx_value=z(n)
       RETURN

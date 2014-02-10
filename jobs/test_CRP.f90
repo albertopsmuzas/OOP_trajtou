@@ -53,5 +53,6 @@ CALL aux%READ(2.8805D0,"angst")
 CALL aux%TO_STD()
 l=aux%getvalue()
 !CALL crp_pes%PLOT_XYMAP("xymap.dat",r,10,10,l,l)
-CALL crp_pes%PLOT_DIRECTION1D("zscan.dat",50,0.D0,r(3),l)
+CALL crp_pes%PLOT_DIRECTION1D("zscan.dat",50,45.D0,r(3),l)
+CALL crp_pes%all_sites(3)%interz%PLOT_INTERPOL(50,"Site3graph")
 END PROGRAM CRP_TEST
