@@ -647,24 +647,24 @@ SUBROUTINE INTERPOL_Z_CRP(thispes)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(CRP),TARGET :: thispes
+   CLASS(CRP) :: thispes
    ! Local variables
    INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),POINTER :: dz1,dz2
+   REAL(KIND=8) :: dz1,dz2
    INTEGER(KIND=4) :: i ! counters
    ! Run secton------------------------
    nsites=size(thispes%all_sites)
    npairpots=size(thispes%all_pairpots)
    CALL thispes%EXTRACT_VASINT()
    DO i = 1, npairpots ! loop pairpots
-      dz1 => thispes%all_pairpots(i)%dz1
-      dz2 => thispes%all_pairpots(i)%dz2
+      dz1=thispes%all_pairpots(i)%dz1
+      dz2=thispes%all_pairpots(i)%dz2
       CALL thispes%all_pairpots(i)%interz%INTERPOL(dz1,1,dz2,1)
    END DO
    CALL thispes%SMOOTH()
    DO i = 1, nsites
-      dz1 => thispes%all_sites(i)%dz1
-      dz2 => thispes%all_sites(i)%dz2
+      dz1=thispes%all_sites(i)%dz1
+      dz2=thispes%all_sites(i)%dz2
       CALL thispes%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
    END DO
    RETURN
@@ -715,6 +715,7 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
    REAL(KIND=8) :: modA ! A modulus
    REAL(KIND=8) :: modP_plus ! P modulus plus other term
    REAL(KIND=8), DIMENSION(3) :: vect, vect2
+   REAL(KIND=8) :: aux
    CHARACTER(LEN=16), PARAMETER :: routinename = "INTERACTION_AP: "
    INTEGER :: i ! Counter
    ! GABBA, GABBA HEY! ----------------------------------------
@@ -765,9 +766,10 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
 #endif
       ! We need the shifted version of the potential
       interac = pairpot%interz%getvalue(r,pairpot%rumpling)
-      dvdz_corr = pairpot%interz%getderiv(r,pairpot%rumpling)*(vect(3)-vect2(3))/r
-      dvdx_corr = pairpot%interz%getderiv(r,pairpot%rumpling)*(vect(1)-vect2(1))/r
-      dvdy_corr = pairpot%interz%getderiv(r,pairpot%rumpling)*(vect(2)-vect2(2))/r
+      aux=pairpot%interz%getderiv(r,pairpot%rumpling) ! better performance
+      dvdz_corr = aux*(vect(3)-vect2(3))/r
+      dvdx_corr = aux*(vect(1)-vect2(1))/r
+      dvdy_corr = aux*(vect(2)-vect2(2))/r
    END IF
 #ifdef DEBUG
    CALL DEBUG_WRITE(routinename,"Repul. interaction: ",interac)
@@ -805,20 +807,20 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    ! I/O VAriables ------------------------------------------
    INTEGER,INTENT(IN) :: n
    REAL(KIND=8),DIMENSION(3), INTENT(IN) :: A
-   TYPE(Pair_pot),INTENT(IN), TARGET :: pairpot
-   TYPE(Surface),INTENT(IN), TARGET :: surf
+   TYPE(Pair_pot),INTENT(IN) :: pairpot
+   TYPE(Surface),INTENT(IN) :: surf
    LOGICAL,INTENT(IN),OPTIONAL :: gnp
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P
    REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
-   REAL(KIND=8),POINTER :: atomx, atomy
-   INTEGER,POINTER :: pairid
+   REAL(KIND=8) :: atomx, atomy
+   INTEGER :: pairid
    INTEGER :: i, k ! Counters
    CHARACTER(LEN=18), PARAMETER :: routinename = "INTERACTION_AENV: "
    ! SUSY IS A HEADBANGER !!!! -------------------
    ! Defining some aliases to make the program simpler:
-   pairid => pairpot%id
+   pairid = pairpot%id
    P(3) = pairpot%rumpling ! rumpling associated with pairpot
    ! Case n = 0
    interac=0.D0
@@ -828,10 +830,8 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    IF (present(gnp).AND.gnp) OPEN(10,FILE="gnp-data.dat",STATUS="replace")
    IF (n.EQ.0) THEN 
       DO i=1, surf%atomtype(pairid)%n
-         atomx => surf%atomtype(pairid)%atom(i,1)
-         atomy => surf%atomtype(pairid)%atom(i,2)
-         P(1)= atomx
-         P(2)= atomy
+         P(1) = surf%atomtype(pairid)%atom(i,1)
+         P(2) = surf%atomtype(pairid)%atom(i,2)
          CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
          interac = interac +dummy1
          dvdz_term = dvdz_term + dummy2
@@ -843,8 +843,8 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
       RETURN
    ELSE IF (n.GT.0) THEN
       DO i=1, surf%atomtype(pairid)%n
-         atomx => surf%atomtype(pairid)%atom(i,1)
-         atomy => surf%atomtype(pairid)%atom(i,2)
+         atomx = surf%atomtype(pairid)%atom(i,1)
+         atomy = surf%atomtype(pairid)%atom(i,2)
          DO k= -n,n
             P(1) = atomx + DFLOAT(n)
             P(2) = atomy + DFLOAT(k)

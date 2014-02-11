@@ -1,8 +1,8 @@
 # Compile options
 
 F = gfortran
-CF = $(F) -cpp -J mod -I mod -c -Wall
-LF = $(F) -cpp -I mod -Wall
+CF = $(F) -cpp -J mod -I mod -c -Wall -O2
+LF = $(F) -cpp -I mod -Wall -O2
 
 # Some paths to find files 
 vpath %.f90 jobs
