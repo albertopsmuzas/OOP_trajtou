@@ -63,20 +63,17 @@ CONTAINS
 !> @param[in] cond2 - if @b id2=1, @b cond2@f$=\frac{d^{2}S(x_{N})}{dx^{2}}@f$; if @b id2=0, @f$S_{N-1}(x)=S_{N}(x)@f$
 !> @param[in] id2 - Integer parameter that controls the meaning of @b cond2
 !
-!> @warning
-!! Uses LAPACKCONTROL_MOD and maybe DEBUG_MOD
-!
 !> @author A.P Muzas - alberto.muzas@uam.es
 !> @date    20/Jan/2014
 !> @version 1.1
 !
-!> @see debug_mod, lapackcontrol_mod
+!> @see debug_mod 
 !----------------------------------------------------------------------
 SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
 #ifdef DEBUG
         USE DEBUG_MOD
 #endif
-        USE LAPACKCONTROL_MOD
+        USE MATHS_MOD 
         IMPLICIT NONE
         ! I/O Variables
         CLASS(Csplines),TARGET,INTENT(INOUT) :: cubicspl
@@ -85,7 +82,6 @@ SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
         REAL(KIND=8),INTENT(IN) :: cond2
         INTEGER,INTENT(IN) :: id2 
         ! Internal variables
-        INTEGER(KIND=4) :: info
         REAL(KIND=8),DIMENSION(cubicspl%n),TARGET :: diag, indep
         REAL(KIND=8),DIMENSION(cubicspl%n),TARGET :: supdiag, subdiag
         REAL(KIND=8),DIMENSION(cubicspl%n-1) :: h ! space between nodes
@@ -97,6 +93,7 @@ SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
         INTEGER(KIND=4),POINTER :: n
         REAL(KIND=8),DIMENSION(:),POINTER :: x,y,d2sdx
         REAL(KIND=8),DIMENSION(:),POINTER :: pointdiag, pointindep, pointsupdiag, pointsubdiag
+        REAL*8,DIMENSION(:),POINTER :: pointd2sdx
         ! HEY, HO! LET'S GO!
         !=============================
         n => cubicspl%n
@@ -161,43 +158,32 @@ SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
         END IF
 !------------------ Set the correct number of dimensions depending on id1 and id2
         IF ((id1.EQ.0).AND.(id2.EQ.0)) THEN
-                pointdiag => diag(2:n-1) ! should've n-2 dimensions
-                pointsupdiag => supdiag(2:n-2) ! should've n-3 dimensions
-                pointsubdiag => subdiag(3:n-1) ! should've n-3 dimensions
-                pointindep => indep(2:n-1) ! should've n-2 dimensions
-                CALL DGTSV(n-2,1,pointsubdiag,pointdiag,pointsupdiag,pointindep,n-2,info)
-                CALL LAPACK_CHECK("DGTSV",info)
-                !CALL TRIDIA(n-2,pointsubdiag,pointdiag,pointsupdiag,pointindep,pointd2sdx)
+                pointdiag => diag(2:n-1)
+                pointsupdiag => supdiag(2:n-1)
+                pointsubdiag => subdiag(2:n-1)
+                pointindep => indep(2:n-1)
+                pointd2sdx => d2sdx(2:n-1)
+                CALL TRIDIA(n-2,pointsubdiag,pointdiag,pointsupdiag,pointindep,pointd2sdx)
                 d2sdx(1)=2*d2sdx(2)-d2sdx(3)
                 d2sdx(n)=2*d2sdx(n-1)-d2sdx(n-2)
-                FORALL(i=2:n-1) d2sdx(i)=indep(i)
         ELSE IF (id1.EQ.0) THEN
-                pointdiag => diag(2:n) ! Should've n-1 dimensions
-                pointsupdiag => supdiag(2:n-1) ! Should've n-2 dimensions
-                pointsubdiag => subdiag(3:n) ! should've n-2 dimensions
-                pointindep => indep(2:n) ! should've n-1 dimensions
-                CALL DGTSV(n-1,1,pointsubdiag,pointdiag,pointsupdiag,pointindep,n-1,info)
-                CALL LAPACK_CHECK("DGTSV",info)
-                !CALL TRIDIA(n-1,pointsubdiag,pointdiag,pointsupdiag,pointindep,pointd2sdx)
-                d2sdx(1)=2*d2sdx(1)-d2sdx(2)
-                FORALL(i=2:n) d2sdx(i)=indep(i)
-        ELSE IF (id2.EQ.0) THEN
-                pointdiag => diag(1:n-1) ! should've n-1 dimensions
-                pointsupdiag => supdiag(1:n-2) ! should've n-2 dimensions
-                pointsubdiag => subdiag(2:n-1) ! should've n-2 dimensions
-                pointindep => indep(1:n-1) ! should've n-1 dimensions
-                CALL DGTSV(n-1,1,pointsubdiag,pointdiag,pointsupdiag,pointindep,n-1,info)
-                CALL LAPACK_CHECK("DGTSV",info)
-                !CALL TRIDIA(n-1,pointsubdiag,pointdiag,pointsupdiag,pointindep,pointd2sdx)
-                d2sdx(n)=2*d2sdx(n-1)-d2sdx(n-2)
-                FORALL(i=1:n-1) d2sdx(i)=indep(i)
-        ELSE
+                pointdiag => diag(2:n) 
+                pointsupdiag => supdiag(2:n)
                 pointsubdiag => subdiag(2:n)
+                pointindep => indep(2:n)
+                pointd2sdx => d2sdx(2:n)
+                CALL TRIDIA(n-1,pointsubdiag,pointdiag,pointsupdiag,pointindep,pointd2sdx)
+                d2sdx(1)=2*d2sdx(1)-d2sdx(2)
+        ELSE IF (id2.EQ.0) THEN
+                pointdiag => diag(1:n-1)
                 pointsupdiag => supdiag(1:n-1)
-                CALL DGTSV(n,1,pointsubdiag,diag,pointsupdiag,indep,n,info)
-                CALL LAPACK_CHECK("DGTSV",info)
-                d2sdx=indep
-                !CALL TRIDIA(n,subdiag,diag,supdiag,indep,d2sdx)
+                pointsubdiag => subdiag(1:n-1)
+                pointindep => indep(1:n-1)
+                pointd2sdx => d2sdx(1:n-1)
+                CALL TRIDIA(n-1,pointsubdiag,pointdiag,pointsupdiag,pointindep,pointd2sdx)
+                d2sdx(n)=2*d2sdx(n-1)-d2sdx(n-2)
+        ELSE
+                CALL TRIDIA(n,subdiag,diag,supdiag,indep,d2sdx)
         END IF
 #ifdef DEBUG
         CALL VERBOSE_WRITE(routinename,"Second derivatives at nodes calculated -----> Done")

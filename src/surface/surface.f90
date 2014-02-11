@@ -110,7 +110,7 @@ END FUNCTION is_initialized
 !-------------------------------------------------------------------------------
 SUBROUTINE INITIALIZE(surf,filename)
    USE UNITS_MOD
-   USE LAPACKCONTROL_MOD
+   USE MATHS_MOD 
    USE CONSTANTS_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
@@ -125,11 +125,6 @@ SUBROUTINE INITIALIZE(surf,filename)
    CHARACTER(LEN=17), PARAMETER :: routinename = "INITIALIZE_SURF: "
    TYPE(length) :: len
    REAL(KIND=8), DIMENSION(2,2) :: aux_r
-   ! Lapack variables
-   INTEGER(KIND=4) :: lwork
-   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: work
-   INTEGER(KIND=4) :: info
-   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipiv
    ! Run section --------------------------------------------
       surf%filename=filename
 #ifdef DEBUG
@@ -211,17 +206,8 @@ SUBROUTINE INITIALIZE(surf,filename)
             CALL DEBUG_WRITE(routinename, surf%metricsurf_mtrx(i,1), surf%metricsurf_mtrx(i,2)) 
           END DO
 #endif
-      ! Setting lapack work variables
-      lwork=3
-      ALLOCATE(work(lwork))
-      ALLOCATE(ipiv(2))
-      FORALL(i=1:2) ipiv(i)=i
       ! Set Matrix: from auxiliar cartesian coordinates to surface coordinates
-      surf%cart2surf_mtrx=surf%surf2cart_mtrx
-      CALL DGETRF(2,2,surf%cart2surf_mtrx,2,ipiv,info)
-      CALL LAPACK_CHECK("DGETRF",info)
-      CALL DGETRI(2,surf%cart2surf_mtrx,2,ipiv,work,lwork,info)
-      CALL LAPACK_CHECK("DGETRI",info)
+      CALL INV_MTRX(2,surf%surf2cart_mtrx,surf%cart2surf_mtrx)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Cart2surf matrix calculated:")
          DO i = 1, 2
@@ -245,11 +231,7 @@ SUBROUTINE INITIALIZE(surf,filename)
          END DO
 #endif
       ! Set Matrix: from auxiliar cartesian coordinates to normalized surface coordinates
-      surf%cart2surfunit_mtrx=surf%surfunit2cart_mtrx
-      CALL DGETRF(2,2,surf%cart2surfunit_mtrx,2,ipiv,info)
-      CALL LAPACK_CHECK("DGETRF",info)
-      CALL DGETRI(2,surf%cart2surfunit_mtrx,2,ipiv,work,lwork,info)
-      CALL LAPACK_CHECK("DGETRI",info)
+      CALL INV_MTRX(2,surf%surfunit2cart_mtrx,surf%cart2surfunit_mtrx)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Cart2surfunit matrix calculated:")
          DO i = 1, 2
@@ -267,11 +249,7 @@ SUBROUTINE INITIALIZE(surf,filename)
          END DO
 #endif
       ! Set Matrix: from auxiliar cartesian coordinates to reciprocal space
-      surf%cart2recip_mtrx=surf%recip2cart_mtrx
-      CALL DGETRF(2,2,surf%cart2recip_mtrx,2,ipiv,info)
-      CALL LAPACK_CHECK("DGETRF",info)
-      CALL DGETRI(2,surf%cart2recip_mtrx,2,ipiv,work,lwork,info)
-      CALL LAPACK_CHECK("DGETRI",info)
+      CALL INV_MTRX(2,surf%recip2cart_mtrx,surf%cart2recip_mtrx)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Cart2recip matrix calculated:")
          DO i = 1, 2

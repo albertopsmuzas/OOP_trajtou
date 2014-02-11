@@ -226,5 +226,97 @@ SUBROUTINE SYMMETRIZE(n,x,v,zero,vtop,nsym,xsym,vsym)
 	WRITE(*,*) "SYMMETRIZE: New points added."
 	RETURN
 END SUBROUTINE SYMMETRIZE
+!###########################################################################
+! SUBROUTINE: TRIDIA #######################################################
+!###########################################################################
+!> @brief
+!! Solves a tridiagonal system. Thomas algorithm.
+!! Conserve the system matrix.
+!
+!> @param[in] n dimensions of the arrays. number of equations
+!> @param[in] a(n) - subdiagonal
+!> @param[in] b(n) - diagonal
+!> @param[in] c(n) - superdiagonal
+!> @param[in] d(n) - right part of the equation
+!> @param[out] x(n) - answer
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 11/Feb/2014
+!> @version 1.0
+! -------------------------------------------------------------------
+SUBROUTINE TRIDIA(n,a,b,c,d,x)
+	IMPLICIT NONE
+	INTEGER,INTENT(IN) :: n
+        REAL*8,DIMENSION(n),INTENT(IN) :: a,b,c,d
+        REAL*8,DIMENSION(n),INTENT(OUT) :: x
+        REAL*8,DIMENSION(n) :: cp,dp
+        REAL*8 :: m
+        INTEGER :: i
+! initialize c-prime and d-prime
+        cp(1) = c(1)/b(1)
+        dp(1) = d(1)/b(1)
+! solve for vectors c-prime and d-prime
+	DO i = 2,n
+		m = b(i)-cp(i-1)*a(i)
+		cp(i) = c(i)/m
+		dp(i) = (d(i)-dp(i-1)*a(i))/m
+	END DO
+! initialize x
+	x(n) = dp(n)
+! solve for x from the vectors c-prime and d-prime
+	DO i = n-1, 1, -1
+		x(i) = dp(i)-cp(i)*x(i+1)
+	END DO
+END SUBROUTINE TRIDIA
+!#####################################################################
+! SUBROUTINE : INV_MTRX ##############################################
+!#####################################################################
+!> @brief
+!! Invert a square matrix with Gauss method. @b mtrx is not destroyed during  the procedure
+!
+!> @param[in] n - Order of the matrix
+!> @param[in] mtrx(n,n) - Initial matrix
+!> @param[out] i_mtrx(n,n) - Inverse matrix
+!
+!> @warning
+!! - This algorithm is inefficient for large matrices or sparse matrices. Use
+!!   it wisely
+!---------------------------------------------------------------------
+SUBROUTINE INV_MTRX (n, mtrx, i_mtrx)
+	IMPLICIT NONE
+	INTEGER, INTENT(IN) :: n
+	REAL(8), DIMENSION(n,n), INTENT(IN):: mtrx
+	REAL(8), DIMENSION(n,n), INTENT(OUT):: i_mtrx
+	! Local Variables ------------------------
+	REAL*8, DIMENSION(n,n) :: B, A
+	REAL*8, DIMENSION(n) :: temp
+	INTEGER, DIMENSION(n) :: ipvt
+	INTEGER, DIMENSION(1) :: imax
+	REAL(8) :: c, d
+	INTEGER :: i, j, k, m
+	! HEY, HO! LET'S GO! ---------------------
+	A = mtrx
+	B = A
+	ipvt = (/ (i, i = 1, n) /)
+	DO k = 1,n
+		imax = MAXLOC(ABS(b(k:n,k)))
+		m = k-1+imax(1)
+		IF (m /= k) THEN
+			ipvt( (/m,k/) ) = ipvt( (/k,m/) )
+			B((/m,k/),:) = B((/k,m/),:)
+		END IF
+		d = 1/B(k,k)
+		temp = B(:,k)
+		DO j = 1, n
+			c = B(k,j)*d
+			B(:,j) = B(:,j)-temp*c
+			B(k,j) = c
+		END DO
+		B(:,k) = temp*(-d)
+		B(k,k) = d
+	END DO
+	A(:,ipvt) = B
+	i_mtrx = A
+END SUBROUTINE INV_MTRX
 
 END MODULE MATHS_MOD

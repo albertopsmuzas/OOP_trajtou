@@ -52,7 +52,7 @@ SUBROUTINE SET_FOURIER2D_COEFF(this,surf)
    USE DEBUG_MOD
 #endif
    USE SURFACE_MOD
-   USE LAPACKCONTROL_MOD
+   USE MATHS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourier2d),INTENT(INOUT) :: this
@@ -63,10 +63,6 @@ SUBROUTINE SET_FOURIER2D_COEFF(this,surf)
    REAL*8, DIMENSION(this%n,this%n) :: T, inv_T 
    REAL*8, DIMENSION(2) :: r ! normalized surface coordinates
    CHARACTER(LEN=21),PARAMETER :: routinename="SET_FOURIER2D_COEFF: "
-   ! Lapack variables
-   INTEGER(KIND=4) :: lwork, info
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: work
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: ipiv
 	! HEY HO!, LET'S GO! ----------
    ALLOCATE(this%coeff(this%n))
 	! Calculate number of terms 
@@ -142,11 +138,6 @@ SUBROUTINE SET_FOURIER2D_COEFF(this,surf)
 			END DO
 		END DO
 	END DO
-   ! Lapack variables
-   lwork=this%n
-   ALLOCATE(work(lwork))
-   ALLOCATE(ipiv(this%n))
-   FORALL(i=1:this%n) ipiv(i)=i
    ! Calculate inverse matrix
 #ifdef DEBUG
    CALL DEBUG_WRITE(routinename,"T matrix:")
@@ -154,11 +145,7 @@ SUBROUTINE SET_FOURIER2D_COEFF(this,surf)
       CALL DEBUG_WRITE(routinename,T(i,:))
    END DO
 #endif
-   inv_T=T
-   CALL DGETRF(this%n,this%n,inv_T,this%n,ipiv,info) ! LU factorization
-   CALL LAPACK_CHECK("DGETRF",info) 
-   CALL DGETRI(this%n,inv_T,this%n,ipiv,work,lwork,info) ! inverse matrix
-   CALL LAPACK_CHECK("DGETRI",info)
+   CALL INV_MTRX(this%n,T,inv_T)
 #ifdef DEBUG
    CALL DEBUG_WRITE(routinename,"inverse T matrix:")
    DO i = 1, this%n
