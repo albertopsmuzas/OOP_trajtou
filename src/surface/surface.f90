@@ -57,7 +57,6 @@ PRIVATE
 	CHARACTER(LEN=30) :: alias
 	CHARACTER(LEN=30) :: filename
 	CHARACTER(LEN=10) :: symmetry_alias
-   CHARACTER(LEN=10) :: units
 	LOGICAL :: initialized=.FALSE.
 	INTEGER(KIND=4) :: symmetry
 	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx 
@@ -69,6 +68,7 @@ PRIVATE
 	INTEGER(KIND=4) :: diff_atoms 
 	TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype 
 	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx 
+   CHARACTER(LEN=10),PUBLIC :: units
 	REAL(KIND=8),PUBLIC :: norm_s1, norm_s2 
 CONTAINS
 	! Initiallize
@@ -81,6 +81,7 @@ CONTAINS
 	PROCEDURE,PUBLIC :: recip2cart
 	PROCEDURE,PUBLIC :: cart2recip
    PROCEDURE,PUBLIC :: project_unitcell
+   PROCEDURE,PUBLIC :: project_iwscell
    ! Enquire block
    PROCEDURE, PUBLIC :: is_initialized
 END TYPE
@@ -413,4 +414,86 @@ FUNCTION project_unitcell(surf,r)
    project_unitcell = surf%surf2cart(project_unitcell)
 	RETURN
 END FUNCTION project_unitcell
+!################################################################
+! SUBROUTINE: project_iwscell ###################################
+!################################################################
+!> @brief
+!! Projects R into Irreducible WS cell. Needs information from
+!! surface main vectors.
+!
+!> @param[in] surf - Surface specifications
+!> @param[in] x - 2D point
+!
+!> @warning
+!! - r is in cartesian coordinates (Input and output)
+!! - Only C4v symmetry
+!----------------------------------------------------------------
+FUNCTION project_iwscell(surf,x)
+   USE CONSTANTS_MOD
+	IMPLICIT NONE
+	! I/O variables
+	CLASS(Surface) , INTENT(IN) :: surf
+   REAL(KIND=8),DIMENSION(2),INTENT(IN) :: x
+	! Local variables
+	REAL*8,DIMENSION(2) :: r
+	REAL*8,DIMENSION(2,2) :: Proj_x, Proj_y, Rot
+	REAL*8,DIMENSION(2) :: aux
+	REAL*8 :: angle, radius, alpha
+	INTEGER :: i ! counters
+   REAL(KIND=8),DIMENSION(2) :: project_iwscell
+	! HEY, HO! LET'S GO! ------------------
+	! Go to surface coordinates
+   r = x
+	r = surf%cart2surf(r)
+	FORALL (i=1:2) 
+		aux(i)=DFLOAT(INT(r(i)))
+		r(i)=r(i)-aux(i)
+	END FORALL
+	! Now, r vector is inside the unit cell. Let's define this vector
+	! taking as the origin the center of the cell (in surface units is 0.5,0.5):
+	FORALL (i=1:2) r(i)=r(i)-0.5D0
+	! Calculate angle
+	IF (r(1).EQ.0.D0) THEN
+		angle = PI/2.D0
+	ELSE
+		angle = DATAN(DABS(r(2))/DABS(r(1))) ! Only angles from 0 to pi rad.
+	END IF
+	radius = DSQRT(r(1)**2.D0+r(2)**2.D0) ! Radius
+	r(1)=radius*DCOS(angle)
+	r(2)=radius*DSIN(angle)
+	alpha = PI/2.D0 ! 90 deg.
+	! 2D Projectors ========================
+	!Rotation
+	Rot(1,1)=DCOS(alpha)
+	Rot(1,2)=-DSIN(alpha)
+	Rot(2,1)=DSIN(alpha)
+	Rot(2,2)=DCOS(alpha)
+	! Projector X
+	Proj_x(1,1)=1.D0
+	Proj_x(1,2)=0.D0
+	Proj_x(2,1)=0.D0
+	Proj_x(2,2)=-1.D0
+	! Projector Y
+	Proj_y(1,1)=-1.D0
+	Proj_y(1,2)=0.D0
+	Proj_y(2,1)=0.D0
+	Proj_y(2,2)=1.D0
+	! Project onto IWS cell
+	IF ((angle.LE.(PI/4.D0)).AND.(angle.GE.0.D0)) THEN
+		r = MATMUL(Proj_y,r)
+		r = MATMUL(Rot, r)
+	ELSE IF ((angle.LE.(PI/2.D0)).AND.(angle.GT.(PI/4.D0))) THEN
+		r = MATMUL(Proj_y, r)
+		r = MATMUL(Proj_x, r)
+	ELSE 
+		WRITE(*,*) "ERR GET_V_XYZ: Incorrect angle value."
+		WRITE(*,*) "angle : ", angle
+		STOP
+	END IF
+	FORALL (i=1:2) r(i)=r(i)+0.5D0
+	! Go to cartesian coordinates
+   r = surf%surf2cart(r)
+   project_iwscell = r
+	RETURN
+END FUNCTION project_iwscell
 END MODULE SURFACE_MOD

@@ -3,7 +3,7 @@
 ##################################################
 include make.inc
 .PHONY : build
-joblist = test_CRP.x
+joblist = test_CRP.x test_inicond.x test_dynamics.x
 hola="adios"
 # Rules 
 build: $(joblist)

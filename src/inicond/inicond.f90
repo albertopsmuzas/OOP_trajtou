@@ -22,7 +22,7 @@ IMPLICIT NONE
 !> @param stat - String that defines the state of this object
 !> @param id - Integer ID number
 !--------------------------------------------------------
-TYPE,ABSTRACT ::  Dynobject
+TYPE ::  Dynobject
    INTEGER :: id 
    REAL*8 :: E
    REAL*8,DIMENSION(:),ALLOCATABLE :: init_r

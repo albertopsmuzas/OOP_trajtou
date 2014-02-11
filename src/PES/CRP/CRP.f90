@@ -146,6 +146,7 @@ TYPE, EXTENDS(PES) :: CRP
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP
+      PROCEDURE,PUBLIC :: is_allowed => is_allowed_crp
 END TYPE CRP
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -1149,7 +1150,7 @@ SUBROUTINE PLOT_DIRECTION1D_CRP(thispes,filename,npoints,angle,z,L)
    CHARACTER(LEN=*), INTENT(IN) :: filename
    REAL*8, INTENT(IN) :: z, angle
    ! Local variables -----------------------------
-   INTEGER :: nspace, inpoints, ndelta
+   INTEGER :: inpoints, ndelta
    REAL*8 :: delta,L,v,s,alpha
    REAL*8 :: xmax, xmin, ymax, ymin 
    REAL*8, DIMENSION(3) :: r, dvdu
@@ -1197,4 +1198,32 @@ SUBROUTINE PLOT_DIRECTION1D_CRP(thispes,filename,npoints,angle,z,L)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT_DIRECTION1D_CRP
+!###########################################################
+!# FUNCTION: is_allowed_crp
+!###########################################################
+!> @brief
+!! Determines if the potential can be calculated in this point
+!-----------------------------------------------------------
+LOGICAL FUNCTION is_allowed_crp(thispes,x) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP),TARGET,INTENT(IN) :: thispes
+   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
+   ! Local variables
+   REAL(KIND=8),POINTER :: xmin,xmax
+   ! Run section
+   xmin => thispes%all_sites(1)%z(1)
+   xmax => thispes%all_sites(1)%z(thispes%all_sites(1)%n)
+   IF (size(x)/=3) THEN
+      WRITE(0,*) "is_allowed_crp ERR: checked array without the correct number of dimensions: 3"
+      is_allowed_crp=.FALSE.
+      CALL EXIT(1)
+   ENDIF
+   IF ((x(3).LT.xmin).OR.(x(3).GT.xmax)) THEN
+     is_allowed_crp=.FALSE. 
+   END IF  
+   is_allowed_crp=.TRUE.
+   RETURN
+END FUNCTION is_allowed_crp
 END MODULE CRP_MOD

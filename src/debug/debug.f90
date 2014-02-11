@@ -303,4 +303,22 @@ SUBROUTINE DEBUG_WRITE_VECT(subroutinename,a)
 	RETURN
 END SUBROUTINE DEBUG_WRITE_VECT
 !
+!###################################################
+! FUNCTION get_debugmode
+!> @brief
+!! Usual get function
+!---------------------------------------------------
+LOGICAL FUNCTION get_debugmode()
+   IMPLICIT NONE
+   get_debugmode=debugmode
+END FUNCTION get_debugmode
+!###################################################
+! FUNCTION get_verbosemode
+!> @brief
+!! Usual get function
+!---------------------------------------------------
+LOGICAL FUNCTION get_verbosemode()
+   IMPLICIT NONE
+   get_verbosemode=verbosemode
+END FUNCTION get_verbosemode
 END MODULE DEBUG_MOD

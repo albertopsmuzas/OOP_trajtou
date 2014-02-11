@@ -1,12 +1,13 @@
 # Include general rules
-debugmode=on
+debugmode=off
 include make.inc
 # Add here all folder names in src
-folderlist= debug constants units surface lapackcontrol PES interpol1d interpol1d/cubicsplines maths PES/CRP interpol2d interpol2d/fourier
+folderlist= debug constants units surface lapackcontrol PES interpol1d interpol1d/cubicsplines maths PES/CRP interpol2d interpol2d/fourier \
+				inicond inicond/atom dynamics dynamics/atom
 
 # Object list. There should be a rule for each object in this list
 objectlist= debug.o constants.o lapackcontrol.o units.o surface.o PES.o CRP.o interpol1d.o maths.o interpol2d.o \
-				fourier2d.o cubicsplines.o
+				fourier2d.o cubicsplines.o inicond.o initatom.o dynamics.o dynatom.o
 				
 
 # Where to find fortran files:
@@ -25,6 +26,10 @@ PES.o:
 maths.o:
 interpol1d.o: 
 interpol2d.o: 
+inicond.o:
+dynamics.o: units.o
+dynatom.o: debug.o dynamics.o CRP.o
+initatom.o: debug.o constants.o units.o inicond.o surface.o
 units.o: debug.o constants.o
 surface.o: debug.o units.o constants.o lapackcontrol.o
 cubicsplines.o: debug.o interpol1d.o
