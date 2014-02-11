@@ -15,7 +15,7 @@ IMPLICIT NONE
 !
 !> @param alias - Human friendly name
 !> @param filename - Name fo the input file
-!> @param kind 
+!> @param kind - Kind of dynamics
 !> @param delta_t - Initial time-step
 !> @param max_t - Maximum time 
 !> @param nfollow - Number of trajectories to be followed

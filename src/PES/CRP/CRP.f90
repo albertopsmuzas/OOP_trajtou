@@ -986,8 +986,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP(thispes,X,v,dvdu)
    DO i=1,nsites
       xy(i,1)=thispes%all_sites(i)%x
       xy(i,2)=thispes%all_sites(i)%y
-      f(i)=thispes%all_sites(i)%interz%getvalue(X(3))
-      dfdz(i)=thispes%all_sites(i)%interz%getderiv(X(3))
+      CALL thispes%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(i),dfdz(i))
    END DO
 	CALL interpolxy%READ(xy,f,dfdz)
    CALL interpolxy%SET_COEFF(thispes%surf)

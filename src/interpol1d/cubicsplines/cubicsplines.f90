@@ -31,6 +31,7 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
       PROCEDURE,PUBLIC :: getvalue => get_csplines_value
       PROCEDURE,PUBLIC :: getderiv => get_csplines_dfdx_value
       ! Private procedures
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CSPLINES
       PROCEDURE,PRIVATE :: SET_SECOND_DERIVS => DSPLIN
       PROCEDURE,PRIVATE :: SET_COEFF => SET_CUBIC_SPLINES_COEFF
 END TYPE Csplines
@@ -445,14 +446,8 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
    IF ((r.lt.this%x(1)).or.(r.gt.this%x(n))) THEN
       WRITE(0,*) "get_csplines_dfdx_value ERR: r outside interpolation interval"
       WRITE(0,*) "get_csplines_dfdx_value ERR: r = ", r
-      WRITE(0,*) "get_csplines_dfdx_value ERR: range from ", z(1)-margen, "to", z(n)+margen
+      WRITE(0,*) "get_csplines_dfdx_value ERR: range from ", z(1), "to", z(n)
       CALL EXIT(1)
-   ELSE IF ((r.LE.(z(n)+margen)).AND.(r.GT.z(n))) THEN
-      get_csplines_dfdx_value=z(n)
-      RETURN
-   ELSE IF ((r.GE.(z(n)+margen)).AND.(r.LT.z(n))) THEN
-      get_csplines_dfdx_value=z(1)
-      RETURN
    END IF
    !
    DO i=1,n-1
@@ -468,4 +463,50 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
    get_csplines_dfdx_value=3.D0*(a*((r-z1)**2.D0))+2.D0*b*(r-z1)+c
    RETURN
 END FUNCTION get_csplines_dfdx_value
+!###############################################################
+! SUBROUTINE: GET_V_AND_DERIVS_CSPLINE
+!> @brief
+!! Computes F(X) and F'(X) at the same time. Better time performance
+!---------------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_CSPLINES(this,x,pot,deriv,shift)
+   IMPLICIT NONE
+   CLASS(Csplines),TARGET,INTENT(IN) :: this
+   REAL(KIND=8),INTENT(IN) :: x
+   REAL(KIND=8),INTENT(OUT) :: pot,deriv
+   REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
+   ! Local variables
+   INTEGER :: i ! Counter
+   REAL(KIND=8) ::  r
+   ! Pointers 
+   INTEGER,POINTER :: n
+   REAL(KIND=8),POINTER :: z1,z2,a,b,c,d
+   REAL(KIND=8),DIMENSION(:),POINTER :: z,v
+   ! Run section -----------------------------------
+   n => this%n
+   z => this%x(1:n)
+   v => this%f(1:n)
+   r=x
+   IF(present(shift)) r=r+shift
+   !
+   IF ((r.lt.this%x(1)).or.(r.gt.this%x(n))) THEN
+      WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+      WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+      WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+      CALL EXIT(1)
+   END IF
+   !
+   DO i=1,n-1
+      z1 => this%x(i)
+      z2 => this%x(i+1)
+      a => this%coeff(i,1)
+      b => this%coeff(i,2)
+      c => this%coeff(i,3)
+      d => this%coeff(i,4)
+      IF ((r.le.z2).and.(r.ge.z1)) EXIT
+   END DO
+   ! Now, counter i has the correct label
+   pot = a*((r-z1)**3.D0)+b*((r-z1)**2.D0)+c*(r-z1)+d
+   deriv = 3.D0*(a*((r-z1)**2.D0))+2.D0*b*(r-z1)+c
+   RETURN
+END SUBROUTINE GET_V_AND_DERIVS_CSPLINES
 END MODULE CUBICSPLINES_MOD

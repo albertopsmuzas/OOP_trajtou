@@ -263,12 +263,12 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 				WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: Initial position is not adequate"
 				WRITE(0,*) "Atomo id: ", atomo%id
 				WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
-				STOP 1
+				CALL EXIT(1)
 			ELSE ! other steps
 				WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: This error is quite uncommon, guess what is happening by your own."
 				WRITE(0,*) "Atom id: ", atomo%id
 				WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
-				STOP 1
+				CALL EXIT(1)
 			END IF
 		END IF
 		! Construct scaling array
