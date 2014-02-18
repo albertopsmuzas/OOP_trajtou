@@ -396,7 +396,7 @@ REAL(KIND=8) FUNCTION get_csplines_value(this,x,shift)
       b => this%coeff(i,2)
       c => this%coeff(i,3)
       d => this%coeff(i,4)
-     IF ((r.le.z2).and.(r.ge.z1)) EXIT
+      IF ((r.le.z2).and.(r.ge.z1)) EXIT
    END DO
    ! Now, counter i has the correct label
    get_csplines_value=a*((r-z1)**3.D0)+b*((r-z1)**2.D0)+c*(r-z1)+d

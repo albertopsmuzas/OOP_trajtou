@@ -12,8 +12,11 @@ IMPLICIT NONE
 !! Generic 2D interpolation type variable
 !
 !> @param n - Number of data points
-!> @param xy - Matrix that collects @f$(x_{i},y_{i})@f$ pairs
-!> @param f - Array that stores couples @f$F(x_{i},y_{i})@f$
+!> @param xy(:,:) - Matrix that collects @f$(x_{i},y_{i})@f$ pairs
+!> @param x(:) - Grid in X. Only if input has grid structure
+!> @param y(:) - Grid in Y. Only if input has grid structure
+!> @param fgrid(:,:) - Function evaluated in a grid
+!> @param f - Array that stores couples @f$F(x_{i},y_{i})@f$. Non grid input.
 !> @param dfdz - Array that stores couples @f$\frac{\partial F(x_{i},y_{i})}{\partial z}@f$
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
@@ -27,15 +30,57 @@ IMPLICIT NONE
 !> @todo 
 !! - Generalize to "n" extra variables, apart from x and y, not only Z
 !---------------------------------------------------------------
-TYPE Interpol2d
+TYPE :: Interpol2d
    INTEGER(KIND=4) :: n
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: x,y
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: fgrid
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f, dfdz
 CONTAINS
    PROCEDURE,PUBLIC :: READ => READ_INTERPOL2D
+   PROCEDURE,PUBLIC :: READGRID => READGRID_INTERPOL2D
 END TYPE Interpol2d
 !////////////////////////////////////////////////////////////////
 CONTAINS
+!##########################################################
+! SUBROUTINE: READGRID_INTERPOL2D
+!> @brief
+!! Reads input defined in a grid
+!
+!> @param[out] this - interpol 2D object to be set up
+!> @param[in] x(:) - X grid
+!> @param[in] y(:) - Y grid
+!> @param[in] f(:,:) - stores F falues for each point in the grid
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 17/Feb/2014
+!> @version 1.0 
+!----------------------------------------------------------
+SUBROUTINE READGRID_INTERPOL2D(this,x,y,f)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Interpol2d),INTENT(OUT) :: this
+   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x,y
+   REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: f
+   ! Local variables
+   INTEGER(KIND=4) :: nx,ny
+   INTEGER(KIND=4) :: i,j ! counters
+   ! Run section ------------------------------------
+   nx=size(x)
+   ny=size(y)
+   IF ((nx/=size(f(:,1))).OR.(ny/=size(f(1,:)))) THEN
+      WRITE(0,*) "READGRID_INTERPOL2D: array mismatch x, y, fgrif"
+      CALL EXIT(1)
+   END IF
+   ALLOCATE(this%x(nx))
+   ALLOCATE(this%y(ny))
+   ALLOCATE(this%fgrid(nx,ny))
+   this%x = x
+   this%y = y
+   this%fgrid = f
+   RETURN
+END SUBROUTINE READGRID_INTERPOL2D
 !###########################################################
 !# SUBROUTINE: READ_INTERPOL2D 
 !###########################################################
