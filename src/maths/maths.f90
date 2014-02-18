@@ -21,7 +21,6 @@ CONTAINS
 !! - If @f$<@f$ and @f$\spadesuit@f$ are order relationships, it holds:
 !!   @f$w_{i}\spadesuit w_{i+1} \Leftrightarrow v_{i}<v_{i+1}@f$
 !
-!> @param[in] nelem - Number of elements in @b arreg1 and @b arreg2
 !> @param[in,out] arreg1 - This array is ordered so that @f$v_{i}<v_{i+1}@f$
 !> @param[in,out] arreg2 - This array is ordered so that @f$w_{i}\spadesuit w_{i+1}@f$
 !
@@ -29,20 +28,32 @@ CONTAINS
 !> @date 27/Jan/2014
 !> @version 1.0
 ! -----------------------------------------------------
-SUBROUTINE ORDER(NELEM,ARREG1,ARREG2)
+SUBROUTINE ORDER(ARREG1,ARREG2)
    IMPLICIT NONE
    ! I/O variables ---------------------------
-   INTEGER, INTENT(IN) :: NELEM
-   REAL*8, DIMENSION(NELEM), INTENT(INOUT) :: ARREG1, ARREG2
+   REAL*8, DIMENSION(:), INTENT(INOUT) :: ARREG1, ARREG2
    ! Local variables -------------------------
+   INTEGER :: NELEM
    LOGICAL :: CLAVE
    INTEGER :: I, K, POS
    REAL*8 :: AUX1, AUX2
    ! FIRE IN THE HOLE! ------------------------
-   IF (NELEM.LT.2)  THEN
-      WRITE(0,*) "ORDER ERR: Less than 2 elements inside arrays."
-      STOP
+   nelem=size(arreg1)
+   IF (nelem/=size(arreg2)) THEN
+      WRITE(0,*) "ORDER ERR: dimension mismatch in arreg1 and arreg2"
+      WRITE(0,*) "arreg1: ", nelem
+      WRITE(0,*) "arreg2: ", size(arreg2)
+      CALL EXIT(1)
    END IF
+   !
+   SELECT CASE (nelem)
+      CASE(: 1)
+         WRITE(0,*) "ORDER ERR: Less than 2 elements inside arrays."
+         CALL EXIT(1)
+      CASE DEFAULT
+         ! do nothing
+   END SELECT 
+   !
    DO I=2,NELEM
       K = I
       AUX1 = ARREG1(K)
@@ -145,7 +156,7 @@ SUBROUTINE SYMMETRIZE(n,x,v,zero,vtop,nsym,xsym,vsym)
 	REAL*8, DIMENSION(:), ALLOCATABLE :: nonredx, nonredv 
 	INTEGER, DIMENSION(:), ALLOCATABLE :: redundant
 	! HEY, HO! LET'S GO! -------------------
-	CALL ORDER(n,x,v) ! Order the initial array
+	CALL ORDER(x,v) ! Order the initial array
 	npoints=0
 	! Checking number of points that satisfies F(x) > vtop
 	DO i=1,n
@@ -222,7 +233,7 @@ SUBROUTINE SYMMETRIZE(n,x,v,zero,vtop,nsym,xsym,vsym)
 		vsym(i)=v(i-nnonred)
 	END DO
 	! The vector is not ordered
-	CALL ORDER(nsym,xsym,vsym)
+	CALL ORDER(xsym,vsym)
 	WRITE(*,*) "SYMMETRIZE: New points added."
 	RETURN
 END SUBROUTINE SYMMETRIZE

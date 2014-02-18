@@ -223,7 +223,7 @@ SUBROUTINE READ_SYMMPOINT_RAW(symmraw,filename)
          aux_v2(i) = v%getvalue()
       END DO
    CLOSE(10)
-   CALL ORDER(symmraw%n,aux_v1,aux_v2) ! Should order Z(i) and V(i)
+   CALL ORDER(aux_v1,aux_v2) ! Should order Z(i) and V(i)
    symmraw%z = aux_v1
    symmraw%v = aux_v2
    symmraw%units_z = z%getunits()
@@ -455,6 +455,9 @@ END SUBROUTINE GEN_SYMMETRIZED_RAW_INPUT
 !!    -# lines 5N+2~5N+2+M: character(len=30),character(len=30); sitio filename, sitio alias
 !-----------------------------------------------------------------------
 SUBROUTINE READ_CRP(this,filename)
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP),INTENT(OUT) :: this 
@@ -473,22 +476,30 @@ SUBROUTINE READ_CRP(this,filename)
    OPEN(11,FILE=filename,STATUS="old")
    READ(11,*) !dummy line
    READ(11,*) file_surf
-   WRITE(*,*) routinename, file_surf
    READ(11,*) max_order
-   WRITE(*,*) routinename,"Max order: ",max_order
    READ(11,*) n_pairpots
-   WRITE(*,*) routinename,"Pairpots: ",n_pairpots
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename, file_surf)
+   CALL VERBOSE_WRITE(routinename,"Max order: ",max_order)
+   CALL VERBOSE_WRITE(routinename,"Pairpots: ",n_pairpots)
+#endif
    ALLOCATE(files_pairpots(n_pairpots))
    DO i = 1, n_pairpots
       READ(11,*) files_pairpots(i)
-      WRITE(*,*) routinename,files_pairpots(i)
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,files_pairpots(i))
+#endif
    END DO
    READ(11,*) n_sites
-   WRITE(*,*) routinename,"Sitios: ",n_sites
+#ifdef DEBUG
+   CALL DEBUG_WRITE(routinename,"Sitios: ",n_sites)
+#endif
    ALLOCATE(files_sites(n_sites))
    DO i = 1, n_sites
       READ(11,*) files_sites(i)
-      WRITE(*,*) routinename,files_sites(i)
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,files_sites(i))
+#endif
    END DO
    CLOSE(11)
    ! Initialize CRP

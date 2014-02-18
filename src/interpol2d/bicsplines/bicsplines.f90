@@ -29,6 +29,8 @@ TYPE,EXTENDS(Interpol2d) :: Bicsplines
       PROCEDURE,PUBLIC :: getvalue => getvalue_bicsplines
       PROCEDURE,PUBLIC :: getderivx => getderivx_bicsplines
       PROCEDURE,PUBLIC :: getderivy => getderivy_bicsplines
+      PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_BICSPLINES
+      PROCEDURE,PUBLIC :: PLOT_SPLINES => PLOT_SPLINES_BICSPLINES
 END TYPE
 !//////////////////////////////////////////////////////////
 CONTAINS
@@ -39,15 +41,16 @@ CONTAINS
 !
 !> @param[in,out] this - bicubic splines object to set coefficients
 !----------------------------------------------------------
-SUBROUTINE SET_COEFF_BICSPLINES(this)
+SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
    ! Initial declarations
    USE MATHS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Bicsplines),INTENT(INOUT) :: this
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
    ! Local variables
    INTEGER(KIND=4) :: nx,ny
-   INTEGER(KIND=4) :: i,j ! counters
+   INTEGER(KIND=4) :: i,j,k ! counters
    REAL(KIND=8) :: x0,x1,y0,y1
    REAL(KIND=8),DIMENSION(4,4) :: xmtrx,inv_xmtrx,ymtrx,inv_ymtrx,smtrx
    ! Run section -------------------------------
@@ -65,6 +68,7 @@ SUBROUTINE SET_COEFF_BICSPLINES(this)
       CALL this%ycsplines(i)%INTERPOL(0.D0,0,0.D0,0) ! last and initial 2 splines are equal
    END DO
    !
+   IF(present(filename)) OPEN (521,FILE=filename,STATUS="replace",ACTION="write")
    DO i = 1, nx-1
       DO j = 1, ny-1
          x0=this%xcsplines(j)%x(i)
@@ -102,11 +106,40 @@ SUBROUTINE SET_COEFF_BICSPLINES(this)
          smtrx(4,3)=d2fdxdy_finitdiff(i+1,j,this%x,this%y,this%fgrid)
          smtrx(4,4)=d2fdxdy_finitdiff(i+1,j+1,this%x,this%y,this%fgrid)
          
-         CALL MTRX_INV(4,xmtrx,inv_xmtrx)
-         CALL MTRX_INV(4,ymtrx,inv_ymtrx)
+         CALL INV_MTRX(4,xmtrx,inv_xmtrx)
+         CALL INV_MTRX(4,ymtrx,inv_ymtrx)
          this%coeff(i,j,:,:)=matmul(matmul(inv_xmtrx,smtrx),inv_ymtrx)
+         IF (present(filename)) THEN
+            WRITE(521,*) "BICUBIC SPLINE :",i,j
+            WRITE(521,*) "=========================="
+            WRITE(521,*) "X matrix:"
+            DO k = 1, 4
+               WRITE(521,*) xmtrx(k,:)
+            END DO
+            WRITE(521,*) "inv_X matrix:"
+            DO k = 1, 4
+               WRITE(521,*) inv_xmtrx(k,:)
+            END DO
+            WRITE(521,*) "Y matrix:"
+            DO k = 1, 4
+               WRITE(521,*) ymtrx(k,:)
+            END DO
+            WRITE(521,*) "inv_Y matrix:"
+            DO k = 1, 4
+               WRITE(521,*) inv_ymtrx(k,:)
+            END DO
+            WRITE(521,*) "S matrix:"
+            DO k = 1, 4
+               WRITE(521,*) smtrx(k,:)
+            END DO
+            WRITE(521,*) "Coeff. matrix:"
+            DO k = 1, 4
+               WRITE(521,*) this%coeff(i,j,k,:)
+            END DO
+         END IF
       END DO
    END DO
+   IF(present(filename)) CLOSE(521)
    RETURN
 END SUBROUTINE SET_COEFF_BICSPLINES
 !###########################################################
@@ -169,7 +202,7 @@ REAL(KIND=8) FUNCTION getvalue_bicsplines(this,x)
    CLASS(Bicsplines),TARGET,INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: x
    ! Local variables
-   REAL(KIND=8),POINTER :: x1,x2
+   REAL(KIND=8),POINTER:: x1,x2
    REAL(KIND=8),DIMENSION(:,:),POINTER :: coeff
    REAL(KIND=8),DIMENSION(4) :: vecy,vecx
    INTEGER(KIND=4) :: nx,ny
@@ -183,8 +216,8 @@ REAL(KIND=8) FUNCTION getvalue_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(i)
-      x2 => this%y(i+1)
+      x1 => this%y(j)
+      x2 => this%y(j+1)
       IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
    END DO
    ! Now, i and j have the correct value
@@ -221,8 +254,8 @@ REAL(KIND=8) FUNCTION getderivx_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(i)
-      x2 => this%y(i+1)
+      x1 => this%y(j)
+      x2 => this%y(j+1)
       IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
    END DO
    ! Now, i and j have the correct value
@@ -259,8 +292,8 @@ REAL(KIND=8) FUNCTION getderivy_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(i)
-      x2 => this%y(i+1)
+      x1 => this%y(j)
+      x2 => this%y(j+1)
       IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
    END DO
    ! Now, i and j have the correct value
@@ -297,8 +330,8 @@ REAL(KIND=8) FUNCTION getderivxy_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(i)
-      x2 => this%y(i+1)
+      x1 => this%y(j)
+      x2 => this%y(j+1)
       IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
    END DO
    ! Now, i and j have the correct value
@@ -336,7 +369,7 @@ SUBROUTINE PLOT_XYMAP_BICSPLINES(this,filename,init_xy,nxpoints,nypoints,Lx,Ly)
    REAL*8,INTENT(IN) :: Ly ! Length of X axis 
    ! Local variables
    REAL*8 :: xmin, ymin, xmax, ymax
-   REAL*8, DIMENSION(3) :: r
+   REAL*8, DIMENSION(2) :: r
    REAL*8 :: xdelta, ydelta
    INTEGER :: xinpoints, nxdelta
    INTEGER :: yinpoints, nydelta
@@ -389,6 +422,39 @@ SUBROUTINE PLOT_XYMAP_BICSPLINES(this,filename,init_xy,nxpoints,nypoints,Lx,Ly)
    r(2) = ymax
    WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
    CLOSE(11)
+   WRITE(*,*) "PLOT_XYMAP_BICSPLINES: Graph created: ",filename
    RETURN
 END SUBROUTINE PLOT_XYMAP_BICSPLINES
+!###########################################################
+!# SUBROUTINE: PLOT_SPLINES_BICSPLINES 
+!###########################################################
+!> @brief
+!! Plot internal splines
+!-----------------------------------------------------------
+SUBROUTINE PLOT_SPLINES_BICSPLINES(this,npoints)
+   ! Initial declarations   
+      
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Bicsplines),INTENT(IN) :: this
+   INTEGER(KIND=4),INTENT(IN) :: npoints
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counters
+   INTEGER(KIND=4) :: nx,ny
+   CHARACTER(LEN=100) :: filename
+   ! Run section
+   nx=size(this%xcsplines)
+   ny=size(this%ycsplines)
+   DO i = 1, ny
+      WRITE(filename,'(I4,A12)') i,"-xspline.dat"
+      filename=adjustl(filename)
+      CALL this%xcsplines(i)%PLOT_INTERPOL(npoints,filename)
+   END DO
+   DO i = 1, nx
+      WRITE(filename,'(I4,A12)') i,"-yspline.dat"
+      filename=adjustl(filename)
+      CALL this%ycsplines(i)%PLOT_INTERPOL(npoints,filename)
+   END DO
+   RETURN
+END SUBROUTINE PLOT_SPLINES_BICSPLINES
 END MODULE BICSPLINES_MOD

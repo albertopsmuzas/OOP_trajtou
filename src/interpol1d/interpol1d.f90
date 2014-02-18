@@ -105,13 +105,13 @@ SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename)
    INTEGER :: inpoints, ndelta
    REAL*8 :: delta, interval, x
    INTEGER :: i ! Counter
-   CHARACTER(LEN=22), PARAMETER :: routinename = "GRAPH_INTERPOL_SITIO: " 
+   CHARACTER(LEN=26), PARAMETER :: routinename = "PLOT_INTERPOL_INTERPOL1D: " 
    ! Pointers ------------------------------------
    REAL*8, POINTER :: xmin, xmax
    INTEGER, POINTER :: n
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "GRAPH_INTERPOL_SITIO ERR: Less than 2 points"
+      WRITE(0,*) "PLOT_INTERPOL_INTERPOL1D ERR: Less than 2 points"
       STOP
    END IF
    !

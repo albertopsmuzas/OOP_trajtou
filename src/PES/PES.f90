@@ -16,9 +16,9 @@ CONTAINS
 	PROCEDURE,PUBLIC :: SET_ALIAS
 	PROCEDURE,PUBLIC :: SET_DIMENSIONS
 	! Get block
-	PROCEDURE,PUBLIC :: get_alias
-	PROCEDURE,PUBLIC :: get_dimensions
-	PROCEDURE,PUBLIC :: get_last_value
+	PROCEDURE,PUBLIC :: getalias
+	PROCEDURE,PUBLIC :: getdimensions
+	PROCEDURE,PUBLIC :: getlastvalue
 	! Enquire block
 	PROCEDURE,PUBLIC :: is_initialized
 END TYPE PES
@@ -88,51 +88,36 @@ END FUNCTION is_initialized
 !##########################################################
 ! FUNCTION: get_alias #####################################
 !##########################################################
-CHARACTER(LEN=30) FUNCTION get_alias(this)
+CHARACTER(LEN=30) FUNCTION getalias(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O VAriables
 	CLASS(PES), INTENT(IN) :: this
 	! Run section
-	IF (this%is_initialized()) THEN
-		get_alias=this%alias
-	ELSE
-		WRITE(0,*) "PES_get_alias: argument is not initialized."
-		CALL EXIT(1)
-	END IF
+	getalias=this%alias
 	RETURN
-END FUNCTION get_alias
+END FUNCTION getalias
 !##########################################################
 ! FUNCTION: get_dimensions ################################
 !##########################################################
-INTEGER FUNCTION get_dimensions(this)
+INTEGER FUNCTION getdimensions(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(PES), INTENT(IN) :: this
 	! Run section
-	IF(this%is_initialized()) THEN
-		get_dimensions=this%dimensions
-	ELSE
-		WRITE(0,*) "PES_get_dimensions: argument is not initialized."
-		CALL EXIT(1)
-	END IF
+	getdimensions=this%dimensions
 	RETURN
-END FUNCTION get_dimensions
+END FUNCTION getdimensions
 !##########################################################
 ! FUNCTION: get_last_value ################################
 !##########################################################
-REAL(KIND=8) FUNCTION get_last_value(this)
+REAL(KIND=8) FUNCTION getlastvalue(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(PES), INTENT(IN) :: this
 	! Run part
-	IF(this%is_initialized()) THEN
-		get_last_value=this%v
-	ELSE
-		WRITE(0,*) "PES_get_value: argument is not initialized."
-		CALL EXIT(1)
-	END IF
-END FUNCTION get_last_value
+	getlastvalue=this%v
+END FUNCTION getlastvalue
 END MODULE PES_MOD

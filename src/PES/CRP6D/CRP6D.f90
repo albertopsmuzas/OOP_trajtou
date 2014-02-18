@@ -4,6 +4,9 @@
 !> @brief
 !! Provides all structures and procedures to perform a complete
 !! CRP-6D interpolation job
+!
+!> @warning
+!! - Inherits modules CRP_MOD, BICSPLINES_MOD
 !#######################################################
 MODULE CRP6D_MOD
 USE CRP_MOD
@@ -39,6 +42,7 @@ CONTAINS
 !-----------------------------------------------------
 SUBROUTINE READ_CUT2D(this,filename)
    ! Initial declarations
+   USE MATHS_MOD
    USE UNITS_MOD
    IMPLICIT NONE
    ! I/O variables
@@ -54,7 +58,7 @@ SUBROUTINE READ_CUT2D(this,filename)
    TYPE(Energy) :: en
    ! Run section ----------------------
    this%filename = filename
-   OPEN (UNIT=10,FILE=filename,STATUS="old",ACTION="write")
+   OPEN (UNIT=10,FILE=filename,STATUS="old",ACTION="read")
    READ(10,*) 
    READ(10,*) this%alias
    READ(10,*) this%x,this%y
@@ -78,6 +82,14 @@ SUBROUTINE READ_CUT2D(this,filename)
          f(i,j)=en%getvalue()
       END DO
    END DO
+   ! order array in a good way:
+   DO j = 1, ny
+      CALL ORDER(r,f(:,j))
+   END DO
+   DO i = 1, nx
+      CALL ORDER(z,f(i,:))
+   END DO
+   !
    CALL this%interrz%READGRID(r,z,f)
    CALL this%interrz%SET_COEFF()
    CLOSE(10)
@@ -91,25 +103,36 @@ END SUBROUTINE READ_CUT2D
 !-----------------------------------------------------------
 SUBROUTINE READ_CRP6D(this,filename)
    ! Initial declarations   
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP6D),INTENT(OUT) :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
-   INTEGER(KIND=4) :: n
    CHARACTER(LEN=30) :: cut2dfilename
+   CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP6D: "
    ! Run section -----------------------
    CALL this%SET_ALIAS("CRP6D PES")
    CALL this%SET_DIMENSIONS(6)
-   OPEN (UNIT=10,FILE=filename,STATUS="old",ACTION="read")
-   READ(10,*) n
-   ALLOCATE(this%corte2d(n))
-   DO i = 1, n
-      READ(10,*) cut2dfilename
+   OPEN (UNIT=11,FILE=filename,STATUS="old",ACTION="read")
+   READ(11,*) ! dummy line
+   READ(11,*) this%n
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Setting up: ",this%getalias())
+   CALL VERBOSE_WRITE(routinename,"(r-Z) 2D cuts found: ",this%n)
+#endif
+   ALLOCATE(this%corte2d(this%n))
+   DO i = 1, this%n
+      READ(11,*) cut2dfilename
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"2D cut input file found: ",cut2dfilename)
+#endif
       CALL this%corte2d(i)%READ(cut2dfilename)
    END DO
-   CLOSE(10)
+   CLOSE(11)
    RETURN
 END SUBROUTINE READ_CRP6D
 END MODULE CRP6D_MOD
