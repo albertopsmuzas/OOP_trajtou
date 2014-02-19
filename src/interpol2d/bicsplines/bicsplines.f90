@@ -159,35 +159,92 @@ REAL(KIND=8) FUNCTION d2fdxdy_finitdiff(i,j,x,y,f)
    ! Local variables
    REAL(KIND=8) :: hx0,hx1
    REAL(KIND=8) :: hy0,hy1
+   INTEGER(KIND=4) :: nx,ny
    ! Run section
-   IF (size(x)/=size(f(:,1))) THEN
+   nx=size(x)
+   ny=size(y)
+   IF (nx/=size(f(:,1))) THEN
       WRITE(0,*) "d2fdxdy: size mismatch of arrays x and f"
       CALL EXIT(1)
-   ELSE IF (size(y)/=size(f(1,:))) THEN
+   ELSE IF (ny/=size(f(1,:))) THEN
       WRITE(0,*) "d2fdxdy: size mismatch of arrays y and f"
       CALL EXIT(1)
    END IF
+   ! initialize variables
+   hx0=0.D0
+   hx1=0.D0
+   hy0=0.D0
+   hy1=0.D0
    !
-   IF ((i==1).OR.(i==size(x))) THEN
-      d2fdxdy_finitdiff=0.D0
+   ! Check if we are in a corner, edge or bulk point of the grid 
+   IF ( i/=1 .AND. i/=nx .AND. j/=1 .AND. j/=ny) THEN ! we are in the 2D bulk
+      hx0=x(i+1)-x(i)
+      hx1=x(i)-x(i-1)
+      hy0=y(j+1)-y(j)
+      hy1=y(j)-y(j-1)
+      d2fdxdy_finitdiff=((1.D0/hx1)-(1.D0/hx0))*((1.D0/hy1)-(1.D0/hy0))*f(j,i)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff+((1.D0/hx1)-(1.D0/hx0))*((f(i,j+1)/hy0)-(f(i,j-1)/hy1))
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff+((1.D0/hy1)-(1.D0/hy0))*((f(i+1,j)/hx0)-(f(i-1,j)/hx1))
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff+(f(i+1,j+1)/(hx0*hy0))-(f(i+1,j-1)/(hx0*hy1))-(f(i-1,j+1)/(hx1*hy0))
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff+(f(i-1,j-1)/(hx1*hy1))
+      d2fdxdy_finitdiff=0.25D0*d2fdxdy_finitdiff
       RETURN
-   END IF
-   IF ((j==1).OR.(j==size(y))) THEN
-      d2fdxdy_finitdiff=0.D0
+   ELSE IF (i==1 .AND. j==1) THEN ! corner ++
+      hx0=x(i+1)-x(i)
+      hy0=y(j+1)-y(j)
+      d2fdxdy_finitdiff=(1.D0/(hx0*hy0))*(f(i,j)-f(i,j+1)-f(i+1,j)+f(i+1,j+1))
       RETURN
-   END IF
+   ELSE IF  (i==1 .AND. j==ny) THEN ! corner +-
+      hx0=x(i+1)-x(i)
+      hy1=y(j)-y(j-1)
+      d2fdxdy_finitdiff=(1.D0/(hx0*hy1))*(f(i+1,j)-f(i+1,j-1)+f(i,j-1)-f(i,j))
+     RETURN
+   ELSE IF (i==nx .AND. j==1) THEN ! corner -+
+      hx1=x(i)-x(i-1)
+      hy0=y(j+1)-y(j)
+      d2fdxdy_finitdiff=(1.D0/(hx1*hy0))*(f(i,j+1)-f(i-1,j+1)+f(i-1,j)-f(i,j))
+     RETURN
+   ELSE IF (i==nx .AND. j==ny) THEN ! corner --
+      hx1=x(i)-x(i-1)
+      hy1=y(j)-y(j-1)
+      d2fdxdy_finitdiff=(1.D0/(hx1*hy1))*(f(i,j)-f(i,j-1)-f(i-1,j)+f(i-1,j-1))
+      RETURN
+   ELSE IF (i==1) THEN ! left edge
+      hx0=x(i+1)-x(i)
+      hy0=y(j+1)-y(j)
+      hy1=y(j)-y(j-1)
+      d2fdxdy_finitdiff=((1.D0/hy1)-(1.D0/hy0))*f(i+1,j)+(1.D0/hy0)*f(i+1,j+1)-(1.D0/hy1)*f(i+1,j-1)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff-((1.D0/hy1)-(1.D0/hy0))*f(i,j)-(1.D0/hy0)*f(i,j+1)+(1.D0/hy1)*f(i,j-1)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff*(1.D0/(2.D0*hx0))
+      RETURN
+   ELSE IF (i==nx) THEN ! right edge
+      hx1=x(i)-x(i-1)
+      hy0=y(j+1)-y(j)
+      hy1=y(j)-y(j-1)
+      d2fdxdy_finitdiff=((1.D0/hy1)-(1.D0/hy0))*f(i,j)+(1.D0/hy0)*f(i,j+1)-(1.D0/hy1)*f(i,j-1)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff-((1.D0/hy1)-(1.D0/hy0))*f(i-1,j)-(1.D0/hy0)*f(i-1,j+1)+(1.D0/hy1)*f(i-1,j-1)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff*(1.D0/(2.D0*hx1))
+      RETURN
+   ELSE IF (j==1) THEN ! down edge
+      hx0=x(i+1)-x(i)
+      hx1=x(i)-x(i-1)
+      hy0=y(j+1)-y(j)
+      d2fdxdy_finitdiff=((1.D0/hx1)-(1.D0/hx0))*f(i,j+1)+(1.D0/hx0)*f(i+1,j+1)-(1.D0/hx1)*f(i-1,j+1)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff-((1.D0/hx1)-(1.D0/hx0))*f(i,j)-(1.D0/hx0)*f(i+1,j)+(1.D0/hx1)*f(i-1,j)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff*(1.D0/(2.D0*hy0))
+      RETURN
+   ELSE IF (j==ny) THEN ! upper edge
+      hx0=y(i+1)-y(i)
+      hx1=y(i)-y(i-1)
+      hy1=x(j)-x(j-1)
+      d2fdxdy_finitdiff=((1.D0/hx1)-(1.D0/hx0))*f(i,j)+(1.D0/hx0)*f(i+1,j)-(1.D0/hx1)*f(i-1,j)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff-((1.D0/hx1)-(1.D0/hx0))*f(i,j-1)-(1.D0/hx0)*f(i+1,j-1)+(1.D0/hx1)*f(i-1,j-1)
+      d2fdxdy_finitdiff=d2fdxdy_finitdiff*(1.D0/(2.D0*hy1))
+      RETURN
+   END IF      
+   WRITE(0,*) "d2fdxdy_finitdiff ERR: If this message was printed, something is wrong"
+   CALL EXIT(1)
    !
-   hx0=x(i+1)-x(i)
-   hx1=x(i)-x(i-1)
-   hy0=y(j+1)-y(j)
-   hy1=y(j)-y(j-1)
-   !
-   d2fdxdy_finitdiff=((1.D0/hx1)-(1.D0/hx0))*((1.D0/hy1)-(1.D0/hy0))*f(j,i)
-   d2fdxdy_finitdiff=d2fdxdy_finitdiff+((1.D0/hx1)-(1.D0/hx0))*((f(i,j+1)/hy0)-(f(i,j-1)/hy1))
-   d2fdxdy_finitdiff=d2fdxdy_finitdiff+((1.D0/hy1)-(1.D0/hy0))*((f(i+1,j)/hx0)-(f(i-1,j)/hx1))
-   d2fdxdy_finitdiff=d2fdxdy_finitdiff+(f(i+1,j+1)/(hx0*hy0))-(f(i+1,j-1)/(hx0*hy1))-(f(i-1,j+1)/(hx1*hy0))+(f(i-1,j-1)/(hx1*hy1))
-   d2fdxdy_finitdiff=0.25D0*d2fdxdy_finitdiff
-   RETURN
 END FUNCTION d2fdxdy_finitdiff
 !#############################################################
 ! SUBROUTINE: getvalue_bicsplines

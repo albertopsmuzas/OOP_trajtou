@@ -35,5 +35,6 @@ DO i = 1, thispes%n
    filename=adjustl(filename)
    CALL thispes%corte2d(i)%interrz%PLOT_XYMAP(filename,(/r1,z1/),100,100,r2-r1,z2-z1)
 END DO
+   CALL thispes%corte2d(1)%interrz%PLOT_SPLINES(150)
 CALL EXIT(0)
 END PROGRAM TEST_CRP6D
