@@ -25,12 +25,14 @@ TYPE,EXTENDS(Interpol2d) :: Bicsplines
    TYPE(Csplines),DIMENSION(:),ALLOCATABLE :: ycsplines
    REAL(KIND=8),DIMENSION(:,:,:,:),ALLOCATABLE :: coeff
    CONTAINS
-      PROCEDURE,PUBLIC :: SET_COEFF => SET_COEFF_BICSPLINES
       PROCEDURE,PUBLIC :: getvalue => getvalue_bicsplines
       PROCEDURE,PUBLIC :: getderivx => getderivx_bicsplines
       PROCEDURE,PUBLIC :: getderivy => getderivy_bicsplines
+      PROCEDURE,PUBLIC :: getderivxy => getderivxy_bicsplines
+      PROCEDURE,PUBLIC :: SET_COEFF => SET_COEFF_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_SPLINES => PLOT_SPLINES_BICSPLINES
+      PROCEDURE,PUBLIC :: PLOT_1D => PLOT_1D_BICSPLINES
 END TYPE
 !//////////////////////////////////////////////////////////
 CONTAINS
@@ -58,7 +60,7 @@ SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
    ny=size(this%y)
    ALLOCATE(this%xcsplines(nx))
    ALLOCATE(this%ycsplines(ny))
-   ALLOCATE(this%coeff(nx,ny,4,4))
+   ALLOCATE(this%coeff(nx-1,ny-1,4,4))
    DO i = 1, ny
       CALL this%xcsplines(i)%READ(this%x,this%fgrid(:,i))
       CALL this%xcsplines(i)%INTERPOL(0.D0,0,0.D0,0) ! last and initial 2 splines are equal
@@ -71,22 +73,22 @@ SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
    IF(present(filename)) OPEN (521,FILE=filename,STATUS="replace",ACTION="write")
    DO i = 1, nx-1
       DO j = 1, ny-1
-         x0=this%xcsplines(j)%x(i)
-         x1=this%xcsplines(j)%x(i+1)
+         x0=this%x(i)
+         x1=this%x(i+1)
 
-         y0=this%ycsplines(i)%x(j)
-         y1=this%ycsplines(i)%x(j+1)
+         y0=this%y(j)
+         y1=this%y(j+1)
 
          xmtrx(1,:)=(/1.D0,x0,x0**2.D0,x0**3.D0/)
          xmtrx(2,:)=(/1.D0,x1,x1**2.D0,x1**3.D0/)
-         xmtrx(3,:)=(/0.D0,1.D0,2.D0*x0,3.D0*x0**2.D0/)
-         xmtrx(4,:)=(/0.D0,1.D0,2.D0*x1,3.D0*x1**2.D0/)
+         xmtrx(3,:)=(/0.D0,1.D0,2.D0*x0,3.D0*(x0**2.D0)/)
+         xmtrx(4,:)=(/0.D0,1.D0,2.D0*x1,3.D0*(x1**2.D0)/)
          ymtrx(:,1)=(/1.D0,y0,y0**2.D0,y0**3.D0/)
          ymtrx(:,2)=(/1.D0,y1,y1**2.D0,y1**3.D0/)
-         ymtrx(:,3)=(/0.D0,1.D0,2.D0*y0,3.D0*y0**2.D0/)
-         ymtrx(:,4)=(/0.D0,1.D0,2.D0*y1,3.D0*y1**2.D0/)
+         ymtrx(:,3)=(/0.D0,1.D0,2.D0*y0,3.D0*(y0**2.D0)/)
+         ymtrx(:,4)=(/0.D0,1.D0,2.D0*y1,3.D0*(y1**2.D0)/)
 
-         smtrx(1,1)=this%fgrid(i,i)
+         smtrx(1,1)=this%fgrid(i,j)
          smtrx(1,2)=this%fgrid(i,j+1)
          smtrx(2,1)=this%fgrid(i+1,j)
          smtrx(2,2)=this%fgrid(i+1,j+1)
@@ -449,39 +451,103 @@ SUBROUTINE PLOT_XYMAP_BICSPLINES(this,filename,init_xy,nxpoints,nypoints,Lx,Ly)
    OPEN(11,file=filename,status="replace")
    r(1) = xmin
    r(2) = ymin
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    DO i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    END DO
    r(2) = ymax
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    ! inpoints in XY
    DO i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
       DO j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
-         WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+         WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
       END DO
       r(2) = ymax
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    END DO
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    DO i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    END DO
    r(2) = ymax
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r)
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    CLOSE(11)
    WRITE(*,*) "PLOT_XYMAP_BICSPLINES: Graph created: ",filename
    RETURN
 END SUBROUTINE PLOT_XYMAP_BICSPLINES
+!###############################################################
+! SUBROUTINE: PLOT_1D_BICSPLINES
+!##############################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut (X,Y)
+!
+!> @param[in] this - Interpolation 2D object
+!> @param[in] filename - Name of the file to print the output
+!> @param[in] init_xy - Initial position to start the scan 
+!> @param[in] npoints - Number of points  
+!> @param[in] angle - Defines the direction of the 1D cut respect to X axis (rad)
+!> @param[in] L - Length of the curve in a.u.
+!
+!> @author A.S. Muzas
+!> @date 20/Feb/2014
+!> @version 1.0
+!---------------------------------------------------------------
+SUBROUTINE PLOT_1D_BICSPLINES(this,filename,init_xy,npoints,angle,L)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   CLASS(Bicsplines),INTENT(IN) :: this
+   REAL*8,DIMENSION(2),INTENT(IN) :: init_xy 
+   INTEGER,INTENT(IN) :: npoints 
+   CHARACTER(LEN=*),INTENT(IN) :: filename 
+   REAL(KIND=8),INTENT(IN) :: angle
+   REAL*8,INTENT(IN) :: L 
+   ! Local variables
+   REAL*8 :: xmin, ymin, xmax, ymax
+   REAL*8, DIMENSION(2) :: r
+   REAL(KIND=8) :: alpha
+   REAL*8 :: delta,s
+   INTEGER :: inpoints, ndelta
+   INTEGER :: i, j ! counters
+   ! GABBA, GABBA HEY! ---------
+   alpha = angle*PI/180.D0
+   xmin = init_xy(1)
+   ymin = init_xy(2)
+   xmax = init_xy(1)+L*dcos(alpha)
+   ymax = init_xy(2)+L*dsin(alpha)
+   ! For X, grid parameters
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=L/DFLOAT(ndelta)
+   ! Let's go! 
+   ! 1st XY point
+   OPEN(11,file=filename,status="replace")
+   r(1) = xmin
+   r(2) = ymin
+   s = dsqrt(r(1)**2.D0+r(2)**2.D0)
+   WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r)
+   DO i =1, inpoints
+      r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
+      r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
+      s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+      WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r)
+   END DO
+   r(1) = xmax
+   r(2) = ymax
+   s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+   WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r)
+   CLOSE(11)
+   WRITE(*,*) "PLOT_1D_BICSPLINES: Graph created: ",filename
+   RETURN
+END SUBROUTINE PLOT_1D_BICSPLINES
 !###########################################################
 !# SUBROUTINE: PLOT_SPLINES_BICSPLINES 
 !###########################################################

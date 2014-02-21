@@ -27,7 +27,7 @@ interpol1d.o:
 interpol2d.o: 
 inicond.o:
 dynamics.o: units.o
-bicsplines.o: maths.o interpol2d.o cubicsplines.o 
+bicsplines.o: maths.o constants.o interpol2d.o cubicsplines.o 
 dynatom.o: debug.o dynamics.o CRP.o
 initatom.o: debug.o constants.o units.o inicond.o surface.o
 units.o: debug.o constants.o

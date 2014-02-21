@@ -91,7 +91,7 @@ SUBROUTINE READ_CUT2D(this,filename)
    END DO
    !
    CALL this%interrz%READGRID(r,z,f)
-   CALL this%interrz%SET_COEFF()
+   CALL this%interrz%SET_COEFF("blabla")
    CLOSE(10)
    RETURN
 END SUBROUTINE READ_CUT2D
