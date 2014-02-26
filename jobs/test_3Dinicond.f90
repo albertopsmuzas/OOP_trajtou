@@ -2,12 +2,12 @@ PROGRAM TEST_INICOND
 ! Initial declarations
 USE INITATOM_MOD
 USE DEBUG_MOD
-USE CRP_MOD
+USE CRP3D_MOD
 IMPLICIT NONE
 ! Some objects
 TYPE(Initatom) :: inicondat
 TYPE(Atom_trajs) :: trajs
-TYPE(CRP) :: thispes
+TYPE(CRP3D) :: thispes
 WRITE(*,*) "##############################"
 WRITE(*,*) "#### TEST INICOND PROGRAM ####"
 WRITE(*,*) "##############################"

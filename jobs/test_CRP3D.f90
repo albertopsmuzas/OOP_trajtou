@@ -1,11 +1,11 @@
 PROGRAM CRP_TEST
 ! Initial declarations
 USE DEBUG_MOD
-USE CRP_MOD
+USE CRP3D_MOD
 USE UNITS_MOD
 IMPLICIT NONE
 ! Variables
-TYPE(CRP) :: crp_pes
+TYPE(CRP3D) :: crp_pes
 CHARACTER(LEN=40) :: filename1,filename2,filename3
 INTEGER(KIND=4) :: nsites, npairpots
 REAL(KIND=8),DIMENSION(3) :: r

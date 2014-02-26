@@ -3,7 +3,7 @@
 !> @brief
 !! Provides tools to run dynamics on atoms
 !> @todo
-!! - Generalize the use of different PES, not only CRP
+!! - Generalize the use of different PES, not only CRP3D
 !##########################################################
 MODULE DYNATOM_MOD
 USE DYNAMICS_MOD
@@ -149,12 +149,12 @@ SUBROUTINE RUN_DYNAMICS_ATOMS(dinamica,inicondat,thispes,trajs)
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
-   USE CRP_MOD
+   USE CRP3D_MOD
    IMPLICIT NONE
    ! I/O variables 
    CLASS(Dynatom),INTENT(IN) :: dinamica
    TYPE(Initatom),INTENT(IN) :: inicondat
-   TYPE(CRP),INTENT(IN) :: thispes
+   TYPE(CRP3D),INTENT(IN) :: thispes
    TYPE(Atom_trajs),INTENT(INOUT) :: trajs
    ! Local variables 
    INTEGER :: i ! counters
@@ -177,7 +177,7 @@ END SUBROUTINE RUN_DYNAMICS_ATOMS
 !--------------------------------------------------------------
 SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
    USE INITATOM_MOD
-   USE CRP_MOD
+   USE CRP3D_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
@@ -185,7 +185,7 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 	! I/O variables
 	TYPE(Dynatom),INTENT(IN) :: dinamica
 	TYPE(Initatom),INTENT(IN) :: inicondat
-   TYPE(CRP),INTENT(IN) :: thispes
+   TYPE(CRP3D),INTENT(IN) :: thispes
 	TYPE(Atom),INTENT(INOUT) :: atomo
 	! Local variables
 	INTEGER :: i, cycles ! counters
@@ -410,11 +410,11 @@ SUBROUTINE ATOM_H_DERIVS(inicondat,thispes,t,z,dzdt,fin)
    USE DEBUG_MOD
 #endif
    USE INITATOM_MOD
-   USE CRP_MOD
+   USE CRP3D_MOD
 	IMPLICIT NONE
 	! I/O variables
 	TYPE(Initatom), INTENT(IN) :: inicondat
-   TYPE(CRP),INTENT(IN) :: thispes
+   TYPE(CRP3D),INTENT(IN) :: thispes
 	REAL*8, DIMENSION(6), INTENT(IN) :: z
 	REAL*8, DIMENSION(6), INTENT(OUT) :: dzdt
 	REAL*8, INTENT(IN) :: t ! time?
@@ -472,11 +472,11 @@ END SUBROUTINE ATOM_H_DERIVS
 !> @see Fortran 77 numerical recipes
 !-----------------------------------------------------------------------------------------
 SUBROUTINE MMID_ATOM(inicondat,thispes,y,dydx,xs,htot,nstep,yout,switch)
-   USE CRP_MOD
+   USE CRP3D_MOD
    USE INITATOM_MOD
 	IMPLICIT NONE
 	! I/O variables
-   TYPE(CRP),INTENT(IN) :: thispes
+   TYPE(CRP3D),INTENT(IN) :: thispes
 	TYPE(Initatom), INTENT(IN) :: inicondat
 	INTEGER, INTENT(IN) :: nstep
 	REAL*8, DIMENSION(6), INTENT(IN) :: y,dydx
@@ -672,7 +672,7 @@ END SUBROUTINE PZEXTR
 !------------------------------------------------------------------------------------------------
 SUBROUTINE BSSTEP_ATOM (inicondat,dinamica,thispes,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
    USE INITATOM_MOD
-   USE CRP_MOD
+   USE CRP3D_MOD
 	IMPLICIT NONE
 	! Parameters for this routine
 	INTEGER, PARAMETER :: nv = 6
@@ -689,7 +689,7 @@ SUBROUTINE BSSTEP_ATOM (inicondat,dinamica,thispes,y,dydx,x,htry,eps,yscal,hdid,
 	! I/O variables
 	TYPE(Initatom),INTENT(IN) :: inicondat
 	TYPE(Dynatom),INTENT(IN) :: dinamica
-   TYPE(CRP),INTENT(IN) :: thispes
+   TYPE(CRP3D),INTENT(IN) :: thispes
 	REAL*8, INTENT(IN) :: eps     ! required accuracy
 	REAL*8, INTENT(IN) ::  htry   ! step to try
 	REAL*8, DIMENSION(6) :: yscal ! factors to scale error 

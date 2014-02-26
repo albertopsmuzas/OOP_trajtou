@@ -1,12 +1,12 @@
 PROGRAM  TEST_DYNAMICS
 USE DEBUG_MOD
-USE CRP_MOD
+USE CRP3D_MOD
 USE INITATOM_MOD
 USE DYNATOM_MOD
 IMPLICIT NONE
 TYPE(Dynatom) :: dinamica
 TYPE(Initatom) :: initialcond
-TYPE(CRP) :: thispes
+TYPE(CRP3D) :: thispes
 REAL(KIND=4),DIMENSION(2) :: timearr
 REAL(KIND=4) :: timer
 TYPE(Atom_trajs) :: trajs
