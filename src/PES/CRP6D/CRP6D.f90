@@ -6,10 +6,10 @@
 !! CRP-6D interpolation job
 !
 !> @warning
-!! - Inherits modules CRP_MOD, BICSPLINES_MOD
+!! - Inherits modules CRP3D_MOD, BICSPLINES_MOD
 !#######################################################
 MODULE CRP6D_MOD
-USE CRP_MOD
+USE CRP3D_MOD
 USE BICSPLINES_MOD
 IMPLICIT NONE
 !//////////////////////////////////////////////////
@@ -24,13 +24,24 @@ TYPE Cut2d
    CONTAINS
       PROCEDURE,PUBLIC :: READ => READ_CUT2D
 END TYPE Cut2d
+!//////////////////////////////////////////////////
+! TYPE: CRP6D_SITIO
+!
+!--------------------------------------------------
+TYPE CRP6D_SITIO
+   INTEGER(KIND=4) :: n2dcuts
+   TYPE(Cut2d),DIMENSION(:),ALLOCATABLE :: zrcut
+END TYPE CRP6D_SITIO
+
 !/////////////////////////////////////////////////
 ! TYPE: CRP6D
 !
 !-------------------------------------------------
 TYPE,EXTENDS(PES) :: CRP6D
-   INTEGER(KIND=4) :: n
-   TYPE(Cut2d),DIMENSION(:),ALLOCATABLE :: corte2d 
+   INTEGER(KIND=4) :: nsites
+   INTEGER(KIND=4) :: natomic
+   TYPE(CRP6D_Sitio),DIMENSION(:),ALLOCATABLE :: CRP6D_site
+   TYPE(CRP3D),DIMENSION(:),ALLOCATABLE :: atomiccrp
    CONTAINS
       PROCEDURE,PUBLIC :: READ => READ_CRP6D
 END TYPE CRP6D
@@ -111,28 +122,60 @@ SUBROUTINE READ_CRP6D(this,filename)
    CLASS(CRP6D),INTENT(OUT) :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables
-   INTEGER(KIND=4) :: i ! counters
-   CHARACTER(LEN=30) :: cut2dfilename
+   INTEGER(KIND=4) :: i,j ! counters
+   INTEGER(KIND=4) :: natomic ! number of atomic potentials
+   INTEGER(KIND=4) :: auxint 
+   CHARACTER(LEN=30) :: cut2dfilename, string
    CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP6D: "
    ! Run section -----------------------
    CALL this%SET_ALIAS("CRP6D PES")
    CALL this%SET_DIMENSIONS(6)
-   OPEN (UNIT=11,FILE=filename,STATUS="old",ACTION="read")
-   READ(11,*) ! dummy line
-   READ(11,*) this%n
+   ! set up molecular crp
+   OPEN (UNIT=180,FILE=filename,STATUS="old",ACTION="read")
+   READ(180,*) ! dummy line
+   READ(180,*) this%natomic
+   SELECT CASE(this%natomic)
+      CASE(: 0,3 :)
+         WRITE(0,*) "READ_CRP6D ERR: Wrong number of atomic potentials. Allowed number: 1 or 2."
+         CALL EXIT(1)
+      CASE DEFAULT 
+         ! do nothing
+   END SELECT
+   ALLOCATE(this%atomiccrp(this%natomic))
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Setting up: ",this%getalias())
-   CALL VERBOSE_WRITE(routinename,"(r-Z) 2D cuts found: ",this%n)
+   CALL VERBOSE_WRITE(routinename,"Atomic potentials found: ",this%natomic)
 #endif
-   ALLOCATE(this%corte2d(this%n))
-   DO i = 1, this%n
-      READ(11,*) cut2dfilename
+   DO i = 1, this%natomic
+      READ(180,*) string
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"2D cut input file found: ",cut2dfilename)
+      CALL VERBOSE_WRITE(routinename,"Load from file: ",string)
 #endif
-      CALL this%corte2d(i)%READ(cut2dfilename)
+      CALL  this%atomiccrp(i)%READ(string)
+      CALL this%atomiccrp(i)%INTERPOL_Z()
    END DO
-   CLOSE(11)
+   READ(180,*) this%nsites
+   SELECT CASE(this%nsites)
+      CASE(: 0)
+         WRITE(0,*) "READ_CRP6D ERR: Wrong natural number"
+         CALL EXIT(0)
+      CASE DEFAULT
+         ! do nothing
+   END SELECT
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"CRP6D sites found: ",this%nsites)
+#endif
+   ALLOCATE(this%CRP6D_site(this%nsites))
+   DO i = 1, this%nsites
+      READ(180,*) auxint
+      this%CRP6D_site(i)%n2dcuts = auxint
+      ALLOCATE(this%CRP6D_site(i)%zrcut(auxint))
+      DO j = 1, auxint
+         READ(180,*) string
+         CALL this%CRP6D_site(i)%zrcut(j)%READ(string)
+      END DO
+   END DO
+   CLOSE(180)
    RETURN
 END SUBROUTINE READ_CRP6D
 END MODULE CRP6D_MOD

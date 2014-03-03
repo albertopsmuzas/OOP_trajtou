@@ -229,7 +229,7 @@ END SUBROUTINE READ_INICOND_ATOM
 SUBROUTINE GENERATE_TRAJS_ATOMS(inicondat,thispes,final_trajs)
    USE UNITS_MOD
    USE CONSTANTS_MOD
-   USE CRP_MOD
+   USE CRP3D_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
@@ -237,7 +237,7 @@ SUBROUTINE GENERATE_TRAJS_ATOMS(inicondat,thispes,final_trajs)
 	! I/O variables
 	CLASS(Initatom),TARGET,INTENT(IN) :: inicondat
 	TYPE(Atom_trajs),INTENT(OUT) :: final_trajs
-	TYPE(CRP),INTENT(IN) :: thispes
+	TYPE(CRP3D),INTENT(IN) :: thispes
 	! Local variables
 	INTEGER :: i, k,j ! counters
 	CHARACTER(LEN=22), PARAMETER :: routinename = "GENERATE_TRAJS_ATOMS: "

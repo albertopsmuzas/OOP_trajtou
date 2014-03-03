@@ -1,11 +1,11 @@
 PROGRAM GET_CRP_VALUE
 ! Initial declarations
 USE DEBUG_MOD
-USE CRP_MOD
+USE CRP3D_MOD
 USE UNITS_MOD
 IMPLICIT NONE
 ! Variables
-TYPE(CRP) :: crp_pes
+TYPE(CRP3D) :: crp_pes
 REAL(KIND=8),DIMENSION(3) :: r,dvdu
 REAL(KIND=8) :: v
 ! Run section===================================================================================0
