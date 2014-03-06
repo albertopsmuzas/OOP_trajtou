@@ -13,7 +13,7 @@ TYPE(Length) :: r,z
 REAL(KIND=8) :: r1,r2,z1,z2
 CALL SET_DEBUG_MODE(.TRUE.)
 ! STEP 1: READ CRP6D INPUT FILES
-CALL thispes%READ("crp6d.inp")
+CALL thispes%READ("INcrp6d.inp")
 
 ! STEP 2: PLOT SOME GRAPHS
 ! Prepare some units

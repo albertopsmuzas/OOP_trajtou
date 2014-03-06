@@ -62,19 +62,33 @@ SUBROUTINE READ_CUT2D(this,filename)
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
    INTEGER(KIND=4) :: nx,ny
+   REAL(KIND=8) :: auxr1,auxr2
    CHARACTER(LEN=10) :: units1,units2,units3
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: z,r
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f
    TYPE(Length) :: len1,len2
    TYPE(Energy) :: en
+   TYPE(Angle) :: angl 
    ! Run section ----------------------
    this%filename = filename
    OPEN (UNIT=10,FILE=filename,STATUS="old",ACTION="read")
    READ(10,*) 
    READ(10,*) this%alias
-   READ(10,*) this%x,this%y
-   READ(10,*) this%theta,this%phi
    READ(10,*) units1,units2,units3
+   READ(10,*) auxr1,auxr2
+   CALL len1%READ(auxr1,units1)
+   CALL len2%READ(auxr2,units1)
+   CALL len1%TO_STD()
+   CALL len2%TO_STD()
+   this%x=len1%getvalue()
+   this%y=len2%getvalue()
+   READ(10,*) auxr1,auxr2
+   CALL angl%READ(auxr1,units3)
+   CALL angl%TO_STD()
+   this%theta=angl%getvalue()
+   CALL angl%READ(auxr2,units3)
+   CALL angl%TO_STD()
+   this%phi=angl%getvalue()
    READ(10,*) nx,ny
    ALLOCATE(r(nx))
    ALLOCATE(z(ny))
@@ -83,8 +97,8 @@ SUBROUTINE READ_CUT2D(this,filename)
       DO i = 1, nx
          READ(10,*) r(i),z(j),f(i,j)
          CALL len1%READ(r(i),units1)
-         CALL len2%READ(z(j),units2)
-         CALL en%READ(f(i,j),units3)
+         CALL len2%READ(z(j),units1)
+         CALL en%READ(f(i,j),units2)
          CALL len1%TO_STD()
          CALL len2%TO_STD()
          CALL en%TO_STD()
