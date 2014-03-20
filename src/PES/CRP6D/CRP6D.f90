@@ -11,6 +11,7 @@
 MODULE CRP6D_MOD
 USE CRP3D_MOD
 USE BICSPLINES_MOD
+USE FOURIER1D_MOD
 IMPLICIT NONE
 !//////////////////////////////////////////////////
 ! TYPE: Cut2d
@@ -30,6 +31,9 @@ END TYPE Cut2d
 !--------------------------------------------------
 TYPE CRP6D_SITIO
    INTEGER(KIND=4) :: n2dcuts
+   INTEGER(KIND=4) :: nphicuts
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: nphipoints
+   TYPE(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
    TYPE(Cut2d),DIMENSION(:),ALLOCATABLE :: zrcut
 END TYPE CRP6D_SITIO
 
