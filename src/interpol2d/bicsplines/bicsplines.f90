@@ -445,7 +445,7 @@ SUBROUTINE PLOT_XYMAP_BICSPLINES(this,filename,init_xy,nxpoints,nypoints,Lx,Ly)
    ! For Y, grid parameters
    yinpoints=nypoints-2
    nydelta=nypoints-1
-   ydelta=(ymax-ymin)/DFLOAT(nydelta)
+   ydelta=Ly/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
    OPEN(11,file=filename,status="replace")

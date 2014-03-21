@@ -31,10 +31,9 @@ END TYPE
 !
 !> @param alias - Human-fiendly name for this surface
 !> @param filename - Input file that contains all surface information
-!> @param symmetry_alias - Name for the symmetry group of this surface
+!> @param symmlabel - Name for the symmetry group of this surface
 !> @param units -  Units in which distances are stored
 !> @param initialized - Controls if this class was initialized or not
-!> @param symmetry - Integer that stores standard symmetry group ID
 !> @param norm_s1, norm_s2 - Norms of surface vectors s1 & s2
 !> @param surf2cart_mtrx - Transformation matrix from surface coordinates to auxiliary cartesian
 !> @param cart2surf_mtrx - Transformation matrix from auxiliary cartesian coordinates to surface
@@ -56,9 +55,7 @@ TYPE Surface
 PRIVATE
 	CHARACTER(LEN=30) :: alias
 	CHARACTER(LEN=30) :: filename
-	CHARACTER(LEN=10) :: symmetry_alias
 	LOGICAL :: initialized=.FALSE.
-	INTEGER(KIND=4) :: symmetry
 	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx 
 	REAL(KIND=8),DIMENSION(2,2) :: cart2surf_mtrx
 	REAL(KIND=8),DIMENSION(2,2) :: surfunit2cart_mtrx 
@@ -70,6 +67,7 @@ PRIVATE
 	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx 
    CHARACTER(LEN=10),PUBLIC :: units
 	REAL(KIND=8),PUBLIC :: norm_s1, norm_s2 
+	CHARACTER(LEN=4) :: symmlabel
 CONTAINS
 	! Initiallize
 	PROCEDURE, PUBLIC :: INITIALIZE
@@ -83,10 +81,42 @@ CONTAINS
    PROCEDURE,PUBLIC :: project_unitcell
    PROCEDURE,PUBLIC :: project_iwscell
    ! Enquire block
-   PROCEDURE, PUBLIC :: is_initialized
+   PROCEDURE,PUBLIC :: is_initialized
+   PROCEDURE,PUBLIC :: tellsymmlabel
+   PROCEDURE,PUBLIC :: tellfilename
 END TYPE
 ! MODULE CONTAINS 
 CONTAINS
+!###########################################################
+!# FUNCTION: tellfilename 
+!###########################################################
+!> @brief
+!! Typical enquire function
+!-----------------------------------------------------------
+CHARACTER(LEN=30) FUNCTION tellfilename(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Surface),INTENT(IN) :: this
+   ! Run section
+   tellfilename=this%filename
+   RETURN
+END FUNCTION tellfilename
+!###########################################################
+!# FUNCTION: tellsymmlabel 
+!###########################################################
+!> @brief
+!! typical enquire function
+!-----------------------------------------------------------
+CHARACTER(LEN=4) FUNCTION tellsymmlabel(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Surface),INTENT(IN):: this
+   ! Run section
+   tellsymmlabel=this%symmlabel
+   RETURN
+END FUNCTION tellsymmlabel   
 !###########################################################
 !# FUNCTION: is_initialized 
 !###########################################################
@@ -158,9 +188,11 @@ SUBROUTINE INITIALIZE(surf,filename)
          CALL VERBOSE_WRITE(routinename,aux_r(i,:))
 #endif
       END DO
+      READ(10,*) surf%symmlabel
       aux_r=transpose(aux_r)
       surf%surf2cart_mtrx=aux_r
 #ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Surface symmetry: ",surf%symmlabel)
       CALL DEBUG_WRITE(routinename,"Surf2cart matrix calculated: ")
       DO i=1,2
          CALL DEBUG_WRITE(routinename,surf%surf2cart_mtrx(i,:))
