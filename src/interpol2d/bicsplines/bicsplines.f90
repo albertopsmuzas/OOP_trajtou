@@ -33,9 +33,104 @@ TYPE,EXTENDS(Interpol2d) :: Bicsplines
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_SPLINES => PLOT_SPLINES_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_1D => PLOT_1D_BICSPLINES
+      PROCEDURE,PUBLIC :: PLOT_DUALDERIVS_AT_GRID
+      PROCEDURE,PUBLIC :: GEN_NEWGRID => GENERATE_NEWGRID_BICSPLINES
 END TYPE
 !//////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: INTERPOL_NEWGRID_BICSPLINES 
+!###########################################################
+!> @brief
+!! Use monodimensional cubic splines interpolation to generate new 
+!! grid.
+!
+!> @warnig 
+!! - Use after we have a correct interpolation of the initial grid 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 21/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE INTERPOL_BICSPLINES(this,nxpoints,nypoints)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Bicsplines),INTENT(INOUT):: this
+   INTEGER,INTENT(IN) :: nxpoints,nypoints ! number of points in XY plane
+   ! Local variables
+   INTEGER(KIND=4) :: oldnx,oldny
+   IMPLICIT NONE
+   ! Local variables
+   REAL*8 :: xmin, ymin, xmax, ymax
+   REAL*8, DIMENSION(2) :: r
+   REAL*8 :: xdelta, ydelta
+   INTEGER :: xinpoints, nxdelta
+   INTEGER :: yinpoints, nydelta
+   INTEGER :: i, j ! counters
+   REAL(KIND=8),DIMENSION(nxpoints) :: newxgrid
+   REAL(KIND=8),DIMENSION(nypoints) :: newygrid
+   ! GABBA, GABBA HEY! ---------
+   oldnx=size(this%x)
+   oldny=size(this%y)
+   !
+   newxgrid(1) = this%x(1)
+   newygrid(1) = this%y(1)
+   newxgrid(nxpoints) = this%x(oldnx)
+   newygrid(nypoints) = this%y(oldny)
+   ! For X, grid parameters
+   xinpoints=nxpoints-2
+   nxdelta=nxpoints-1
+   xdelta=(newxgrid(oldnx)-newxgrid(1))/DFLOAT(nxdelta)
+   ! For Y, grid parameters
+   yinpoints=nypoints-2
+   nydelta=nypoints-1
+   ydelta=(newygrid(oldny)-newygrid(1))/DFLOAT(nydelta)
+   ! Let's go! 
+   DO i = 1, 
+      ! loop body
+   END DO
+   
+
+
+
+
+
+   ! 1st XY point
+   r(1) = xmin
+   r(2) = ymin
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   END DO
+   r(2) = ymax
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   ! inpoints in XY
+   DO i = 1, xinpoints
+      r(1) = xmin+DFLOAT(i)*xdelta
+      r(2) = ymin
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+      DO j = 1, yinpoints
+         r(2) = ymin + DFLOAT(j)*ydelta
+         WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+      END DO
+      r(2) = ymax
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   END DO
+   ! Last point in XY plane
+   r(1) = xmax
+   r(2) = ymax
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   END DO
+   r(2) = ymax
+   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   CLOSE(11)
+   RETURN
+END SUBROUTINE INTERPOL_NEWGRID_BICSPLINES
 !##########################################################
 ! SUBROUTINE: SEC_COEFF_BICSPLINES
 !> @brief
@@ -58,8 +153,8 @@ SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
    ! Run section -------------------------------
    nx=size(this%x)
    ny=size(this%y)
-   ALLOCATE(this%xcsplines(nx))
-   ALLOCATE(this%ycsplines(ny))
+   ALLOCATE(this%xcsplines(ny))
+   ALLOCATE(this%ycsplines(nx))
    ALLOCATE(this%coeff(nx-1,ny-1,4,4))
    DO i = 1, ny
       CALL this%xcsplines(i)%READ(this%x,this%fgrid(:,i))
@@ -72,21 +167,23 @@ SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
    !
    IF(present(filename)) OPEN (521,FILE=filename,STATUS="replace",ACTION="write")
    DO i = 1, nx-1
+      x0=this%x(i)
+      x1=this%x(i+1)
+
       DO j = 1, ny-1
-         x0=this%x(i)
-         x1=this%x(i+1)
 
          y0=this%y(j)
          y1=this%y(j+1)
-
-         xmtrx(1,:)=(/1.D0,x0,x0**2.D0,x0**3.D0/)
-         xmtrx(2,:)=(/1.D0,x1,x1**2.D0,x1**3.D0/)
-         xmtrx(3,:)=(/0.D0,1.D0,2.D0*x0,3.D0*(x0**2.D0)/)
-         xmtrx(4,:)=(/0.D0,1.D0,2.D0*x1,3.D0*(x1**2.D0)/)
-         ymtrx(:,1)=(/1.D0,y0,y0**2.D0,y0**3.D0/)
-         ymtrx(:,2)=(/1.D0,y1,y1**2.D0,y1**3.D0/)
-         ymtrx(:,3)=(/0.D0,1.D0,2.D0*y0,3.D0*(y0**2.D0)/)
-         ymtrx(:,4)=(/0.D0,1.D0,2.D0*y1,3.D0*(y1**2.D0)/)
+         
+         ! Create matrices for reduced coordinates (0 to x1-x0)
+         xmtrx(1,:)=(/1.D0,0.D0,0.D0,0.D0/)
+         xmtrx(2,:)=(/1.D0,x1-x0,(x1-x0)**2.D0,(x1-x0)**3.D0/)
+         xmtrx(3,:)=(/0.D0,1.D0,0.D0,0.D0/)
+         xmtrx(4,:)=(/0.D0,1.D0,2.D0*(x1-x0),3.D0*((x1-x0)**2.D0)/)
+         ymtrx(:,1)=(/1.D0,0.D0,0.D0,0.D0/)
+         ymtrx(:,2)=(/1.D0,y1-y0,(y1-y0)**2.D0,(y1-y0)**3.D0/)
+         ymtrx(:,3)=(/0.D0,1.D0,0.D0,0.D0/)
+         ymtrx(:,4)=(/0.D0,1.D0,2.D0*(y1-y0),3.D0*((y1-y0)**2.D0)/)
 
          smtrx(1,1)=this%fgrid(i,j)
          smtrx(1,2)=this%fgrid(i,j+1)
@@ -261,7 +358,7 @@ REAL(KIND=8) FUNCTION getvalue_bicsplines(this,x)
    CLASS(Bicsplines),TARGET,INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: x
    ! Local variables
-   REAL(KIND=8),POINTER:: x1,x2
+   REAL(KIND=8),POINTER:: x1,x2,y1,y2
    REAL(KIND=8),DIMENSION(:,:),POINTER :: coeff
    REAL(KIND=8),DIMENSION(4) :: vecy,vecx
    INTEGER(KIND=4) :: nx,ny
@@ -275,14 +372,14 @@ REAL(KIND=8) FUNCTION getvalue_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(j)
-      x2 => this%y(j+1)
-      IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
+      y1 => this%y(j)
+      y2 => this%y(j+1)
+      IF((x(2).LE.y2).AND.(x(2).GE.y1)) EXIT
    END DO
    ! Now, i and j have the correct value
    coeff => this%coeff(i,j,:,:)
-   vecx=(/1.D0,x(1),x(1)**2.D0,x(1)**3.D0/)
-   vecy=(/1.D0,x(2),x(2)**2.D0,x(2)**3.D0/)
+   vecx=(/1.D0,x(1)-x1,(x(1)-x1)**2.D0,(x(1)-x1)**3.D0/)
+   vecy=(/1.D0,x(2)-y1,(x(2)-y1)**2.D0,(x(2)-y1)**3.D0/)
    getvalue_bicsplines=dot_product(vecx,matmul(coeff,vecy))
    RETURN
 END FUNCTION getvalue_bicsplines
@@ -299,7 +396,7 @@ REAL(KIND=8) FUNCTION getderivx_bicsplines(this,x)
    CLASS(Bicsplines),TARGET,INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: x
    ! Local variables
-   REAL(KIND=8),POINTER :: x1,x2
+   REAL(KIND=8),POINTER :: x1,x2,y1,y2
    REAL(KIND=8),DIMENSION(:,:),POINTER :: coeff
    REAL(KIND=8),DIMENSION(4) :: vecy,vecx
    INTEGER(KIND=4) :: nx,ny
@@ -313,14 +410,14 @@ REAL(KIND=8) FUNCTION getderivx_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(j)
-      x2 => this%y(j+1)
-      IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
+      y1 => this%y(j)
+      y2 => this%y(j+1)
+      IF((x(2).LE.y2).AND.(x(2).GE.y1)) EXIT
    END DO
    ! Now, i and j have the correct value
    coeff => this%coeff(i,j,:,:)
-   vecx=(/0.D0,1.D0,2.D0*x(1),3.D0*x(1)**2.D0/)
-   vecy=(/1.D0,x(2),x(2)**2.D0,x(2)**3.D0/)
+   vecx=(/0.D0,1.D0,2.D0*(x(1)-x1),3.D0*(x(1)-x1)**2.D0/)
+   vecy=(/1.D0,x(2)-y1,(x(2)-y1)**2.D0,(x(2)-y1)**3.D0/)
    getderivx_bicsplines=dot_product(vecx,matmul(coeff,vecy))
    RETURN
 END FUNCTION getderivx_bicsplines
@@ -337,7 +434,7 @@ REAL(KIND=8) FUNCTION getderivy_bicsplines(this,x)
    CLASS(Bicsplines),TARGET,INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: x
    ! Local variables
-   REAL(KIND=8),POINTER :: x1,x2
+   REAL(KIND=8),POINTER :: x1,x2,y1,y2
    REAL(KIND=8),DIMENSION(:,:),POINTER :: coeff
    REAL(KIND=8),DIMENSION(4) :: vecy,vecx
    INTEGER(KIND=4) :: nx,ny
@@ -351,14 +448,14 @@ REAL(KIND=8) FUNCTION getderivy_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(j)
-      x2 => this%y(j+1)
-      IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
+      y1 => this%y(j)
+      y2 => this%y(j+1)
+      IF((x(2).LE.y2).AND.(x(2).GE.y1)) EXIT
    END DO
    ! Now, i and j have the correct value
    coeff => this%coeff(i,j,:,:)
-   vecx=(/1.D0,x(1),x(1)**2.D0,x(1)**3.D0/)
-   vecy=(/0.D0,1.D0,2.D0*x(2),3.D0*x(2)**2.D0/)
+   vecx=(/1.D0,(x(1)-x1),(x(1)-x1)**2.D0,(x(1)-x1)**3.D0/)
+   vecy=(/0.D0,1.D0,2.D0*(x(2)-y1),3.D0*(x(2)-y1)**2.D0/)
    getderivy_bicsplines=dot_product(vecx,matmul(coeff,vecy))
    RETURN
 END FUNCTION getderivy_bicsplines
@@ -375,7 +472,7 @@ REAL(KIND=8) FUNCTION getderivxy_bicsplines(this,x)
    CLASS(Bicsplines),TARGET,INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: x
    ! Local variables
-   REAL(KIND=8),POINTER :: x1,x2
+   REAL(KIND=8),POINTER :: x1,x2,y1,y2
    REAL(KIND=8),DIMENSION(:,:),POINTER :: coeff
    REAL(KIND=8),DIMENSION(4) :: vecy,vecx
    INTEGER(KIND=4) :: nx,ny
@@ -389,14 +486,14 @@ REAL(KIND=8) FUNCTION getderivxy_bicsplines(this,x)
       IF((x(1).LE.x2).AND.(x(1).GE.x1)) EXIT
    END DO
    DO j = 1, ny-1
-      x1 => this%y(j)
-      x2 => this%y(j+1)
-      IF((x(2).LE.x2).AND.(x(2).GE.x1)) EXIT
+      y1 => this%y(j)
+      y2 => this%y(j+1)
+      IF((x(2).LE.y2).AND.(x(2).GE.y1)) EXIT
    END DO
    ! Now, i and j have the correct value
    coeff => this%coeff(i,j,:,:)
-   vecx=(/0.D0,1.D0,2.D0*x(1),3.D0*x(1)**2.D0/)
-   vecy=(/0.D0,1.D0,2.D0*x(2),3.D0*x(2)**2.D0/)
+   vecx=(/0.D0,1.D0,2.D0*(x(1)-x1),3.D0*(x(1)-x1)**2.D0/)
+   vecy=(/0.D0,1.D0,2.D0*(x(2)-y1),3.D0*(x(2)-y1)**2.D0/)
    getderivxy_bicsplines=dot_product(vecx,matmul(coeff,vecy))
    RETURN
 END FUNCTION getderivxy_bicsplines
@@ -556,7 +653,6 @@ END SUBROUTINE PLOT_1D_BICSPLINES
 !-----------------------------------------------------------
 SUBROUTINE PLOT_SPLINES_BICSPLINES(this,npoints)
    ! Initial declarations   
-      
    IMPLICIT NONE
    ! I/O variables
    CLASS(Bicsplines),INTENT(IN) :: this
@@ -580,4 +676,41 @@ SUBROUTINE PLOT_SPLINES_BICSPLINES(this,npoints)
    END DO
    RETURN
 END SUBROUTINE PLOT_SPLINES_BICSPLINES
+!###########################################################
+!# SUBROUTINE: PLOT_FINITEDIFF_AT_GRID
+!###########################################################
+!> @brief
+!! Creates a file with finite differences results at gridpoints
+!
+!> @details
+!! - Useful to check if finite differences give good results in the
+!!   proposed grid
+!! - FORMAT: 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 21/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE PLOT_DUALDERIVS_AT_GRID(this,filename)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Bicsplines),TARGET,INTENT(IN):: this
+   CHARACTER(LEN=*),INTENT(IN) :: filename  
+   ! Local variables
+   INTEGER(KIND=4) :: i,j ! counters
+   INTEGER(KIND=4) :: nx,ny
+   REAL(KIND=8),DIMENSION(:),POINTER :: x,y
+   ! Run section
+   nx=size(this%x)
+   ny=size(this%y)
+   OPEN (10,FILE=filename,STATUS="replace",ACTION="write")
+   DO i = 1, nx
+      DO j = 1, ny
+         WRITE(10,*) this%x(i),this%y(j),d2fdxdy_finitdiff(i,j,this%x,this%y,this%fgrid)
+      END DO
+   END DO
+   CLOSE(10)
+   RETURN
+END SUBROUTINE PLOT_DUALDERIVS_AT_GRID
 END MODULE BICSPLINES_MOD
