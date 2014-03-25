@@ -15,12 +15,20 @@ IMPLICIT NONE
 !! fixed
 !-------------------------------------------------
 TYPE Cut2d
+   PRIVATE
    CHARACTER(LEN=30) :: alias
    CHARACTER(LEN=30) :: filename
    REAL(KIND=8) :: x,y,phi,theta
-   TYPE(Bicsplines) :: interrz
+   TYPE(Bicsplines),PUBLIC :: interrz
    CONTAINS
       PROCEDURE,PUBLIC :: READ => READ_CUT2D
+      PROCEDURE,PUBLIC :: getgridsizer => getgridsizer_cut2d
+      PROCEDURE,PUBLIC :: getgridsizez => getgridsizez_cut2d
+      PROCEDURE,PUBLIC :: getfirstr => getfirstr_cut2d
+      PROCEDURE,PUBLIC :: getfirstz => getfirstz_cut2d
+      PROCEDURE,PUBLIC :: getlastz => getlastz_cut2d
+      PROCEDURE,PUBLIC :: getlastr => getlastr_cut2d
+      PROCEDURE,PUBLIC :: getalias => getalias_cut2d
 END TYPE Cut2d
 !//////////////////////////////////////////////////
 ! TYPE: WYCKOFFSITIO
@@ -53,6 +61,117 @@ TYPE,ABSTRACT :: Wyckoffsitio
 END TYPE Wyckoffsitio
 !/////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNCTION: getalias_cut2d 
+!###########################################################
+!> @brief
+!! Common get function. Gets alias of a Cut2d object
+!-----------------------------------------------------------
+CHARACTER(LEN=30) FUNCTION getalias_cut2d(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   ! Run section
+   getalias_cut2d=this%alias
+   RETURN
+END FUNCTION getalias_cut2d
+!###########################################################
+!# FUNCTION: getgridsizer_cut2d 
+!###########################################################
+!> @brief
+!! Common get function. Gets R grid size
+!-----------------------------------------------------------
+INTEGER(KIND=4) FUNCTION getgridsizer_cut2d(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   ! Run section
+   getgridsizer_cut2d=size(this%interrz%x)
+   RETURN
+END FUNCTION getgridsizer_cut2d
+!###########################################################
+!# FUNCTION: getgridsizez_cut2d 
+!###########################################################
+!> @brief
+!! Common get function. Gets Z grid size
+!-----------------------------------------------------------
+INTEGER(KIND=4) FUNCTION getgridsizez_cut2d(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   ! Run section
+   getgridsizez_cut2d=size(this%interrz%y)
+   RETURN
+END FUNCTION getgridsizez_cut2d
+!###########################################################
+!# FUNCTION: getfirstr_cut2d 
+!###########################################################
+!> @brief 
+!! Just common get function to get first R value
+!
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getfirstr_cut2d(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   ! Local variables
+   
+   ! Run section
+   getfirstr_cut2d=this%interrz%x(1)
+   RETURN
+END FUNCTION getfirstr_cut2d
+!###########################################################
+!# FUNCTION: getlastr_cut2d 
+!###########################################################
+!> @brief 
+!! Just common get function to get last R value
+!
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getlastr_cut2d(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   ! Run section
+   getlastr_cut2d=this%interrz%x(size(this%interrz%x))
+   RETURN
+END FUNCTION getlastr_cut2d
+!###########################################################
+!# FUNCTION: getfirstz_cut2d 
+!###########################################################
+!> @brief 
+!! Just common get function to get first Z value
+!
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getfirstz_cut2d(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   ! Run section
+   getfirstz_cut2d=this%interrz%y(1)
+   RETURN
+END FUNCTION getfirstz_cut2d
+!###########################################################
+!# FUNCTION: getlastz_cut2d 
+!###########################################################
+!> @brief 
+!! Just common get function to get last Z value
+!
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getlastz_cut2d(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   ! Run section
+   getlastz_cut2d=this%interrz%y(size(this%interrz%y))
+   RETURN
+END FUNCTION getlastz_cut2d
 !###########################################################
 !# SUBROUTINE: SET_ID_WYCKOFFSITIO 
 !###########################################################
@@ -139,10 +258,52 @@ SUBROUTINE READ_CUT2D(this,filename)
    END DO
    !
    CALL this%interrz%READGRID(r,z,f)
-   CALL this%interrz%SET_COEFF("blabla")
+   CALL this%interrz%INTERPOL()
    CLOSE(10)
    RETURN
 END SUBROUTINE READ_CUT2D
+!###########################################################
+!# SUBROUTINE: INTERPOl_CUT2D 
+!###########################################################
+!> @brief
+!! Smoothes and interpolates a RZ-2dcur of the potential
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 25/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE INTERPOl_CUT2D(this)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   TYPE(Cut2d),INTENT(INOUT) :: this
+   ! Local variables
+   local_vars
+   ! Run section
+   body
+   RETURN
+END SUBROUTINE INTERPOl_CUT2D
+!###########################################################
+!# SUBROUTINE: SMOOTH_CUT2D 
+!###########################################################
+!> @brief
+!! Smooths a an Rz-2dcut of the potential
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 25/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SMOOTH_CUT2D(arguments)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   io_vars
+   ! Local variables
+   local_vars
+   ! Run section
+   body
+   RETURN
+END SUBROUTINE SMOOTH_CUT2D
 !###########################################################
 !# SUBROUTINE: READ_WYCKOFFSITE 
 !###########################################################

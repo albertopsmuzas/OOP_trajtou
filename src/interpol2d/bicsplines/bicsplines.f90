@@ -29,15 +29,36 @@ TYPE,EXTENDS(Interpol2d) :: Bicsplines
       PROCEDURE,PUBLIC :: getderivx => getderivx_bicsplines
       PROCEDURE,PUBLIC :: getderivy => getderivy_bicsplines
       PROCEDURE,PUBLIC :: getderivxy => getderivxy_bicsplines
-      PROCEDURE,PUBLIC :: SET_COEFF => SET_COEFF_BICSPLINES
+      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_SPLINES => PLOT_SPLINES_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_1D => PLOT_1D_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_DUALDERIVS_AT_GRID
-      PROCEDURE,PUBLIC :: GEN_NEWGRID => GENERATE_NEWGRID_BICSPLINES
+      PROCEDURE,PUBLIC :: INTERPOL_NEWGRID => INTERPOL_NEWGRID_BICSPLINES
+      PROCEDURE,PUBLIC :: REBOOT => REBOOT_BICSPLINES
 END TYPE
 !//////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: REBOOT_BICSPLINES 
+!###########################################################
+!> @brief
+!! Deallocates all information inside a Bicsplines variable
+!-----------------------------------------------------------
+SUBROUTINE REBOOT_BICSPLINES(this)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Bicsplines),INTENT(INOUT) :: this
+   ! Run section
+   DEALLOCATE(this%xcsplines)
+   DEALLOCATE(this%ycsplines)
+   DEALLOCATE(this%x)
+   DEALLOCATE(this%y)
+   DEALLOCATE(this%fgrid)
+   DEALLOCATE(this%coeff)
+   RETURN
+END SUBROUTINE REBOOT_BICSPLINES
 !###########################################################
 !# SUBROUTINE: INTERPOL_NEWGRID_BICSPLINES 
 !###########################################################
@@ -52,24 +73,25 @@ CONTAINS
 !> @date 21/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INTERPOL_BICSPLINES(this,nxpoints,nypoints)
+SUBROUTINE INTERPOL_NEWGRID_BICSPLINES(this,nxpoints,nypoints)
    ! Initial declarations   
+   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Bicsplines),INTENT(INOUT):: this
    INTEGER,INTENT(IN) :: nxpoints,nypoints ! number of points in XY plane
    ! Local variables
    INTEGER(KIND=4) :: oldnx,oldny
-   IMPLICIT NONE
-   ! Local variables
    REAL*8 :: xmin, ymin, xmax, ymax
-   REAL*8, DIMENSION(2) :: r
    REAL*8 :: xdelta, ydelta
    INTEGER :: xinpoints, nxdelta
    INTEGER :: yinpoints, nydelta
    INTEGER :: i, j ! counters
    REAL(KIND=8),DIMENSION(nxpoints) :: newxgrid
    REAL(KIND=8),DIMENSION(nypoints) :: newygrid
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: v
+   TYPE(Csplines),DIMENSION(:),ALLOCATABLE :: newyspline
+   CHARACTER(LEN=29),PARAMETER :: routinename="INTERPOL_NEWGRID_BICSPLINES: "
    ! GABBA, GABBA HEY! ---------
    oldnx=size(this%x)
    oldny=size(this%y)
@@ -81,64 +103,66 @@ SUBROUTINE INTERPOL_BICSPLINES(this,nxpoints,nypoints)
    ! For X, grid parameters
    xinpoints=nxpoints-2
    nxdelta=nxpoints-1
-   xdelta=(newxgrid(oldnx)-newxgrid(1))/DFLOAT(nxdelta)
+   xdelta=(newxgrid(nxpoints)-newxgrid(1))/DFLOAT(nxdelta)
    ! For Y, grid parameters
    yinpoints=nypoints-2
    nydelta=nypoints-1
-   ydelta=(newygrid(oldny)-newygrid(1))/DFLOAT(nydelta)
-   ! Let's go! 
-   DO i = 1, 
-      ! loop body
+   ydelta=(newygrid(nypoints)-newygrid(1))/DFLOAT(nydelta)
+   ! generate new x and y grid
+   DO i = 1,xinpoints 
+      newxgrid(i+1)=newxgrid(1)+i*xdelta
    END DO
-   
-
-
-
-
-
-   ! 1st XY point
-   r(1) = xmin
-   r(2) = ymin
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
-   DO i =1, yinpoints
-      r(2) = ymin + DFLOAT(i)*ydelta
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   DO j = 1,yinpoints 
+      newygrid(j+1)=newygrid(1)+j*ydelta
    END DO
-   r(2) = ymax
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
-   ! inpoints in XY
-   DO i = 1, xinpoints
-      r(1) = xmin+DFLOAT(i)*xdelta
-      r(2) = ymin
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
-      DO j = 1, yinpoints
-         r(2) = ymin + DFLOAT(j)*ydelta
-         WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Changing old grid to:")
+   CALL VERBOSE_WRITE(routinename,(/nxpoints,nypoints/))
+   CALL VERBOSE_WRITE(routinename,"xdelta: ",xdelta)
+   CALl VERBOSE_WRITE(routinename,"ydelta: ",ydelta)
+   CALL DEBUG_WRITE(routinename,"Old X grid:")
+   CALL DEBUG_WRITE(routinename,this%x)
+   CALL DEBUG_WRITE(routinename,"Old Y grid:")
+   CALL DEBUG_WRITE(routinename,this%y)
+   CALL DEBUG_WRITE(routinename,"New X grid:")
+   CALL DEBUG_WRITE(routinename,newxgrid)
+   CALL DEBUG_WRITE(routinename,"New Y grid:")
+   CALL DEBUG_WRITE(routinename,newygrid)
+#endif
+   ! generate new cubic splines in Y 
+   ALLOCATE(v(nxpoints,oldny))
+   DO j = 1, oldny
+      DO i = 1, nxpoints
+         v(i,j)=this%xcsplines(j)%getvalue(newxgrid(i))
       END DO
-      r(2) = ymax
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
    END DO
-   ! Last point in XY plane
-   r(1) = xmax
-   r(2) = ymax
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
-   DO i =1, yinpoints
-      r(2) = ymin + DFLOAT(i)*ydelta
-      WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
+   ALLOCATE(newyspline(nxpoints))
+   DO i = 1, nxpoints
+      CALL newyspline(i)%READ(this%y,v(i,:))
+      CALL newyspline(i)%INTERPOL(0.D0,0,0.D0,0)
    END DO
-   r(2) = ymax
-   WRITE(11,*) r(1),r(2),this%getvalue(r),this%getderivx(r),this%getderivy(r),this%getderivxy(r)
-   CLOSE(11)
+   DEALLOCATE(v)
+   ! store all data in v
+   ALLOCATE(v(nxpoints,nypoints))
+   DO i = 1, nxpoints
+      DO j = 1, nypoints
+         v(i,j)=newyspline(i)%getvalue(newygrid(j))
+      END DO
+   END DO
+   ! Now generate new interpolation
+   CALL this%REBOOT()
+   CALL this%READGRID(newxgrid,newygrid,v)
+   CALL this%INTERPOL()
    RETURN
 END SUBROUTINE INTERPOL_NEWGRID_BICSPLINES
 !##########################################################
-! SUBROUTINE: SEC_COEFF_BICSPLINES
+! SUBROUTINE: INTERPOL_BICSPLINES
 !> @brief
 !! Sets coefficients
 !
 !> @param[in,out] this - bicubic splines object to set coefficients
 !----------------------------------------------------------
-SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
+SUBROUTINE INTERPOL_BICSPLINES(this,filename)
    ! Initial declarations
    USE MATHS_MOD
    IMPLICIT NONE
@@ -156,9 +180,9 @@ SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
    ALLOCATE(this%xcsplines(ny))
    ALLOCATE(this%ycsplines(nx))
    ALLOCATE(this%coeff(nx-1,ny-1,4,4))
-   DO i = 1, ny
-      CALL this%xcsplines(i)%READ(this%x,this%fgrid(:,i))
-      CALL this%xcsplines(i)%INTERPOL(0.D0,0,0.D0,0) ! last and initial 2 splines are equal
+   DO j = 1, ny
+      CALL this%xcsplines(j)%READ(this%x,this%fgrid(:,j))
+      CALL this%xcsplines(j)%INTERPOL(0.D0,0,0.D0,0) ! last and initial 2 splines are equal
    END DO
    DO i = 1, nx
       CALL this%ycsplines(i)%READ(this%y,this%fgrid(i,:))
@@ -198,7 +222,7 @@ SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
          smtrx(3,1)=this%xcsplines(j)%getderiv(x0)
          smtrx(3,2)=this%xcsplines(j+1)%getderiv(x0)
          smtrx(4,1)=this%xcsplines(j)%getderiv(x1)
-         smtrx(4,4)=this%xcsplines(j+1)%getderiv(x1)
+         smtrx(4,2)=this%xcsplines(j+1)%getderiv(x1)
 
          smtrx(3,3)=d2fdxdy_finitdiff(i,j,this%x,this%y,this%fgrid)
          smtrx(3,4)=d2fdxdy_finitdiff(i,j+1,this%x,this%y,this%fgrid)
@@ -240,7 +264,7 @@ SUBROUTINE SET_COEFF_BICSPLINES(this,filename)
    END DO
    IF(present(filename)) CLOSE(521)
    RETURN
-END SUBROUTINE SET_COEFF_BICSPLINES
+END SUBROUTINE INTERPOL_BICSPLINES
 !###########################################################
 !# FUNCTION: d2fdxdy_finitdiff
 !###########################################################
@@ -262,26 +286,33 @@ REAL(KIND=8) FUNCTION d2fdxdy_finitdiff(i,j,x,y,f)
    ! Run section
    nx=size(x)
    ny=size(y)
-   IF (nx/=size(f(:,1))) THEN
-      WRITE(0,*) "d2fdxdy: size mismatch of arrays x and f"
-      CALL EXIT(1)
-   ELSE IF (ny/=size(f(1,:))) THEN
-      WRITE(0,*) "d2fdxdy: size mismatch of arrays y and f"
-      CALL EXIT(1)
-   END IF
+   ! Check sizes of arrays
+   SELECT CASE(nx == size(f(:,1)))
+      CASE(.FALSE.)
+         WRITE(0,*) "d2fdxdy: size mismatch of arrays x and f"
+         CALL EXIT(1)
+      CASE (.TRUE.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(ny == size(f(1,:)))
+      CASE(.FALSE.)
+         WRITE(0,*) "d2fdxdy: size mismatch of arrays y and f"
+         CALL EXIT(1)
+      CASE (.TRUE.)
+         ! do nothing
+   END SELECT
    ! initialize variables
    hx0=0.D0
    hx1=0.D0
    hy0=0.D0
    hy1=0.D0
-   !
    ! Check if we are in a corner, edge or bulk point of the grid 
    IF ( i/=1 .AND. i/=nx .AND. j/=1 .AND. j/=ny) THEN ! we are in the 2D bulk
       hx0=x(i+1)-x(i)
       hx1=x(i)-x(i-1)
       hy0=y(j+1)-y(j)
       hy1=y(j)-y(j-1)
-      d2fdxdy_finitdiff=((1.D0/hx1)-(1.D0/hx0))*((1.D0/hy1)-(1.D0/hy0))*f(j,i)
+      d2fdxdy_finitdiff=((1.D0/hx1)-(1.D0/hx0))*((1.D0/hy1)-(1.D0/hy0))*f(i,j)
       d2fdxdy_finitdiff=d2fdxdy_finitdiff+((1.D0/hx1)-(1.D0/hx0))*((f(i,j+1)/hy0)-(f(i,j-1)/hy1))
       d2fdxdy_finitdiff=d2fdxdy_finitdiff+((1.D0/hy1)-(1.D0/hy0))*((f(i+1,j)/hx0)-(f(i-1,j)/hx1))
       d2fdxdy_finitdiff=d2fdxdy_finitdiff+(f(i+1,j+1)/(hx0*hy0))-(f(i+1,j-1)/(hx0*hy1))-(f(i-1,j+1)/(hx1*hy0))
@@ -333,9 +364,9 @@ REAL(KIND=8) FUNCTION d2fdxdy_finitdiff(i,j,x,y,f)
       d2fdxdy_finitdiff=d2fdxdy_finitdiff*(1.D0/(2.D0*hy0))
       RETURN
    ELSE IF (j==ny) THEN ! upper edge
-      hx0=y(i+1)-y(i)
-      hx1=y(i)-y(i-1)
-      hy1=x(j)-x(j-1)
+      hx0=x(i+1)-x(i)
+      hx1=x(i)-x(i-1)
+      hy1=y(j)-y(j-1)
       d2fdxdy_finitdiff=((1.D0/hx1)-(1.D0/hx0))*f(i,j)+(1.D0/hx0)*f(i+1,j)-(1.D0/hx1)*f(i-1,j)
       d2fdxdy_finitdiff=d2fdxdy_finitdiff-((1.D0/hx1)-(1.D0/hx0))*f(i,j-1)-(1.D0/hx0)*f(i+1,j-1)+(1.D0/hx1)*f(i-1,j-1)
       d2fdxdy_finitdiff=d2fdxdy_finitdiff*(1.D0/(2.D0*hy1))
