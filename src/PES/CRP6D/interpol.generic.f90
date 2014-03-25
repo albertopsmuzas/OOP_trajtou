@@ -272,17 +272,17 @@ END SUBROUTINE READ_CUT2D
 !> @date 25/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INTERPOl_CUT2D(this)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   TYPE(Cut2d),INTENT(INOUT) :: this
-   ! Local variables
-   local_vars
-   ! Run section
-   body
-   RETURN
-END SUBROUTINE INTERPOl_CUT2D
+!SUBROUTINE INTERPOl_CUT2D(this)
+   !! Initial declarations   
+   !IMPLICIT NONE
+   !! I/O variables
+   !TYPE(Cut2d),INTENT(INOUT) :: this
+   !! Local variables
+   !local_vars
+   !! Run section
+   !body
+   !RETURN
+!END SUBROUTINE INTERPOl_CUT2D
 !###########################################################
 !# SUBROUTINE: SMOOTH_CUT2D 
 !###########################################################
@@ -293,17 +293,17 @@ END SUBROUTINE INTERPOl_CUT2D
 !> @date 25/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SMOOTH_CUT2D(arguments)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   io_vars
-   ! Local variables
-   local_vars
-   ! Run section
-   body
-   RETURN
-END SUBROUTINE SMOOTH_CUT2D
+!SUBROUTINE SMOOTH_CUT2D(arguments)
+   !! Initial declarations   
+   !IMPLICIT NONE
+   !! I/O variables
+   !io_vars
+   !! Local variables
+   !local_vars
+   !! Run section
+   !body
+   !RETURN
+!END SUBROUTINE SMOOTH_CUT2D
 !###########################################################
 !# SUBROUTINE: READ_WYCKOFFSITE 
 !###########################################################

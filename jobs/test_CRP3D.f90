@@ -24,7 +24,7 @@ WRITE(*,*) "CRP_PES program executed"
 WRITE(*,*) "***************************************" 
 
 ! STEP 2: INITIALIZE CRP PES:
-CALL crp_pes%READ("crp.inp")
+CALL crp_pes%READ("INcrp3.inp")
 
 ! STEP 3: DO Z INTERPOLATION EXTRACTING VASINT AND SMOOTHING SITES
 CALL crp_pes%INTERPOL_Z()

@@ -1,36 +1,130 @@
 MODULE PES_MOD
 IMPLICIT NONE
-!====================================================================================================
-! Type for a generic Potential energy surface
-!--------------------------------------------
+!/////////////////////////////////////////////////////////////////
+! TYPE: Atomdata
+!> @brief
+!! Type to store atoms characteristics
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 25/Mar/2013
+!> @version 1.0
+!----------------------------------------------------------------
+TYPE :: Atomdata
+PRIVATE
+   REAL(KIND=8) :: mass
+   CHARACTER(LEN=2) :: myname
+   CONTAINS
+      PROCEDURE,PUBLIC :: getname => getname_atomdata
+      PROCEDURE,PUBLIC :: getmass => getmass_atomdata
+END TYPE Atomdata
+!////////////////////////////////////////////////////////////////////////////////////////
+! TYPE: PES
+!> @brief
+!! Type for a generic Potential energy surface
+!
+!> param alias - An alias for the PES
+!> param dimensions - Number of coordinates which this PES depends on
+!> param r - last point qhere the potential was calculated
+!> param dvdu - last calculated derivatives
+!> param v - last value of the potential (at r, obviously)
+!> param initialized - Controls status of the PES
+!> param atomdat - Contains array of atoms (with some info) related to this PES
+!----------------------------------------------------------------------------------------
 TYPE PES
 PRIVATE
-	CHARACTER(LEN=30) :: alias ! Just an alias for the PES
-	INTEGER :: dimensions ! number of coordinates which this PES depends on
-	REAL(KIND=8), DIMENSION(:),ALLOCATABLE :: r ! last point where the potential was calculated
-	REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dvdu ! last calculated derivatives
-	REAL(KIND=8) :: v ! last value of the potential (obviously at point r)
+   CHARACTER(LEN=30) :: alias
+   INTEGER :: dimensions
+	REAL(KIND=8), DIMENSION(:),ALLOCATABLE :: r
+	REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dvdu 
+	REAL(KIND=8) :: v
 	LOGICAL :: initialized = .FALSE.
-CONTAINS
-	! Set block
-	PROCEDURE,PUBLIC :: SET_ALIAS
-	PROCEDURE,PUBLIC :: SET_DIMENSIONS
-	! Get block
-	PROCEDURE,PUBLIC :: getalias
-	PROCEDURE,PUBLIC :: getdimensions
-	PROCEDURE,PUBLIC :: getlastvalue
-	! Enquire block
-	PROCEDURE,PUBLIC :: is_initialized
+   TYPE(Atomdata),DIMENSION(:),ALLOCATABLE,PUBLIC:: atomdat
+   CONTAINS
+      ! Set block
+      PROCEDURE,PUBLIC :: SET_ALIAS => SET_ALIAS_PES
+      PROCEDURE,PUBLIC :: SET_DIMENSIONS => SET_DIMENSIONS_PES
+      PROCEDURE,PUBLIC :: SET_ATOMS => SET_ATOMS_PES
+      ! Get block
+      PROCEDURE,PUBLIC :: getalias => getalias_PES
+      PROCEDURE,PUBLIC :: getdimensions => getdimensions_PES
+      PROCEDURE,PUBLIC :: getlastvalue => getlastvalue_PES
+      ! Enquire block
+      PROCEDURE,PUBLIC :: is_initialized => is_initialized_PES
 END TYPE PES
-! MODULE CONTAINS:
+!////////////////////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNCTION: getname_atomdata 
+!###########################################################
+!> @brief
+!! Common get function. Gets name of Atomdata type variable
+!-----------------------------------------------------------
+CHARACTER(LEN=2) FUNCTION getname_atomdata(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Atomdata),INTENT(IN) :: this
+   ! Run section
+   getname_atomdata=this%myname
+   RETURN
+END FUNCTION getname_atomdata  
+!###########################################################
+!# FUNCTION: getmass_atomdata 
+!###########################################################
+!> @brief 
+!! Common get function. Gets mass of Atomdata
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getmass_atomdata(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Atomdata),INTENT(IN):: this
+   ! Run section
+   getmass_atomdata=this%mass
+   RETURN
+END FUNCTION getmass_atomdata
+!###########################################################
+!# SUBROUTINE: SET_ATOMS_PES 
+!###########################################################
+!> @brief
+!! Sets atoms of the PES
+!-----------------------------------------------------------
+SUBROUTINE SET_ATOMS_PES(this,n,names,masses)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(PES),INTENT(INOUT) :: this
+   INTEGER(KIND=4),INTENT(IN) :: n
+   CHARACTER(LEN=2),DIMENSION(:) :: names
+   REAL(KIND=8),DIMENSION(:) :: masses
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counter
+   ! Run section
+   ! Check data
+   SELECT CASE(n==size(names) .AND. n==size(masses))
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         WRITE(0,*) "SET_ATOMS_PES ERR: Size mismatch between declared atoms, names and masses"
+         CALL EXIT(1)
+   END SELECT
+   ! Set information
+   ALLOCATE(this%atomdat(n))
+   DO i = 1, n
+      this%atomdat(i)%mass=masses(i)
+      this%atomdat(i)%myname=names(i)
+   END DO
+   RETURN
+END SUBROUTINE SET_ATOMS_PES
 !###############################################################
 ! SUBROUTINE: SET_ALIAS ########################################
 !###############################################################
-! - Sets an alias for PES.
-! - If no argument is given a default string will be loaded
+!> @brief
+!! Sets an alias for PES.
+!> @details
+!! - If no argument is given a default string will be loaded
 !---------------------------------------------------------------
-SUBROUTINE SET_ALIAS(this,alias)
+SUBROUTINE SET_ALIAS_PES(this,alias)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
@@ -43,14 +137,16 @@ SUBROUTINE SET_ALIAS(this,alias)
 		this%alias="Mysterious PES"
 	END IF
 	RETURN
-END SUBROUTINE SET_ALIAS
+END SUBROUTINE SET_ALIAS_PES
 !###############################################################
 ! SUBROUTINE: SET_DIMENSIONS ###################################
 !###############################################################
-! - Sets number of dimensions and allocates some arrays
-! - If no argument is given, default value will be 1
+!> @brief
+!! Sets number of dimensions and allocates some arrays
+!> @details
+!! - If no argument is given, default value will be 1
 !---------------------------------------------------------------
-SUBROUTINE SET_DIMENSIONS(this,dimensions)
+SUBROUTINE SET_DIMENSIONS_PES(this,dimensions)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
@@ -66,58 +162,68 @@ SUBROUTINE SET_DIMENSIONS(this,dimensions)
 	ALLOCATE(this%r(1:this%dimensions))
 	ALLOCATE(this%dvdu(1:this%dimensions))
 	RETURN
-END SUBROUTINE SET_DIMENSIONS
+END SUBROUTINE SET_DIMENSIONS_PES
 !#########################################################
 ! FUNCTION: is_initiallized ##############################
 !#########################################################
-! - Enquires whether the PES is initiallized or not
+!> @brief
+!! Enquires whether the PES is initiallized or not
 !---------------------------------------------------------
-LOGICAL FUNCTION is_initialized(this)
+LOGICAL FUNCTION is_initialized_PES(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(PES), INTENT(IN) :: this
 	! Run section
 	IF(this%initialized) THEN
-		is_initialized=.TRUE.
+		is_initialized_PES=.TRUE.
 	ELSE
-		is_initialized=.FALSE.
+		is_initialized_PES=.FALSE.
 	END IF
 	RETURN
-END FUNCTION is_initialized
+END FUNCTION is_initialized_PES
 !##########################################################
 ! FUNCTION: get_alias #####################################
 !##########################################################
-CHARACTER(LEN=30) FUNCTION getalias(this)
+!> @brief
+!! Common get function. Gets alias from PES derived type
+!----------------------------------------------------------
+CHARACTER(LEN=30) FUNCTION getalias_PES(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O VAriables
 	CLASS(PES), INTENT(IN) :: this
 	! Run section
-	getalias=this%alias
+	getalias_PES=this%alias
 	RETURN
-END FUNCTION getalias
+END FUNCTION getalias_PES
 !##########################################################
 ! FUNCTION: get_dimensions ################################
 !##########################################################
-INTEGER FUNCTION getdimensions(this)
+!> @brief
+!! Common get function. Gets dimensions from PES derived type
+!----------------------------------------------------------
+INTEGER FUNCTION getdimensions_PES(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(PES), INTENT(IN) :: this
 	! Run section
-	getdimensions=this%dimensions
+	getdimensions_PES=this%dimensions
 	RETURN
-END FUNCTION getdimensions
+END FUNCTION getdimensions_PES
 !##########################################################
 ! FUNCTION: get_last_value ################################
 !##########################################################
-REAL(KIND=8) FUNCTION getlastvalue(this)
+!> @brief
+!! Common get function. Gets last value calculated of the PES
+!----------------------------------------------------------
+REAL(KIND=8) FUNCTION getlastvalue_PES(this)
 	! Initial declarations
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(PES), INTENT(IN) :: this
 	! Run part
-	getlastvalue=this%v
-END FUNCTION getlastvalue
+	getlastvalue_PES=this%v
+END FUNCTION getlastvalue_PES
 END MODULE PES_MOD

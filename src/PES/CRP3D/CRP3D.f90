@@ -458,6 +458,7 @@ SUBROUTINE READ_CRP3D(this,filename)
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
+   USE UNITS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),INTENT(OUT) :: this 
@@ -468,6 +469,11 @@ SUBROUTINE READ_CRP3D(this,filename)
    CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_sites
    CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_pairpots
    CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP3D: "
+   CHARACTER(LEN=2),DIMENSION(1) :: symbol
+   CHARACTER(LEN=10) :: units
+   REAL(KIND=8):: aux
+   REAL(KIND=8),DIMENSION(1) :: aux1
+   TYPE(Mass) :: masss
    INTEGER(KIND=4) :: i ! Counter
    ! HEY HO!, LET'S GO!! ------------------
    CALL this%SET_DIMENSIONS(3)
@@ -475,6 +481,11 @@ SUBROUTINE READ_CRP3D(this,filename)
    ! Read input file
    OPEN(11,FILE=filename,STATUS="old")
    READ(11,*) !dummy line
+   READ(11,*) symbol,aux,units
+   CALL masss%READ(aux,units)
+   CALL masss%TO_STD()
+   aux1=masss%getvalue()
+   CALL this%SET_ATOMS(1,symbol,aux1)
    READ(11,*) file_surf
    READ(11,*) max_order
    READ(11,*) n_pairpots
@@ -548,7 +559,7 @@ SUBROUTINE EXTRACT_VASINT_CRP3D(thispes)
    INTEGER(KIND=4) :: npairpots, nsites
    INTEGER(KIND=4) :: i,j ! counters
    REAL(KIND=8) :: control_vasint
-   CHARACTER(LEN=20) :: routinename="EXTRACT_VASINT_CRP3D: "
+   CHARACTER(LEN=22) :: routinename="EXTRACT_VASINT_CRP3D: "
    ! Run section ------------------------
    npairpots=size(thispes%all_pairpots)
    control_vasint=thispes%all_pairpots(1)%vasint

@@ -33,7 +33,7 @@ units.o: debug.o constants.o
 surface.o: debug.o units.o constants.o maths.o 
 cubicsplines.o: debug.o interpol1d.o
 fourier2d.o: debug.o constants.o surface.o interpol2d.o
-CRP3D.o: debug.o maths.o cubicsplines.o fourier2d.o PES.o surface.o 
+CRP3D.o: debug.o units.o maths.o cubicsplines.o fourier2d.o PES.o surface.o 
 CRP6D.o: maths.o units.o CRP3D.o interpol.p4mm.o 
 fourier1d.o: constants.o debug.o interpol1d.o
 interpol.generic.o: debug.o fourier1d.o bicsplines.o
