@@ -27,6 +27,50 @@ TYPE,EXTENDS(PES) :: CRP6D
 END TYPE CRP6D
 CONTAINS
 !###########################################################
+!# SUBROUTINE: FROM_MOLECULAR_TO_ATOMIC 
+!###########################################################
+!> @brief
+!! Go from molecular coordinates x,y,z,r,theta,phi to
+!! xa,ya,za,xb,yb,zb
+!-----------------------------------------------------------
+SUBROUTINE FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   REAL(KIND=8),INTENT(IN) :: ma,mb
+   REAL(KIND=8),INTENT(IN) :: molcoord
+   REAL(KIND=8),INTENT(OUT) :: atomcoord
+   ! Run section
+   atomcoord(1)=molcoord(1)+(mb/(ma+mb))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(2)=molcoord(2)+(mb/(ma+mb))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(3)=molcoord(3)+(mb/(ma+mb))*molcoord(4)*dcos(molcoord(5))
+   atomcoord(4)=molcoord(1)-(ma/(ma+mb))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(5)=molcoord(2)-(ma/(ma+mb))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(6)=molcoord(3)-(ma/(ma+mb))*molcoord(4)*dcos(molcoord(5))
+   RETURN
+END SUBROUTINE FROM_MOLECULAR_TO_ATOMIC
+!###########################################################
+!# SUBROUTINE: SMOOTH_CUT2D 
+!###########################################################
+!> @brief
+!! Smooths a an Rz-2dcut of the potential
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 25/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+!SUBROUTINE SMOOTH_CUT2D(arguments)
+   !! Initial declarations   
+   !IMPLICIT NONE
+   !! I/O variables
+   !io_vars
+   !! Local variables
+   !local_vars
+   !! Run section
+   !body
+   !RETURN
+!END SUBROUTINE SMOOTH_CUT2D
+!###########################################################
 !# SUBROUTINE: READ_CRP6D 
 !###########################################################
 !> @brief

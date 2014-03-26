@@ -266,7 +266,7 @@ END SUBROUTINE READ_CUT2D
 !# SUBROUTINE: INTERPOl_CUT2D 
 !###########################################################
 !> @brief
-!! Smoothes and interpolates a RZ-2dcur of the potential
+!! Interpolates a RZ-2dcur of the potential
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 25/Mar/2014
@@ -283,27 +283,6 @@ END SUBROUTINE READ_CUT2D
    !body
    !RETURN
 !END SUBROUTINE INTERPOl_CUT2D
-!###########################################################
-!# SUBROUTINE: SMOOTH_CUT2D 
-!###########################################################
-!> @brief
-!! Smooths a an Rz-2dcut of the potential
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 25/Mar/2014
-!> @version 1.0
-!-----------------------------------------------------------
-!SUBROUTINE SMOOTH_CUT2D(arguments)
-   !! Initial declarations   
-   !IMPLICIT NONE
-   !! I/O variables
-   !io_vars
-   !! Local variables
-   !local_vars
-   !! Run section
-   !body
-   !RETURN
-!END SUBROUTINE SMOOTH_CUT2D
 !###########################################################
 !# SUBROUTINE: READ_WYCKOFFSITE 
 !###########################################################
