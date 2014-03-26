@@ -25,18 +25,87 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
    LOGICAL :: is_initialized = .FALSE.
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: d2fdx 
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: coeff
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE,PUBLIC :: xmin
    CONTAINS
       ! Public procedures
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CUBIC_SPLINES
       PROCEDURE,PUBLIC :: getvalue => get_csplines_value
       PROCEDURE,PUBLIC :: getderiv => get_csplines_dfdx_value
-      ! Private procedures
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CSPLINES
+      PROCEDURE,PUBLIC :: SET_MINIMUM => SET_MINIMUM_CSPLINES
+      ! Private procedures
       PROCEDURE,PRIVATE :: SET_SECOND_DERIVS => DSPLIN
       PROCEDURE,PRIVATE :: SET_COEFF => SET_CUBIC_SPLINES_COEFF
 END TYPE Csplines
 !//////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: SET_MINIMUM_CSPLINES 
+!###########################################################
+!> @brief
+!! Locates minimums in the interpolation. Analytical solution
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 26/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SET_MINIMUM_CSPLINES(this)
+   ! Initial declarations  
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Csplines),TARGET,INTENT(INOUT)::this
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counters
+   REAL(KIND=8),DIMENSION(:),POINTER :: coeff
+   REAL(KIND=8),POINTER :: x1,x2
+   REAL(KIND=8) :: s
+   REAL(KIND=8) :: discriminant
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux
+   CHARACTER(LEN=22),PARAMETER :: routinename="SET_MINIMUM_CSPLINES: "
+   ! Run section
+   DO i = 1, this%n-1 ! number of splines
+      coeff => this%coeff(i,:)
+      x1 => this%x(i)
+      x2 => this%x(i+1)
+      discriminant=coeff(2)**2.D0-3.D0*coeff(1)*coeff(3)
+      SELECT CASE( discriminant > 0.D0)
+         CASE(.TRUE.)
+            s=(-coeff(2)+dsqrt(discriminant))/(3.D0*coeff(1))
+         CASE(.FALSE.)
+            CYCLE
+      END SELECT
+      SELECT CASE(s >= 0.D0 .AND. s <= x2-x1)
+         CASE(.TRUE.)
+            SELECT CASE(ALLOCATED(this%xmin))
+               CASE(.TRUE.)
+                  ALLOCATE(aux(size(this%xmin)))
+                  aux=this%xmin
+                  DEALLOCATE(this%xmin)
+                  ALLOCATE(this%xmin(size(aux)+1))
+                  this%xmin(size(aux)+1)=s+x1
+                  DEALLOCATE(aux)
+               CASE(.FALSE.)
+                  ALLOCATE(this%xmin(1))
+                  this%xmin=s+x1
+            END SELECT
+         CASE(.FALSE.)
+            CYCLE
+      END SELECT
+   END DO
+#ifdef DEBUG
+   SELECT CASE(ALLOCATED(this%xmin))
+      CASE(.TRUE.)
+         CALL VERBOSE_WRITE(routinename,"Minimums found: ",size(this%xmin))
+         CALL VERBOSE_WRITE(routinename,this%xmin)
+      CASE(.FALSE.)
+         CALL VERBOSE_WRITE(routinename,"There are not any minimums")
+   END SELECT
+#endif
+   RETURN
+END SUBROUTINE SET_MINIMUM_CSPLINES
 !######################################################################
 ! SUBROUTINE: DSPLIN ##################################################
 !######################################################################

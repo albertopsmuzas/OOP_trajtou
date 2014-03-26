@@ -11,6 +11,7 @@
 !#######################################################
 MODULE CRP6D_MOD
 USE CRP3D_MOD
+USE EXTRAPOL_TO_VACUUM_MOD
 USE INTERPOL_WYCKOFF_P4MM_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////
@@ -23,6 +24,7 @@ TYPE,EXTENDS(PES) :: CRP6D
    LOGICAL :: is_smooth=.FALSE.
    CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE :: wyckoffsite
    TYPE(CRP3D),DIMENSION(:),ALLOCATABLE :: atomiccrp
+   TYPE(Vacuumpot) :: farpot
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_CRP6D
@@ -30,6 +32,7 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CRP6D
       PROCEDURE,PUBLIC :: RAWINTERPOL => RAWINTERPOL_CRP6D
+      PROCEDURE,PUBLIC :: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
 END TYPE CRP6D
 CONTAINS
 !###########################################################
@@ -50,6 +53,7 @@ SUBROUTINE INTERPOL_CRP6D(this)
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
    ! Run section
+   CALL this%EXTRACT_VACUUMSURF()   
    CALL this%SMOOTH()
    this%is_smooth=.TRUE.
    DO i = 1, this%nsites
@@ -175,6 +179,48 @@ SUBROUTINE SMOOTH_CRP6D(this)
    RETURN
 END SUBROUTINE SMOOTH_CRP6D
 !###########################################################
+!# SUBROUTINE: EXTRACT_VACUUMSURF_CRP6D
+!###########################################################
+!> @brief
+!! Extracts energy at equilibrium distance in the vacuum and surface energy
+!! to an Rz-2dcut of the potential
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 25/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
+   ! Initial declarations   
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+    CLASS(CRP6D),INTENT(INOUT) :: this
+   ! Local variables
+   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
+   INTEGER(KIND=4) :: nr,nz
+   INTEGER(KIND=4) :: i,j,k,l ! counters
+   REAL(KIND=8) :: ma,mb
+   CHARACTER(LEN=14),PARAMETER :: routinename="SMOOTH_CRP6D: "
+   REAL(KIND=8) :: newpot
+   ! Run section
+   DO i = 1, this%nsites ! cycle wyckoff sites
+      DO j = 1, this%wyckoffsite(i)%n2dcuts
+         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
+         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
+         DO k = 1, nr
+            DO l = 1, nz
+               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
+               newpot=newpot-this%farpot%surfen
+               CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+            END DO
+         END DO
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE EXTRACT_VACUUMSURF_CRP6D
+!###########################################################
 !# SUBROUTINE: READ_CRP6D 
 !###########################################################
 !> @brief
@@ -249,6 +295,8 @@ SUBROUTINE READ_CRP6D(this,filename)
             ! do nothing
       END SELECT
    END DO
+   READ(180,*) string
+   CALL this%farpot%INITIALIZE(string)
    ! Read number of wyckoff sites and its letters
    READ(180,'(I2)',advance="no") this%nsites
    ALLOCATE(letter(this%nsites))

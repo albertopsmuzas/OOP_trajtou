@@ -32,7 +32,7 @@ TYPE :: Interpol1d
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f
    CONTAINS
       PROCEDURE,PUBLIC :: READ => READ_INTERPOL1D
-      PROCEDURE,PUBLIC :: PLOT_DATA => PLOT_DATA_INTERPOL1D
+      PROCEDURE,PUBLIC :: PLOTDATA => PLOT_DATA_INTERPOL1D
       PROCEDURE,PUBLIC :: PLOT_INTERPOL => PLOT_INTERPOL_INTERPOL1D
       PROCEDURE,PUBLIC :: getvalue => getvalue_interpol1d ! child types, override this
       PROCEDURE,PUBLIC :: getderiv => getderiv_interpol1d ! child types, override this
