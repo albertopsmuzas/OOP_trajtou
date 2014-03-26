@@ -18,17 +18,25 @@ TYPE Cut2d
    PRIVATE
    CHARACTER(LEN=30) :: alias
    CHARACTER(LEN=30) :: filename
-   REAL(KIND=8) :: x,y,phi,theta
+   REAL(KIND=8),PUBLIC :: x,y,phi,theta
    TYPE(Bicsplines),PUBLIC :: interrz
    CONTAINS
+      ! Initialize block
       PROCEDURE,PUBLIC :: READ => READ_CUT2D
+      ! Get block
       PROCEDURE,PUBLIC :: getgridsizer => getgridsizer_cut2d
       PROCEDURE,PUBLIC :: getgridsizez => getgridsizez_cut2d
       PROCEDURE,PUBLIC :: getfirstr => getfirstr_cut2d
       PROCEDURE,PUBLIC :: getfirstz => getfirstz_cut2d
       PROCEDURE,PUBLIC :: getlastz => getlastz_cut2d
       PROCEDURE,PUBLIC :: getlastr => getlastr_cut2d
+      PROCEDURE,PUBLIC :: getgridvaluer => getgridvaluer_cut2d
+      PROCEDURE,PUBLIC :: getgridvaluez => getgridvaluez_cut2d
       PROCEDURE,PUBLIC :: getalias => getalias_cut2d
+      PROCEDURE,PUBLIC :: getpotatgridpoint => getpotatgridpoint_cut2d
+      ! Tools block
+      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CUT2D
+      PROCEDURE,PUBLIC :: CHANGEPOT_AT_GRIDPOINT => CHANGEPOT_AT_GRIDPOINT_CUT2D
 END TYPE Cut2d
 !//////////////////////////////////////////////////
 ! TYPE: WYCKOFFSITIO
@@ -56,11 +64,84 @@ TYPE,ABSTRACT :: Wyckoffsitio
    TYPE(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
    TYPE(Cut2d),DIMENSION(:),ALLOCATABLE :: zrcut
    CONTAINS
+      ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_WYCKOFFSITIO
       PROCEDURE,PUBLIC :: SET_ID => SET_ID_WYCKOFFSITIO
 END TYPE Wyckoffsitio
 !/////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNCTION: getpotatgridpoint_cut2d 
+!###########################################################
+!> @brief 
+!! Common get function. Gets the potential at a given grid point
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getpotatgridpoint_cut2d(this,i,j) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN) :: this
+   INTEGER(KIND=4),INTENT(IN) :: i,j
+   ! Local variables
+   ! local_vars
+   ! Run section
+   getpotatgridpoint_cut2d=this%interrz%fgrid(i,j)
+   RETURN
+END FUNCTION getpotatgridpoint_cut2d
+!###########################################################
+!# SUBROUTINE: CHANGEPOT_AT_GRIDPOINT_CUT2D 
+!###########################################################
+!> @brief
+!! Changes the value of the potential at a given point of the
+!! grid.
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 26/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE CHANGEPOT_AT_GRIDPOINT_CUT2D(this,i,j,newpot)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(INOUT):: this
+   INTEGER(KIND=4),INTENT(IN) :: i,j
+   REAL(KIND=8),INTENT(IN) :: newpot
+   ! Run section
+   this%interrz%fgrid(i,j)=newpot
+   RETURN
+END SUBROUTINE CHANGEPOT_AT_GRIDPOINT_CUT2D
+!###########################################################
+!# FUNCTION: getgridvaluer_cut2d 
+!###########################################################
+!> @brief 
+!! Common get function. Gets ith component of the grid in R
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getgridvaluer_cut2d(this,i) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   INTEGER(KIND=4),INTENT(IN) :: i
+   ! Run section
+   getgridvaluer_cut2d=this%interrz%x(i)
+   RETURN
+END FUNCTION getgridvaluer_cut2d
+!###########################################################
+!# FUNCTION: getgridvaluez_cut2d 
+!###########################################################
+!> @brief 
+!! Common get function. Gets ith component of the grid in Z
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getgridvaluez_cut2d(this,i) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(IN):: this
+   INTEGER(KIND=4),INTENT(IN) :: i
+   ! Run section
+   getgridvaluez_cut2d=this%interrz%y(i)
+   RETURN
+END FUNCTION getgridvaluez_cut2d
 !###########################################################
 !# FUNCTION: getalias_cut2d 
 !###########################################################
@@ -258,7 +339,6 @@ SUBROUTINE READ_CUT2D(this,filename)
    END DO
    !
    CALL this%interrz%READGRID(r,z,f)
-   CALL this%interrz%INTERPOL()
    CLOSE(10)
    RETURN
 END SUBROUTINE READ_CUT2D
@@ -272,17 +352,16 @@ END SUBROUTINE READ_CUT2D
 !> @date 25/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-!SUBROUTINE INTERPOl_CUT2D(this)
-   !! Initial declarations   
-   !IMPLICIT NONE
-   !! I/O variables
-   !TYPE(Cut2d),INTENT(INOUT) :: this
-   !! Local variables
-   !local_vars
-   !! Run section
-   !body
-   !RETURN
-!END SUBROUTINE INTERPOl_CUT2D
+SUBROUTINE INTERPOl_CUT2D(this)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Cut2d),INTENT(INOUT) :: this
+   ! Local variables
+   ! Run section
+   CALL this%interrz%INTERPOL()
+   RETURN
+END SUBROUTINE INTERPOl_CUT2D
 !###########################################################
 !# SUBROUTINE: READ_WYCKOFFSITE 
 !###########################################################

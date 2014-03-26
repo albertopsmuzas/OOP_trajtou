@@ -21,7 +21,7 @@ WRITE(*,*) "***************************************"
 CALL ETIME(timearr,timer)
 ! STEP 1: START UP OUR PES
 CALL thispes%READ("crp.inp")
-CALL thispes%INTERPOL_Z()
+CALL thispes%INTERPOL()
 !
 ! STEP 2: INITIAL CONDITIONS
 CALL initialcond%READ("inicond.inp")

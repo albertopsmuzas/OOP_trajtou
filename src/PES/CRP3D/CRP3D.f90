@@ -142,8 +142,9 @@ TYPE, EXTENDS(PES) :: CRP3D
       PROCEDURE,PUBLIC :: READ => READ_CRP3D
       PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP3D
-      PROCEDURE,PUBLIC :: INTERPOL_Z => INTERPOL_Z_CRP3D
+      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_Z_CRP3D
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
+      PROCEDURE,PUBLIC :: getpot => getpot_crp3d
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP3D
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
       PROCEDURE,PUBLIC :: is_allowed => is_allowed_CRP3D
@@ -1018,6 +1019,106 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
 	FORALL(i=1:3) dvdu(i) = dvdu(i) + deriv(i)
 	RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CRP3D
+!############################################################
+!# FUNCTION: getpot_crp3d ###################################
+!############################################################
+!> @brief
+!! Subroutine that calculates the 3D potential for a point A
+!
+!> @param[in] thispes - CRP3D PES
+!> @param[in] X - Point in space to calculate the potential. Cartesian's
+!
+!> @warning
+!! - All sitios should have been interpolated in Z direction previously. It
+!!   is optinal to extract "vasint".
+!! - Corrugation, MUST have been extracted from sitios previously (smoothed) 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 06/Feb/2014
+!> @version 1.0
+!------------------------------------------------------------
+REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+	IMPLICIT NONE
+	! I/O variables
+   CLASS(CRP3D),TARGET,INTENT(IN) :: thispes
+	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
+	! Local variables
+	REAL(KIND=8):: v
+	REAL(KIND=8),DIMENSION(3):: dvdu
+	TYPE(Fourier2d) :: interpolxy
+   INTEGER(KIND=4) :: nsites,npairpots
+	REAL(KIND=8),DIMENSION(3) :: A, deriv
+	REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f, dfdz ! arguments to the xy interpolation
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
+	INTEGER :: i, j,k ! counters
+	! Pointers
+	REAL(KIND=8), POINTER :: zmax
+	TYPE(Pair_pot),POINTER :: pairpot
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
+	zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
+   npairpots = size(thispes%all_pairpots)
+   nsites = size(thispes%all_sites)
+	! GABBA, GABBA HEY! ----------------------
+   SELECT CASE(X(3).GT.zmax)
+      CASE(.TRUE.)
+         getpot_crp3d = 0.D0
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+	! For the corrugation addition, we need to project upon IWS cell
+	A = X
+   A(1:2) = thispes%surf%project_unitcell(X(1:2))
+   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
+	!
+	pot = 0.D0 ! Initialization value
+	v = 0.D0 ! Initialization value
+#ifdef DEBUG   
+	CALL VERBOSE_WRITE(routinename,"Proceeding to calculate repulsive interactions")
+	CALL VERBOSE_WRITE(routinename,"Max_order: ", thispes%max_order)
+#endif
+	DO j=1, npairpots
+		pairpot => thispes%all_pairpots(j)
+		DO k=0,thispes%max_order
+#ifdef DEBUG
+			CALL VERBOSE_WRITE(routinename, "---> Invoking order", k)
+#endif
+			CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+			v = v + pot
+		END DO
+#ifdef DEBUG
+		CALL VERBOSE_WRITE(routinename, "Repulsive interaction: ", pot)
+		CALL VERBOSE_WRITE(routinename, "Cumulative repulsive interaction:", v )
+		CALL VERBOSE_WRITE(routinename, "dvdx: ",deriv(1))
+		CALL VERBOSE_WRITE(routinename, "dvdy: ",deriv(2))
+		CALL VERBOSE_WRITE(routinename, "dvdz: ",deriv(3))
+		CALL VERBOSE_WRITE(routinename, "Cumulative dvdx: ",dvdu(1))
+		CALL VERBOSE_WRITE(routinename, "Cumulative dvdy: ",dvdu(2))
+		CALL VERBOSE_WRITE(routinename, "Cumulative dvdz: ",dvdu(3))
+#endif
+	END DO
+	! Now, we have all the repulsive interaction and corrections to the derivarives
+	! stored in v(:) and dvdu(:) respectively.
+	! Let's get v and derivatives from xy interpolation of the corrugationless function
+   ALLOCATE(f(nsites))
+   ALLOCATE(xy(nsites,2))
+   ALLOCATE(dfdz(nsites))
+   DO i=1,nsites
+      xy(i,1)=thispes%all_sites(i)%x
+      xy(i,2)=thispes%all_sites(i)%y
+      CALL thispes%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(i),dfdz(i))
+   END DO
+	CALL interpolxy%READ(xy,f,dfdz)
+   CALL interpolxy%SET_COEFF(thispes%surf)
+   CALL interpolxy%GET_F_AND_DERIV(thispes%surf,X,pot,deriv)
+	! Corrections from the smoothing procedure
+   getpot_crp3d = v + pot
+	RETURN
+END FUNCTION getpot_crp3d
 !######################################################################
 ! SUBROUTINE: PLOT_DATA_SYMMPOINT #####################################
 !######################################################################

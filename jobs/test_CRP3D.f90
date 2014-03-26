@@ -27,7 +27,7 @@ WRITE(*,*) "***************************************"
 CALL crp_pes%READ("INcrp3.inp")
 
 ! STEP 3: DO Z INTERPOLATION EXTRACTING VASINT AND SMOOTHING SITES
-CALL crp_pes%INTERPOL_Z()
+CALL crp_pes%INTERPOL()
 
 ! STEP 4: PLOT SOME GRAPHS
 nsites=size(crp_pes%all_sites)
