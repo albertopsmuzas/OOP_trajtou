@@ -29,6 +29,7 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
    CONTAINS
       ! Public procedures
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CUBIC_SPLINES
+      PROCEDURE,PUBLIC :: REINTERPOL => REINTERPOL_CSPLINES
       PROCEDURE,PUBLIC :: getvalue => get_csplines_value
       PROCEDURE,PUBLIC :: getderiv => get_csplines_dfdx_value
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CSPLINES
@@ -39,6 +40,56 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
 END TYPE Csplines
 !//////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: REINTERPOL_CSPLINES 
+!###########################################################
+!> @brief
+!! Interpolates an already interpolated CSplines job
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date ! type a date
+!> @version 1.0
+!
+!> @see interpol_cubic_splines
+!-----------------------------------------------------------
+SUBROUTINE REINTERPOL_CSPLINES(this,dz1,id1,dz2,id2,filename)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Csplines),INTENT(INOUT) :: this
+   REAL(KIND=8),INTENT(IN) :: dz1,dz2
+   INTEGER(KIND=4),INTENT(IN) :: id1,id2
+   CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
+   ! Local variables
+   ! Run section
+   SELECT CASE(this%is_initialized)
+      CASE(.FALSE.)
+         WRITE(0,*) "REINTERPOL_CSPLINES ERR: use INTERPOL intead of REINTERPOL, this csplines &
+                     job was not prior initialized"
+         CALL EXIT(1)
+      CASE(.TRUE.)
+         ! do nothing
+   END SELECT
+   DEALLOCATE(this%d2fdx)
+   DEALLOCATE(this%coeff)
+   this%is_initialized=.FALSE.
+   !
+   SELECT CASE(present(filename))
+      CASE(.TRUE.)
+         CALL this%INTERPOL(dz1,id1,dz2,id2,filename)
+      CASE(.FALSE.)
+         CALL this%INTERPOL(dz1,id1,dz2,id2)
+   END SELECT
+   !
+   SELECT CASE(ALLOCATED(this%xmin))
+      CASE(.TRUE.)
+         DEALLOCATE(this%xmin)
+         CALL this%SET_MINIMUM()
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   RETURN
+END SUBROUTINE REINTERPOL_CSPLINES
 !###########################################################
 !# SUBROUTINE: SET_MINIMUM_CSPLINES 
 !###########################################################

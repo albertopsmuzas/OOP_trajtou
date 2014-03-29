@@ -12,7 +12,7 @@ MODULE CRP3D_MOD
    USE PES_MOD
    USE SURFACE_MOD
    USE CUBICSPLINES_MOD
-   USE FOURIER2D_MOD
+   USE FOURIER_P4MM_MOD
 ! Initial declarations
 IMPLICIT NONE
 !///////////////////////////////////////////////////////////////////////////////
@@ -138,6 +138,7 @@ TYPE, EXTENDS(PES) :: CRP3D
    TYPE(Pair_pot),DIMENSION(:),ALLOCATABLE :: all_pairpots
    TYPE(Sitio),DIMENSION(:),ALLOCATABLE :: all_sites
    TYPE(Surface) :: surf
+   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: klist
    CONTAINS
       PROCEDURE,PUBLIC :: READ => READ_CRP3D
       PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
@@ -513,6 +514,20 @@ SUBROUTINE READ_CRP3D(this,filename)
       CALL VERBOSE_WRITE(routinename,files_sites(i))
 #endif
    END DO
+   ! read last part of the file
+   READ(11,*) ! dummy
+   READ(11,*) ! dummy
+   READ(11,*) ! dummy
+   ALLOCATE(this%klist(n_sites,2))
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Kpoints found:")
+#endif
+   DO i = 1, n_sites
+      READ(11,*) this%klist(i,:)
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,this%klist(i,:))
+#endif
+   END DO
    CLOSE(11)
    ! Initialize CRP3D
    ALLOCATE(this%all_pairpots(n_pairpots))
@@ -525,6 +540,7 @@ SUBROUTINE READ_CRP3D(this,filename)
    END DO
    CALL this%surf%INITIALIZE(file_surf)
    this%max_order = max_order
+   
    RETURN
 END SUBROUTINE READ_CRP3D
 !#######################################################################
@@ -762,7 +778,7 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
    modP_plus = dot_product(P,vect2)
    r=dsqrt(modA+modP_plus)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename, "Distance: ",r)
+   CALL DEBUG_WRITE(routinename, "Distance: ",r)
 #endif
    IF (r.GT.pairpot%z(pairpot%n)) THEN
       interac = 0.D0 ! if distance too high, interaction 0 
@@ -937,87 +953,74 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
-	IMPLICIT NONE
-	! I/O variables
+   IMPLICIT NONE
+   ! I/O variables
    CLASS(CRP3D),TARGET,INTENT(IN) :: thispes
-	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
-	REAL(KIND=8),INTENT(OUT) :: v
-	REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
-	! Local variables
-	TYPE(Fourier2d) :: interpolxy
+   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
+   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
+   ! Local variables
+   TYPE(Fourierp4mm):: interpolxy
    INTEGER(KIND=4) :: nsites,npairpots
-	REAL(KIND=8),DIMENSION(3) :: A, deriv
-	REAL(KIND=8) :: pot
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f, dfdz ! arguments to the xy interpolation
+   REAL(KIND=8),DIMENSION(3) :: A,deriv
+   REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-	INTEGER :: i, j,k ! counters
-	! Pointers
+   INTEGER :: i, j,k ! counters
+   ! Pointers
 	REAL(KIND=8), POINTER :: zmax
-	TYPE(Pair_pot),POINTER :: pairpot
+   TYPE(Pair_pot),POINTER :: pairpot
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
-	zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
+   zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
    npairpots = size(thispes%all_pairpots)
    nsites = size(thispes%all_sites)
-	! GABBA, GABBA HEY! ----------------------
-	IF (X(3).GT.zmax) THEN
-		dvdu = 0.D0
-		v = 0.D0
-		RETURN
-	END IF
-	! For the corrugation addition, we need to project upon IWS cell
-	A = X
+   ! GABBA, GABBA HEY! ----------------------
+   IF (X(3).GT.zmax) THEN
+      dvdu = 0.D0
+      v = 0.D0
+      RETURN
+   END IF
+   ! For the corrugation addition, we need to project upon IWS cell
+   A = X
    A(1:2) = thispes%surf%project_unitcell(X(1:2))
    A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
-	!
-	pot = 0.D0 ! Initialization value
-	v = 0.D0 ! Initialization value
-	FORALL(i=1:3) 
-		dvdu(i) = 0.D0 ! Initialization value
-		deriv(i) = 0.D0 ! Initialization value
-	END FORALL 
-#ifdef DEBUG   
-	CALL VERBOSE_WRITE(routinename,"Proceeding to calculate repulsive interactions")
-	CALL VERBOSE_WRITE(routinename,"Max_order: ", thispes%max_order)
-#endif
-	DO j=1, npairpots
-		pairpot => thispes%all_pairpots(j)
-		DO k=0,thispes%max_order
-#ifdef DEBUG
-			CALL VERBOSE_WRITE(routinename, "---> Invoking order", k)
-#endif
-			CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
-			v = v + pot
-			FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
-		END DO
-#ifdef DEBUG
-		CALL VERBOSE_WRITE(routinename, "Repulsive interaction: ", pot)
-		CALL VERBOSE_WRITE(routinename, "Cumulative repulsive interaction:", v )
-		CALL VERBOSE_WRITE(routinename, "dvdx: ",deriv(1))
-		CALL VERBOSE_WRITE(routinename, "dvdy: ",deriv(2))
-		CALL VERBOSE_WRITE(routinename, "dvdz: ",deriv(3))
-		CALL VERBOSE_WRITE(routinename, "Cumulative dvdx: ",dvdu(1))
-		CALL VERBOSE_WRITE(routinename, "Cumulative dvdy: ",dvdu(2))
-		CALL VERBOSE_WRITE(routinename, "Cumulative dvdz: ",dvdu(3))
-#endif
-	END DO
-	! Now, we have all the repulsive interaction and corrections to the derivarives
-	! stored in v(:) and dvdu(:) respectively.
-	! Let's get v and derivatives from xy interpolation of the corrugationless function
-   ALLOCATE(f(nsites))
+   !
+   pot = 0.D0 ! Initialization value
+   v = 0.D0 ! Initialization value
+   FORALL(i=1:3) 
+      dvdu(i) = 0.D0 ! Initialization value
+      deriv(i) = 0.D0 ! Initialization value
+   END FORALL 
+   DO j=1, npairpots
+      pairpot => thispes%all_pairpots(j)
+      DO k=0,thispes%max_order
+         CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+         v = v + pot
+         FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
+      END DO
+   END DO
+   ! Now, we have all the repulsive interaction and corrections to the derivarives
+   ! stored in v(:) and dvdu(:) respectively.
+   ! Let's get v and derivatives from xy interpolation of the corrugationless function
+   ALLOCATE(f(2,nsites))
    ALLOCATE(xy(nsites,2))
-   ALLOCATE(dfdz(nsites))
+   ALLOCATE(potarr(nsites))
+   ALLOCATE(derivarr(nsites,2))
    DO i=1,nsites
       xy(i,1)=thispes%all_sites(i)%x
       xy(i,2)=thispes%all_sites(i)%y
-      CALL thispes%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(i),dfdz(i))
+      CALL thispes%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
    END DO
-	CALL interpolxy%READ(xy,f,dfdz)
-   CALL interpolxy%SET_COEFF(thispes%surf)
-   CALL interpolxy%GET_F_AND_DERIV(thispes%surf,X,pot,deriv)
-	! Corrections from the smoothing procedure
-	v = v + pot
-	FORALL(i=1:3) dvdu(i) = dvdu(i) + deriv(i)
-	RETURN
+   CALL interpolxy%READ(xy,f,thispes%klist)
+   CALL interpolxy%INTERPOL(thispes%surf)
+   CALL interpolxy%GET_F_AND_DERIVS(thispes%surf,X,potarr,derivarr)
+   ! Corrections from the smoothing procedure
+   v = v + potarr(1)
+   dvdu(1)=dvdu(1)+derivarr(1,1)
+   dvdu(2)=dvdu(2)+derivarr(1,2)
+   dvdu(3)=dvdu(3)+potarr(2)
+   RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CRP3D
 !############################################################
 !# FUNCTION: getpot_crp3d ###################################
@@ -1041,28 +1044,29 @@ REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
-	IMPLICIT NONE
-	! I/O variables
+   IMPLICIT NONE
+   ! I/O variables
    CLASS(CRP3D),TARGET,INTENT(IN) :: thispes
 	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
-	! Local variables
-	REAL(KIND=8):: v
-	REAL(KIND=8),DIMENSION(3):: dvdu
-	TYPE(Fourier2d) :: interpolxy
+   ! Local variables
+   REAL(KIND=8):: v
+   REAL(KIND=8),DIMENSION(3):: dvdu
+   TYPE(Fourierp4mm) :: interpolxy
    INTEGER(KIND=4) :: nsites,npairpots
-	REAL(KIND=8),DIMENSION(3) :: A, deriv
-	REAL(KIND=8) :: pot
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f, dfdz ! arguments to the xy interpolation
+   REAL(KIND=8),DIMENSION(3) :: A,deriv
+   REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-	INTEGER :: i, j,k ! counters
-	! Pointers
-	REAL(KIND=8), POINTER :: zmax
-	TYPE(Pair_pot),POINTER :: pairpot
+   INTEGER :: i, j,k ! counters
+   ! Pointers
+   REAL(KIND=8), POINTER :: zmax
+   TYPE(Pair_pot),POINTER :: pairpot
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
-	zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
+   zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
    npairpots = size(thispes%all_pairpots)
    nsites = size(thispes%all_sites)
-	! GABBA, GABBA HEY! ----------------------
+   ! GABBA, GABBA HEY! ----------------------
    SELECT CASE(X(3).GT.zmax)
       CASE(.TRUE.)
          getpot_crp3d = 0.D0
@@ -1070,54 +1074,38 @@ REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-	! For the corrugation addition, we need to project upon IWS cell
-	A = X
+   ! For the corrugation addition, we need to project upon IWS cell
+   A = X
    A(1:2) = thispes%surf%project_unitcell(X(1:2))
    A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
-	!
-	pot = 0.D0 ! Initialization value
-	v = 0.D0 ! Initialization value
-#ifdef DEBUG   
-	CALL VERBOSE_WRITE(routinename,"Proceeding to calculate repulsive interactions")
-	CALL VERBOSE_WRITE(routinename,"Max_order: ", thispes%max_order)
-#endif
-	DO j=1, npairpots
-		pairpot => thispes%all_pairpots(j)
-		DO k=0,thispes%max_order
-#ifdef DEBUG
-			CALL VERBOSE_WRITE(routinename, "---> Invoking order", k)
-#endif
-			CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
-			v = v + pot
-		END DO
-#ifdef DEBUG
-		CALL VERBOSE_WRITE(routinename, "Repulsive interaction: ", pot)
-		CALL VERBOSE_WRITE(routinename, "Cumulative repulsive interaction:", v )
-		CALL VERBOSE_WRITE(routinename, "dvdx: ",deriv(1))
-		CALL VERBOSE_WRITE(routinename, "dvdy: ",deriv(2))
-		CALL VERBOSE_WRITE(routinename, "dvdz: ",deriv(3))
-		CALL VERBOSE_WRITE(routinename, "Cumulative dvdx: ",dvdu(1))
-		CALL VERBOSE_WRITE(routinename, "Cumulative dvdy: ",dvdu(2))
-		CALL VERBOSE_WRITE(routinename, "Cumulative dvdz: ",dvdu(3))
-#endif
-	END DO
-	! Now, we have all the repulsive interaction and corrections to the derivarives
-	! stored in v(:) and dvdu(:) respectively.
-	! Let's get v and derivatives from xy interpolation of the corrugationless function
-   ALLOCATE(f(nsites))
+   !
+   pot = 0.D0 ! Initialization value
+   v = 0.D0 ! Initialization value
+   DO j=1, npairpots
+      pairpot => thispes%all_pairpots(j)
+      DO k=0,thispes%max_order
+         CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+         v = v + pot
+      END DO
+   END DO
+   ! Now, we have all the repulsive interaction and corrections to the derivarives
+   ! stored in v(:) and dvdu(:) respectively.
+   ! Let's get v and derivatives from xy interpolation of the corrugationless function
+   ALLOCATE(f(2,nsites))
    ALLOCATE(xy(nsites,2))
-   ALLOCATE(dfdz(nsites))
+   ALLOCATE(potarr(nsites))
+   ALLOCATE(derivarr(nsites,2))
    DO i=1,nsites
       xy(i,1)=thispes%all_sites(i)%x
       xy(i,2)=thispes%all_sites(i)%y
-      CALL thispes%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(i),dfdz(i))
+      CALL thispes%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
    END DO
-	CALL interpolxy%READ(xy,f,dfdz)
-   CALL interpolxy%SET_COEFF(thispes%surf)
-   CALL interpolxy%GET_F_AND_DERIV(thispes%surf,X,pot,deriv)
-	! Corrections from the smoothing procedure
-   getpot_crp3d = v + pot
-	RETURN
+   CALL interpolxy%READ(xy,f,thispes%klist)
+   CALL interpolxy%INTERPOL(thispes%surf)
+   CALL interpolxy%GET_F_AND_DERIVS(thispes%surf,X,potarr,derivarr)
+   ! Corrections from the smoothing procedure
+   getpot_crp3d = v + potarr(1)
+   RETURN
 END FUNCTION getpot_crp3d
 !######################################################################
 ! SUBROUTINE: PLOT_DATA_SYMMPOINT #####################################

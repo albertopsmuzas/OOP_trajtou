@@ -6,7 +6,7 @@
 !! 2D functions
 !##########################################################
 MODULE BICSPLINES_MOD
-USE INTERPOL2D_MOD
+USE INTERPOLGRID2D_MOD
 USE CUBICSPLINES_MOD
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////
@@ -19,7 +19,7 @@ IMPLICIT NONE
 !> @param ystring - Interpolation in 1D for each string of control
 !!                  points in y
 !----------------------------------------------------------
-TYPE,EXTENDS(Interpol2d) :: Bicsplines
+TYPE,EXTENDS(Interpolgrid2d) :: Bicsplines
    PRIVATE
    TYPE(Csplines),DIMENSION(:),ALLOCATABLE :: xcsplines
    TYPE(Csplines),DIMENSION(:),ALLOCATABLE :: ycsplines
@@ -151,7 +151,7 @@ SUBROUTINE INTERPOL_NEWGRID_BICSPLINES(this,nxpoints,nypoints)
    END DO
    ! Now generate new interpolation
    CALL this%REBOOT()
-   CALL this%READGRID(newxgrid,newygrid,v)
+   CALL this%READ(newxgrid,newygrid,v)
    CALL this%INTERPOL()
    RETURN
 END SUBROUTINE INTERPOL_NEWGRID_BICSPLINES

@@ -338,7 +338,7 @@ SUBROUTINE READ_CUT2D(this,filename)
       CALL ORDER(z,f(i,:))
    END DO
    !
-   CALL this%interrz%READGRID(r,z,f)
+   CALL this%interrz%READ(r,z,f)
    CLOSE(10)
    RETURN
 END SUBROUTINE READ_CUT2D

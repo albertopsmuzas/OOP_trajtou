@@ -183,7 +183,7 @@ END SUBROUTINE SMOOTH_CRP6D
 !###########################################################
 !> @brief
 !! Extracts energy at equilibrium distance in the vacuum and surface energy
-!! to an Rz-2dcut of the potential
+!! to an Rz-2dcut of the potential. Shifts the vacuum potential as well.
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 25/Mar/2014
@@ -191,9 +191,6 @@ END SUBROUTINE SMOOTH_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
@@ -202,7 +199,6 @@ SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
    REAL(KIND=8) :: ma,mb
-   CHARACTER(LEN=14),PARAMETER :: routinename="SMOOTH_CRP6D: "
    REAL(KIND=8) :: newpot
    ! Run section
    DO i = 1, this%nsites ! cycle wyckoff sites
@@ -212,12 +208,13 @@ SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
          DO k = 1, nr
             DO l = 1, nz
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
-               newpot=newpot-this%farpot%surfen
+               newpot=newpot-this%farpot%getscalefactor()
                CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
             END DO
          END DO
       END DO
    END DO
+   CALL this%farpot%SHIFTPOT()
    RETURN
 END SUBROUTINE EXTRACT_VACUUMSURF_CRP6D
 !###########################################################

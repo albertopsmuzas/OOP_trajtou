@@ -15,9 +15,11 @@ IMPLICIT NONE
 !! monodimensional vacuum potential
 !----------------------------------------------------------------
 TYPE :: Vacuumpot
+   PRIVATE
    INTEGER(KIND=4) :: n
    TYPE(Csplines) :: rpot
    REAL(KIND=8) :: surfen
+   REAL(KIND=8) :: potmin
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_VACUUMPOT
@@ -25,11 +27,55 @@ TYPE :: Vacuumpot
       ! Get block
       PROCEDURE,PUBLIC :: getpot => getpot_vacuumpot
       PROCEDURE,PUBLIC :: getderiv => getderiv_vacuumpot
+      PROCEDURE,PUBLIC :: getscalefactor => getscalefactor_vacuumpot
+      ! Tools block
+      PROCEDURE,PUBLIC :: SHIFTPOT => SHIFTPOT_VACUUMPOT
       ! Plot tools block
       PROCEDURE,PUBLIC :: PLOT => PLOT_VACUUMPOT
-      PROCEDURE,PUBLIC :: PLOTDATA => PLOTDATA_VACUUMPLOT
+      PROCEDURE,PUBLIC :: PLOTDATA => PLOTDATA_VACUUMPOT
 END TYPE Vacuumpot
+!/////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: SHIFTPOT_VACUUMPOT 
+!###########################################################
+!> @brief
+!! Shift the entire potential so that the equilibrium geomtry has
+!! energy 0
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 27/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SHIFTPOT_VACUUMPOT(this)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Vacuumpot),INTENT(INOUT):: this
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counters
+   ! Run section
+   DO i = 1, this%n
+      this%rpot%f(i)=this%rpot%f(i)-this%potmin
+   END DO
+   CALL this%rpot%REINTERPOL(0.D0,0,0.D0,0)
+   RETURN
+END SUBROUTINE SHIFTPOT_VACUUMPOT
+!###########################################################
+!# FUNCTION: getscalefactor_vacuumpot 
+!###########################################################
+!> @brief 
+!! Common get function. Gets the sum of atributes surfen and potmin
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getscalefactor_vacuumpot(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Vacuumpot),INTENT(IN):: this
+   ! Run section
+   getscalefactor_vacuumpot=this%surfen+this%potmin
+   RETURN
+END FUNCTION getscalefactor_vacuumpot
 !###########################################################
 !# FUNCTION: getderiv_vacuumpot 
 !###########################################################
@@ -63,7 +109,7 @@ REAL(KIND=8) FUNCTION getpot_vacuumpot(this,r)
    RETURN
 END FUNCTION getpot_vacuumpot
 !###########################################################
-!# SUBROUTINE: PLOTDATA_VACUUMPLOT 
+!# SUBROUTINE: PLOTDATA_VACUUMPOT 
 !###########################################################
 !> @brief
 !! Plots a graph with values of the potential at grid points
@@ -72,7 +118,7 @@ END FUNCTION getpot_vacuumpot
 !> @date 26/Mar/2013
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE PLOTDATA_VACUUMPLOT(this,filename)
+SUBROUTINE PLOTDATA_VACUUMPOT(this,filename)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
@@ -81,9 +127,9 @@ SUBROUTINE PLOTDATA_VACUUMPLOT(this,filename)
    ! Run section
    CALL this%rpot%PLOTDATA(filename)
    RETURN
-END SUBROUTINE PLOTDATA_VACUUMPLOT
+END SUBROUTINE PLOTDATA_VACUUMPOT
 !###########################################################
-!# SUBROUTINE: PLOT_VACUUMPLOT 
+!# SUBROUTINE: PLOT_VACUUMPOT 
 !###########################################################
 !> @brief
 !! Plots a graph once interpolation was done
@@ -137,6 +183,7 @@ SUBROUTINE INITIALIZE_VACUUMPOT(this,filename)
          SELECT CASE(size(this%rpot%xmin))
             CASE(1)
                !do nothing
+               this%potmin = this%rpot%getvalue(this%rpot%xmin(1))
             CASE DEFAULT
                WRITE(0,*) "INITIALIZE_VACUUMPOT ERR: More than one minimum. Something is wrong"
                CALL EXIT(1)
@@ -177,9 +224,9 @@ SUBROUTINE READ_VACUUMPOT(this,filename)
    READ(111,*) ! dummy line
    READ(111,*) lenunits,enunits
    READ(111,*) aux1
-   CALL len%READ(aux1,lenunits)
-   CALL len%TO_STD()
-   this%surfen=len%getvalue()
+   CALL en%READ(aux1,enunits)
+   CALL en%TO_STD()
+   this%surfen=en%getvalue()
    READ(111,*) this%n
    ALLOCATE(r(this%n))
    ALLOCATE(f(this%n))
