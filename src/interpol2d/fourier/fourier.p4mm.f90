@@ -48,7 +48,7 @@ REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r)
       CASE(3)
          termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))+dcos(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
       CASE DEFAULT
-         WRITE(0,*) "termfourier ERR: Incorrect fourier term id: ", id
+         WRITE(0,*) "termfoup4mm ERR: Incorrect fourier term id: ", id
          CALL EXIT(1)
    END SELECT
    RETURN
@@ -81,14 +81,14 @@ REAL(KIND=8) FUNCTION termfoup4mm_dx(id,surf,k,r)
       CASE(0)
          termfoup4mm_dx=0.D0
       CASE(1)
-         termfoup4mm_dx=-g*k(1)*dsin(g*dfloat(k(1))*r(1))
+         termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))
       CASE(2)
-         termfoup4mm_dx=-g*k(1)*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(1))*r(2))
+         termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(1))*r(2))
       CASE(3)
-         termfoup4mm_dx=-g*k(1)*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))-&
-            g*k(2)*dsin(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
+         termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))-&
+            g*dfloat(k(2))*dsin(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
       CASE DEFAULT
-         WRITE(0,*) "termfourier ERR: Incorrect fourier term id: ", id
+         WRITE(0,*) "termfoup4mm_dx ERR: Incorrect fourier term id: ", id
          CALL EXIT(1)
    END SELECT
    RETURN
@@ -121,14 +121,14 @@ REAL(KIND=8) FUNCTION termfoup4mm_dy(id,surf,k,r)
       CASE(0)
          termfoup4mm_dy=0.D0
       CASE(1)
-         termfoup4mm_dy=-g*k(1)*dsin(g*dfloat(k(1))*r(2))
+         termfoup4mm_dy=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(2))
       CASE(2)
-         termfoup4mm_dy=-g*k(1)*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(1))*r(2))
+         termfoup4mm_dy=-g*dfloat(k(1))*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(1))*r(2))
       CASE(3)
-         termfoup4mm_dy=-g*k(2)*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(2))*r(2))-&
-            g*k(1)*dcos(g*dfloat(k(2))*r(1))*dsin(g*dfloat(k(1))*r(2))
+         termfoup4mm_dy=-g*dfloat(k(2))*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(2))*r(2))-&
+            g*dfloat(k(1))*dcos(g*dfloat(k(2))*r(1))*dsin(g*dfloat(k(1))*r(2))
       CASE DEFAULT
-         WRITE(0,*) "termfourier ERR: Incorrect fourier term id: ", id
+         WRITE(0,*) "termfoup4mm_dy ERR: Incorrect fourier term id: ", id
          CALL EXIT(1)
    END SELECT
    RETURN
@@ -167,8 +167,8 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
       END DO
    END DO
    CALL INV_MTRX(this%n,tmtrx,inv_tmtrx)
-   DO i = 1, size(this%f(:,1))
-      this%coeff(i,:)=matmul(inv_tmtrx,this%f(i,:))
+   DO i = 1, size(this%f(:,1)) ! looop over functions
+      this%coeff(:,i)=matmul(inv_tmtrx,this%f(i,:))
    END DO
    SELECT CASE(present(filename)) ! Check if we want to print coefficients
       CASE(.TRUE.)
@@ -196,11 +196,13 @@ END SUBROUTINE INTERPOL_FOURIERP4MM
 !-----------------------------------------------------------
 SUBROUTINE SET_TERMMAP_FOURIERP4MM(this)
    ! Initial declarations   
+   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourierp4mm),INTENT(INOUT)::this
    ! Local variables
    INTEGER(KIND=4) :: i !counters
+   CHARACTER(LEN=25),PARAMETER :: routinename="SET_TERMMAP_FOURIERP4MM: "
    ! Run section
    ALLOCATE(this%termmap(this%n))
    DO i = 1, this%n
@@ -237,6 +239,10 @@ SUBROUTINE SET_TERMMAP_FOURIERP4MM(this)
             CALL EXIT(1)
       END SELECT
    END DO
+#ifdef DEBUG+
+   CALL DEBUG_WRITE(routinename,"Klist structure: ")
+   CALL DEBUG_WRITE(routinename,this%termmap)
+#endif
    RETURN
 END SUBROUTINE SET_TERMMAP_FOURIERP4MM
 !###########################################################
@@ -277,6 +283,9 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
       dvdu(i,1)=dot_product(terms_dx,this%coeff(:,i))
       dvdu(i,2)=dot_product(terms_dy,this%coeff(:,i))
    END DO
+   DEALLOCATE(terms)
+   DEALLOCATE(terms_dx)
+   DEALLOCATE(terms_dy)
    RETURN
 END SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM
 END MODULE FOURIER_P4MM_MOD 
