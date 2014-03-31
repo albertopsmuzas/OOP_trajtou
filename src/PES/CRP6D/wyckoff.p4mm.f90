@@ -1,12 +1,12 @@
 !#########################################################
-! MODULE: INTERPOL_WYCKOFF_P4MM
+! MODULE: WYCKOFF_P4MM
 !> @brief
 !! Provides tools to interpolate through wyckoff sites belonging to
 !! p4mm wallpaper symmetry
 !##########################################################
-MODULE INTERPOL_WYCKOFF_P4MM_MOD
+MODULE WYCKOFF_P4MM_MOD
 ! Initial declarations
-USE INTERPOL_WYCKOFF_GENERIC_MOD
+USE WYCKOFF_GENERIC_MOD
 USE FOURIER1D_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
@@ -24,4 +24,4 @@ END TYPE Wyckoffp4mm
 !/////////////////////////////////////////////////////////////////
 CONTAINS
 ! contains, body
-END MODULE INTERPOL_WYCKOFF_P4MM_MOD
+END MODULE WYCKOFF_P4MM_MOD

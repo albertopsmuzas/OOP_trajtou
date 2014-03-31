@@ -33,7 +33,7 @@ TYPE :: Interpol1d
    CONTAINS
       PROCEDURE,PUBLIC :: READ => READ_INTERPOL1D
       PROCEDURE,PUBLIC :: PLOTDATA => PLOT_DATA_INTERPOL1D
-      PROCEDURE,PUBLIC :: PLOT_INTERPOL => PLOT_INTERPOL_INTERPOL1D
+      PROCEDURE,PUBLIC :: PLOT => PLOT_INTERPOL_INTERPOL1D
       PROCEDURE,PUBLIC :: getvalue => getvalue_interpol1d ! child types, override this
       PROCEDURE,PUBLIC :: getderiv => getderiv_interpol1d ! child types, override this
 END TYPE Interpol1d

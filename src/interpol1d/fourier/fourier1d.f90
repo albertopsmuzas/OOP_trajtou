@@ -17,39 +17,104 @@ IMPLICIT NONE
 !------------------------------------------------
 TYPE,EXTENDS(Interpol1d):: Fourier1d
    PRIVATE
-   LOGICAL :: par
-   INTEGER(KIND=4) :: order
+   LOGICAL :: even=.FALSE.
    REAL(KIND=8) :: period
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeffpar,coeffodd
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: klist
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff
    CONTAINS
-      PROCEDURE,PUBLIC :: ispar => ispar_fourier1d
+      PROCEDURE,PUBLIC :: READ_EXTRA => READ_EXTRA_DETAILS_FOURIER1D
+      PROCEDURE,PUBLIC :: is_even => is_even_fourier1d
       PROCEDURE,PUBLIC :: getperiod => getperiod_fourier1d
-      PROCEDURE,PUBLIC :: getorder => getorder_fourier1d
-      PROCEDURE,PUBLIC :: SET_COEFF => SET_COEFF_FOURIER1D
+      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_FOURIER1D
       PROCEDURE,PUBLIC :: getvalue => getvalue_fourier1d
       PROCEDURE,PUBLIC :: getderiv => getderiv_fourier1d
 END TYPE Fourier1d
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# FUNCTION: getorder_fourier1d 
+!# SUBROUTINE: READ_EXTRA_DETAILS_FOURIER1D 
 !###########################################################
 !> @brief
-!! Simple get function
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 03/Mar/2014
-!> @version 1.0
+!! Reads specific data for fourier interpolations
 !-----------------------------------------------------------
-INTEGER(KIND=4) FUNCTION getorder_fourier1d(this) 
+SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d),INTENT(IN) :: this
+   CLASS(Fourier1d),INTENT(INOUT):: this
+   REAL(KIND=8),INTENT(IN) :: period
+   INTEGER(KIND=4),DIMENSION(:) :: klist
+   LOGICAL, INTENT(IN),OPTIONAL:: is_even
    ! Run section
-   getorder_fourier1d=this%order
+   this%period=period
+   ALLOCATE(this%klist(size(klist)))
+   this%klist=klist
+   SELECT CASE(present(is_even))
+      CASE(.TRUE.)
+         this%even=is_even
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    RETURN
-END FUNCTION getorder_fourier1d
+END SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D
+!###########################################################
+!# FUNCTION: termfou1d 
+!###########################################################
+!> @brief 
+!! Value of the term of order kpoint of a one dimensional fourier
+!! expansion. Positive values stand for even terms of the series.
+!! Negative numbers stand for odd termns in the expansion
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION termfou1d(kpoint,period,x)
+   ! Initial declarations 
+   USE CONSTANTS_MOD  
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: kpoint
+   REAL(KIND=8),INTENT(IN) :: x,period
+   ! Run section
+   SELECT CASE(kpoint)
+      CASE(0)
+         termfou1d=1.D0
+      CASE(1 :) 
+         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*x)
+      CASE(: -1)
+         termfou1d=dsin((2.D0*PI/period)*dfloat(-kpoint)*x)
+      CASE DEFAULT
+         WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
+END FUNCTION termfou1d
+!###########################################################
+!# FUNCTION: termfou1d_dx
+!###########################################################
+!> @brief 
+!! Value of the d(term)/dx of order kpoint of a one dimensional fourier
+!! expansion. Positive values stand for even terms of the series.
+!! Negative numbers stand for odd termns in the expansion
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION termfou1d_dx(kpoint,period,x)
+   ! Initial declarations 
+   USE CONSTANTS_MOD  
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: kpoint
+   REAL(KIND=8),INTENT(IN) :: x,period
+   ! Run section
+   SELECT CASE(kpoint)
+      CASE(0)
+         termfou1d_dx=0.D0
+      CASE(1 :) 
+         termfou1d_dx=-(2.D0*PI/period)*dfloat(kpoint)*dsin((2.D0*PI/period)*dfloat(kpoint)*x)
+      CASE(: -1)
+         termfou1d_dx=(2.D0*PI/period)*dfloat(-kpoint)*dcos((2.D0*PI/period)*dfloat(-kpoint)*x)
+      CASE DEFAULT
+         WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
+END FUNCTION termfou1d_dx
 !###########################################################
 !# FUNCTION: getperiod_fourier1d 
 !###########################################################
@@ -70,75 +135,60 @@ REAL(KIND=8) FUNCTION getperiod_fourier1d(this)
    RETURN
 END FUNCTION getperiod_fourier1d  
 !##################################################
-! FUNCTION: ispar_fourier1d
+! FUNCTION: is_even_fourier1d
 !> @brief
-!! Basic enquire function. If the function is par,
+!! Basic enquire function. If the function is even,
 !! sinus elements vanish from expansion
 !--------------------------------------------------
-LOGICAL FUNCTION ispar_fourier1d(this)
+LOGICAL FUNCTION is_even_fourier1d(this)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourier1d),INTENT(IN) :: this
    ! Run section ----------------
-   ispar_fourier1d = this%par
+   is_even_fourier1d = this%even
    RETURN
-END FUNCTION ispar_fourier1d
-!#################################################
-! SUBROUTINE: SET_COEFF_FURIER1D
+END FUNCTION is_even_fourier1d
+!###########################################################
+!# SUBROUTINE: INTERPOL_FOURIER1D 
+!###########################################################
 !> @brief
-!! Performs interpolation
-!-------------------------------------------------
-SUBROUTINE SET_COEFF_FOURIER1D(this,period,ispar)
-   ! Initial declarations
+!! Performs a generic fourier1d interpolation
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Mar/2014 
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE INTERPOL_FOURIER1D(this)
+   ! Initial declarations   
    USE MATHS_MOD
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d),INTENT(INOUT) :: this
-   REAL(KIND=8),INTENT(IN) :: period
-   LOGICAL,INTENT(IN),OPTIONAL :: ispar
+   CLASS(Fourier1d),INTENT(INOUT) :: this 
    ! Local variables
-   INTEGER(KIND=4) :: q ! max order of the expansion
-   INTEGER(KIND=4) :: i,l ! counters
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: m ,inv_m
-   REAL(KIND=8), DIMENSION(:),ALLOCATABLE :: aux
-   ! Run section -----------------
-   q=((this%n-1)/2) ! if this%n-1 is not a par number, this'd be an error
-   this%order=q
-   ALLOCATE(m(this%n,this%n))
-   ALLOCATE(inv_m(this%n,this%n))
-   SELECT CASE(ispar)
-      CASE(.TRUE.) ! is par, only par coefficients
-         this%par=.TRUE.
-         ALLOCATE(this%coeffpar(this%n))
-         FORALL(i=1:this%n,l=1:this%n)
-            m(i,l)=dcos((2.D0*pi/period)*dfloat(l-1)*this%f(i))
-         END FORALL
-         CALL INV_MATRIX(this%n,m,inv_m)
-         this%coeffpar=matmul(inv_m,this%f)
-         RETURN
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: terms,inv_terms
+   INTEGER(KIND=4) :: i,j ! counters
+   ! Run section
+   ALLOCATE(this%coeff(this%n))
+   ALLOCATE(terms(this%n,this%n))
+   SELECT CASE(allocated(this%klist))
+      CASE(.TRUE.)
+         ! do nothing
       CASE(.FALSE.)
-         this%par=.FALSE. 
-         ALLOCATE(this%coeffpar(q+1))
-         ALLOCATE(this%coeffodd(q))
-         ALLOCATE(aux(this%n))
-         FORALL(i=1:this%n,l=1:q+1)
-            m(i,l)=dcos((2.D0*pi/period)*dfloat(l-1)*this%f(i))
-         END FORALL
-         FORALL(i=1:this%n,l=q+2:this%n)
-            m(i,l)=dsin((2.D0*pi/period)*dfloat(l-1)*this%f(i))
-         END FORALL
-         CALL INV_MATRIX(this%n,m,inv_m)
-         aux=matmul(inv_m,this%f)
-         this%coeffpar=aux(1:q+1)
-         this%coeffodd=aux(q+2:this%n)
-         RETURN
-      CASE DEFAULT
-         WRITE(0,*) "SET_COEFF_FOURIER1D ERR: Wrong value for ispar variable"
+         WRITE(0,*) "INTERPOL_FOURIER ERR: Klist was not initialized before"
+         WRITE(0,*) "INTERPOL_FOURIER_ERR: Use READ_EXTRA subroutine"
          CALL EXIT(1)
    END SELECT
-END SUBROUTINE SET_COEFF_FOURIER1D
+   DO i = 1, this%n ! loop over eq for different points
+      DO j = 1, this%n ! loop over coefficients
+         terms(i,j)=termfou1d(this%klist(j),this%period,this%x(i))
+      END DO
+   END DO
+   CALL INV_MTRX(this%n,terms,inv_terms)
+   this%coeff=matmul(inv_terms,this%f)
+   DEALLOCATE(terms)
+   RETURN
+END SUBROUTINE INTERPOL_FOURIER1D
 !###########################################################
 !# FUNCTION: getvalue_fourier1d 
 !###########################################################
@@ -160,25 +210,21 @@ REAL(KIND=8) FUNCTION getvalue_fourier1d(this,x,shift)
    REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: m
+   REAL(KIND=8) :: r
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms
    ! Run section
-   IF (x <= this%f(1) .OR. x >= this%f(this%n)) THEN
-      WRITE(0,*) "getvalue_fourier1d ERR: requested f(x) value is out of range"
-      CALL EXIT(1)
-   END IF
-   ALLOCATE(m(this%n))
-   SELECT CASE(this%par)
+   SELECT CASE(present(shift))
       CASE(.TRUE.)
-         FORALL(i=1:this%n) m(i)=dcos((2.D0*pi/this%period)*dfloat(i-1)*x)
-         getvalue_fourier1d=dot_product(this%coeffpar,m)
+         r=x+shift
       CASE(.FALSE.)
-         FORALL(i=1:this%order+1) m(i)=dcos((2.D0*pi/this%period)*dfloat(i-1)*x)
-         FORALL(i=this%order+2:this%n) m(i)=dsin((2.D0*pi/this%period)*dfloat(i-this%order-1)*x)
-         getvalue_fourier1d=dot_product(m(1:(this%order+1)),this%coeffpar)
-         getvalue_fourier1d=getvalue_fourier1d+dot_product(m(this%order+2:this%n),this%coeffodd)
-      CASE DEFAULT
-         ! do nothing
+         r=x
    END SELECT
+   ALLOCATE(terms(this%n))
+   DO i = 1, this%n
+      terms(i)=termfou1d(this%klist(i),this%period,r)
+   END DO
+   getvalue_fourier1d=dot_product(terms,this%coeff)
+   DEALLOCATE(terms)
    RETURN
 END FUNCTION getvalue_fourier1d
 !###########################################################
@@ -191,7 +237,7 @@ END FUNCTION getvalue_fourier1d
 !> @date 03/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getderiv_fourier1d(this,x,shift) 
+REAL(KIND=8) FUNCTION getderiv_fourier1d(this,x,shift)
    ! Initial declarations   
    USE CONSTANTS_MOD
    IMPLICIT NONE
@@ -201,29 +247,21 @@ REAL(KIND=8) FUNCTION getderiv_fourier1d(this,x,shift)
    REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: m
+   REAL(KIND=8) :: r
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms
    ! Run section
-   IF (x <= this%f(1) .OR. x >= this%f(this%n)) THEN
-      WRITE(0,*) "getvalue_fourier1d ERR: requested f(x) value is out of range"
-      CALL EXIT(1)
-   END IF
-   ALLOCATE(m(this%n))
-   SELECT CASE(this%par)
+   SELECT CASE(present(shift))
       CASE(.TRUE.)
-         FORALL(i=1:this%n) m(i)=-dsin((2.D0*pi/this%period)*dfloat(i-1)*x)*(2.D0*pi/this%period)*dfloat(i-1)
-         getderiv_fourier1d=dot_product(this%coeffpar,m)
+         r=x+shift
       CASE(.FALSE.)
-         FORALL(i=1:this%order+1)
-            m(i)=-dsin((2.D0*pi/this%period)*dfloat(i-1)*x)*(2.D0*pi/this%period)*dfloat(i-1)
-         END FORALL
-         FORALL(i=this%order+2:this%n) 
-            m(i)=dcos((2.D0*pi/this%period)*dfloat(i-this%order-1)*x)*(2.D0*pi/this%period)*dfloat(i-this%order-1)
-         END FORALL
-         getderiv_fourier1d=dot_product(m(1:this%order+1),this%coeffpar)
-         getderiv_fourier1d=getderiv_fourier1d+dot_product(m(this%order+2:this%n),this%coeffodd)
-      CASE DEFAULT
-         ! do nothing
+         r=x
    END SELECT
+   ALLOCATE(terms(this%n))
+   DO i = 1, this%n
+      terms(i)=termfou1d_dx(this%klist(i),this%period,r)
+   END DO
+   getderiv_fourier1d=dot_product(terms,this%coeff)
+   DEALLOCATE(terms)
    RETURN
 END FUNCTION getderiv_fourier1d
 END MODULE FOURIER1D_MOD

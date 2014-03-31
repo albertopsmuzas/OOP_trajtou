@@ -698,12 +698,12 @@ SUBROUTINE PLOT_SPLINES_BICSPLINES(this,npoints)
    DO i = 1, ny
       WRITE(filename,'(I4,A12)') i,"-xspline.dat"
       filename=adjustl(filename)
-      CALL this%xcsplines(i)%PLOT_INTERPOL(npoints,filename)
+      CALL this%xcsplines(i)%PLOT(npoints,filename)
    END DO
    DO i = 1, nx
       WRITE(filename,'(I4,A12)') i,"-yspline.dat"
       filename=adjustl(filename)
-      CALL this%ycsplines(i)%PLOT_INTERPOL(npoints,filename)
+      CALL this%ycsplines(i)%PLOT(npoints,filename)
    END DO
    RETURN
 END SUBROUTINE PLOT_SPLINES_BICSPLINES

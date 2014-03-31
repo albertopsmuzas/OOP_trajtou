@@ -146,7 +146,7 @@ SUBROUTINE PLOT_VACUUMPOT(this,npoints,filename)
    INTEGER(KIND=4),INTENT(IN) :: npoints
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Run section
-   CALL this%rpot%PLOT_INTERPOL(npoints,filename)
+   CALL this%rpot%PLOT(npoints,filename)
    RETURN
 END SUBROUTINE PLOT_VACUUMPOT
 !###########################################################
