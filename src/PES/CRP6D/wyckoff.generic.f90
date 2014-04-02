@@ -9,6 +9,14 @@ MODULE WYCKOFF_GENERIC_MOD
 ! Initial declarations
 IMPLICIT NONE
 !//////////////////////////////////////////////////
+! TYPE: Fouklist
+!> @brief
+!! Auxiliar type to get rid with some technical problems
+!--------------------------------------------------
+TYPE Fouklist
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: k
+END TYPE
+!//////////////////////////////////////////////////
 ! TYPE: Cut2d
 !> @brief
 !! Contains data for a Z,R interpolation letting X,Y,Theta,Phi
@@ -58,18 +66,59 @@ END TYPE Cut2d
 TYPE,ABSTRACT :: Wyckoffsitio
    !PRIVATE
    CHARACTER :: id
+   LOGICAL :: is_homonucl=.FALSE.
+   REAL(KIND=8) :: x,y
    INTEGER(KIND=4) :: n2dcuts
    INTEGER(KIND=4) :: nphicuts
+   REAL(KIND=8) ::rinit,zinit
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: nphipoints
-   TYPE(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
+   TYPE(Fouklist),DIMENSION(:),ALLOCATABLE :: klistphi
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: klisttheta
    TYPE(Cut2d),DIMENSION(:),ALLOCATABLE :: zrcut
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_WYCKOFFSITIO
       PROCEDURE,PUBLIC :: SET_ID => SET_ID_WYCKOFFSITIO
+      PROCEDURE,PUBLIC :: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
+      ! Interface procedures
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_WYCKOFFSITIO
 END TYPE Wyckoffsitio
 !/////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: SET_HOMONUCL_WYCKOFFSITIO 
+!###########################################################
+!> @brief
+!! Common set function. Sets is_homonucl atribute
+!-----------------------------------------------------------
+SUBROUTINE SET_HOMONUCL_WYCKOFFSITIO(this,is_homonucl)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Wyckoffsitio),INTENT(INOUT):: this
+   LOGICAL,INTENT(IN) :: is_homonucl
+   ! Run section
+   this%is_homonucl=is_homonucl
+   RETURN
+END SUBROUTINE SET_HOMONUCL_WYCKOFFSITIO
+!###########################################################
+!# SUBROUTINE: GET_V_AND_DERIVS_WYCKOFFSITIO 
+!###########################################################
+!> @brief
+!! Dummy subroutine, acting as an interface 
+!-----------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_WYCKOFFSITIO(this,x,v,dvdu)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Wyckoffsitio),INTENT(IN) :: this
+   REAL(KIND=8),DIMENSION(4),INTENT(IN) ::x 
+   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(4),INTENT(OUT) :: dvdu
+   ! Run section
+   WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFSITIO ERR: if I was invoked, something went wrong with type allocation of wyckoffsitio"
+   CALL EXIT(1)
+END SUBROUTINE GET_V_AND_DERIVS_WYCKOFFSITIO
 !###########################################################
 !# FUNCTION: getpotatgridpoint_cut2d 
 !###########################################################
@@ -395,18 +444,33 @@ SUBROUTINE READ_WYCKOFFSITIO(this,u)
    READ(u,'(I2)',advance="no") this%n2dcuts
    ALLOCATE(this%zrcut(this%n2dcuts))
    READ(u,'(I2)',advance="no") this%nphicuts
-   ALLOCATE(this%phicut(this%nphicuts))
    ALLOCATE(this%nphipoints(this%nphicuts))
+   ALLOCATE(this%klistphi(this%nphicuts))
    READ(u,*) this%nphipoints(:)
+   DO i = 1, this%nphicuts
+         ALLOCATE(this%klistphi(i)%k(this%nphipoints(i)))
+         READ(u,*) this%klistphi(i)%k(:)
+   END DO
+   ALLOCATE(this%klisttheta(this%nphicuts))
+   READ(u,*) this%klisttheta(:)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"n2dcuts: ",this%n2dcuts)
    CALL VERBOSE_WRITE(routinename,"nphicuts: ",this%nphicuts)
    CALL VERBOSE_WRITE(routinename,this%nphipoints(:))
+   DO i = 1, this%nphicuts
+         CALL VERBOSE_WRITE(routinename,"Kpoins list for phi interpolations:")
+         CALL VERBOSE_WRITE(routinename,this%klistphi(i)%k(:))
+   END DO
+   CALL VERBOSE_WRITE(routinename,"Kpoints for theta interpolation: ")
+   CALL VERBOSE_WRITE(routinename,this%klisttheta)
 #endif
    DO i = 1, this%n2dcuts
       READ(u,*) filename
       CALL this%zrcut(i)%READ(filename)
    END DO
+   ! All zrcuts should belong to the same XY position (center of mass)
+   this%x=this%zrcut(1)%x
+   this%x=this%zrcut(1)%y
    RETURN
 END SUBROUTINE READ_WYCKOFFSITIO
 

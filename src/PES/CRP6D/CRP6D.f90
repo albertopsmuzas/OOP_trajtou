@@ -12,6 +12,7 @@
 MODULE CRP6D_MOD
 USE CRP3D_MOD
 USE EXTRAPOL_TO_VACUUM_MOD
+USE FOURIER_P4MM_MOD
 USE WYCKOFF_P4MM_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////
@@ -21,20 +22,178 @@ IMPLICIT NONE
 TYPE,EXTENDS(PES) :: CRP6D
    INTEGER(KIND=4) :: nsites
    INTEGER(KIND=4) :: natomic
+   LOGICAL :: is_homonucl=.FALSE.
    LOGICAL :: is_smooth=.FALSE.
    CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE :: wyckoffsite
    TYPE(CRP3D),DIMENSION(:),ALLOCATABLE :: atomiccrp
    TYPE(Vacuumpot) :: farpot
+   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: xyklist
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_CRP6D
+      ! Get block
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
       ! Tools block
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CRP6D
       PROCEDURE,PUBLIC :: RAWINTERPOL => RAWINTERPOL_CRP6D
       PROCEDURE,PUBLIC :: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
+      PROCEDURE,PUBLIC :: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
 END TYPE CRP6D
 CONTAINS
+!###########################################################
+!# SUBROUTINE: INTERPOL_NEW_RZGRID_CRP6D 
+!###########################################################
+!> @brief
+!! Creates a different R-Z grid using the ones stored in files
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D(this,nRpoints,nZpoints)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),INTENT(INOUT) :: this
+   INTEGER(KIND=4),INTENT(IN) :: nrpoints,nzpoints
+   ! Local variables
+   INTEGER(KIND=4) :: i,j ! counters
+   ! Run section
+   DO i = 1, this%nsites
+      DO j = 1, this%wyckoffsite(i)%n2dcuts
+         CALL this%wyckoffsite(i)%zrcut(j)%interrz%INTERPOL_NEWGRID(nrpoints,nzpoints)
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D
+!###########################################################
+!# SUBROUTINE: GET_V_AND_DERIVS_CRP6D 
+!###########################################################
+!> @brief
+!! Gets the potential and the derivatives respect to all DOFs
+!
+!> @warning
+!! - Assumed a Fourier interpolation in XY (symmetry adapted)
+!! - Assumed a Fourier interpolation in theta (symmetry adapted)
+!! - Assumed a Fourier interpolation in phi (symmetry adapted)
+!! - Assumed a bicubic splines interpolation in R-Z (symmetry independent)
+!! - Assumed that Z-R grids have the same size
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: x
+   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dvdu
+   ! Local variables
+   INTEGER(KIND=4) :: i,j ! counters
+   REAL(KIND=8) :: ma,mb ! masses
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f ! smooth function and derivs
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: dfdu ! smooth derivatives
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux2
+   REAL(KIND=8),DIMENSION(6) :: atomicx
+   REAL(KIND=8) :: va,vb
+   REAL(KIND=8),DIMENSION(3) :: dvdu_atomicA
+   REAL(KIND=8),DIMENSION(3) :: dvdu_atomicB
+   TYPE(Fourierp4mm) :: xyinterpol
+   ! Run section
+   SELECT CASE(this%is_smooth)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH()"
+         CALl EXIT(1)
+   END SELECT
+   SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastz()) 
+      CASE(.TRUE.)
+         v=this%farpot%getpot(x(3))
+         dvdu(1)=0.D0
+         dvdu(2)=0.D0
+         dvdu(3)=0.D0
+         dvdu(4)=this%farpot%getderiv(x(3))
+         dvdu(5)=0.D0
+         dvdu(6)=0.D0
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   ALLOCATE(f(5,this%nsites))
+   ALLOCATE(xy(this%nsites,2))
+   DO i = 1, this%nsites 
+      CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
+      xy(i,1)=this%wyckoffsite(i)%x
+      xy(i,2)=this%wyckoffsite(i)%y
+   END DO
+   ! f(1,:) smooth potential values
+   ! f(2,:) smooth dvdz
+   ! f(3,:) smooth dvdr
+   ! f(4,:) smooth dvdtheta
+   ! f(5,:) smooth dvdphi
+   CALL xyinterpol%READ(xy,f,this%xyklist)
+   CALL xyinterpol%INTERPOL(this%atomiccrp(1)%surf)
+   ALLOCATE(aux1(5))
+   ALLOCATE(aux2(5,2))
+   CALL xyinterpol%GET_F_AND_DERIVS(this%atomiccrp(1)%surf,x(1:2),aux1,aux2)
+   !-------------------------------------
+   ! Results for the smooth potential
+   !-------------------------------------
+   ! v=aux1(1)         ! v
+   ! dvdu(1)=aux2(1,1) ! dvdx
+   ! dvdu(2)=aux2(1,2) ! dvdy
+   ! dvdu(3)=aux1(2)   ! dvdz
+   ! dvdu(4)=aux1(3)   ! dvdr
+   ! dvdu(5)=aux1(4)   ! dvdtheta
+   ! dvdu(6)=aux1(5)   ! dvdphi
+   !--------------------------------------
+   ! Results for the real potential
+   !-------------------------------------
+   ma=this%atomdat(1)%getmass()
+   mb=this%atomdat(2)%getmass()
+   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,x,atomicx)
+   SELECT CASE(this%natomic)
+      CASE(1)
+         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
+         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
+      CASE(2)
+         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
+         CALL this%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
+      CASE DEFAULT
+         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
+         CALL EXIT(1)
+   END SELECT
+   v=aux1(1)+va+vb
+   dvdu(1)=aux2(1,1)+dvdu_atomicA(1)+dvdu_atomicB(1)
+   dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
+   dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
+   dvdu(4)=aux1(3)&
+      +(mb/(ma+mb))*dvdu_atomicA(1)*dcos(x(6))*dsin(x(5))&
+      +(mb/(ma+mb))*dvdu_atomicA(2)*dsin(x(6))*dsin(x(5))&
+      +(mb/(ma+mb))*dvdu_atomicA(3)*dcos(x(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(1)*dcos(x(6))*dsin(x(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(2)*dsin(x(6))*dsin(x(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(3)*dcos(x(5))
+   dvdu(5)=aux1(4)&
+      +(mb/(ma+mb))*x(4)*dvdu_atomicA(1)*dcos(x(6))*dcos(x(5))&
+      +(mb/(ma+mb))*x(4)*dvdu_atomicA(2)*dsin(x(6))*dcos(x(5))&
+      -(mb/(ma+mb))*x(4)*dvdu_atomicA(3)*dsin(x(5))&
+      -(ma/(ma+mb))*x(4)*dvdu_atomicB(1)*dcos(x(6))*dcos(x(5))&
+      -(ma/(ma+mb))*x(4)*dvdu_atomicB(2)*dsin(x(6))*dcos(x(5))&
+      +(ma/(ma+mb))*x(4)*dvdu_atomicB(3)*dsin(x(5))
+   dvdu(6)=aux1(5)&
+      -(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(1)*dsin(x(6))&
+      +(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(2)*dcos(x(6))&
+      +(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(1)*dsin(x(6))&
+      -(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(2)*dcos(x(6))
+   RETURN
+END SUBROUTINE GET_V_AND_DERIVS_CRP6D
 !###########################################################
 !# SUBROUTINE: INTERPOL_CRP6D 
 !###########################################################
@@ -262,11 +421,13 @@ SUBROUTINE READ_CRP6D(this,filename)
    CALL this%SET_ATOMS(2,symbollist,masslist)
    READ(180,*) this%natomic
    SELECT CASE(this%natomic)
-      CASE(: 0,3 :)
+      CASE(1)
+         this%is_homonucl=.TRUE.
+      CASE(2)
+         this%is_homonucl=.FALSE.
+      CASE DEFAULT 
          WRITE(0,*) "READ_CRP6D ERR: Wrong number of atomic potentials. Allowed number: 1 or 2."
          CALL EXIT(1)
-      CASE DEFAULT 
-         ! do nothing
    END SELECT
    ALLOCATE(this%atomiccrp(this%natomic))
 #ifdef DEBUG
@@ -319,6 +480,13 @@ SUBROUTINE READ_CRP6D(this,filename)
    DO i = 1, this%nsites
       CALL this%wyckoffsite(i)%READ(180)
       CALL this%wyckoffsite(i)%SET_ID(letter(i))
+      CALL this%wyckoffsite(i)%SET_HOMONUCL(this%is_homonucl)
+   END DO
+   ! Read the final part of the input: kpoints for XY interpolation
+   ALLOCATE(this%xyklist(this%nsites,2))
+   READ(180,*) ! dummy line
+   DO i = 1, this%nsites
+      READ(180,*) this%xyklist(i,:)
    END DO
    CLOSE(180)
    RETURN
