@@ -8,7 +8,7 @@ TYPE(CRP6D) :: thispes
 REAL(KIND=8),DIMENSION(6) :: x
 REAL(KIND=8),DIMENSION(6) :: dvdu
 REAL(KIND=8) :: v
-CALL SET_DEBUG_MODE(.TRUE.)
+CALL SET_VERBOSE_MODE(.TRUE.)
 READ(*,*) x
 WRITE(*,*) "*****************************************"
 WRITE(*,*) "********* GET CRP6D POTENTIAL************"
@@ -16,7 +16,7 @@ WRITE(*,*) "*****************************************"
 ! STEP 1: READ CRP6D INPUT FILES
 CALL thispes%READ("INcrp6d.inp")
 CALL thispes%INTERPOL()
-CALL thispes%INTERPOL_NEW_RZGRID(50,100)
+CALL thispes%INTERPOL_NEW_RZGRID(100,200)
 CALL thispes%GET_V_AND_DERIVS(x,v,dvdu)
 WRITE(*,*) "Potential (au): ", v
 WRITE(*,*) "dvdx (au): ", dvdu(1)

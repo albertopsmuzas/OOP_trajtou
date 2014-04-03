@@ -239,32 +239,33 @@ END SUBROUTINE TO_RAD
 !# SUBROUTINE: TO DEG #######################################
 !############################################################
 !> @brief
-!! Manages angle units. Changes radians to degrees
+!! Manages angle units. Changes to degrees
 !
-!> @param[in,out] this - Angle subtype variable. Can be omitted.
+!> @param[in,out] this - Angle subtype variable.
 !
 !> @author A.P. Muzas - alberto.muzas@uam.es
 !> @date 06/Nov/2013
 !> @version 1.0
 !------------------------------------------------------------
 SUBROUTINE TO_DEG(this)
-	! Initial declarations
-	USE CONSTANTS_MOD
-        IMPLICIT NONE
-        ! I/O variables
-        CLASS(angle), INTENT(INOUT) :: this
-        ! GO, GO, GO !!!------
-        IF (this%units.EQ."deg") THEN
-                RETURN
-        ELSE IF (this%units.EQ."rad") THEN
-                this%mag = this%mag*180.D0/pi
-        ELSE
-                WRITE(0,*) "TO_DEG ERR: incorrect kind"
-                WRITE(0,*) "Supported ones: rad, deg"
-                CALL EXIT(1)
-        END IF
-        this%units = "deg"
-        RETURN
+   ! Initial declarations
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(angle), INTENT(INOUT) :: this
+   ! GO, GO, GO !!!------
+   SELECT CASE(this%units)
+      CASE("deg")
+         RETURN
+      CASE("rad")
+         this%mag = this%mag*180.D0/pi
+         this%units = "deg"
+      CASE DEFAULT
+         WRITE(0,*) "TO_DEG ERR: incorrect kind"
+         WRITE(0,*) "Supported ones: rad, deg"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
 END SUBROUTINE TO_DEG
 !############################################################
 !# SUBROUTINE: LENGTH_AU ####################################

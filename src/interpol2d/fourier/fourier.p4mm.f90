@@ -46,7 +46,8 @@ REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r)
       CASE(2)
          termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(1))*r(2))
       CASE(3)
-         termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))+dcos(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
+         termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))+&
+            dcos(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
       CASE DEFAULT
          WRITE(0,*) "termfoup4mm ERR: Incorrect fourier term id: ", id
          CALL EXIT(1)
@@ -155,11 +156,13 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
    CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
    ! Local variables
    INTEGER(KIND=4) :: i,j !counters
+   INTEGER(KIND=4) :: nfunc
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: tmtrx, inv_tmtrx
    ! Run section
+   nfunc=size(this%f(:,1))
    ALLOCATE(tmtrx(this%n,this%n))
    ALLOCATE(inv_tmtrx(this%n,this%n))
-   ALLOCATE(this%coeff(this%n,size(this%f(:,1))))
+   ALLOCATE(this%coeff(this%n,nfunc))
    CALL this%SET_TERMMAP()
    DO i = 1, this%n ! loop over points
       DO j = 1, this%n ! loop over terms (one for each k point)
@@ -167,14 +170,14 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
       END DO
    END DO
    CALL INV_MTRX(this%n,tmtrx,inv_tmtrx)
-   DO i = 1, size(this%f(:,1)) ! looop over functions
+   DO i = 1, nfunc ! looop over functions
       this%coeff(:,i)=matmul(inv_tmtrx,this%f(i,:))
    END DO
    SELECT CASE(present(filename)) ! Check if we want to print coefficients
       CASE(.TRUE.)
          OPEN (10,FILE=filename,STATUS="replace",ACTION="write")
-         DO i = 1, size(this%f(:,1))
-            WRITE(10,*) this%coeff(i,:)
+         DO i = 1,nfunc
+            WRITE(10,*) this%coeff(:,i)
          END DO
          CLOSE(10)
       CASE(.FALSE.)
@@ -239,7 +242,7 @@ SUBROUTINE SET_TERMMAP_FOURIERP4MM(this)
             CALL EXIT(1)
       END SELECT
    END DO
-#ifdef DEBUG+
+#ifdef DEBUG
    CALL DEBUG_WRITE(routinename,"Klist structure: ")
    CALL DEBUG_WRITE(routinename,this%termmap)
 #endif
@@ -268,12 +271,24 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
    REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: dvdu
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
+   INTEGER(KIND=4) :: nfunc
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms,terms_dx,terms_dy
    ! Run section
    ALLOCATE(terms(this%n))
    ALLOCATE(terms_dx(this%n))
    ALLOCATE(terms_dy(this%n))
-   DO i = 1, size(this%f(:,1))
+   SELECT CASE(size(v) == this%nfunc .AND. size(dvdu(:,1)) == this%nfunc .AND.&
+      size(dvdu(1,:)) == 2)
+      CASE(.FALSE.)
+         WRITE(0,*) "GET_F_AND_DERIVS_FOURIERP4MM ERR: size mismatch in v and stored values of f"
+         WRITE(0,*) "GET_F_AND_DERIVS_FOURIERP4MM ERR: nfunc: ", this%nfunc
+         WRITE(0,*) "GET_F_AND_DERIVS_FOURIERP4MM ERR: size(v): ",size(v)
+         WRITE(0,*) "GET_F_AND_DERIVS_FOURIERP4MM ERR: size(vdvdu): ",size(dvdu(:,1))
+         CALL EXIT(1)
+      CASE(.TRUE.)
+         ! do nothing
+   END SELECT
+   DO i = 1, nfunc
       DO j = 1, this%n
          terms(j)=termfoup4mm(this%termmap(j),surf,this%klist(j,:),r)
          terms_dx(j)=termfoup4mm_dx(this%termmap(j),surf,this%klist(j,:),r)

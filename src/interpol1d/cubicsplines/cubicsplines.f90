@@ -149,10 +149,10 @@ SUBROUTINE SET_MINIMUM_CSPLINES(this)
 #ifdef DEBUG
    SELECT CASE(ALLOCATED(this%xmin))
       CASE(.TRUE.)
-         CALL VERBOSE_WRITE(routinename,"Minimums found: ",size(this%xmin))
-         CALL VERBOSE_WRITE(routinename,this%xmin)
+         CALL DEBUG_WRITE(routinename,"Minimums found: ",size(this%xmin))
+         CALL DEBUG_WRITE(routinename,this%xmin)
       CASE(.FALSE.)
-         CALL VERBOSE_WRITE(routinename,"There are not any minimums")
+         CALL DEBUG_WRITE(routinename,"There are not any minimums")
    END SELECT
 #endif
    RETURN
@@ -307,7 +307,7 @@ SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
                 CALL TRIDIA(n,subdiag,diag,supdiag,indep,d2sdx)
         END IF
 #ifdef DEBUG
-        CALL VERBOSE_WRITE(routinename,"Second derivatives at nodes calculated -----> Done")
+        CALL DEBUG_WRITE(routinename,"Second derivatives at nodes calculated -----> Done")
 #endif
 END SUBROUTINE DSPLIN
 !######################################################################
@@ -384,7 +384,7 @@ SUBROUTINE SET_CUBIC_SPLINES_COEFF(this,filename)
                 IF ((filename.NE."None").AND.(present(filename))) WRITE(11,*) x1, x2, a, b, c, d
         END DO
 #ifdef DEBUG
-        CALL VERBOSE_WRITE(routinename,"Set coefficients  -----> Done")
+        CALL DEBUG_WRITE(routinename,"Set coefficients  -----> Done")
         IF ((filename.NE."None").AND.(present(filename))) CALL VERBOSE_WRITE(routinename,"Data stored inside ", filename)
 #endif
         IF ((filename.NE."None").AND.(present(filename))) CLOSE(11)

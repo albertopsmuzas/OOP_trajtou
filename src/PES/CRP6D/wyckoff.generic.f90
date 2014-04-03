@@ -470,7 +470,7 @@ SUBROUTINE READ_WYCKOFFSITIO(this,u)
    END DO
    ! All zrcuts should belong to the same XY position (center of mass)
    this%x=this%zrcut(1)%x
-   this%x=this%zrcut(1)%y
+   this%y=this%zrcut(1)%y
    RETURN
 END SUBROUTINE READ_WYCKOFFSITIO
 

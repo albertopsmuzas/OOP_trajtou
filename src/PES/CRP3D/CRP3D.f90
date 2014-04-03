@@ -1005,8 +1005,8 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
    ALLOCATE(f(2,nsites))
    ALLOCATE(xy(nsites,2))
-   ALLOCATE(potarr(nsites))
-   ALLOCATE(derivarr(nsites,2))
+   ALLOCATE(potarr(2))
+   ALLOCATE(derivarr(2,2))
    DO i=1,nsites
       xy(i,1)=thispes%all_sites(i)%x
       xy(i,2)=thispes%all_sites(i)%y
@@ -1093,8 +1093,8 @@ REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
    ALLOCATE(f(2,nsites))
    ALLOCATE(xy(nsites,2))
-   ALLOCATE(potarr(nsites))
-   ALLOCATE(derivarr(nsites,2))
+   ALLOCATE(potarr(2))
+   ALLOCATE(derivarr(2,2))
    DO i=1,nsites
       xy(i,1)=thispes%all_sites(i)%x
       xy(i,2)=thispes%all_sites(i)%y

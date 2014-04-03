@@ -86,6 +86,7 @@ END SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    ! Initial declarations   
+   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP6D),INTENT(IN):: this
@@ -105,6 +106,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(3) :: dvdu_atomicA
    REAL(KIND=8),DIMENSION(3) :: dvdu_atomicB
    TYPE(Fourierp4mm) :: xyinterpol
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
    SELECT CASE(this%is_smooth)
       CASE(.TRUE.)
@@ -115,33 +117,65 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    END SELECT
    SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastz()) 
       CASE(.TRUE.)
-         v=this%farpot%getpot(x(3))
+         v=this%farpot%getpot(x(4))
          dvdu(1)=0.D0
          dvdu(2)=0.D0
          dvdu(3)=0.D0
-         dvdu(4)=this%farpot%getderiv(x(3))
+         dvdu(4)=this%farpot%getderiv(x(4))
          dvdu(5)=0.D0
          dvdu(6)=0.D0
+         RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    ALLOCATE(f(5,this%nsites))
    ALLOCATE(xy(this%nsites,2))
    DO i = 1, this%nsites 
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Wyckoffsite: ",i)
+      CALL VERBOSE_WRITE(routinename,"Letter:",this%wyckoffsite(i)%id)
+#endif
       CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
       xy(i,1)=this%wyckoffsite(i)%x
       xy(i,2)=this%wyckoffsite(i)%y
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"At XY: ",(/xy(i,1),xy(i,2)/))
+      CALL VERBOSE_WRITE(routinename,"With Z/R/Theta/Phi:")
+      CALL VERBOSE_WRITE(routinename,x(3:6))
+      CALL VERBOSE_WRITE(routinename,"Pot: ",f(1,i))
+      CALL VERBOSE_WRITE(routinename,"dvdz: ",f(2,i))
+      CALL VERBOSE_WRITE(routinename,"dvdr: ",f(3,i))
+      CALL VERBOSE_WRITE(routinename,"dvdtheta: ",f(4,i))
+      CALL VERBOSE_WRITE(routinename,"dvdphi: ",f(5,i))
+#endif
    END DO
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
    ! f(3,:) smooth dvdr
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
+   WRITE(*,*) "xy "
+   DO i = 1, this%nsites
+      WRITE(*,*) xy(i,:)
+   END DO
+   WRITE(*,*) "xyklist"
+   DO i = 1, this%nsites
+      WRITE(*,*) this%xyklist(i,:)
+   END DO
+   WRITE(*,*) "f"
+   DO i = 1, 5
+      WRITE(*,*) f(i,:)
+   END DO
    CALL xyinterpol%READ(xy,f,this%xyklist)
    CALL xyinterpol%INTERPOL(this%atomiccrp(1)%surf)
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
    CALL xyinterpol%GET_F_AND_DERIVS(this%atomiccrp(1)%surf,x(1:2),aux1,aux2)
+   WRITE(*,*) aux1(:)
+   DO i = 1, 5
+      WRITE(*,*) aux2(i,:)
+   END DO
+#ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
    !-------------------------------------
@@ -152,6 +186,15 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux1(5)   ! dvdphi
+   CALL VERBOSE_WRITE(routinename,"Values for smooth potential")
+   CALL VERBOSE_WRITE(routinename,"v: ",aux1(1))   ! v
+   CALL VERBOSE_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
+   CALL VERBOSE_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
+   CALL VERBOSE_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
+   CALL VERBOSE_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
+   CALL VERBOSE_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
+   CALL VERBOSE_WRITE(routinename,"dvdphi: ",aux1(5))   ! dvdphi
+#endif
    !--------------------------------------
    ! Results for the real potential
    !-------------------------------------
@@ -170,6 +213,15 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
          CALL EXIT(1)
    END SELECT
    v=aux1(1)+va+vb
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Contributions of the atomic potential: ")
+   CALL VERBOSE_WRITE(routinename, "Position Atom A: ",atomicx(1:3))
+   CALL VERBOSE_WRITE(routinename,"Va: ",va)
+   CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVa/dya: ",dvdu_atomicA)
+   CALL VERBOSE_WRITE(routinename, "Position Atom B: ",atomicx(4:6))
+   CALL VERBOSE_WRITE(routinename,"Vb: ",vb)
+   CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
+#endif
    dvdu(1)=aux2(1,1)+dvdu_atomicA(1)+dvdu_atomicB(1)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
    dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
@@ -488,6 +540,12 @@ SUBROUTINE READ_CRP6D(this,filename)
    DO i = 1, this%nsites
       READ(180,*) this%xyklist(i,:)
    END DO
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"xyklist found:")
+   DO i = 1, this%nsites
+      CALL VERBOSE_WRITE(routinename,this%xyklist(i,:))
+   END DO
+#endif
    CLOSE(180)
    RETURN
 END SUBROUTINE READ_CRP6D

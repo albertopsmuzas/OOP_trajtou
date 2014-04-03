@@ -75,6 +75,9 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
    SELECT CASE(size(f)/=nfuncs .OR. size(dfdx)/=nfuncs)
       CASE(.TRUE.)
          WRITE(0,*) "GET_ALLFUNCS_AND DERIVS ERR: size mismatch of output arguments"
+         WRITE(0,*) "nfuncs: ",nfuncs
+         WRITE(0,*) "size f: ", size(f)
+         WRITE(0,*) "size dfdx: ",size(dfdx)
          CALL EXIT(1)
       CASE(.FALSE.)
          ! do nothing
@@ -88,9 +91,9 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
    END DO
    f(1)=dot_product(terms,this%coeff)
    dfdx(1)=dot_product(terms_dx,this%coeff)
-   DO i = 1, nfuncs
-      f(i+1)=dot_product(terms,this%extracoeff(:,i))
-      dfdx(i+1)=dot_product(terms_dx,this%extracoeff(:,i))
+   DO i = 2, nfuncs
+      f(i)=dot_product(terms,this%extracoeff(:,i-1))
+      dfdx(i)=dot_product(terms_dx,this%extracoeff(:,i-1))
    END DO
    RETURN
 END SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D
@@ -140,6 +143,8 @@ SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even)
    REAL(KIND=8),INTENT(IN) :: period
    INTEGER(KIND=4),DIMENSION(:) :: klist
    LOGICAL, INTENT(IN),OPTIONAL:: is_even
+   ! Local variables
+   INTEGER(KIND=4) :: i  ! counters
    ! Run section
    SELECT CASE(size(klist) == this%n)
       CASE(.FALSE.)
@@ -154,6 +159,15 @@ SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even)
    SELECT CASE(present(is_even))
       CASE(.TRUE.)
          this%even=is_even
+         DO i = 1, size(klist)
+            SELECT CASE(klist(i)<0 .AND. is_even)
+               CASE(.TRUE.)
+                  WRITE(0,*) "READ_EXTRA_DETAILS_FOURIER1D ERR: Kpoints incompatible with selected parity"
+                  CALL EXIT(1)
+               CASE(.FALSE.)
+                  ! do nothing
+            END SELECT
+         END DO
       CASE(.FALSE.)
          ! do nothing
    END SELECT
@@ -273,6 +287,7 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
    ! Run section
    ALLOCATE(this%coeff(this%n))
    ALLOCATE(terms(this%n,this%n))
+   ALLOCATE(inv_terms(this%n,this%n))
    SELECT CASE(allocated(this%klist))
       CASE(.TRUE.)
          ! do nothing
@@ -294,7 +309,7 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
       CASE(.TRUE.)
          ALLOCATE(this%extracoeff(this%n,size(this%extrafuncs(:,1))))
          DO i = 1, size(this%extrafuncs(:,1))
-            this%extracoeff(:,i)=matmul(inv_terms,this%extrafuncs(1,:))
+            this%extracoeff(:,i)=matmul(inv_terms,this%extrafuncs(i,:))
          END DO
       CASE(.FALSE.)
          ! do nothing

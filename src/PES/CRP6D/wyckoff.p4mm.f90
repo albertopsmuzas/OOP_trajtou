@@ -40,6 +40,10 @@ CONTAINS
 !-----------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    ! Initial declarations   
+#ifdef DEBUG
+   USE DEBUG_MOD
+   USE UNITS_MOD
+#endif
    USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
@@ -62,6 +66,11 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philist
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: thetalist
    LOGICAL :: phi_is_even,theta_is_even
+   CHARACTER(LEN=30),PARAMETER :: routinename="GET_V_AND_DERIVS_WYCKOFFP4MM: "
+#ifdef DEBUG
+   TYPE(Angle),DIMENSION(:),ALLOCATABLE :: beta
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philistdeg
+#endif
    ! Run section
    z=x(1)
    r=x(2)
@@ -70,11 +79,21 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    h=0
    SELECT CASE(this%id)
       !----------------------------------------------------
-      CASE("a" : "b") 
+      CASE("a" : "c") 
          ! Intrinsic periodicities
-         period_phi=PI/2.D0
-         phi_is_even=.TRUE.
-         theta_is_even=.TRUE.
+         SELECT CASE(this%id)
+            CASE("a" : "b")
+               period_phi=PI/2.D0
+               phi_is_even=.TRUE.
+               theta_is_even=.TRUE. ! due to inversion center
+            CASE("c")
+               period_phi=PI
+               phi_is_even=.TRUE.
+               theta_is_even=.TRUE. ! due to inversion center
+            CASE DEFAULT
+               WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFP4MM: Unexpected error with Wyckoff id"
+               CALL EXIT(1)
+         END SELECT
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                period_theta=PI
@@ -98,45 +117,28 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             END DO
             aux(1,:)=dfdz(:)
             aux(2,:)=dfdr(:)
-            CALL phicut(i)%READ(philist,f)
-            CALL phicut(i)%ADD_MOREFUNCS(aux)
-            CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
-            CALL phicut(i)%INTERPOL()
-            DEALLOCATE(philist)
-            DEALLOCATE(f)
-            DEALLOCATE(dfdr)
-            DEALLOCATE(dfdz)
-            DEALLOCATE(aux)
-         END DO
-      !----------------------------------------------------
-      CASE("c")
-         ! Intrinsic periodicities
-         period_phi=PI
-         phi_is_even=.TRUE.
-         theta_is_even=.TRUE.
-         SELECT CASE(this%is_homonucl)
-            CASE(.TRUE.)
-               period_theta=PI
-            CASE(.FALSE.)
-               period_theta=2.D0*PI
-         END SELECT
-         ! Prepare phi interpolation
-         ALLOCATE(phicut(this%nphicuts))
-         DO i = 1, this%nphicuts
-            ALLOCATE(f(this%nphipoints(i)))
-            ALLOCATE(dfdr(this%nphipoints(i)))
-            ALLOCATE(dfdz(this%nphipoints(i)))
-            ALLOCATE(philist(this%nphipoints(i)))
-            ALLOCATE(aux(2,this%nphipoints(i)))
-            DO j = 1, this%nphipoints(i) ! loop over number of zrcuts inside
-               h=h+1 ! numbering of zrcuts
-               f(j)=this%zrcut(h)%interrz%getvalue((/r,z/))
-               dfdr(j)=this%zrcut(h)%interrz%getderivx((/r,z/))
-               dfdz(j)=this%zrcut(h)%interrz%getderivy((/r,z/))
-               philist(j)=this%zrcut(h)%phi
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,"New phicut:")
+            CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
+            ALLOCATE(beta(size(philist)))
+            ALLOCATE(philistdeg(size(philist)))
+            DO j = 1, size(philist)
+               CALL beta(j)%READ(philist(j),"rad")
+               CALL beta(j)%TO_DEG()
+               philistdeg(j)=beta(j)%getvalue()
             END DO
-            aux(1,:)=dfdz(:)
-            aux(2,:)=dfdr(:)
+            CALl VERBOSE_WRITE(routinename,philistdeg)
+            CALL VERBOSE_WRITE(routinename,"At Phi: (rad)")
+            CALl VERBOSE_WRITE(routinename,philist)
+            CALL VERBOSE_WRITE(routinename,"f:")
+            CALl VERBOSE_WRITE(routinename,f)
+            CALL VERBOSE_WRITE(routinename,"dfdz:")
+            CALL VERBOSE_WRITE(routinename,aux(1,:))
+            CALL VERBOSE_WRITE(routinename,"dfdr:")
+            CALL VERBOSE_WRITE(routinename,aux(2,:))
+            DEALLOCATE(beta)
+            DEALLOCATE(philistdeg)
+#endif
             CALL phicut(i)%READ(philist,f)
             CALL phicut(i)%ADD_MOREFUNCS(aux)
             CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
@@ -176,6 +178,28 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             END DO
             aux(1,:)=dfdz(:)
             aux(2,:)=dfdr(:)
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,"New phicut:")
+            CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
+            ALLOCATE(beta(size(philist)))
+            ALLOCATE(philistdeg(size(philist)))
+            DO j = 1, size(philist)
+               CALL beta(j)%READ(philist(j),"rad")
+               CALL beta(j)%TO_DEG()
+               philistdeg(j)=beta(j)%getvalue()
+            END DO
+            CALl VERBOSE_WRITE(routinename,philistdeg)
+            CALL VERBOSE_WRITE(routinename,"At Phi: (rad)")
+            CALl VERBOSE_WRITE(routinename,philist)
+            CALL VERBOSE_WRITE(routinename,"f:")
+            CALl VERBOSE_WRITE(routinename,f)
+            CALL VERBOSE_WRITE(routinename,"dfdz:")
+            CALL VERBOSE_WRITE(routinename,aux(1,:))
+            CALL VERBOSE_WRITE(routinename,"dfdr:")
+            CALL VERBOSE_WRITE(routinename,aux(2,:))
+            DEALLOCATE(beta)
+            DEALLOCATE(philistdeg)
+#endif
             CALL phicut(i)%READ(philist,f)
             CALL phicut(i)%ADD_MOREFUNCS(aux)
             CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
@@ -220,9 +244,33 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       dfdphi(i)=aux(2,1)
       DEALLOCATE(aux)
    END DO
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"New thetacut:")
+   CALL VERBOSE_WRITE(routinename,"At Theta: (deg)")
+   ALLOCATE(beta(size(thetalist)))
+   ALLOCATE(philistdeg(size(thetalist)))
+   DO j = 1, size(thetalist)
+      CALL beta(j)%READ(thetalist(j),"rad")
+      CALL beta(j)%TO_DEG()
+      philistdeg(j)=beta(j)%getvalue()
+   END DO
+   CALl VERBOSE_WRITE(routinename,philistdeg)
+   CALL VERBOSE_WRITE(routinename,"At Theta: (rad)")
+   CALl VERBOSE_WRITE(routinename,thetalist)
+   CALL VERBOSE_WRITE(routinename,"f:")
+   CALl VERBOSE_WRITE(routinename,f)
+   CALL VERBOSE_WRITE(routinename,"dfdz:")
+   CALL VERBOSE_WRITE(routinename,dfdz)
+   CALL VERBOSE_WRITE(routinename,"dfdr:")
+   CALL VERBOSE_WRITE(routinename,dfdr)
+   CALL VERBOSE_WRITE(routinename,"dfdphi:")
+   CALL VERBOSE_WRITE(routinename,dfdphi)
+   DEALLOCATE(beta)
+   DEALLOCATE(philistdeg)
+#endif
    CALL thetacut%READ(thetalist,f)
    CALL thetacut%READ_EXTRA(period_theta,this%klisttheta,theta_is_even)
-   ALLOCATE(aux(4,this%nphicuts))
+   ALLOCATE(aux(3,this%nphicuts))
    aux(1,:)=dfdz(:)
    aux(2,:)=dfdr(:)
    aux(3,:)=dfdphi(:)

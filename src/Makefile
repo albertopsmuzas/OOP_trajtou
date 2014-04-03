@@ -36,7 +36,7 @@ surface.o: debug.o units.o constants.o maths.o
 cubicsplines.o: debug.o interpol1d.o
 fourier.p4mm.o: debug.o constants.o surface.o fourier2d.o
 CRP3D.o: debug.o units.o maths.o cubicsplines.o fourier.p4mm.o PES.o surface.o 
-CRP6D.o: maths.o units.o CRP3D.o wyckoff.p4mm.o extrapol.o
+CRP6D.o: debug.o units.o maths.o CRP3D.o wyckoff.p4mm.o extrapol.o
 fourier1d.o: constants.o debug.o interpol1d.o
 wyckoff.generic.o: debug.o fourier1d.o bicsplines.o
 wyckoff.p4mm.o: wyckoff.generic.o

@@ -25,6 +25,7 @@ IMPLICIT NONE
 !---------------------------------------------------------------
 TYPE :: Fourier2d
    INTEGER(KIND=4) :: n
+   INTEGER(KIND=4) :: nfunc
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: klist
@@ -81,22 +82,23 @@ SUBROUTINE READ_FOURIER2D(this,xy,f,klist)
    REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: f
    INTEGER(KIND=4),DIMENSION(:,:),INTENT(IN) :: klist
    ! Local variables
-   INTEGER(KIND=4) :: n,q
+   INTEGER(KIND=4) :: ndata,nfunc
    ! Run section
-   n=size(f(1,:))
-   q=size(f(:,1))
-   SELECT CASE(size(xy(:,1)) == n .OR. size(xy(1,:))==2)
+   ndata=size(f(1,:))
+   nfunc=size(f(:,1))
+   SELECT CASE(size(xy(:,1)) == ndata .AND. size(xy(1,:))==2)
       CASE(.FALSE.)
          WRITE(0,*) "READ_FOURIER2D ERR: dimensions mismatch in arrays xy or f"
          CALL EXIT(1)
       CASE(.TRUE.)
          ! do nothing
    END SELECT
-   this%n=n
-   ALLOCATE(this%xy(n,2))
-   ALLOCATE(this%f(n,q))
-   ALLOCATE(this%klist(n,2))
+   this%n=ndata
+   ALLOCATE(this%xy(ndata,2))
+   ALLOCATE(this%f(nfunc,ndata))
+   ALLOCATE(this%klist(ndata,2))
    this%f = f
+   this%nfunc = nfunc
    this%xy = xy
    this%klist=klist
    RETURN
