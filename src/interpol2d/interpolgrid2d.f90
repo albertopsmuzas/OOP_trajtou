@@ -21,7 +21,6 @@ IMPLICIT NONE
 !> @version 1.0 
 !---------------------------------------------------------------
 TYPE,ABSTRACT :: Interpolgrid2d
-   INTEGER(KIND=4) :: n
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: x,y
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: fgrid
 CONTAINS

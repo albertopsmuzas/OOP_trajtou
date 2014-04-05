@@ -55,6 +55,7 @@ END TYPE Quantity
 TYPE, EXTENDS(Quantity) :: Length
 CONTAINS
    PROCEDURE,PUBLIC :: TO_STD => LENGTH_AU
+   PROCEDURE,PUBLIC :: TO_ANGST => TO_ANGST_LENGTH
 END TYPE Length
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Energy
@@ -280,22 +281,52 @@ END SUBROUTINE TO_DEG
 !> @version 1.0
 !------------------------------------------------------------
 SUBROUTINE LENGTH_AU(this)
-        IMPLICIT NONE
-        ! I/O variables
-        CLASS(length), INTENT(INOUT) :: this
-        ! Run section
-        IF (this%units.EQ."angst") THEN
-                this%mag = this%mag / au2angst
-        ELSE IF (this%units.EQ."au") THEN
-                RETURN
-        ELSE
-                WRITE(0,*) "LENGTH_AU ERR: incorrect units"
-                WRITE(0,*) "Supported ones: angst, au"
-                CALL EXIT(1)
-        END IF
-        this%units = "au"
-        RETURN
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(length), INTENT(INOUT) :: this
+   ! Run section
+   SELECT CASE(this%units)
+      CASE("angst")
+         this%mag = this%mag / au2angst
+         this%units = "au"
+      CASE("au")
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "TO_ANGST ERR: incorrect units"
+         WRITE(0,*) "Supported ones: angst, au"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
 END SUBROUTINE LENGTH_AU
+!###########################################################
+!# SUBROUTINE: TO_ANGST_LENGTH 
+!###########################################################
+!> @brief
+!! go to angstroem units
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE TO_ANGST_LENGTH(this)
+   ! Initial declarations     
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Length),INTENT(INOUT):: this
+   ! Run section
+   SELECT CASE(this%units)
+      CASE("angst")
+         ! do nothing
+      CASE("au")
+         this%mag = this%mag*au2angst
+         this%units = "angst"
+      CASE DEFAULT
+         WRITE(0,*) "TO_ANGST ERR: incorrect units"
+         WRITE(0,*) "Supported ones: angst, au"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
+END SUBROUTINE TO_ANGST_LENGTH
 !############################################################
 !# SUBROUTINE: MASS_AU ######################################
 !############################################################

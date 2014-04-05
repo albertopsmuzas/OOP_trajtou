@@ -19,6 +19,7 @@ READ(*,*) nwyckoff,nzrcut,nxgrid,nygrid,nxpoints,nypoints
 CALL SET_VERBOSE_MODE(.FALSE.)
 CALL SET_DEBUG_MODE(.FALSE.)
 CALL thispes%READ("INcrp6d.inp")
+CALL thispes%INTERPOL()
 WRITE(*,*) "******************************************"
 WRITE(*,*) "******* TESTING CRP6D 2DCUT GRID *********"
 WRITE(*,*) "******************************************"
@@ -35,11 +36,9 @@ r1=thispes%wyckoffsite(nwyckoff)%zrcut(nzrcut)%getfirstr()
 r2=thispes%wyckoffsite(nwyckoff)%zrcut(nzrcut)%getlastr()
 z1=thispes%wyckoffsite(nwyckoff)%zrcut(nzrcut)%getfirstz()
 z2=thispes%wyckoffsite(nwyckoff)%zrcut(nzrcut)%getlastz()
-
 WRITE(filename1,'(I1,A10)') nzrcut,"-xymap.oldgrid.dat"
 WRITE(realname1,'(I1,A1,A11)') nwyckoff,"-",filename1
 CALL thispes%wyckoffsite(nwyckoff)%zrcut(nzrcut)%interrz%PLOT_XYMAP(realname1,(/r1,z1/),nxpoints,nypoints,r2-r1,z2-z1)
-
 CALL thispes%wyckoffsite(nwyckoff)%zrcut(nzrcut)%interrz%INTERPOL_NEWGRID(nxgrid,nygrid)
 WRITE(filename2,'(I1,A10)') nzrcut,"-xymap.newgrid.dat"
 WRITE(realname2,'(I1,A1,A11)') nwyckoff,"-",filename2

@@ -323,6 +323,73 @@ SUBROUTINE FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
    RETURN
 END SUBROUTINE FROM_MOLECULAR_TO_ATOMIC
 !###########################################################
+!# SUBROUTINE: FROM_ATOMIC_TO_MOLECULAR 
+!###########################################################
+!> @brief
+!! Goes from atomic coordinates xa,ya,za,xb,yb,zb to molecular
+!! coordinates x,y,z,r,theta,phi.
+!> @details
+!! - We have enforced @f$\theta \in [0,\pi]@f$ and @f$\phi \in [0,2\pi)@f$
+!-----------------------------------------------------------
+SUBROUTINE FROM_ATOMIC_TO_MOLECULAR(ma,mb,atomcoord,molcoord)
+   ! Initial declarations
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables
+   REAL(KIND=8),INTENT(IN) :: ma,mb
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: atomcoord
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: molcoord
+   ! Local variables
+   ! Run section
+   molcoord(1)=(1.D0/(ma+mb))*(atomcoord(1)*ma+atomcoord(4)*mb)
+   molcoord(2)=(1.D0/(ma+mb))*(atomcoord(2)*ma+atomcoord(5)*mb)
+   molcoord(3)=(1.D0/(ma+mb))*(atomcoord(3)*ma+atomcoord(6)*mb)
+   molcoord(4)=dsqrt((atomcoord(1)-atomcoord(4))**2.D0+&
+      (atomcoord(2)-atomcoord(5))**2.D0+(atomcoord(3)-atomcoord(6))**2.D0)
+   molcoord(5)=dacos((atomcoord(3)-atomcoord(6))/molcoord(4))
+   SELECT CASE(atomcoord(1)<atomcoord(4)) ! II or III Quadrant
+      CASE(.TRUE.)
+         molcoord(6)=PI-datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing   
+   END SELECT
+   SELECT CASE(atomcoord(1)>atomcoord(4) .AND. atomcoord(2)>=atomcoord(5)) ! I Quadrant
+      CASE(.TRUE.)
+         molcoord(6)=datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(atomcoord(1)>atomcoord(4) .AND. atomcoord(2)<atomcoord(5)) ! IV Quadrant
+      CASE(.TRUE.)
+         molcoord(6)=2.D0*PI+datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
+         RETURN
+      CASE(.FALSE.)
+         !do nothing
+   END SELECT
+   SELECT CASE(atomcoord(1)==atomcoord(4) .AND. atomcoord(2)>atomcoord(5))
+      CASE(.TRUE.)
+         molcoord(6)=PI/2.D0
+      CASE(.FALSE.)
+         !do nothing
+   END SELECT
+   SELECT CASE(atomcoord(1)==atomcoord(4) .AND. atomcoord(2)<atomcoord(5))
+      CASE(.TRUE.)
+         molcoord(6)=3.D0*PI/2.D0
+      CASE(.FALSE.)
+         !do nothing
+   END SELECT
+   SELECT CASE(atomcoord(1)==atomcoord(4) .AND. atomcoord(2)==atomcoord(5)) ! cartwheel, cannot be defined
+      CASE(.TRUE.)
+         molcoord(6)=0.D0 
+      CASE(.FALSE.)
+         WRITE(*,*) "FROM_ATOMIC_TO_MOLECULAR ERR: Geometry was not taken into account, check code"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
+END SUBROUTINE FROM_ATOMIC_TO_MOLECULAR
+!###########################################################
 !# SUBROUTINE: SMOOTH_CRP6D
 !###########################################################
 !> @brief
