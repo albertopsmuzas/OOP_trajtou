@@ -16,7 +16,8 @@ WRITE(*,*) "*****************************************"
 ! STEP 1: READ CRP6D INPUT FILES
 CALL thispes%READ("INcrp6d.inp")
 CALL thispes%INTERPOL()
-CALL thispes%INTERPOL_NEW_RZGRID(100,200)
+!CALL thispes%RAWINTERPOL()
+!CALL thispes%INTERPOL_NEW_RZGRID(40,80)
 CALL thispes%GET_V_AND_DERIVS(x,v,dvdu)
 WRITE(*,*) "Potential (au): ", v
 WRITE(*,*) "dvdx (au): ", dvdu(1)

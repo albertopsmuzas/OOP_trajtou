@@ -39,6 +39,9 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: RAWINTERPOL => RAWINTERPOL_CRP6D
       PROCEDURE,PUBLIC :: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
       PROCEDURE,PUBLIC :: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
+      ! Plot tools
+      PROCEDURE,PUBLIC :: PLOT1D_THETA => PLOT1D_THETA_CRP6D
+      PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP6D
 END TYPE CRP6D
 CONTAINS
 !###########################################################
@@ -140,8 +143,6 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
       xy(i,2)=this%wyckoffsite(i)%y
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"At XY: ",(/xy(i,1),xy(i,2)/))
-      CALL VERBOSE_WRITE(routinename,"With Z/R/Theta/Phi:")
-      CALL VERBOSE_WRITE(routinename,x(3:6))
       CALL VERBOSE_WRITE(routinename,"Pot: ",f(1,i))
       CALL VERBOSE_WRITE(routinename,"dvdz: ",f(2,i))
       CALL VERBOSE_WRITE(routinename,"dvdr: ",f(3,i))
@@ -154,7 +155,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    ! f(3,:) smooth dvdr
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
-   WRITE(*,*) "xy "
+   WRITE(*,*) "xy"
    DO i = 1, this%nsites
       WRITE(*,*) xy(i,:)
    END DO
@@ -162,10 +163,15 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    DO i = 1, this%nsites
       WRITE(*,*) this%xyklist(i,:)
    END DO
-   WRITE(*,*) "f"
+   WRITE(*,*) "function"
    DO i = 1, 5
       WRITE(*,*) f(i,:)
    END DO
+   OPEN (123,FILE="resume.dat",STATUS="replace",ACTION="write")
+   DO i = 1, this%nsites
+      WRITE(123,*) xy(i,:),f(:,i) 
+   END DO
+   CLOSE(123)
    CALL xyinterpol%READ(xy,f,this%xyklist)
    CALL xyinterpol%INTERPOL(this%atomiccrp(1)%surf)
    ALLOCATE(aux1(5))
@@ -600,6 +606,7 @@ SUBROUTINE READ_CRP6D(this,filename)
       CALL this%wyckoffsite(i)%READ(180)
       CALL this%wyckoffsite(i)%SET_ID(letter(i))
       CALL this%wyckoffsite(i)%SET_HOMONUCL(this%is_homonucl)
+      CALL this%wyckoffsite(i)%SET_MYNUMBER(i)
    END DO
    ! Read the final part of the input: kpoints for XY interpolation
    ALLOCATE(this%xyklist(this%nsites,2))
@@ -616,4 +623,169 @@ SUBROUTINE READ_CRP6D(this,filename)
    CLOSE(180)
    RETURN
 END SUBROUTINE READ_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT1D_THETA_CRP6D #######################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA values
+!
+!> @warning
+!! - The graph starts always at 0,0
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 09/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(5),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,L,v,s,alpha
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=24),PARAMETER :: routinename = "PLOT1D_THETA_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = 0.D0
+   xmax = 2.D0*PI
+   r(1:5)=x(1:5)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(6)=xmin
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(6),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(6)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(6),v,dvdu(:)
+   END DO
+   ! Final value
+   r(6) = xmax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(6),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_THETA_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT_XYMAP_CRP6D
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 2D cut (X,Y) of the PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the file to print the output
+!> @param[in] init_point - Initial position to start the scan (a.u. and radians). 6 DIMENSIONAL
+!> @param[in] nxpoints - Number of points in X axis (auxiliar cartesian coordinates)
+!> @param[in] nypoints - Number of points in Y axis (auxiliar cartesian coordinates)
+!> @param[in] Lx - Length of X axis (a.u.)
+!> @param[in] Ly - Length of Y axis (a.u.)
+!
+!> @warning
+!! - Z,R,THETA,PHI parameters are taken from @b init_point
+!
+!> @author A.S. Muzas
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
+   IMPLICIT NONE
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: init_point ! Initial position to start the scan (in a.u. and radians)
+   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
+   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
+   REAL(KIND=8),INTENT(IN) :: Lx ! Length of X axis 
+   REAL(KIND=8),INTENT(IN) :: Ly ! Length of X axis 
+   ! Local variables
+   REAL(KIND=8) :: xmin, ymin, xmax, ymax
+   REAL(KIND=8),DIMENSION(6) :: r,dvdu
+   REAL(KIND=8) :: xdelta, ydelta
+   INTEGER :: xinpoints, nxdelta
+   INTEGER :: yinpoints, nydelta
+   INTEGER :: i, j ! counters
+   REAL(KIND=8) :: v ! potential
+   ! GABBA, GABBA HEY! ---------
+   xmin = init_point(1)
+   ymin = init_point(2)
+   xmax = init_point(1)+Lx
+   ymax = init_point(2)+Ly
+   ! For X, grid parameters
+   xinpoints=nxpoints-2
+   nxdelta=nxpoints-1
+   xdelta=Lx/DFLOAT(nxdelta)
+   ! For Y, grid parameters
+   yinpoints=nypoints-2
+   nydelta=nypoints-1
+   ydelta=(ymax-ymin)/DFLOAT(nydelta)
+   ! Let's go! 
+   ! 1st XY point
+   OPEN(11,file=filename,status="replace")
+   r(1) = xmin
+   r(2) = ymin
+   r(3:6)=init_point(3:6)
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   ! inpoints in XY
+   DO i = 1, xinpoints
+      r(1) = xmin+DFLOAT(i)*xdelta
+      r(2) = ymin
+      r(3:6) = init_point(3:6)
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+      DO j = 1, yinpoints
+         r(2) = ymin + DFLOAT(j)*ydelta
+         CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+         WRITE(11,*) r(1:2),v,dvdu(:)
+      END DO
+      r(2) = ymax
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+   END DO
+   ! Last point in XY plane
+   r(1) = xmax
+   r(2) = ymax
+   r(3:6) = init_point(3:6)
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   CLOSE(11)
+   RETURN
+END SUBROUTINE PLOT_XYMAP_CRP6D
+
 END MODULE CRP6D_MOD

@@ -156,13 +156,11 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
    CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
    ! Local variables
    INTEGER(KIND=4) :: i,j !counters
-   INTEGER(KIND=4) :: nfunc
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: tmtrx, inv_tmtrx
    ! Run section
-   nfunc=size(this%f(:,1))
    ALLOCATE(tmtrx(this%n,this%n))
    ALLOCATE(inv_tmtrx(this%n,this%n))
-   ALLOCATE(this%coeff(this%n,nfunc))
+   ALLOCATE(this%coeff(this%n,this%nfunc))
    CALL this%SET_TERMMAP()
    DO i = 1, this%n ! loop over points
       DO j = 1, this%n ! loop over terms (one for each k point)
@@ -170,13 +168,13 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
       END DO
    END DO
    CALL INV_MTRX(this%n,tmtrx,inv_tmtrx)
-   DO i = 1, nfunc ! looop over functions
+   DO i = 1,this%nfunc ! looop over functions
       this%coeff(:,i)=matmul(inv_tmtrx,this%f(i,:))
    END DO
    SELECT CASE(present(filename)) ! Check if we want to print coefficients
       CASE(.TRUE.)
          OPEN (10,FILE=filename,STATUS="replace",ACTION="write")
-         DO i = 1,nfunc
+         DO i = 1,this%nfunc
             WRITE(10,*) this%coeff(:,i)
          END DO
          CLOSE(10)
@@ -271,7 +269,6 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
    REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: dvdu
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
-   INTEGER(KIND=4) :: nfunc
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms,terms_dx,terms_dy
    ! Run section
    ALLOCATE(terms(this%n))
@@ -288,7 +285,7 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
       CASE(.TRUE.)
          ! do nothing
    END SELECT
-   DO i = 1, nfunc
+   DO i = 1, this%nfunc
       DO j = 1, this%n
          terms(j)=termfoup4mm(this%termmap(j),surf,this%klist(j,:),r)
          terms_dx(j)=termfoup4mm_dx(this%termmap(j),surf,this%klist(j,:),r)

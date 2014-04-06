@@ -140,15 +140,20 @@ TYPE, EXTENDS(PES) :: CRP3D
    TYPE(Surface) :: surf
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: klist
    CONTAINS
+      ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_CRP3D
+      ! Get block 
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
+      PROCEDURE,PUBLIC :: getpot => getpot_crp3d
+      ! Enquire block
+      PROCEDURE,PUBLIC :: is_allowed => is_allowed_CRP3D
+      ! Tools block
       PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP3D
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_Z_CRP3D
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
-      PROCEDURE,PUBLIC :: getpot => getpot_crp3d
+      ! Plot tools
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP3D
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
-      PROCEDURE,PUBLIC :: is_allowed => is_allowed_CRP3D
 END TYPE CRP3D
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -1003,9 +1008,15 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
    ! Now, we have all the repulsive interaction and corrections to the derivarives
    ! stored in v(:) and dvdu(:) respectively.
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
+   ! f(1,i) ==> v values interpolated for Z at site "i"
+   ! f(2,i) ==> dvdz values interpolated for Z at site "i"
    ALLOCATE(f(2,nsites))
    ALLOCATE(xy(nsites,2))
+   ! potarr(1) ==> v interpolated at X,Y for a given Z
+   ! potarr(2) ==> dvdz interpolated at X,Y for a given Z
    ALLOCATE(potarr(2))
+   ! derivarr(1,1:2) ==> dvdx, dvdy interpolated at X,Y
+   ! derivarr(2,1:2) ==> d(dvdz)/dx, d(dvdz)/dy interpolated at X,Y. It is not needed
    ALLOCATE(derivarr(2,2))
    DO i=1,nsites
       xy(i,1)=thispes%all_sites(i)%x

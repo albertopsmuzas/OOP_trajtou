@@ -70,6 +70,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
 #ifdef DEBUG
    TYPE(Angle),DIMENSION(:),ALLOCATABLE :: beta
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philistdeg
+   CHARACTER(LEN=18) :: filename
 #endif
    ! Run section
    z=x(1)
@@ -117,6 +118,10 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             END DO
             aux(1,:)=dfdz(:)
             aux(2,:)=dfdr(:)
+            CALL phicut(i)%READ(philist,f)
+            CALL phicut(i)%ADD_MOREFUNCS(aux)
+            CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
+            CALL phicut(i)%INTERPOL()
 #ifdef DEBUG
             CALL VERBOSE_WRITE(routinename,"New phicut:")
             CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
@@ -136,13 +141,15 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             CALL VERBOSE_WRITE(routinename,aux(1,:))
             CALL VERBOSE_WRITE(routinename,"dfdr:")
             CALL VERBOSE_WRITE(routinename,aux(2,:))
+            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.dat" 
+            CALL phicut(i)%PLOT(100,filename)
+            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.raw" 
+            CALL phicut(i)%PLOTDATA(filename)
+            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
+            CALL phicut(i)%PLOTCYCLIC(300,filename)
             DEALLOCATE(beta)
             DEALLOCATE(philistdeg)
 #endif
-            CALL phicut(i)%READ(philist,f)
-            CALL phicut(i)%ADD_MOREFUNCS(aux)
-            CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
-            CALL phicut(i)%INTERPOL()
             DEALLOCATE(philist)
             DEALLOCATE(f)
             DEALLOCATE(dfdr)
@@ -178,6 +185,10 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             END DO
             aux(1,:)=dfdz(:)
             aux(2,:)=dfdr(:)
+            CALL phicut(i)%READ(philist,f)
+            CALL phicut(i)%ADD_MOREFUNCS(aux)
+            CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
+            CALL phicut(i)%INTERPOL()
 #ifdef DEBUG
             CALL VERBOSE_WRITE(routinename,"New phicut:")
             CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
@@ -197,13 +208,15 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             CALL VERBOSE_WRITE(routinename,aux(1,:))
             CALL VERBOSE_WRITE(routinename,"dfdr:")
             CALL VERBOSE_WRITE(routinename,aux(2,:))
+            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.dat" 
+            CALL phicut(i)%PLOT(100,filename)
+            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.raw" 
+            CALL phicut(i)%PLOTDATA(filename)
+            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
+            CALL phicut(i)%PLOTCYCLIC(300,filename)
             DEALLOCATE(beta)
             DEALLOCATE(philistdeg)
 #endif
-            CALL phicut(i)%READ(philist,f)
-            CALL phicut(i)%ADD_MOREFUNCS(aux)
-            CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
-            CALL phicut(i)%INTERPOL()
             DEALLOCATE(philist)
             DEALLOCATE(f)
             DEALLOCATE(dfdr)
@@ -244,6 +257,14 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       dfdphi(i)=aux(2,1)
       DEALLOCATE(aux)
    END DO
+   CALL thetacut%READ(thetalist,f)
+   CALL thetacut%READ_EXTRA(period_theta,this%klisttheta,theta_is_even)
+   ALLOCATE(aux(3,this%nphicuts))
+   aux(1,:)=dfdz(:)
+   aux(2,:)=dfdr(:)
+   aux(3,:)=dfdphi(:)
+   CALL thetacut%ADD_MOREFUNCS(aux)
+   CALL thetacut%INTERPOL()
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New thetacut:")
    CALL VERBOSE_WRITE(routinename,"At Theta: (deg)")
@@ -265,17 +286,15 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    CALL VERBOSE_WRITE(routinename,dfdr)
    CALL VERBOSE_WRITE(routinename,"dfdphi:")
    CALL VERBOSE_WRITE(routinename,dfdphi)
+   WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.dat" 
+   CALL thetacut%PLOT(100,filename)
+   WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.raw" 
+   CALL thetacut%PLOTDATA(filename)
+   WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.cyc" 
+   CALL thetacut%PLOTCYCLIC(300,filename)
    DEALLOCATE(beta)
    DEALLOCATE(philistdeg)
 #endif
-   CALL thetacut%READ(thetalist,f)
-   CALL thetacut%READ_EXTRA(period_theta,this%klisttheta,theta_is_even)
-   ALLOCATE(aux(3,this%nphicuts))
-   aux(1,:)=dfdz(:)
-   aux(2,:)=dfdr(:)
-   aux(3,:)=dfdphi(:)
-   CALL thetacut%ADD_MOREFUNCS(aux)
-   CALL thetacut%INTERPOL()
    DEALLOCATE(f)
    DEALLOCATE(dfdr)
    DEALLOCATE(dfdz)

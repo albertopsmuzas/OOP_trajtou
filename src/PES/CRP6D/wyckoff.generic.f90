@@ -66,6 +66,7 @@ END TYPE Cut2d
 TYPE,ABSTRACT :: Wyckoffsitio
    !PRIVATE
    CHARACTER :: id
+   INTEGER(KIND=4) :: mynumber
    LOGICAL :: is_homonucl=.FALSE.
    REAL(KIND=8) :: x,y
    INTEGER(KIND=4) :: n2dcuts
@@ -80,16 +81,33 @@ TYPE,ABSTRACT :: Wyckoffsitio
       PROCEDURE,PUBLIC :: READ => READ_WYCKOFFSITIO
       PROCEDURE,PUBLIC :: SET_ID => SET_ID_WYCKOFFSITIO
       PROCEDURE,PUBLIC :: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
+      PROCEDURE,PUBLIC :: SET_MYNUMBER => SET_MYNUMBER_WYCKOFFSITIO
       ! Interface procedures
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_WYCKOFFSITIO
 END TYPE Wyckoffsitio
 !/////////////////////////////////////////////////////////////////
 CONTAINS
 !###########################################################
+!# SUBROUTINE: SET_MYNUMBER_WYCKOFFSITIO 
+!###########################################################
+!> @brief
+!! Common set function. Sets_mynumber atribute
+!-----------------------------------------------------------
+SUBROUTINE SET_MYNUMBER_WYCKOFFSITIO(this,mynumber)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Wyckoffsitio),INTENT(INOUT):: this
+   INTEGER(KIND=4),INTENT(IN) :: mynumber
+   ! Run section
+   this%mynumber=mynumber
+   RETURN
+END SUBROUTINE SET_MYNUMBER_WYCKOFFSITIO
+!###########################################################
 !# SUBROUTINE: SET_HOMONUCL_WYCKOFFSITIO 
 !###########################################################
 !> @brief
-!! Common set function. Sets is_homonucl atribute
+!! Common set function. Sets homonucl atribute
 !-----------------------------------------------------------
 SUBROUTINE SET_HOMONUCL_WYCKOFFSITIO(this,is_homonucl)
    ! Initial declarations   
