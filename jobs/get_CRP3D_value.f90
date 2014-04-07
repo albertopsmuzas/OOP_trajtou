@@ -21,7 +21,7 @@ CALL crp_pes%INTERPOL()
 
 ! STEP 4: GIVE VALUE
 CALL crp_pes%GET_V_AND_DERIVS(r,v,dvdu)
-WRITE(*,*) "Potential (a.u.): ", v
+WRITE(*,*) "Potential (a.u.): ", v, crp_pes%getpot(r)
 WRITE(*,*) "Derivatives in auxiliar cartesian coord. (a.u.): ", dvdu(:)
 CALL EXIT(0)
 END PROGRAM GET_CRP_VALUE

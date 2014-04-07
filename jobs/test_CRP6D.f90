@@ -58,7 +58,7 @@ DO i=1,thispesraw%nsites
 END DO
 CALL thispes%farpot%PLOT(100,"vacuumpot.dat")
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_XYMAP("4-1-xymap.dat",(/r1,z1/),200,200,r2-r1,z2-z1)
-CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_DUALDERIVS_AT_GRID("4-1-dualderivs.dat")
+!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_DUALDERIVS_AT_GRID("4-1-dualderivs.dat")
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("0-0.dat",(/r1,z1/),10000,0.D0,r2-r1)
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("0-1.dat",(/r1,z1+1.D0/),10000,0.D0,r2-r1)
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("0-2.dat",(/r1,z1+2.D0/),10000,0.D0,r2-r1)
@@ -69,7 +69,7 @@ CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_DUALDERIVS_AT_GRID("4-1-dualde
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%INTERPOL_NEWGRID(150,300)
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_XYMAP("new.4-1-xymap.dat",(/r1,z1/),200,200,r2-r1,z2-z1)
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_DUALDERIVS_AT_GRID("new.4-1-dualderivs.dat")
-CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_SPLINES(100)
+!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_SPLINES(100)
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.0-0.dat",(/r1,z1/),10000,0.D0,r2-r1)
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.0-1.dat",(/r1,z1+1.D0/),10000,0.D0,r2-r1)
 !CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.0-2.dat",(/r1,z1+2.D0/),10000,0.D0,r2-r1)

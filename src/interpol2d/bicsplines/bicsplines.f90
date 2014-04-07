@@ -25,17 +25,20 @@ TYPE,EXTENDS(Interpolgrid2d) :: Bicsplines
    TYPE(Csplines),DIMENSION(:),ALLOCATABLE :: ycsplines
    REAL(KIND=8),DIMENSION(:,:,:,:),ALLOCATABLE :: coeff
    CONTAINS
+      ! Get block
       PROCEDURE,PUBLIC :: getvalue => getvalue_bicsplines
       PROCEDURE,PUBLIC :: getderivx => getderivx_bicsplines
       PROCEDURE,PUBLIC :: getderivy => getderivy_bicsplines
       PROCEDURE,PUBLIC :: getderivxy => getderivxy_bicsplines
+      ! Tools block
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_BICSPLINES
+      PROCEDURE,PUBLIC :: INTERPOL_NEWGRID => INTERPOL_NEWGRID_BICSPLINES
+      PROCEDURE,PUBLIC :: REBOOT => REBOOT_BICSPLINES
+      ! Pot tools
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_SPLINES => PLOT_SPLINES_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_1D => PLOT_1D_BICSPLINES
       PROCEDURE,PUBLIC :: PLOT_DUALDERIVS_AT_GRID
-      PROCEDURE,PUBLIC :: INTERPOL_NEWGRID => INTERPOL_NEWGRID_BICSPLINES
-      PROCEDURE,PUBLIC :: REBOOT => REBOOT_BICSPLINES
 END TYPE
 !//////////////////////////////////////////////////////////
 CONTAINS
@@ -397,6 +400,16 @@ REAL(KIND=8) FUNCTION getvalue_bicsplines(this,x)
    ! Run section
    nx=size(this%x)
    ny=size(this%y)
+   SELECT CASE(x(1)<this%x(1) .OR. x(1)>this%x(nx) .OR. x(2)<this%y(1) .OR. x(2)>this%y(ny))
+      CASE(.TRUE.)
+         WRITE(0,*) "getvalue_bicsplines ERR: requested X,Y outside interpolation limits:"
+         WRITE(0,*) "Your request: ",x(1), x(2)
+         WRITE(0,*) "X limits: ", this%x(1),this%x(nx)
+         WRITE(0,*) "Y limits: ", this%y(1),this%y(ny)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    DO i = 1, nx-1
       x1 => this%x(i)
       x2 => this%x(i+1)
@@ -435,6 +448,16 @@ REAL(KIND=8) FUNCTION getderivx_bicsplines(this,x)
    ! Run section
    nx=size(this%x)
    ny=size(this%y)
+   SELECT CASE(x(1)<this%x(1) .OR. x(1)>this%x(nx) .OR. x(2)<this%y(1) .OR. x(2)>this%y(ny))
+      CASE(.TRUE.)
+         WRITE(0,*) "getderivx_bicsplines ERR: requested X,Y outside interpolation limits:"
+         WRITE(0,*) "Your request: ",x(1), x(2)
+         WRITE(0,*) "X limits: ", this%x(1),this%x(nx)
+         WRITE(0,*) "Y limits: ", this%y(1),this%y(ny)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    DO i = 1, nx-1
       x1 => this%x(i)
       x2 => this%x(i+1)
@@ -473,6 +496,16 @@ REAL(KIND=8) FUNCTION getderivy_bicsplines(this,x)
    ! Run section
    nx=size(this%x)
    ny=size(this%y)
+   SELECT CASE(x(1)<this%x(1) .OR. x(1)>this%x(nx) .OR. x(2)<this%y(1) .OR. x(2)>this%y(ny))
+      CASE(.TRUE.)
+         WRITE(0,*) "getderivy_bicsplines ERR: requested X,Y outside interpolation limits:"
+         WRITE(0,*) "Your request: ",x(1), x(2)
+         WRITE(0,*) "X limits: ", this%x(1),this%x(nx)
+         WRITE(0,*) "Y limits: ", this%y(1),this%y(ny)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    DO i = 1, nx-1
       x1 => this%x(i)
       x2 => this%x(i+1)
@@ -511,6 +544,16 @@ REAL(KIND=8) FUNCTION getderivxy_bicsplines(this,x)
    ! Run section
    nx=size(this%x)
    ny=size(this%y)
+   SELECT CASE(x(1)<this%x(1) .OR. x(1)>this%x(nx) .OR. x(2)<this%y(1) .OR. x(2)>this%y(ny))
+      CASE(.TRUE.)
+         WRITE(0,*) "getderivxy_bicsplines ERR: requested X,Y outside interpolation limits:"
+         WRITE(0,*) "Your request: ",x(1), x(2)
+         WRITE(0,*) "X limits: ", this%x(1),this%x(nx)
+         WRITE(0,*) "Y limits: ", this%y(1),this%y(ny)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    DO i = 1, nx-1
       x1 => this%x(i)
       x2 => this%x(i+1)

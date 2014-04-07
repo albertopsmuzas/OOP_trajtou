@@ -36,6 +36,7 @@ REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r)
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8) :: g
+    INTEGER(KIND=4) ::i ! counters
    ! Run section
    g=2.D0*PI/surf%norm_s1
    SELECT CASE(id)
@@ -48,6 +49,13 @@ REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r)
       CASE(3)
          termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))+&
             dcos(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
+      CASE(4)
+         termfoup4mm=2D0*(dcos(g*dfloat(-k(1))*r(1))+dcos(g*dfloat(-k(1))*r(2)))&
+            +4D0*dcos(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(-k(1))*r(2))
+         DO i = 1, -k(1)+1
+            termfoup4mm=termfoup4mm+2.D0*dcos(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
+               +2.D0*dcos(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
+         END DO
       CASE DEFAULT
          WRITE(0,*) "termfoup4mm ERR: Incorrect fourier term id: ", id
          CALL EXIT(1)
@@ -76,6 +84,7 @@ REAL(KIND=8) FUNCTION termfoup4mm_dx(id,surf,k,r)
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8):: g
+   INTEGER(KIND=4) :: i ! counter
    ! Run section
    g=2.D0*PI/surf%norm_s1
    SELECT CASE(id)
@@ -88,6 +97,14 @@ REAL(KIND=8) FUNCTION termfoup4mm_dx(id,surf,k,r)
       CASE(3)
          termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))-&
             g*dfloat(k(2))*dsin(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
+      CASE(4)
+         termfoup4mm_dx=-2.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))&
+         -4.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(-k(1))*r(2))
+          DO i = 1, -k(1)+1
+            termfoup4mm_dx=termfoup4mm_dx&
+               -2.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
+               -2.D0*g*dfloat(i)*dsin(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
+         END DO
       CASE DEFAULT
          WRITE(0,*) "termfoup4mm_dx ERR: Incorrect fourier term id: ", id
          CALL EXIT(1)
@@ -116,6 +133,7 @@ REAL(KIND=8) FUNCTION termfoup4mm_dy(id,surf,k,r)
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8):: g
+   INTEGER(KIND=4) :: i ! counters
    ! Run section
    g=2.D0*PI/surf%norm_s1
    SELECT CASE(id)
@@ -128,6 +146,14 @@ REAL(KIND=8) FUNCTION termfoup4mm_dy(id,surf,k,r)
       CASE(3)
          termfoup4mm_dy=-g*dfloat(k(2))*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(2))*r(2))-&
             g*dfloat(k(1))*dcos(g*dfloat(k(2))*r(1))*dsin(g*dfloat(k(1))*r(2))
+      CASE(4)
+         termfoup4mm_dy=-2.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(2))&
+            -4.D0*g*dfloat(-k(1))*dcos(g*dfloat(-k(1))*r(1))*dsin(g*dfloat(-k(1))*r(2))
+            DO i = 1, -k(1)+1
+               termfoup4mm_dy=termfoup4mm_dy&
+               -2.D0*g*dfloat(i)*dcos(g*dfloat(-k(1))*r(1))*dsin(g*dfloat(i)*r(2))&
+               -2.D0*g*dfloat(-k(1))*dcos(g*dfloat(i)*r(1))*dsin(g*dfloat(-k(1))*r(2))
+            END DO
       CASE DEFAULT
          WRITE(0,*) "termfoup4mm_dy ERR: Incorrect fourier term id: ", id
          CALL EXIT(1)
@@ -191,6 +217,10 @@ END SUBROUTINE INTERPOL_FOURIERP4MM
 !! be used during the fourier interpolation. These terms depend
 !! on the kpoints chosen.
 !
+!> @warning
+!! - If the first coordinate of the Kpoint is negative, an average will be done instead for
+!!   that order
+!
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 28/Mar/2014 
 !> @version 1.0
@@ -234,6 +264,13 @@ SUBROUTINE SET_TERMMAP_FOURIERP4MM(this)
       SELECT CASE(this%klist(i,2)<this%klist(i,1) .AND. this%klist(i,2)>0)
          CASE(.TRUE.)
             this%termmap(i)=3
+            CYCLE
+         CASE DEFAULT
+            ! do nothing
+      END SELECT
+      SELECT CASE(this%klist(i,1)<0)
+         CASE(.TRUE.)
+            this%termmap(i)=4
             CYCLE
          CASE DEFAULT
             WRITE(0,*) "INTERPOL_FOURIER4MM ERR: Kpoint list has a bad item at position ",i

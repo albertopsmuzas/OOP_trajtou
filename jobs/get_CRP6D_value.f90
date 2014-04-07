@@ -17,7 +17,7 @@ WRITE(*,*) "*****************************************"
 CALL thispes%READ("INcrp6d.inp")
 CALL thispes%INTERPOL()
 !CALL thispes%RAWINTERPOL()
-!CALL thispes%INTERPOL_NEW_RZGRID(40,80)
+!CALL thispes%INTERPOL_NEW_RZGRID(200,400)
 CALL thispes%GET_V_AND_DERIVS(x,v,dvdu)
 WRITE(*,*) "Potential (au): ", v
 WRITE(*,*) "dvdx (au): ", dvdu(1)

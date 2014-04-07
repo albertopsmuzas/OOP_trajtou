@@ -475,6 +475,7 @@ END SUBROUTINE SMOOTH_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
    ! Initial declarations   
+   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
@@ -484,6 +485,7 @@ SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
    INTEGER(KIND=4) :: i,j,k,l ! counters
    REAL(KIND=8) :: ma,mb
    REAL(KIND=8) :: newpot
+   CHARACTER(LEN=26),PARAMETER :: routinename="EXTRACT_VACUUMSURF_CRP6D: "
    ! Run section
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
@@ -499,6 +501,9 @@ SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
       END DO
    END DO
    CALL this%farpot%SHIFTPOT()
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Potential shifted: ",this%farpot%getscalefactor())
+#endif
    RETURN
 END SUBROUTINE EXTRACT_VACUUMSURF_CRP6D
 !###########################################################
