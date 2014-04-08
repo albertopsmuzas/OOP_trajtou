@@ -14,7 +14,8 @@ CHARACTER(LEN=13) :: realname
 CHARACTER(LEN=17) :: realname1
 TYPE(Length) :: r,z
 REAL(KIND=8) :: r1,r2,z1,z2
-CALL SET_DEBUG_MODE(.TRUE.)
+REAL(KIND=8),DIMENSION(6) :: pos
+CALL SET_VERBOSE_MODE(.TRUE.)
 ! STEP 1: READ CRP6D INPUT FILES
 CALL thispes%READ("INcrp6d.inp")
 CALL thispesraw%READ("INcrp6d.inp")
@@ -44,6 +45,15 @@ DO i=1,thispes%nsites
       WRITE(filename,'(I1,A10)') j,"-dualg.dat"
       WRITE(realname,'(I1,A1,A11)') i,"-",filename
       CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOT_DUALDERIVS_AT_GRID(realname)
+      pos(1)=thispes%wyckoffsite(i)%zrcut(j)%x
+      pos(2)=thispes%wyckoffsite(i)%zrcut(j)%y
+      pos(3)=z1
+      pos(4)=r1
+      pos(5)=thispes%wyckoffsite(i)%zrcut(j)%theta
+      pos(6)=thispes%wyckoffsite(i)%zrcut(j)%phi
+      WRITE(filename,'(I1,A10)') j,"-inter.dat"
+      WRITE(realname,'(I1,A1,A11)') i,"-",filename
+      CALL thispes%PLOT_RZMAP(pos,100,100,r2-r1,z2-z1,realname)
    END DO
 END DO
 DO i=1,thispesraw%nsites
@@ -56,27 +66,8 @@ DO i=1,thispesraw%nsites
       CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_DUALDERIVS_AT_GRID(realname1)
    END DO
 END DO
+
 CALL thispes%farpot%PLOT(100,"vacuumpot.dat")
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_XYMAP("4-1-xymap.dat",(/r1,z1/),200,200,r2-r1,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_DUALDERIVS_AT_GRID("4-1-dualderivs.dat")
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("0-0.dat",(/r1,z1/),10000,0.D0,r2-r1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("0-1.dat",(/r1,z1+1.D0/),10000,0.D0,r2-r1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("0-2.dat",(/r1,z1+2.D0/),10000,0.D0,r2-r1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("90-0.dat",(/r1,z1/),10000,90.D0,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("90-1.dat",(/r1+1.D0,z1/),10000,90.D0,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("90-2.dat",(/r1+2.D0,z1/),10000,90.D0,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("45-0.dat",(/r1,z1/),10000,45.D0,r2-r1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%INTERPOL_NEWGRID(150,300)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_XYMAP("new.4-1-xymap.dat",(/r1,z1/),200,200,r2-r1,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_DUALDERIVS_AT_GRID("new.4-1-dualderivs.dat")
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_SPLINES(100)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.0-0.dat",(/r1,z1/),10000,0.D0,r2-r1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.0-1.dat",(/r1,z1+1.D0/),10000,0.D0,r2-r1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.0-2.dat",(/r1,z1+2.D0/),10000,0.D0,r2-r1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.90-0.dat",(/r1,z1/),10000,90.D0,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.90-1.dat",(/r1+1.D0,z1/),10000,90.D0,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.90-2.dat",(/r1+2.D0,z1/),10000,90.D0,z2-z1)
-!CALL thispes%wyckoffsite(4)%zrcut(1)%interrz%PLOT_1D("new.45-0.dat",(/r1,z1/),10000,45.D0,r2-r1)
 
 CALL EXIT(0)
 END PROGRAM TEST_CRP6D

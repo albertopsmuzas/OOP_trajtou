@@ -42,6 +42,7 @@ TYPE,EXTENDS(PES) :: CRP6D
       ! Plot tools
       PROCEDURE,PUBLIC :: PLOT1D_THETA => PLOT1D_THETA_CRP6D
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP6D
+      PROCEDURE,PUBLIC :: PLOT_RZMAP => PLOT_RZMAP_CRP6D
 END TYPE CRP6D
 CONTAINS
 !###########################################################
@@ -155,32 +156,11 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    ! f(3,:) smooth dvdr
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
-   WRITE(*,*) "xy"
-   DO i = 1, this%nsites
-      WRITE(*,*) xy(i,:)
-   END DO
-   WRITE(*,*) "xyklist"
-   DO i = 1, this%nsites
-      WRITE(*,*) this%xyklist(i,:)
-   END DO
-   WRITE(*,*) "function"
-   DO i = 1, 5
-      WRITE(*,*) f(i,:)
-   END DO
-   OPEN (123,FILE="resume.dat",STATUS="replace",ACTION="write")
-   DO i = 1, this%nsites
-      WRITE(123,*) xy(i,:),f(:,i) 
-   END DO
-   CLOSE(123)
    CALL xyinterpol%READ(xy,f,this%xyklist)
    CALL xyinterpol%INTERPOL(this%atomiccrp(1)%surf)
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
    CALL xyinterpol%GET_F_AND_DERIVS(this%atomiccrp(1)%surf,x(1:2),aux1,aux2)
-   WRITE(*,*) aux1(:)
-   DO i = 1, 5
-      WRITE(*,*) aux2(i,:)
-   END DO
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
@@ -792,5 +772,103 @@ SUBROUTINE PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    CLOSE(11)
    RETURN
 END SUBROUTINE PLOT_XYMAP_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT_RZMAP_CRP6D
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 2D cut (R,Z) of the PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the file to print the output
+!> @param[in] init_point - Initial position to start the scan (a.u. and radians). 6 DIMENSIONAL
+!> @param[in] nxpoints - Number of points in R axis
+!> @param[in] nypoints - Number of points in Z axis
+!> @param[in] Lx - Length of R axis (a.u.)
+!> @param[in] Ly - Length of Z axis (a.u.)
+!
+!> @warning
+!! - X,Y,THETA,PHI parameters are taken from @b init_point
+!
+!> @author A.S. Muzas
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
+   IMPLICIT NONE
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: init_point 
+   INTEGER,INTENT(IN) :: nxpoints, nypoints 
+   CHARACTER(LEN=*),INTENT(IN) :: filename 
+   REAL(KIND=8),INTENT(IN) :: Lx
+   REAL(KIND=8),INTENT(IN) :: Ly
+   ! Local variables
+   REAL(KIND=8) :: xmin, ymin, xmax, ymax
+   REAL(KIND=8),DIMENSION(6) :: r,dvdu
+   REAL(KIND=8) :: xdelta, ydelta
+   INTEGER :: xinpoints, nxdelta
+   INTEGER :: yinpoints, nydelta
+   INTEGER :: i, j ! counters
+   REAL(KIND=8) :: v ! potential
+   ! GABBA, GABBA HEY! ---------
+   xmin = init_point(4)
+   ymin = init_point(3)
+   xmax = init_point(4)+Lx
+   ymax = init_point(3)+Ly
+   ! For X, grid parameters
+   xinpoints=nxpoints-2
+   nxdelta=nxpoints-1
+   xdelta=Lx/DFLOAT(nxdelta)
+   ! For Y, grid parameters
+   yinpoints=nypoints-2
+   nydelta=nypoints-1
+   ydelta=(ymax-ymin)/DFLOAT(nydelta)
+   ! Let's go! 
+   ! 1st XY point
+   OPEN(11,file=filename,status="replace")
+   r(4) = xmin
+   r(3) = ymin
+   r(1:2)=init_point(1:2)
+   r(5:6)=init_point(5:6)
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(4),r(3),v,dvdu(:)
+   DO i =1, yinpoints
+      r(3) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(4),r(3),v,dvdu(:)
+   END DO
+   r(3) = ymax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(4),r(3),v,dvdu(:)
+   ! inpoints in XY
+   DO i = 1, xinpoints
+      r(4) = xmin+DFLOAT(i)*xdelta
+      r(3) = ymin
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(4),r(3),v,dvdu(:)
+      DO j = 1, yinpoints
+         r(3) = ymin + DFLOAT(j)*ydelta
+         CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+         WRITE(11,*) r(4),r(3),v,dvdu(:)
+      END DO
+      r(3) = ymax
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(4),r(3),v,dvdu(:)
+   END DO
+   ! Last point in XY plane
+   r(4) = xmax
+   r(3) = ymax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(4),r(3),v,dvdu(:)
+   DO i =1, yinpoints
+      r(3) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(4),r(3),v,dvdu(:)
+   END DO
+   r(3) = ymax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(4),r(3),v,dvdu(:)
+   CLOSE(11)
+   RETURN
+END SUBROUTINE PLOT_RZMAP_CRP6D
 
 END MODULE CRP6D_MOD
