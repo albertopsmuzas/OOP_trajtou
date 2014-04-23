@@ -41,6 +41,9 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
       ! Plot tools
       PROCEDURE,PUBLIC :: PLOT1D_THETA => PLOT1D_THETA_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_PHI => PLOT1D_PHI_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_R => PLOT1D_R_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_Z => PLOT1D_Z_CRP6D
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP6D
       PROCEDURE,PUBLIC :: PLOT_RZMAP => PLOT_RZMAP_CRP6D
 END TYPE CRP6D
@@ -609,7 +612,7 @@ SUBROUTINE READ_CRP6D(this,filename)
    RETURN
 END SUBROUTINE READ_CRP6D
 !#######################################################################
-! SUBROUTINE: PLOT1D_THETA_CRP6D #######################################
+! SUBROUTINE: PLOT1D_PHI_CRP6D #######################################
 !#######################################################################
 !> @brief
 !! Creates a file with name "filename" with a 1D cut of the PES. 
@@ -617,33 +620,33 @@ END SUBROUTINE READ_CRP6D
 !> @param[in] thispes - CRP6D PES used
 !> @param[in] filename - Name of the output file
 !> @param[in] npoints - Number of points in the graphic. npoints>=2
-!> @param[in] x - array with X,Y,Z,R,THETA values
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
 !
 !> @warning
-!! - The graph starts always at 0,0
+!! - The graph starts always at 0,0. Initial PHI value in X array is ignored
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
+SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
    USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
+   INTEGER,INTENT(IN) :: npoints
    CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(5),INTENT(IN) :: X
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,L,v,s,alpha
+   REAL(KIND=8) :: delta,v
    REAL(KIND=8) :: xmax, xmin, ymax, ymin 
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=24),PARAMETER :: routinename = "PLOT1D_THETA_CRP6D: "
+   CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      WRITE(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
       CALL EXIT(1)
    END IF
    !
@@ -672,7 +675,205 @@ SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
    WRITE(11,*) r(6),v,dvdu(:)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
+END SUBROUTINE PLOT1D_PHI_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT1D_THETA_CRP6D #########################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0, Initial THETA value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=20),PARAMETER :: routinename = "PLOT1D_THETA_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = 0.D0
+   xmax = 2.D0*PI
+   r(1:4)=x(1:4)
+   r(6)=x(6)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(5)=xmin
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(5),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(5)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(5),v,dvdu(:)
+   END DO
+   ! Final value
+   r(5) = xmax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(5),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
 END SUBROUTINE PLOT1D_THETA_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT1D_R_CRP6D #########################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0, Initial R value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_R_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_R_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_R_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstr()
+   xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastr()
+   r(1:3)=x(1:3)
+   r(5:6)=x(5:6)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(4)=xmin
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(4),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(4)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(4),v,dvdu(:)
+   END DO
+   ! Final value
+   r(4) = xmax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(4),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_R_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT1D_Z_CRP6D #########################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0, Initial Z value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_Z_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_Z_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstz()
+   xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastz()
+   r(1:2)=x(1:2)
+   r(4:6)=x(4:6)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(3)=xmin
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(3),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(3)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(3),v,dvdu(:)
+   END DO
+   ! Final value
+   r(3) = xmax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(3),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_Z_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_CRP6D
 !#######################################################################

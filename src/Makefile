@@ -1,4 +1,5 @@
 # Include general rules
+#debugmode=on
 debugmode=off
 include make.inc
 # Add here all folder names in src
