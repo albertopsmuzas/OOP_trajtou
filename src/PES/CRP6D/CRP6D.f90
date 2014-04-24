@@ -641,7 +641,7 @@ SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
    REAL(KIND=8) :: xmax, xmin, ymax, ymin 
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   REAL(KIND=8),DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
