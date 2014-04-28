@@ -95,12 +95,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
                WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFP4MM: Unexpected error with Wyckoff id"
                CALL EXIT(1)
          END SELECT
-         SELECT CASE(this%is_homonucl)
-            CASE(.TRUE.)
-               period_theta=PI
-            CASE(.FALSE.)
-               period_theta=2.D0*PI
-         END SELECT
+         period_theta=PI ! this stands always for a~c sites (due to inversion center)
          ! Prepare phi interpolation
          ALLOCATE(phicut(this%nphicuts))
          DO i = 1, this%nphicuts
@@ -286,12 +281,17 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    CALL VERBOSE_WRITE(routinename,dfdr)
    CALL VERBOSE_WRITE(routinename,"dfdphi:")
    CALL VERBOSE_WRITE(routinename,dfdphi)
-   WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.dat" 
-   CALL thetacut%PLOT(100,filename)
-   WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.raw" 
-   CALL thetacut%PLOTDATA(filename)
-   WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.cyc" 
-   CALL thetacut%PLOTCYCLIC(300,filename)
+   SELECT CASE(get_debugmode())
+      CASE(.TRUE.)
+         WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.dat" 
+         CALL thetacut%PLOT(100,filename)
+         WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.raw" 
+         CALL thetacut%PLOTDATA(filename)
+         WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.cyc" 
+         CALL thetacut%PLOTCYCLIC(300,filename)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    DEALLOCATE(beta)
    DEALLOCATE(philistdeg)
 #endif

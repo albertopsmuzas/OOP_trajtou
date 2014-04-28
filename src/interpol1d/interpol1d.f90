@@ -96,6 +96,9 @@ END SUBROUTINE PLOT_DATA_INTERPOL1D
 !! by @b npoints. Cannot be less than two. It also plots the first derivative
 !----------------------------------------------------------------------
 SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename)
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints
@@ -131,7 +134,9 @@ SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename)
       WRITE(11,*) x,this%getvalue(x),this%getderiv(x)
    END DO
    WRITE(11,*) xmax,this%getvalue(xmax),this%getderiv(xmax)
-   WRITE(*,*) routinename,filename," file created"
+#ifdef DEBUG
+   CALL DEBUG_WRITE(routinename,filename," file created")
+#endif
    CLOSE(11)
 END SUBROUTINE PLOT_INTERPOL_INTERPOL1D
 !###########################################################

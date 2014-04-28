@@ -404,6 +404,9 @@ END FUNCTION getderiv_fourier1d
 !----------------------------------------------------------------------
 SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D(this,npoints,filename)
    USE CONSTANTS_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints
@@ -439,7 +442,9 @@ SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D(this,npoints,filename)
       WRITE(11,*) x,this%getvalue(x),this%getderiv(x)
    END DO
    WRITE(11,*) xmax,this%getvalue(xmax),this%getderiv(xmax)
-   WRITE(*,*) routinename,filename," file created"
+#ifdef DEBUG   
+   CALL DEBUG_WRITE(routinename,filename," file created")
+#endif
    CLOSE(11)
 END SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D
 
