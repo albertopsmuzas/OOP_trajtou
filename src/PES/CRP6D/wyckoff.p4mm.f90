@@ -77,7 +77,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    r=x(2)
    theta=x(3)
    phi=x(4)
-   h=0
+   h=0 ! initialize h
    SELECT CASE(this%id)
       !----------------------------------------------------
       CASE("a" : "c") 
@@ -95,10 +95,15 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
                WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFP4MM: Unexpected error with Wyckoff id"
                CALL EXIT(1)
          END SELECT
-         period_theta=PI ! this stands always for a~c sites (due to inversion center)
+         SELECT CASE(this%is_homonucl)
+            CASE(.TRUE.)
+               period_theta=PI
+            CASE(.FALSE.)
+               period_theta=2.D0*PI
+         END SELECT
          ! Prepare phi interpolation
          ALLOCATE(phicut(this%nphicuts))
-         DO i = 1, this%nphicuts
+         DO i = 1, this%nphicuts ! loop over sites
             ALLOCATE(f(this%nphipoints(i)))
             ALLOCATE(dfdr(this%nphipoints(i)))
             ALLOCATE(dfdz(this%nphipoints(i)))
@@ -106,9 +111,9 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             ALLOCATE(aux(2,this%nphipoints(i)))
             DO j = 1, this%nphipoints(i) ! loop over number of zrcuts inside
                h=h+1 ! numbering of zrcuts
-               f(j)=this%zrcut(h)%interrz%getvalue((/r,z/))
-               dfdr(j)=this%zrcut(h)%interrz%getderivx((/r,z/))
-               dfdz(j)=this%zrcut(h)%interrz%getderivy((/r,z/))
+               f(j)=this%zrcut(h)%interrz%getvalue((/r,z/)) ! storing potential at this site
+               dfdr(j)=this%zrcut(h)%interrz%getderivx((/r,z/)) ! storing d/dr at this site
+               dfdz(j)=this%zrcut(h)%interrz%getderivy((/r,z/)) ! storing d/dz at this site
                philist(j)=this%zrcut(h)%phi
             END DO
             aux(1,:)=dfdz(:)
@@ -118,7 +123,13 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even)
             CALL phicut(i)%INTERPOL()
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"New phicut:")
+            CALL VERBOSE_WRITE(routinename,"New phicut")
+            CALL VERBOSE_WRITE(routinename,"for theta: ",this%zrcut(h)%theta)
+            CALL VERBOSE_WRITE(routinename,"is homonuclear: ",this%is_homonucl)
+            CALL VERBOSE_WRITE(routinename,"Period Phi: ",period_phi)
+            CALL VERBOSE_WRITE(routinename,"Period Theta:",period_theta)
+            CALL VERBOSE_WRITE(routinename,"Phi is even: ",phi_is_even)
+            CALL VERBOSE_WRITE(routinename,"Theta is even: ",theta_is_even)
             CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
             ALLOCATE(beta(size(philist)))
             ALLOCATE(philistdeg(size(philist)))
@@ -139,9 +150,9 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.dat" 
             CALL phicut(i)%PLOT(100,filename)
             WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.raw" 
-            CALL phicut(i)%PLOTDATA(filename)
-            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
-            CALL phicut(i)%PLOTCYCLIC(300,filename)
+         CALL phicut(i)%PLOTDATA(filename)
+         WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
+            CALL phicut(i)%PLOTCYCLIC_ALL(300,filename)
             DEALLOCATE(beta)
             DEALLOCATE(philistdeg)
 #endif
@@ -153,19 +164,19 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
          END DO
       !----------------------------------------------------
       CASE("f") ! in this case we should interpol respect to phi-pi/4
-         phi_is_even=.TRUE. ! in phi-pi/4 is even
+         phi_is_even=.TRUE. 
          theta_is_even=.FALSE.
          ! In this case, homonuclear case increases periodicity
-         SELECT CASE(this%is_homonucl)
-            CASE(.TRUE.)
-               period_phi=PI
-               period_theta=PI
-            CASE(.FALSE.)
-               period_phi=2.D0*PI
-               period_theta=2.D0*PI
-         END SELECT
          ALLOCATE(phicut(this%nphicuts))
          DO i = 1, this%nphicuts
+            SELECT CASE(this%is_homonucl)
+               CASE(.TRUE.)
+                  period_phi=2.D0*PI
+                  period_theta=PI
+               CASE(.FALSE.)
+                  period_phi=2.D0*PI
+                  period_theta=2.D0*PI
+            END SELECT
             ALLOCATE(f(this%nphipoints(i)))
             ALLOCATE(dfdr(this%nphipoints(i)))
             ALLOCATE(dfdz(this%nphipoints(i)))
@@ -178,6 +189,12 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
                dfdz(j)=this%zrcut(h)%interrz%getderivy((/r,z/))
                philist(j)=this%zrcut(h)%phi-PI/4.D0
             END DO
+            SELECT CASE((this%zrcut(h)%theta>=1.5707963267948956D0).AND.(this%zrcut(h)%theta<=1.5707963267948976D0))
+               CASE(.TRUE.)
+                  period_phi=PI
+               CASE(.FALSE.)
+                  period_phi=2.D0*PI
+            END SELECT
             aux(1,:)=dfdz(:)
             aux(2,:)=dfdr(:)
             CALL phicut(i)%READ(philist,f)
@@ -186,6 +203,12 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             CALL phicut(i)%INTERPOL()
 #ifdef DEBUG
             CALL VERBOSE_WRITE(routinename,"New phicut:")
+            CALL VERBOSE_WRITE(routinename,"for theta: ",this%zrcut(h)%theta)
+            CALL VERBOSE_WRITE(routinename,"is homonuclear: ",this%is_homonucl)
+            CALL VERBOSE_WRITE(routinename,"Period Phi: ",period_phi)
+            CALL VERBOSE_WRITE(routinename,"Period Theta:",period_theta)
+            CALL VERBOSE_WRITE(routinename,"Phi is even: ",phi_is_even)
+            CALL VERBOSE_WRITE(routinename,"Theta is even: ",theta_is_even)
             CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
             ALLOCATE(beta(size(philist)))
             ALLOCATE(philistdeg(size(philist)))
@@ -208,7 +231,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
             WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.raw" 
             CALL phicut(i)%PLOTDATA(filename)
             WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
-            CALL phicut(i)%PLOTCYCLIC(300,filename)
+            CALL phicut(i)%PLOTCYCLIC_ALL(300,filename)
             DEALLOCATE(beta)
             DEALLOCATE(philistdeg)
 #endif

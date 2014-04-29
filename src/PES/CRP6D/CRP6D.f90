@@ -33,6 +33,7 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: READ => READ_CRP6D
       ! Get block
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
       ! Tools block
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CRP6D
@@ -41,9 +42,13 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
       ! Plot tools
       PROCEDURE,PUBLIC :: PLOT1D_THETA => PLOT1D_THETA_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_PHI => PLOT1D_PHI_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_R => PLOT1D_R_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_Z => PLOT1D_Z_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP6D
       PROCEDURE,PUBLIC :: PLOT_RZMAP => PLOT_RZMAP_CRP6D
 END TYPE CRP6D
@@ -236,6 +241,116 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CRP6D
 !###########################################################
+!# SUBROUTINE: GET_V_AND_DERIVS_SMOOTH_CRP6D 
+!###########################################################
+!> @brief
+!! Gets the SMOOTH potential and the derivatives respect to all DOFs
+!
+!> @details
+!! This routine doesn't check PES smoothness, so it can be used to get
+!! interpolated values for the raw PES
+!> @warning
+!! - Assumed a Fourier interpolation in XY (symmetry adapted)
+!! - Assumed a Fourier interpolation in theta (symmetry adapted)
+!! - Assumed a Fourier interpolation in phi (symmetry adapted)
+!! - Assumed a bicubic splines interpolation in R-Z (symmetry independent)
+!! - Assumed that Z-R grids have the same size
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
+   ! Initial declarations   
+   USE DEBUG_MOD
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: x
+   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dvdu
+   ! Local variables
+   INTEGER(KIND=4) :: i,j ! counters
+   REAL(KIND=8) :: ma,mb ! masses
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f ! smooth function and derivs
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: dfdu ! smooth derivatives
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux2
+   TYPE(Fourierp4mm) :: xyinterpol
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP6D: "
+   ! Run section
+   SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastz()) 
+      CASE(.TRUE.)
+         v=this%farpot%getpot(x(4))
+         dvdu(1)=0.D0
+         dvdu(2)=0.D0
+         dvdu(3)=0.D0
+         dvdu(4)=this%farpot%getderiv(x(4))
+         dvdu(5)=0.D0
+         dvdu(6)=0.D0
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   ALLOCATE(f(5,this%nsites))
+   ALLOCATE(xy(this%nsites,2))
+   DO i = 1, this%nsites 
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Wyckoffsite: ",i)
+      CALL VERBOSE_WRITE(routinename,"Letter:",this%wyckoffsite(i)%id)
+#endif
+      CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
+      xy(i,1)=this%wyckoffsite(i)%x
+      xy(i,2)=this%wyckoffsite(i)%y
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"At XY: ",(/xy(i,1),xy(i,2)/))
+      CALL VERBOSE_WRITE(routinename,"Pot: ",f(1,i))
+      CALL VERBOSE_WRITE(routinename,"dvdz: ",f(2,i))
+      CALL VERBOSE_WRITE(routinename,"dvdr: ",f(3,i))
+      CALL VERBOSE_WRITE(routinename,"dvdtheta: ",f(4,i))
+      CALL VERBOSE_WRITE(routinename,"dvdphi: ",f(5,i))
+#endif
+   END DO
+   ! f(1,:) smooth potential values
+   ! f(2,:) smooth dvdz
+   ! f(3,:) smooth dvdr
+   ! f(4,:) smooth dvdtheta
+   ! f(5,:) smooth dvdphi
+   CALL xyinterpol%READ(xy,f,this%xyklist)
+   CALL xyinterpol%INTERPOL(this%atomiccrp(1)%surf)
+   ALLOCATE(aux1(5))
+   ALLOCATE(aux2(5,2))
+   CALL xyinterpol%GET_F_AND_DERIVS(this%atomiccrp(1)%surf,x(1:2),aux1,aux2)
+#ifdef DEBUG
+   !-------------------------------------
+   ! Results for the smooth potential
+   !-------------------------------------
+   ! v=aux1(1)         ! v
+   ! dvdu(1)=aux2(1,1) ! dvdx
+   ! dvdu(2)=aux2(1,2) ! dvdy
+   ! dvdu(3)=aux1(2)   ! dvdz
+   ! dvdu(4)=aux1(3)   ! dvdr
+   ! dvdu(5)=aux1(4)   ! dvdtheta
+   ! dvdu(6)=aux1(5)   ! dvdphi
+   CALL VERBOSE_WRITE(routinename,"Values for smooth potential")
+   CALL VERBOSE_WRITE(routinename,"v: ",aux1(1))   ! v
+   CALL VERBOSE_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
+   CALL VERBOSE_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
+   CALL VERBOSE_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
+   CALL VERBOSE_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
+   CALL VERBOSE_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
+   CALL VERBOSE_WRITE(routinename,"dvdphi: ",aux1(5))   ! dvdphi
+#endif
+   v=aux1(1)
+   dvdu(1)=aux2(1,1)
+   dvdu(2)=aux2(1,2)
+   dvdu(3)=aux1(2)
+   dvdu(5)=aux1(4)
+   dvdu(6)=aux1(5)
+   RETURN
+END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D
+!###########################################################
 !# SUBROUTINE: INTERPOL_CRP6D 
 !###########################################################
 !> @brief
@@ -281,6 +396,7 @@ SUBROUTINE RAWINTERPOL_CRP6D(this)
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
    ! Run section
+   CALL this%EXTRACT_VACUUMSURF()   
    DO i = 1, this%nsites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
          CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL
@@ -677,6 +793,71 @@ SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
    CLOSE(11)
 END SUBROUTINE PLOT1D_PHI_CRP6D
 !#######################################################################
+! SUBROUTINE: PLOT1D_PHI_SMOOTH_CRP6D #######################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the smooth PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0. Initial PHI value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 09/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER,INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8),DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=25),PARAMETER :: routinename = "PLOT1D_PHI_SMOOTH_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = 0.D0
+   xmax = 2.D0*PI
+   r(1:5)=x(1:5)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(6)=xmin
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(6),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(6)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(6),v,dvdu(:)
+   END DO
+   ! Final value
+   r(6) = xmax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(6),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D
+!#######################################################################
 ! SUBROUTINE: PLOT1D_THETA_CRP6D #########################################
 !#######################################################################
 !> @brief
@@ -743,6 +924,72 @@ SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
    CLOSE(11)
 END SUBROUTINE PLOT1D_THETA_CRP6D
 !#######################################################################
+! SUBROUTINE: PLOT1D_THETA_SMOOTH_CRP6D #########################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the smooth PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0, Initial THETA value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=27),PARAMETER :: routinename = "PLOT1D_THETA_SMOOTH_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = 0.D0
+   xmax = 2.D0*PI
+   r(1:4)=x(1:4)
+   r(6)=x(6)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(5)=xmin
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(5),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(5)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(5),v,dvdu(:)
+   END DO
+   ! Final value
+   r(5) = xmax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(5),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D
+!#######################################################################
 ! SUBROUTINE: PLOT1D_R_CRP6D #########################################
 !#######################################################################
 !> @brief
@@ -788,7 +1035,7 @@ SUBROUTINE PLOT1D_R_CRP6D(thispes,npoints,X,filename)
    !
    inpoints=npoints-2
    ndelta=npoints-1
-   delta=2.D0*PI/dfloat(ndelta)
+   delta=(xmax-xmin)/dfloat(ndelta)
    !
    OPEN(11,file=filename,status="replace")
    ! Initial value
@@ -808,6 +1055,72 @@ SUBROUTINE PLOT1D_R_CRP6D(thispes,npoints,X,filename)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT1D_R_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT1D_R_SMOOTH_CRP6D #########################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the smooth PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0, Initial R value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_R_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_R_SMOOTH_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_R_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstr()
+   xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastr()
+   r(1:3)=x(1:3)
+   r(5:6)=x(5:6)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=(xmax-xmin)/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(4)=xmin
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(4),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(4)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(4),v,dvdu(:)
+   END DO
+   ! Final value
+   r(4) = xmax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(4),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_R_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_Z_CRP6D #########################################
 !#######################################################################
@@ -854,7 +1167,7 @@ SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,filename)
    !
    inpoints=npoints-2
    ndelta=npoints-1
-   delta=2.D0*PI/dfloat(ndelta)
+   delta=(xmax-xmin)/dfloat(ndelta)
    !
    OPEN(11,file=filename,status="replace")
    ! Initial value
@@ -874,6 +1187,75 @@ SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,filename)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT1D_Z_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT1D_Z_SMOOTH_CRP6D #########################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the smooth PES. 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0, Initial Z value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta,v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r, dvdu
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_Z_SMOOTH_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   SELECT CASE(npoints)
+      CASE(: 1)
+         WRITE(0,*) "PLOT1D_Z_CRP6D ERR: Less than 2 points"
+         CALL EXIT(1)
+      CASE DEFAULT
+         ! do nothing
+   END SELECT
+   !
+   xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstz()
+   xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastz()
+   r(1:2)=x(1:2)
+   r(4:6)=x(4:6)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=(xmax-xmin)/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(3)=xmin
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(3),v,dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(3)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(3),v,dvdu(:)
+   END DO
+   ! Final value
+   r(3) = xmax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(3),v,dvdu(:)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_CRP6D
 !#######################################################################

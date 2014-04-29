@@ -38,6 +38,7 @@ TYPE,EXTENDS(Interpol1d):: Fourier1d
       PROCEDURE,PUBLIC :: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D
       ! Plotting tools
       PROCEDURE,PUBLIC :: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D
+      PROCEDURE,PUBLIC :: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
 END TYPE Fourier1d
 !//////////////////////////////////////////////////
 CONTAINS
@@ -118,8 +119,8 @@ SUBROUTINE ADD_MORE_FUNCS_FOURIER1D(this,f)
    ! Local variables
    INTEGER(KIND=4) :: nfuncs, ndata
    ! Run section
-   nfuncs=size(f(:,1))
-   ndata=size(f(1,:))
+   nfuncs=size(f(:,1)) ! number of rows
+   ndata=size(f(1,:)) ! number of columns
    SELECT CASE(ndata == this%n)
       CASE(.FALSE.)
          WRITE(0,*) "ADD_MORE_FUNCS_FOURIER1D ERR: size mismatch between extra functions and the original one"
@@ -447,5 +448,66 @@ SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D(this,npoints,filename)
 #endif
    CLOSE(11)
 END SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D
+!######################################################################
+! SUBROUTINE: PLOTCYCLIC_ALL_INTERPOL_FOURIER1D ################################
+!######################################################################
+!> @brief
+!! Creates a data file called @b filename with the interpolation graphic of
+!! this fourier1d type variable. The number of points in that graphic is defined
+!! by @b npoints. Cannot be less than two. It also plots the first derivative.
+!! The graphic goes from 0 to @f$2\pi@f$
+!----------------------------------------------------------------------
+SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D(this,npoints,filename)
+   USE CONSTANTS_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   INTEGER,INTENT(IN) :: npoints
+   CLASS(Fourier1d),INTENT(IN) :: this
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! Local variables -----------------------------
+   INTEGER :: inpoints,ndelta,nfunc
+   REAL(KIND=8) :: delta, interval, x
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f,dfdx
+   INTEGER :: i ! Counter
+   CHARACTER(LEN=31), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D: " 
+   ! Pointers ------------------------------------
+   REAL(KIND=8):: xmin, xmax
+   INTEGER(KIND=4):: n
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOTCYCLIC_INTERPOL_FOURIER1D ERR: Less than 2 points"
+      STOP
+   END IF
+   !
+   n= this%n
+   xmin=0
+   xmax=2.D0*PI
+   nfunc=size(this%extrafuncs(:,1))+1
+   ALLOCATE(f(nfunc))
+   ALLOCATE(dfdx(nfunc))
+   !
+   interval=xmax-xmin
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=interval/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   CALL this%GET_ALLFUNCS_AND_DERIVS(xmin,f,dfdx)
+   WRITE(11,*) xmin,f(:),dfdx(:)
+   DO i=1, inpoints
+      x=xmin+(dfloat(i)*delta)
+      CALL this%GET_ALLFUNCS_AND_DERIVS(x,f,dfdx) 
+      WRITE(11,*) x,f(:),dfdx(:)
+   END DO
+   CALL this%GET_ALLFUNCS_AND_DERIVS(xmax,f,dfdx) 
+   WRITE(11,*) xmax,f(:),dfdx(:)
+#ifdef DEBUG   
+   CALL DEBUG_WRITE(routinename,filename," file created")
+#endif
+   CLOSE(11)
+END SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
 
 END MODULE FOURIER1D_MOD

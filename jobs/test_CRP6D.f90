@@ -41,7 +41,7 @@ DO i=1,thispes%nsites
    DO j = 1, thispes%wyckoffsite(i)%n2dcuts
       WRITE(filename,'(I1,A10)') j,"-cut2d.dat"
       WRITE(realname,'(I1,A1,A11)') i,"-",filename
-      CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOT_XYMAP(realname,(/r1,z1/),100,100,r2-r1,z2-z1)
+      CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOT_XYMAP(realname,(/r1,z1/),300,300,r2-r1,z2-z1)
       WRITE(filename,'(I1,A10)') j,"-dualg.dat"
       WRITE(realname,'(I1,A1,A11)') i,"-",filename
       CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOT_DUALDERIVS_AT_GRID(realname)
@@ -53,14 +53,14 @@ DO i=1,thispes%nsites
       pos(6)=thispes%wyckoffsite(i)%zrcut(j)%phi
       WRITE(filename,'(I1,A10)') j,"-inter.dat"
       WRITE(realname,'(I1,A1,A11)') i,"-",filename
-      CALL thispes%PLOT_RZMAP(pos,100,100,r2-r1,z2-z1,realname)
+      CALL thispes%PLOT_RZMAP(pos,300,300,r2-r1,z2-z1,realname)
    END DO
 END DO
 DO i=1,thispesraw%nsites
    DO j = 1, thispesraw%wyckoffsite(i)%n2dcuts
       WRITE(filename1,'(I1,A14)') j,"-cut2d.raw.dat"
       WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
-      CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_XYMAP(realname1,(/r1,z1/),100,100,r2-r1,z2-z1)
+      CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_XYMAP(realname1,(/r1,z1/),300,300,r2-r1,z2-z1)
       WRITE(filename1,'(I1,A14)') j,"-dualg.raw.dat"
       WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
       CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_DUALDERIVS_AT_GRID(realname1)
