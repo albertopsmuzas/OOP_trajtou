@@ -144,20 +144,13 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    ALLOCATE(xy(this%nsites,2))
    DO i = 1, this%nsites 
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Wyckoffsite: ",i)
-      CALL VERBOSE_WRITE(routinename,"Letter:",this%wyckoffsite(i)%id)
+      CALL VERBOSE_SEPARATOR1()
+      CALL VERBOSE_WRITE(routinename,"WYCKOFF SITE: ",i)
+      CALL VERBOSE_WRITE(routinename,"Letter: ",this%wyckoffsite(i)%id)
 #endif
       CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
       xy(i,1)=this%wyckoffsite(i)%x
       xy(i,2)=this%wyckoffsite(i)%y
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"At XY: ",(/xy(i,1),xy(i,2)/))
-      CALL VERBOSE_WRITE(routinename,"Pot: ",f(1,i))
-      CALL VERBOSE_WRITE(routinename,"dvdz: ",f(2,i))
-      CALL VERBOSE_WRITE(routinename,"dvdr: ",f(3,i))
-      CALL VERBOSE_WRITE(routinename,"dvdtheta: ",f(4,i))
-      CALL VERBOSE_WRITE(routinename,"dvdphi: ",f(5,i))
-#endif
    END DO
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
@@ -180,7 +173,21 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux1(5)   ! dvdphi
-   CALL VERBOSE_WRITE(routinename,"Values for smooth potential")
+   CALL VERBOSE_WRITE(routinename,"List of XY: "
+   DO i = 1,this%nsites 
+     CALL VERBOSE_WRIUTE(routinename,xy(i,:)
+   END DO
+   CALL VERBOSE_WRITE(routinename,"Smooth V at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(1,:))
+   CALL VERBOSE_WRITE(routinename,"Smooth dv/dz at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(2,:))
+   CALL VERBOSE_WRITE(routinename,"Smooth dv/dr at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(3,:))
+   CALL VERBOSE_WRITE(routinename,"Smooth dv/dtheta at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(4,:))
+   CALL VERBOSE_WRITE(routinename,"Smooth dv/dphi at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(5,:))
+   CALL VERBOSE_WRITE(routinename,"Smooth interpolated values:")
    CALL VERBOSE_WRITE(routinename,"v: ",aux1(1))   ! v
    CALL VERBOSE_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
    CALL VERBOSE_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
@@ -250,11 +257,15 @@ END SUBROUTINE GET_V_AND_DERIVS_CRP6D
 !! This routine doesn't check PES smoothness, so it can be used to get
 !! interpolated values for the raw PES
 !> @warning
-!! - Assumed a Fourier interpolation in XY (symmetry adapted)
-!! - Assumed a Fourier interpolation in theta (symmetry adapted)
-!! - Assumed a Fourier interpolation in phi (symmetry adapted)
+!! - Assumed a 2D Fourier interpolation in XY (symmetry adapted)
+!! - Assumed a 1D Fourier interpolation in theta (symmetry adapted)
+!! - Assumed a 1D Fourier interpolation in phi (symmetry adapted)
 !! - Assumed a bicubic splines interpolation in R-Z (symmetry independent)
-!! - Assumed that Z-R grids have the same size
+!! - Assumed that Z-R grids have the same size. This can be ensured using
+!!   using subroutine INTERPOL_NEWGRID
+!
+!> @see
+!! interpol_newgrid_crp6d
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Apr/2014
@@ -297,20 +308,13 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ALLOCATE(xy(this%nsites,2))
    DO i = 1, this%nsites 
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Wyckoffsite: ",i)
+      CALL VERBOSE_SEPARATOR1()
+      CALL VERBOSE_WRITE(routinename,"WYCKOFFSITE: ",i)
       CALL VERBOSE_WRITE(routinename,"Letter:",this%wyckoffsite(i)%id)
 #endif
       CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
       xy(i,1)=this%wyckoffsite(i)%x
       xy(i,2)=this%wyckoffsite(i)%y
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"At XY: ",(/xy(i,1),xy(i,2)/))
-      CALL VERBOSE_WRITE(routinename,"Pot: ",f(1,i))
-      CALL VERBOSE_WRITE(routinename,"dvdz: ",f(2,i))
-      CALL VERBOSE_WRITE(routinename,"dvdr: ",f(3,i))
-      CALL VERBOSE_WRITE(routinename,"dvdtheta: ",f(4,i))
-      CALL VERBOSE_WRITE(routinename,"dvdphi: ",f(5,i))
-#endif
    END DO
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
@@ -333,19 +337,26 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux1(5)   ! dvdphi
-   CALL VERBOSE_WRITE(routinename,"Values for smooth potential")
-   CALL VERBOSE_WRITE(routinename,"v: ",aux1(1))   ! v
-   CALL VERBOSE_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
-   CALL VERBOSE_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
-   CALL VERBOSE_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
-   CALL VERBOSE_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
-   CALL VERBOSE_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
-   CALL VERBOSE_WRITE(routinename,"dvdphi: ",aux1(5))   ! dvdphi
+   CALL VERBOSE_WRITE(routinename,"List of XY: "
+   DO i = 1,this%nsites 
+     CALL VERBOSE_WRIUTE(routinename,xy(i,:)
+   END DO
+   CALL VERBOSE_WRITE(routinename,"Pots at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(1,:))
+   CALL VERBOSE_WRITE(routinename,"dv/dz at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(2,:))
+   CALL VERBOSE_WRITE(routinename,"dv/dr at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(3,:))
+   CALL VERBOSE_WRITE(routinename,"dv/dtheta at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(4,:))
+   CALL VERBOSE_WRITE(routinename,"dv/dphi at each wyckoff site:")
+   CALL VERBOSE_WRITE(routinename,f(5,:))
 #endif
    v=aux1(1)
    dvdu(1)=aux2(1,1)
    dvdu(2)=aux2(1,2)
    dvdu(3)=aux1(2)
+   dvdu(4)=aux1(3)
    dvdu(5)=aux1(4)
    dvdu(6)=aux1(5)
    RETURN
@@ -574,7 +585,9 @@ END SUBROUTINE SMOOTH_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
    ! Initial declarations   
+#ifdef DEBUG
    USE DEBUG_MOD
+#endif
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this

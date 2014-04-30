@@ -1,32 +1,37 @@
 !#########################################################
-! RAISON D'ÊTRE:
-! - Manages debug messages 
-! UPDATES:
-! - Created: 11/Nov/2013 
-! FUNCTIONALITY:
-! - Provides 2 global variables: debugmode and verbosemode
-! - There are 2 different types of subroutines: those that 
-!   print when verbosemode=.true. and those that print when
-!   debugmode=.true.
-! - It is hardly recommended to use printing subroutines 
-!   inside #ifdef DEBUG #endif blocks. Otherwise, the 
-!   standard program will check verbosemode and debugmode too
-!   often.
-! - The philosophy under this module is to set 3 different
-!   levels of verbosity:
-!   . Whitout using this module: the program will only output
-!     in some specific files, avoiding unnecessary standard 
-!     printing or checking debugging variables.
-!   . Using this module, verbosemode=.true. : subroutines
-!     print some std output. Just to know which routines
-!     were executed.
-!   . Using this module, debugmode=.true. : subroutines
-!     print whatever the developer thinks it is useful to
-!     follow possible bugs. This option forces verbosemode=.true.
-! IDEAS FOR THE FUTURE:
-! - Use unrestricted polymorphism instead of interfaces. NOT
-!   all compilers have this feature (gfortran doesn't). This
-!   is why the INTERFACE structures are kept for the moment.
+! MODULE: DEBUG_MOD
+!
+!> @brief
+!! Manages debug messages 
+!
+!> @details
+!! - Provides 3 global variables: debugmode, verbosemode and silentmode.
+!!   Silentmode=.true. redirects all output to some specific file.
+!! - There are 2 different types of subroutines: those that 
+!!   print when verbosemode=.true. and those that print when
+!!   debugmode=.true.
+!! - It is hardly recommended to use printing subroutines 
+!!   inside #ifdef DEBUG #endif blocks. Otherwise, the 
+!!   standard program will check verbosemode and debugmode too
+!!   often.
+!! - The philosophy under this module is to set 3 different
+!!   levels of verbosity:
+!!   . @b Not @b using @b this @b module: the program will only output
+!!     in some specific files, avoiding unnecessary standard 
+!!     printing or checking debugging variables.
+!!   . @b Using @b this @b module, @b verbosemode=.true. : subroutines
+!!     print some std output. Just to know which routines
+!!     were executed, maybe some @b very useful information.
+!!   . @b Using @b this @b module, @b debugmode=.true. : subroutines
+!!     print whatever the developer thinks it is useful to
+!!     follow possible bugs. This option forces verbosemode=.true.
+!!     Not recomended for real calculations (e.g. run long dynamics)
+!
+!> @todo
+!! - Use unrestricted polymorphism instead of interfaces. NOT
+!!   all compilers have this feature (gfortran doesn't). This
+!!   is why the INTERFACE structures are kept for the moment.
+!! - Implement silentmode properly.
 !##########################################################
 MODULE DEBUG_MOD
 ! Initial declarations
@@ -34,6 +39,8 @@ IMPLICIT NONE
 ! Global variables
 LOGICAL,PRIVATE :: debugmode=.FALSE.
 LOGICAL,PRIVATE :: verbosemode=.FALSE.
+LOGICAL,PRIVATE :: silentmode=.FALSE.
+CHARACTER(LEN=20),PRIVATE :: outputdebug_msg
 INTERFACE DEBUG_WRITE
 	MODULE PROCEDURE DEBUG_WRITE_STRING , DEBUG_WRITE_STRING_REAL, &
 		DEBUG_WRITE_STRING_INT, DEBUG_WRITE_STRING_REAL_INT, &
@@ -50,6 +57,65 @@ INTERFACE VERBOSE_WRITE
       VERBOSE_WRITE_VECTCHAR, VERBOSE_WRITE_VECTINT, VERBOSE_WRITE_STRING_VECT
 END INTERFACE VERBOSE_WRITE
 CONTAINS
+!###########################################################
+!# SUBROUTINE: SET_SILENT_MODE
+!###########################################################
+!> @brief
+!! Common set subroutine. Sets silent mode.
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2004
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SET_SILENT_MODE(is_silent,filename)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   LOGICAL,INTENT(IN) :: is_silent
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! Run section
+   silentmode=is_silent
+   outputdebug_msg=filename
+   RETURN
+END SUBROUTINE SET_SILENT_MODE
+!###########################################################
+!# SUBROUTINE: DEBUG_SEPARATOR1
+!###########################################################
+!> @brief
+!! Prints a line "----------------------------------" when debugmode is
+!! activated
+!-----------------------------------------------------------
+SUBROUTINE DEBUG_SEPARATOR1()
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! Run section
+   SELECT CASE(debugmode)
+      CASE(.TRUE.)
+         WRITE(*,*) "---------------------------------------------------------"
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   RETURN
+END SUBROUTINE DEBUG_SEPARATOR1
+!###########################################################
+!# SUBROUTINE: VERBOSE_SEPARATOR1
+!###########################################################
+!> @brief
+!! Prints a line "----------------------------------" when verbosemode is
+!! activated
+!-----------------------------------------------------------
+SUBROUTINE VERBOSE_SEPARATOR1()
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! Run section
+   SELECT CASE(verbosemode)
+      CASE(.TRUE.)
+         WRITE(*,*) "---------------------------------------------------------"
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   RETURN
+END SUBROUTINE VERBOSE_SEPARATOR1
 !###########################################################
 !# SUBROUTINE: SET_VERBOSE_MODE 
 !###########################################################

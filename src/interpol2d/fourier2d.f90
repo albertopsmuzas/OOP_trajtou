@@ -62,7 +62,7 @@ END SUBROUTINE INTERPOL_FOURIER2D
 !
 !> @param[out] this - Interpol2d class to be read
 !> @param[in] xy - Matrix that collects @f$(x_{i},y_{i})@f$ pairs
-!> @param[in] f - Values of @f$F(x_{i},y_{i})@f$i. It is a matrix so that
+!> @param[in] f - Values of @f$F(x_{i},y_{i})@f$. It is a matrix so that
 !!                the user can provide in each row a different function that
 !!                will have the same @f$T^{-1}@f$ matrix during the
 !!                interpolation
