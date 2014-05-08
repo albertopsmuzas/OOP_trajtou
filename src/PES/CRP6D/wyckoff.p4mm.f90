@@ -189,7 +189,8 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
                dfdz(j)=this%zrcut(h)%interrz%getderivy((/r,z/))
                philist(j)=this%zrcut(h)%phi-PI/4.D0
             END DO
-            SELECT CASE((this%zrcut(h)%theta>=1.5707963267948956D0).AND.(this%zrcut(h)%theta<=1.5707963267948976D0))
+            SELECT CASE((this%zrcut(h)%theta>=1.5707963267948956D0).AND.(this%zrcut(h)%theta<=1.5707963267948976D0)&
+               .AND.this%is_homonucl)
                CASE(.TRUE.)
                   period_phi=PI
                CASE(.FALSE.)
