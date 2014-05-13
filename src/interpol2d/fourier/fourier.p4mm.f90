@@ -50,11 +50,10 @@ REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r)
          termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))+&
             dcos(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
       CASE(4)
-         termfoup4mm=2D0*(dcos(g*dfloat(-k(1))*r(1))+dcos(g*dfloat(-k(1))*r(2)))&
-            +4D0*dcos(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(-k(1))*r(2))
-         DO i = 1, -k(1)+1
-            termfoup4mm=termfoup4mm+2.D0*dcos(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
-               +2.D0*dcos(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
+         termfoup4mm=0.D0
+         DO i = 0, -k(1) ! k(1) is negative
+            termfoup4mm=termfoup4mm+dcos(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
+               +dcos(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
          END DO
       CASE DEFAULT
          WRITE(0,*) "termfoup4mm ERR: Incorrect fourier term id: ", id
@@ -98,12 +97,11 @@ REAL(KIND=8) FUNCTION termfoup4mm_dx(id,surf,k,r)
          termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))-&
             g*dfloat(k(2))*dsin(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
       CASE(4)
-         termfoup4mm_dx=-2.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))&
-         -4.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(-k(1))*r(2))
-          DO i = 1, -k(1)+1
+         termfoup4mm_dx=0.D0
+          DO i = 0, -k(1)
             termfoup4mm_dx=termfoup4mm_dx&
-               -2.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
-               -2.D0*g*dfloat(i)*dsin(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
+               -g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
+               -g*dfloat(i)*dsin(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
          END DO
       CASE DEFAULT
          WRITE(0,*) "termfoup4mm_dx ERR: Incorrect fourier term id: ", id
@@ -147,12 +145,11 @@ REAL(KIND=8) FUNCTION termfoup4mm_dy(id,surf,k,r)
          termfoup4mm_dy=-g*dfloat(k(2))*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(2))*r(2))-&
             g*dfloat(k(1))*dcos(g*dfloat(k(2))*r(1))*dsin(g*dfloat(k(1))*r(2))
       CASE(4)
-         termfoup4mm_dy=-2.D0*g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(2))&
-            -4.D0*g*dfloat(-k(1))*dcos(g*dfloat(-k(1))*r(1))*dsin(g*dfloat(-k(1))*r(2))
-            DO i = 1, -k(1)+1
+         termfoup4mm_dy=0.D0
+            DO i = 0, -k(1)
                termfoup4mm_dy=termfoup4mm_dy&
-               -2.D0*g*dfloat(i)*dcos(g*dfloat(-k(1))*r(1))*dsin(g*dfloat(i)*r(2))&
-               -2.D0*g*dfloat(-k(1))*dcos(g*dfloat(i)*r(1))*dsin(g*dfloat(-k(1))*r(2))
+               -g*dfloat(i)*dcos(g*dfloat(-k(1))*r(1))*dsin(g*dfloat(i)*r(2))&
+               -g*dfloat(-k(1))*dcos(g*dfloat(i)*r(1))*dsin(g*dfloat(-k(1))*r(2))
             END DO
       CASE DEFAULT
          WRITE(0,*) "termfoup4mm_dy ERR: Incorrect fourier term id: ", id

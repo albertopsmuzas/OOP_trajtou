@@ -173,9 +173,9 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux1(5)   ! dvdphi
-   CALL VERBOSE_WRITE(routinename,"List of XY: "
+   CALL VERBOSE_WRITE(routinename,"List of XY: ")
    DO i = 1,this%nsites 
-     CALL VERBOSE_WRIUTE(routinename,xy(i,:)
+     CALL VERBOSE_WRITE(routinename,xy(i,:))
    END DO
    CALL VERBOSE_WRITE(routinename,"Smooth V at each wyckoff site:")
    CALL VERBOSE_WRITE(routinename,f(1,:))
@@ -337,9 +337,9 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux1(5)   ! dvdphi
-   CALL VERBOSE_WRITE(routinename,"List of XY: "
+   CALL VERBOSE_WRITE(routinename,"List of XY: ")
    DO i = 1,this%nsites 
-     CALL VERBOSE_WRIUTE(routinename,xy(i,:)
+     CALL VERBOSE_WRITE(routinename,xy(i,:))
    END DO
    CALL VERBOSE_WRITE(routinename,"Pots at each wyckoff site:")
    CALL VERBOSE_WRITE(routinename,f(1,:))

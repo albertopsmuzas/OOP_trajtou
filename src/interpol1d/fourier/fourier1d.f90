@@ -19,6 +19,7 @@ TYPE,EXTENDS(Interpol1d):: Fourier1d
    PRIVATE
    LOGICAL :: even=.FALSE.
    REAL(KIND=8) :: period
+   REAL(KIND=8) :: phase=0.D0
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: klist
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extracoeff
@@ -28,6 +29,7 @@ TYPE,EXTENDS(Interpol1d):: Fourier1d
       PROCEDURE,PUBLIC :: getperiod => getperiod_fourier1d
       PROCEDURE,PUBLIC :: getvalue => getvalue_fourier1d
       PROCEDURE,PUBLIC :: getderiv => getderiv_fourier1d
+      PROCEDURE,PUBLIC :: getphase => getphase_fourier1d
       ! Initialization block
       PROCEDURE,PUBLIC :: READ_EXTRA => READ_EXTRA_DETAILS_FOURIER1D
       ! Enquire block
@@ -42,6 +44,21 @@ TYPE,EXTENDS(Interpol1d):: Fourier1d
 END TYPE Fourier1d
 !//////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNCTION: getphase_fourier1d 
+!###########################################################
+!> @brief 
+!! Common get function. Gets value of atribute phase
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getphase_fourier1d(this)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Fourier1d),INTENT(IN) :: this
+   ! Run section
+   getphase_fourier1d=this%phase
+   RETURN
+END FUNCTION getphase_fourier1d
 !###########################################################
 !# SUBROUTINE: GET_ALLFUNC_AND_DERIVS_FOURIER1D
 !###########################################################
@@ -89,8 +106,8 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
    ALLOCATE(terms(this%n))
    ALLOCATE(terms_dx(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d(this%klist(i),this%period,x)
-      terms_dx(i)=termfou1d_dx(this%klist(i),this%period,x)
+      terms(i)=termfou1d(this%klist(i),this%period,this%phase,x)
+      terms_dx(i)=termfou1d_dx(this%klist(i),this%period,this%phase,x)
    END DO
    f(1)=dot_product(terms,this%coeff)
    dfdx(1)=dot_product(terms_dx,this%coeff)
@@ -138,13 +155,14 @@ END SUBROUTINE ADD_MORE_FUNCS_FOURIER1D
 !> @brief
 !! Reads specific data for fourier interpolations
 !-----------------------------------------------------------
-SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even)
+SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even,phase)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourier1d),INTENT(INOUT):: this
    REAL(KIND=8),INTENT(IN) :: period
    INTEGER(KIND=4),DIMENSION(:) :: klist
+   REAL(KIND=8),INTENT(IN),OPTIONAL :: phase
    LOGICAL, INTENT(IN),OPTIONAL:: is_even
    ! Local variables
    INTEGER(KIND=4) :: i  ! counters
@@ -159,6 +177,12 @@ SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even)
    this%period=period
    ALLOCATE(this%klist(size(klist)))
    this%klist=klist
+   SELECT CASE(present(phase))
+      CASE(.TRUE.)
+         this%phase=phase
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    SELECT CASE(present(is_even))
       CASE(.TRUE.)
          this%even=is_even
@@ -184,21 +208,21 @@ END SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D
 !! expansion. Positive values stand for even terms of the series.
 !! Negative numbers stand for odd termns in the expansion
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d(kpoint,period,x)
+REAL(KIND=8) FUNCTION termfou1d(kpoint,period,phase,x)
    ! Initial declarations 
    USE CONSTANTS_MOD  
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x,period
+   REAL(KIND=8),INTENT(IN) :: x,period,phase
    ! Run section
    SELECT CASE(kpoint)
       CASE(0)
          termfou1d=1.D0
       CASE(1 :) 
-         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*x)
+         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
       CASE(: -1)
-         termfou1d=dsin((2.D0*PI/period)*dfloat(-kpoint)*x)
+         termfou1d=dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
       CASE DEFAULT
          WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
          CALL EXIT(1)
@@ -213,21 +237,21 @@ END FUNCTION termfou1d
 !! expansion. Positive values stand for even terms of the series.
 !! Negative numbers stand for odd termns in the expansion
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx(kpoint,period,x)
+REAL(KIND=8) FUNCTION termfou1d_dx(kpoint,period,phase,x)
    ! Initial declarations 
    USE CONSTANTS_MOD  
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x,period
+   REAL(KIND=8),INTENT(IN) :: x,period,phase
    ! Run section
    SELECT CASE(kpoint)
       CASE(0)
          termfou1d_dx=0.D0
       CASE(1 :) 
-         termfou1d_dx=-(2.D0*PI/period)*dfloat(kpoint)*dsin((2.D0*PI/period)*dfloat(kpoint)*x)
+         termfou1d_dx=-(2.D0*PI/period)*dfloat(kpoint)*dsin((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
       CASE(: -1)
-         termfou1d_dx=(2.D0*PI/period)*dfloat(-kpoint)*dcos((2.D0*PI/period)*dfloat(-kpoint)*x)
+         termfou1d_dx=(2.D0*PI/period)*dfloat(-kpoint)*dcos((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
       CASE DEFAULT
          WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
          CALL EXIT(1)
@@ -301,7 +325,7 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
    END SELECT
    DO i = 1, this%n ! loop over eq for different points
       DO j = 1, this%n ! loop over coefficients
-         terms(i,j)=termfou1d(this%klist(j),this%period,this%x(i))
+         terms(i,j)=termfou1d(this%klist(j),this%period,this%phase,this%x(i))
       END DO
    END DO
    CALL INV_MTRX(this%n,terms,inv_terms)
@@ -351,7 +375,7 @@ REAL(KIND=8) FUNCTION getvalue_fourier1d(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d(this%klist(i),this%period,r)
+      terms(i)=termfou1d(this%klist(i),this%period,this%phase,r)
    END DO
    getvalue_fourier1d=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
@@ -388,7 +412,7 @@ REAL(KIND=8) FUNCTION getderiv_fourier1d(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d_dx(this%klist(i),this%period,r)
+      terms(i)=termfou1d_dx(this%klist(i),this%period,this%phase,r)
    END DO
    getderiv_fourier1d=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
