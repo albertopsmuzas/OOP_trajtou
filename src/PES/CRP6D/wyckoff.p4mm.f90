@@ -81,15 +81,15 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    ! PHI INTERPOLATION ----------------------------------------------------
    SELECT CASE(this%id)
       CASE("a" : "b")
+         period_phi=PI/2.D0
+         phase_phi=0.D0
+         phi_is_even=.TRUE.
+         theta_is_even=.TRUE. 
+      CASE("c")
          period_phi=PI
          phase_phi=0.D0
          phi_is_even=.TRUE.
-         theta_is_even=.TRUE. ! due to inversion center
-      CASE("c")
-         period_phi=2.D0*PI
-         phase_phi=0.D0
-         phi_is_even=.TRUE.
-         theta_is_even=.TRUE. ! due to inversion center
+         theta_is_even=.TRUE. 
       CASE("f")
          period_phi=2.D0*PI
          phase_phi=-PI/2.D0
@@ -175,7 +175,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    SELECT CASE(this%is_homonucl)
       CASE(.TRUE.)
          period_theta=PI
-         phase_theta=-PI
+         phase_theta=0.D0
       CASE(.FALSE.)
          period_theta=2.D0*PI
          phase_theta=0.D0
