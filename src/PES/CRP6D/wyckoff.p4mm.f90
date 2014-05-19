@@ -29,14 +29,18 @@ CONTAINS
 !# SUBROUTINE: GET_V_AND_DERIVS_WYCKOFFP4MM 
 !###########################################################
 !> @brief
-!! Interpolates all phicuts and thetacuts for a given value of r and z.
-!! Gets the potential and derivatives for z,r,theta,phi
+!! Symmetry adapted interpolation for p4mm wallpaper group.
 !
 !> @param[in] x - Array which stands for Z,r,theta,phi
+!> @param[out] v - potential at X
+!> @param[out] dvdu - Array with derivatives: dvdz, dvdr, dvdtheta dvdphi
+!
+!> @warning
+!! - Only stands for a,b,c, and f p4mm Wyckoff sites.
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date ! type a date
-!> @version 1.0
+!> @date Apr/2014
+!> @version 1.2
 !-----------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    ! Initial declarations   
@@ -77,29 +81,37 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    r=x(2)
    theta=x(3)
    phi=x(4)
-   h=0 ! initialize h
-   ! PHI INTERPOLATION ----------------------------------------------------
+   ! CONDITIONS: edit this part to include/edit symmetries
+   SELECT CASE(this%is_homonucl)
+      CASE(.TRUE.)
+         period_theta=PI
+         phase_theta=0.D0
+      CASE(.FALSE.)
+         period_theta=2.D0*PI
+         phase_theta=0.D0
+   END SELECT
    SELECT CASE(this%id)
       CASE("a" : "b")
          period_phi=PI/2.D0
          phase_phi=0.D0
          phi_is_even=.TRUE.
-         theta_is_even=.TRUE. 
+         theta_is_even=.TRUE. ! due to inversion-point symmetry
       CASE("c")
          period_phi=PI
          phase_phi=0.D0
          phi_is_even=.TRUE.
-         theta_is_even=.TRUE. 
+         theta_is_even=.TRUE. ! due to inversion-point symmetry
       CASE("f")
          period_phi=2.D0*PI
          phase_phi=-PI/2.D0
          phi_is_even=.TRUE. 
-         theta_is_even=.FALSE.
+         theta_is_even=.FALSE. ! lack of inversion symmetry
       CASE DEFAULT
          WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFP4MM: Unexpected error with Wyckoff id"
          CALL EXIT(1)
    END SELECT
-   ! Prepare phi interpolation
+   ! PHI INTERPOLATION ----------------------------------------------------
+   h=0 ! initialize h
    ALLOCATE(phicut(this%nphicuts))
    DO i = 1, this%nphicuts ! loop over sites
       ALLOCATE(f(this%nphipoints(i)))
@@ -172,14 +184,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    ALLOCATE(dfdz(this%nphicuts))
    ALLOCATE(dfdr(this%nphicuts))
    ALLOCATE(dfdphi(this%nphicuts))
-   SELECT CASE(this%is_homonucl)
-      CASE(.TRUE.)
-         period_theta=PI
-         phase_theta=0.D0
-      CASE(.FALSE.)
-         period_theta=2.D0*PI
-         phase_theta=0.D0
-   END SELECT
    h=0 ! reboot h
    DO i = 1, this%nphicuts
       DO j = 1, this%nphipoints(i)

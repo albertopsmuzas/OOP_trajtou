@@ -15,12 +15,14 @@ CHARACTER(LEN=17) :: realname1
 TYPE(Length) :: r,z
 REAL(KIND=8) :: r1,r2,z1,z2
 REAL(KIND=8),DIMENSION(6) :: pos
-CALL SET_VERBOSE_MODE(.TRUE.)
+CALL SET_VERBOSE_MODE(.FALSE.)
+CALL SET_DEBUG_MODE(.FALSE.)
 ! STEP 1: READ CRP6D INPUT FILES
 CALL thispes%READ("INcrp6d.inp")
 CALL thispesraw%READ("INcrp6d.inp")
 CALL thispes%INTERPOL()
 CALL thispesraw%RAWINTERPOL()
+CALL thispesraw%INTERPOL_NEW_RZGRID(200,200)
 
 ! STEP 2: PLOT SOME GRAPHS
 ! Prepare some units
@@ -64,6 +66,9 @@ DO i=1,thispesraw%nsites
       WRITE(filename1,'(I1,A14)') j,"-dualg.raw.dat"
       WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
       CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_DUALDERIVS_AT_GRID(realname1)
+      WRITE(filename1,'(I1,A14)') j,"-cut1d.45d.dat"
+      WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
+      CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_1D(realname1,(/0.76D0,0.5D0/),300,45.D0,4.D0)
    END DO
 END DO
 

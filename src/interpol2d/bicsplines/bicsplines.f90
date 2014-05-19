@@ -704,17 +704,20 @@ SUBROUTINE PLOT_1D_BICSPLINES(this,filename,init_xy,npoints,angle,L)
    r(1) = xmin
    r(2) = ymin
    s = dsqrt(r(1)**2.D0+r(2)**2.D0)
-   WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r)
+   WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r),&
+      this%getderivx(r),this%getderivy(r)
    DO i =1, inpoints
       r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
       r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
       s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-      WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r)
+      WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r),&
+         this%getderivx(r),this%getderivy(r)
    END DO
    r(1) = xmax
    r(2) = ymax
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-   WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r)
+   WRITE(11,*) s,this%getvalue(r),dcos(alpha)*this%getderivx(r)+dsin(alpha)*this%getderivy(r),&
+      this%getderivx(r),this%getderivy(r)
    CLOSE(11)
    WRITE(*,*) "PLOT_1D_BICSPLINES: Graph created: ",filename
    RETURN

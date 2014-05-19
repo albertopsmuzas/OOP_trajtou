@@ -24,6 +24,7 @@ TYPE,EXTENDS(Interpol1d):: Fourier1d
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extracoeff
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extrafuncs
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: coupled
    CONTAINS
       ! get block
       PROCEDURE,PUBLIC :: getperiod => getperiod_fourier1d
@@ -106,8 +107,8 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
    ALLOCATE(terms(this%n))
    ALLOCATE(terms_dx(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d(this%klist(i),this%period,this%phase,x)
-      terms_dx(i)=termfou1d_dx(this%klist(i),this%period,this%phase,x)
+      terms(i)=termfou1d(this%klist(i),this%coupled(i),this%period,this%phase,x)
+      terms_dx(i)=termfou1d_dx(this%klist(i),this%coupled(i),this%period,this%phase,x)
    END DO
    f(1)=dot_product(terms,this%coeff)
    dfdx(1)=dot_product(terms_dx,this%coeff)
@@ -165,18 +166,49 @@ SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even,phase)
    REAL(KIND=8),INTENT(IN),OPTIONAL :: phase
    LOGICAL, INTENT(IN),OPTIONAL:: is_even
    ! Local variables
-   INTEGER(KIND=4) :: i  ! counters
+   INTEGER(KIND=4) :: i,h,q  ! counters
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: newklist
+   INTEGER(KIND=4) :: nklist, ncouples
    ! Run section
-   SELECT CASE(size(klist) == this%n)
+   nklist=size(klist)
+   ALLOCATE(newklist(this%n))
+   ALLOCATE(this%coupled(this%n))
+   SELECT CASE(nklist == this%n)
       CASE(.FALSE.)
-         WRITE(0,*) "READ_EXTRA_DETAILS_FOURIER1D ERR: mismatch between number of points and size of kpoints array"
-         CALL EXIT(1)
+         SELECT CASE(nklist>this%n)
+            CASE(.TRUE.)
+               i=1
+               h=1
+               q=1
+               DO WHILE(i <= nklist)
+                  SELECT CASE(abs(klist(i)) == abs(klist(i+1)))
+                     CASE(.TRUE.)
+                        SELECT CASE(klist(i)>=klist(i+1))
+                           CASE(.TRUE.)
+                              this%coupled(h)=q
+                           CASE(.FALSE.)
+                              this%coupled(h)=-q
+                        END SELECT
+                        newklist(h)=abs(klist(i))
+                        q=q+1
+                        i=i+1
+                     CASE(.FALSE.) ! Not coupled
+                        this%coupled(i)=0
+                  END SELECT
+                  i=i+1
+                  h=h+1
+               END DO
+            CASE(.FALSE.)
+                WRITE(0,*) "READ_EXTRA_DETAILS_FOURIER ERR: More Kpoints needed"
+                CALL EXIT(1)
+         END SELECT
       CASE(.TRUE.)
-         ! do nothing
+         newklist=klist
+         FORALL(i=1:this%n)this%coupled(i)=0
    END SELECT
    this%period=period
-   ALLOCATE(this%klist(size(klist)))
-   this%klist=klist
+   ALLOCATE(this%klist(this%n))
+   this%klist=newklist
    SELECT CASE(present(phase))
       CASE(.TRUE.)
          this%phase=phase
@@ -208,23 +240,33 @@ END SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D
 !! expansion. Positive values stand for even terms of the series.
 !! Negative numbers stand for odd termns in the expansion
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d(kpoint,period,phase,x)
+REAL(KIND=8) FUNCTION termfou1d(kpoint,coupled,period,phase,x)
    ! Initial declarations 
    USE CONSTANTS_MOD  
    IMPLICIT NONE
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
+   INTEGER(KIND=4),INTENT(IN) :: kpoint,coupled
    REAL(KIND=8),INTENT(IN) :: x,period,phase
    ! Run section
-   SELECT CASE(kpoint)
+   SELECT CASE(coupled)
       CASE(0)
-         termfou1d=1.D0
-      CASE(1 :) 
-         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
+         SELECT CASE(kpoint)
+            CASE(0)
+               termfou1d=1.D0
+            CASE(1 :) 
+               termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
+            CASE(: -1)
+               termfou1d=dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
+            CASE DEFAULT
+               WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
+               CALL EXIT(1)
+         END SELECT
+      CASE(1 :)
+         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))+dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
       CASE(: -1)
-         termfou1d=dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
+         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))-dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
       CASE DEFAULT
-         WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
+         WRITE(0,*) "Termfou1d ERR: Bad coupled mapping"
          CALL EXIT(1)
    END SELECT
    RETURN
@@ -237,23 +279,35 @@ END FUNCTION termfou1d
 !! expansion. Positive values stand for even terms of the series.
 !! Negative numbers stand for odd termns in the expansion
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx(kpoint,period,phase,x)
+REAL(KIND=8) FUNCTION termfou1d_dx(kpoint,coupled,period,phase,x)
    ! Initial declarations 
    USE CONSTANTS_MOD  
    IMPLICIT NONE
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
+   INTEGER(KIND=4),INTENT(IN) :: kpoint,coupled
    REAL(KIND=8),INTENT(IN) :: x,period,phase
    ! Run section
-   SELECT CASE(kpoint)
+   SELECT CASE(coupled)
       CASE(0)
-         termfou1d_dx=0.D0
-      CASE(1 :) 
-         termfou1d_dx=-(2.D0*PI/period)*dfloat(kpoint)*dsin((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
+         SELECT CASE(kpoint)
+            CASE(0)
+               termfou1d_dx=0.D0
+            CASE(1 :) 
+               termfou1d_dx=-(2.D0*PI/period)*dfloat(kpoint)*dsin((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
+            CASE(: -1)
+               termfou1d_dx=(2.D0*PI/period)*dfloat(-kpoint)*dcos((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
+            CASE DEFAULT
+               WRITE(0,*) "Termfou1d_dx ERR: This message was not supposed to be printed ever. Check the code"
+               CALL EXIT(1)
+         END SELECT
+      CASE(1 :)
+         termfou1d_dx=(2.D0*PI/period)*dfloat(kpoint)*(dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))&
+            -dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase)))
       CASE(: -1)
-         termfou1d_dx=(2.D0*PI/period)*dfloat(-kpoint)*dcos((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
+         termfou1d_dx=(2.D0*PI/period)*dfloat(kpoint)*(-dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))&
+            -dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase)))
       CASE DEFAULT
-         WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
+         WRITE(0,*) "Termfou1d_dx ERR: Bad coupled mapping"
          CALL EXIT(1)
    END SELECT
    RETURN
@@ -325,7 +379,7 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
    END SELECT
    DO i = 1, this%n ! loop over eq for different points
       DO j = 1, this%n ! loop over coefficients
-         terms(i,j)=termfou1d(this%klist(j),this%period,this%phase,this%x(i))
+         terms(i,j)=termfou1d(this%klist(j),this%coupled(j),this%period,this%phase,this%x(i))
       END DO
    END DO
    CALL INV_MTRX(this%n,terms,inv_terms)
@@ -375,7 +429,7 @@ REAL(KIND=8) FUNCTION getvalue_fourier1d(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d(this%klist(i),this%period,this%phase,r)
+      terms(i)=termfou1d(this%klist(i),this%coupled(i),this%period,this%phase,r)
    END DO
    getvalue_fourier1d=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
@@ -412,7 +466,7 @@ REAL(KIND=8) FUNCTION getderiv_fourier1d(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d_dx(this%klist(i),this%period,this%phase,r)
+      terms(i)=termfou1d_dx(this%klist(i),this%coupled(i),this%period,this%phase,r)
    END DO
    getderiv_fourier1d=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
