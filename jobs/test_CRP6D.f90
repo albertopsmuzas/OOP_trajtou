@@ -22,7 +22,7 @@ CALL thispes%READ("INcrp6d.inp")
 CALL thispesraw%READ("INcrp6d.inp")
 CALL thispes%INTERPOL()
 CALL thispesraw%RAWINTERPOL()
-CALL thispesraw%INTERPOL_NEW_RZGRID(200,200)
+!CALL thispesraw%INTERPOL_NEW_RZGRID(200,200)
 
 ! STEP 2: PLOT SOME GRAPHS
 ! Prepare some units
@@ -56,22 +56,14 @@ DO i=1,thispes%nsites
       WRITE(filename,'(I1,A10)') j,"-inter.dat"
       WRITE(realname,'(I1,A1,A11)') i,"-",filename
       CALL thispes%PLOT_RZMAP(pos,100,100,r2-r1,z2-z1,realname)
-   END DO
-END DO
-DO i=1,thispesraw%nsites
-   DO j = 1, thispesraw%wyckoffsite(i)%n2dcuts
       WRITE(filename1,'(I1,A14)') j,"-cut2d.raw.dat"
       WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
-      CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_XYMAP(realname1,(/r1,z1/),100,100,r2-r1,z2-z1)
-      WRITE(filename1,'(I1,A14)') j,"-dualg.raw.dat"
+      CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOTDATA(realname1)
+      WRITE(filename1,'(I1,A14)') j,"-cut2d.smt.dat"
       WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
-      CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_DUALDERIVS_AT_GRID(realname1)
-      WRITE(filename1,'(I1,A14)') j,"-cut1d.45d.dat"
-      WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
-      CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOT_1D(realname1,(/0.76D0,0.5D0/),300,45.D0,4.D0)
+      CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOTDATA(realname1)
    END DO
 END DO
-
 CALL thispes%farpot%PLOT(100,"vacuumpot.dat")
 
 CALL EXIT(0)

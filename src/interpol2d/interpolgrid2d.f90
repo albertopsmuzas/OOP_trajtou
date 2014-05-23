@@ -26,6 +26,7 @@ TYPE,ABSTRACT :: Interpolgrid2d
 CONTAINS
    PROCEDURE,PUBLIC :: READ => READ_INTERPOLGRID2D
    PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_INTERPOLGRID2D
+   PROCEDURE,PUBLIC :: PLOTDATA => PLOTDATA_INTERPOLGRID2D
 END TYPE Interpolgrid2d
 !////////////////////////////////////////////////////////////////
 CONTAINS
@@ -85,4 +86,34 @@ SUBROUTINE READ_INTERPOLGRID2D(this,x,y,f)
    this%fgrid = f
    RETURN
 END SUBROUTINE READ_INTERPOLGRID2D
+!###########################################################
+!# SUBROUTINE: PLOTDATA_INTERPOLGRID2D 
+!###########################################################
+!> @brief
+!! Plot data stored in the grid, not interpolated values
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date May/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE PLOTDATA_INTERPOLGRID2D(this,filename)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Interpolgrid2d),INTENT(IN) :: this
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! Local variables
+   INTEGER(KIND=4) :: nx,ny
+   INTEGER(KIND=4) :: i,j ! counters
+   ! Run section
+   nx=size(this%x)
+   ny=size(this%y)
+   OPEN (10,FILE=filename,STATUS="replace",ACTION="write")
+   DO i = 1, nx
+      DO j = 1, ny
+         WRITE(10,*) this%x(i),this%y(j),this%fgrid(i,j)
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE PLOTDATA_INTERPOLGRID2D
 END MODULE INTERPOLGRID2D_MOD
