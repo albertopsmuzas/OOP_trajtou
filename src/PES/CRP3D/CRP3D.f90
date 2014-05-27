@@ -145,6 +145,7 @@ TYPE, EXTENDS(PES) :: CRP3D
       ! Get block 
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
       PROCEDURE,PUBLIC :: getpot => getpot_crp3d
+      PROCEDURE,PUBLIC :: getrumpling => getrumpling_CRP3D
       ! Enquire block
       PROCEDURE,PUBLIC :: is_allowed => is_allowed_CRP3D
       ! Tools block
@@ -157,6 +158,26 @@ TYPE, EXTENDS(PES) :: CRP3D
 END TYPE CRP3D
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNCTION: getrumpling_CRP3D 
+!###########################################################
+!> @brief 
+!! Common get function. Gets rumpling value of parit potential "toptype"
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date MAy/2014
+!> @version 1.0
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getrumpling_CRP3D(this,toptype) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP3D),INTENT(IN):: this
+   INTEGER(KIND=4),INTENT(IN) :: toptype
+   ! Run section
+   getrumpling_CRP3D=this%all_pairpots(toptype)%rumpling
+   RETURN
+END FUNCTION getrumpling_CRP3D
 !######################################################################
 ! SUBROUTINE: READ_SYMMPOINT_RAW ######################################
 !######################################################################

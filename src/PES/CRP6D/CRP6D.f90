@@ -22,8 +22,10 @@ IMPLICIT NONE
 TYPE,EXTENDS(PES) :: CRP6D
    INTEGER(KIND=4) :: nsites
    INTEGER(KIND=4) :: natomic
+   LOGICAL :: is_interpolated=.FALSE.
    LOGICAL :: is_homonucl=.FALSE.
    LOGICAL :: is_smooth=.FALSE.
+   LOGICAL :: is_shifted=.FALSE.
    CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE :: wyckoffsite
    TYPE(CRP3D),DIMENSION(:),ALLOCATABLE :: atomiccrp
    TYPE(Vacuumpot) :: farpot
@@ -31,15 +33,20 @@ TYPE,EXTENDS(PES) :: CRP6D
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_CRP6D
+      ! Set block
+      PROCEDURE,PUBLIC :: SET_SMOOTH => SET_SMOOTH_CRP6D
       ! Get block
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
       ! Tools block
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP6D
+      PROCEDURE,PUBLIC :: SMOOTH_EXTRA => SMOOTH_EXTRA_CRP6D
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CRP6D
       PROCEDURE,PUBLIC :: RAWINTERPOL => RAWINTERPOL_CRP6D
       PROCEDURE,PUBLIC :: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
+      PROCEDURE,PUBLIC :: ADD_VACUUMSURF => ADD_VACUUMSURF_CRP6D
       PROCEDURE,PUBLIC :: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
+      PROCEDURE,PUBLIC :: CHEAT_CARTWHEEL_ONTOP => CHEAT_CARTWHEEL_ONTOP_CRP6D
       ! Plot tools
       PROCEDURE,PUBLIC :: PLOT1D_THETA => PLOT1D_THETA_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
@@ -53,6 +60,80 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: PLOT_RZMAP => PLOT_RZMAP_CRP6D
 END TYPE CRP6D
 CONTAINS
+!###########################################################
+!# SUBROUTINE: SET_SMOOTH_CRP6D
+!###########################################################
+!> @brief
+!! Common set function. Sets is_smooth atribute
+!-----------------------------------------------------------
+SUBROUTINE SET_SMOOTH_CRP6D(this,is_smooth)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),INTENT(INOUT):: this
+   LOGICAL,INTENT(IN) :: is_smooth
+   ! Run section
+   this%is_smooth=is_smooth
+   RETURN
+END SUBROUTINE SET_SMOOTH_CRP6D
+!###########################################################
+!# SUBROUTINE: CHEAT_CARTWHEEL_ONTOP_CRP6D 
+!###########################################################
+!> @brief
+!! This subroutine changes data from a raw cut2d input by the
+!! value interpolated from atomic potentials. Only data too close
+!! to the plane @f$ \pi: z=\over{r}{2}+rumpling@f$
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date May/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D(this,wyckoff,cut2d,toptype,dmax)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O 
+   CLASS(CRP6D),INTENT(INOUT) :: this
+   INTEGER(KIND=4),INTENT(IN) :: wyckoff,cut2d,toptype
+   REAL(KIND=8),INTENT(IN) :: dmax
+   ! Local variables
+   INTEGER(KIND=4) :: i,j ! counters
+   REAL(KIND=8) :: r,z,rump,interac
+   REAL(KIND=8) :: x,y ! x,y position
+   REAL(KIND=8) :: m1, m2 ! masses
+   REAL(KIND=8) :: dist ! distance to the plane
+   INTEGER(KIND=4) :: nr,nz
+   REAL(KIND=8),DIMENSION(3) :: pos1,pos2
+   ! Run section
+   nr=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridsizeR()
+   nz=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridsizeZ()
+   x=this%wyckoffsite(wyckoff)%x
+   y=this%wyckoffsite(wyckoff)%y
+   m1=this%atomdat(1)%getmass()
+   m2=this%atomdat(2)%getmass()
+   rump=this%atomiccrp(1)%getrumpling(toptype)
+   DO i = 1, nr
+      DO j = 1, nz
+        r=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridvalueR(i)
+        z=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridvalueZ(j)
+        dist=(2.D0/sqrt(5.D0))*dabs(z+rump-r/2.D0)
+        pos1=(/x,y,z+(m2/(m1+m2))*r/)
+        pos2=(/x,y,z-(m1/(m1+m2))*r/)
+        SELECT CASE(dist <= dmax) 
+           CASE(.TRUE.)
+              SELECT CASE(this%is_homonucl)
+                 CASE(.TRUE.)
+                    interac=this%atomiccrp(1)%getpot(pos1)+this%atomiccrp(1)%getpot(pos2)
+                 CASE(.FALSE.)
+                    interac=this%atomiccrp(1)%getpot(pos1)+this%atomiccrp(2)%getpot(pos2)
+              END SELECT
+              CALL this%wyckoffsite(wyckoff)%zrcut(cut2d)%CHANGEPOT_AT_GRIDPOINT(i,j,interac)
+           CASE(.FALSE.)
+              ! do nothing
+        END SELECT
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D
 !###########################################################
 !# SUBROUTINE: INTERPOL_NEW_RZGRID_CRP6D 
 !###########################################################
@@ -381,12 +462,13 @@ SUBROUTINE INTERPOL_CRP6D(this)
    ! Run section
    CALL this%EXTRACT_VACUUMSURF()   
    CALL this%SMOOTH()
-   this%is_smooth=.TRUE.
+   !CALL this%SMOOTH_EXTRA()
    DO i = 1, this%nsites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
          CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL
       END DO
    END DO
+   this%is_interpolated=.TRUE.
    RETURN
 END SUBROUTINE INTERPOL_CRP6D
 !###########################################################
@@ -413,6 +495,7 @@ SUBROUTINE RAWINTERPOL_CRP6D(this)
          CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL
       END DO
    END DO
+   this%is_interpolated=.TRUE.
    RETURN
 END SUBROUTINE RAWINTERPOL_CRP6D
 !###########################################################
@@ -509,7 +592,7 @@ END SUBROUTINE FROM_ATOMIC_TO_MOLECULAR
 !# SUBROUTINE: SMOOTH_CRP6D
 !###########################################################
 !> @brief
-!! Smooths a an Rz-2dcut of the potential
+!! Smooths a RZ-2dcut of the potential using atomic potentials
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 25/Mar/2014
@@ -570,8 +653,145 @@ SUBROUTINE SMOOTH_CRP6D(this)
          END DO
       END DO
    END DO
+   this%is_smooth=.TRUE.
    RETURN
 END SUBROUTINE SMOOTH_CRP6D
+!###########################################################
+!# SUBROUTINE: ROUGH_CRP6D
+!###########################################################
+!> @brief
+!! ROUGHs a RZ-2dcut of the potential using atomic potentials
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date May/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE ROUGH_CRP6D(this)
+   ! Initial declarations   
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+    CLASS(CRP6D),INTENT(INOUT) :: this
+   ! Local variables
+   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
+   INTEGER(KIND=4) :: nr,nz
+   INTEGER(KIND=4) :: i,j,k,l ! counters
+   REAL(KIND=8) :: ma,mb
+   CHARACTER(LEN=13),PARAMETER :: routinename="ROUGH_CRP6D: "
+   REAL(KIND=8) :: newpot
+   ! Run section
+   ma=this%atomdat(1)%getmass()
+   mb=this%atomdat(2)%getmass()
+   DO i = 1, this%nsites ! cycle wyckoff sites
+      DO j = 1, this%wyckoffsite(i)%n2dcuts
+         molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
+         molcoord(2)=this%wyckoffsite(i)%zrcut(j)%y
+         molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
+         molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
+         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
+         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
+         DO k = 1, nr
+            DO l = 1, nz
+               molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
+               molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
+               CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
+#ifdef DEBUG
+               CALL DEBUG_WRITE(routinename,"Molecular coords:")
+               CALL DEBUG_WRITE(routinename,molcoord)
+               CALL DEBUG_WRITE(routinename,"Atomic coords:")
+               CALL DEBUG_WRITE(routinename,atomcoord)
+#endif
+               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
+               SELECT CASE(this%natomic)
+                  CASE(1)
+                     newpot=newpot+this%atomiccrp(1)%getpot(atomcoord(1:3))+&
+                        this%atomiccrp(1)%getpot(atomcoord(4:6))
+                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  CASE(2)
+                     newpot=newpot+this%atomiccrp(1)%getpot(atomcoord(1:3))+&
+                        this%atomiccrp(2)%getpot(atomcoord(4:6))
+                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  CASE DEFAULT
+                     WRITE(0,*) "SMOOTH_CRP6D ERR: Something is wrong with number of atomic crp potentials"
+                     CALL EXIT(1)
+               END SELECT
+            END DO
+         END DO
+      END DO
+   END DO
+   this%is_smooth=.FALSE.
+   RETURN
+END SUBROUTINE ROUGH_CRP6D
+!###########################################################
+!# SUBROUTINE: SMOOTH_EXTRA_CRP6D
+!###########################################################
+!> @brief
+!! Smooths a RZ-2dcut of the potential using atomic potentials as well
+!! as the vacuum potential
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date May/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SMOOTH_EXTRA_CRP6D(this)
+   ! Initial declarations   
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+    CLASS(CRP6D),INTENT(INOUT) :: this
+   ! Local variables
+   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
+   INTEGER(KIND=4) :: nr,nz
+   INTEGER(KIND=4) :: i,j,k,l ! counters
+   REAL(KIND=8) :: ma,mb
+   CHARACTER(LEN=20),PARAMETER :: routinename="SMOOTH_EXTRA_CRP6D: "
+   REAL(KIND=8) :: newpot
+   ! Run section
+   ma=this%atomdat(1)%getmass()
+   mb=this%atomdat(2)%getmass()
+   DO i = 1, this%nsites ! cycle wyckoff sites
+      DO j = 1, this%wyckoffsite(i)%n2dcuts
+         molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
+         molcoord(2)=this%wyckoffsite(i)%zrcut(j)%y
+         molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
+         molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
+         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
+         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
+         DO k = 1, nr
+            DO l = 1, nz
+               molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
+               molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
+               CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
+#ifdef DEBUG
+               CALL DEBUG_WRITE(routinename,"Molecular coords:")
+               CALL DEBUG_WRITE(routinename,molcoord)
+               CALL DEBUG_WRITE(routinename,"Atomic coords:")
+               CALL DEBUG_WRITE(routinename,atomcoord)
+#endif
+               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
+               SELECT CASE(this%natomic)
+                  CASE(1)
+                     newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))-&
+                        this%atomiccrp(1)%getpot(atomcoord(4:6))-this%farpot%getpot(molcoord(4))
+                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  CASE(2)
+                     newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))-&
+                        this%atomiccrp(2)%getpot(atomcoord(4:6))-this%farpot%getpot(molcoord(4))
+                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  CASE DEFAULT
+                     WRITE(0,*) "SMOOTH_EXTRA_CRP6D ERR: Something is wrong with number of atomic crp potentials"
+                     CALL EXIT(1)
+               END SELECT
+            END DO
+         END DO
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE SMOOTH_EXTRA_CRP6D
 !###########################################################
 !# SUBROUTINE: EXTRACT_VACUUMSURF_CRP6D
 !###########################################################
@@ -616,8 +836,56 @@ SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Potential shifted: ",this%farpot%getscalefactor())
 #endif
+   this%is_shifted=.TRUE.
    RETURN
 END SUBROUTINE EXTRACT_VACUUMSURF_CRP6D
+!###########################################################
+!# SUBROUTINE: ADD_VACUUMSURF_CRP6D
+!###########################################################
+!> @brief
+!! Adds energy at equilibrium distance in the vacuum and surface energy
+!! to an Rz-2dcut of the potential. Shifts the vacuum potential as well.
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date May/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE ADD_VACUUMSURF_CRP6D(this)
+   ! Initial declarations   
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+    CLASS(CRP6D),INTENT(INOUT) :: this
+   ! Local variables
+   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
+   INTEGER(KIND=4) :: nr,nz
+   INTEGER(KIND=4) :: i,j,k,l ! counters
+   REAL(KIND=8) :: ma,mb
+   REAL(KIND=8) :: newpot
+   CHARACTER(LEN=22),PARAMETER :: routinename="ADD_VACUUMSURF_CRP6D: "
+   ! Run section
+   DO i = 1, this%nsites ! cycle wyckoff sites
+      DO j = 1, this%wyckoffsite(i)%n2dcuts
+         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizeR()
+         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizeZ()
+         DO k = 1, nr
+            DO l = 1, nz
+               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
+               newpot=newpot+this%farpot%getscalefactor()
+               CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+            END DO
+         END DO
+      END DO
+   END DO
+   CALL this%farpot%SHIFTPOT_UNDO()
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Potential re-shifted: ",this%farpot%getscalefactor())
+#endif
+   this%is_shifted=.FALSE.
+   RETURN
+END SUBROUTINE ADD_VACUUMSURF_CRP6D
 !###########################################################
 !# SUBROUTINE: READ_CRP6D 
 !###########################################################

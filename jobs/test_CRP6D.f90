@@ -22,8 +22,6 @@ CALL thispes%READ("INcrp6d.inp")
 CALL thispesraw%READ("INcrp6d.inp")
 CALL thispes%INTERPOL()
 CALL thispesraw%RAWINTERPOL()
-!CALL thispesraw%INTERPOL_NEW_RZGRID(200,200)
-
 ! STEP 2: PLOT SOME GRAPHS
 ! Prepare some units
 CALL r%READ(0.4D0,"angst")
@@ -32,8 +30,8 @@ CALL r%TO_STD()
 CALL z%TO_STD()
 z1=z%getvalue()
 r1=r%getvalue()
-CALL r%READ(2.3D0,"angst")
-CALL z%READ(4D0,"angst")
+CALL r%READ(2.28D0,"angst")
+CALL z%READ(3.8D0,"angst")
 CALL r%TO_STD()
 CALL z%TO_STD()
 z2=z%getvalue()
@@ -44,9 +42,6 @@ DO i=1,thispes%nsites
       WRITE(filename,'(I1,A10)') j,"-cut2d.dat"
       WRITE(realname,'(I1,A1,A11)') i,"-",filename
       CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOT_XYMAP(realname,(/r1,z1/),100,100,r2-r1,z2-z1)
-      WRITE(filename,'(I1,A10)') j,"-dualg.dat"
-      WRITE(realname,'(I1,A1,A11)') i,"-",filename
-      CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOT_DUALDERIVS_AT_GRID(realname)
       pos(1)=thispes%wyckoffsite(i)%zrcut(j)%x
       pos(2)=thispes%wyckoffsite(i)%zrcut(j)%y
       pos(3)=z1

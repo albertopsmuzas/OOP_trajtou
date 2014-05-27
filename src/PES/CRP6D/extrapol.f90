@@ -30,6 +30,7 @@ TYPE :: Vacuumpot
       PROCEDURE,PUBLIC :: getscalefactor => getscalefactor_vacuumpot
       ! Tools block
       PROCEDURE,PUBLIC :: SHIFTPOT => SHIFTPOT_VACUUMPOT
+      PROCEDURE,PUBLIC :: SHIFTPOT_UNDO => SHIFTPOT_UNDO_VACUUMPOT
       ! Plot tools block
       PROCEDURE,PUBLIC :: PLOT => PLOT_VACUUMPOT
       PROCEDURE,PUBLIC :: PLOTDATA => PLOTDATA_VACUUMPOT
@@ -61,6 +62,31 @@ SUBROUTINE SHIFTPOT_VACUUMPOT(this)
    CALL this%rpot%REINTERPOL(0.D0,0,0.D0,0)
    RETURN
 END SUBROUTINE SHIFTPOT_VACUUMPOT
+!###########################################################
+!# SUBROUTINE: SHIFTPOT_UNDO_VACUUMPOT 
+!###########################################################
+!> @brief
+!! Shift the entire potential so that the equilibrium geomtry has
+!! energy 0
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 27/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SHIFTPOT_UNDO_VACUUMPOT(this)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Vacuumpot),INTENT(INOUT):: this
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counters
+   ! Run section
+   DO i = 1, this%n
+      this%rpot%f(i)=this%rpot%f(i)+this%potmin
+   END DO
+   CALL this%rpot%REINTERPOL(0.D0,0,0.D0,0)
+   RETURN
+END SUBROUTINE SHIFTPOT_UNDO_VACUUMPOT
 !###########################################################
 !# FUNCTION: getscalefactor_vacuumpot 
 !###########################################################
