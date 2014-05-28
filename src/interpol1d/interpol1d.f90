@@ -26,18 +26,33 @@ IMPLICIT NONE
 !> @date 28/Jan/2014
 !> @version 1.0
 !-----------------------------------------------------------------------
-TYPE :: Interpol1d
+TYPE,ABSTRACT :: Interpol1d
    INTEGER(KIND=4) :: n
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: x
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f
    CONTAINS
-      PROCEDURE,PUBLIC :: READ => READ_INTERPOL1D
-      PROCEDURE,PUBLIC :: PLOTDATA => PLOT_DATA_INTERPOL1D
-      PROCEDURE,PUBLIC :: PLOT => PLOT_INTERPOL_INTERPOL1D
-      PROCEDURE,PUBLIC :: getvalue => getvalue_interpol1d ! child types, override this
-      PROCEDURE,PUBLIC :: getderiv => getderiv_interpol1d ! child types, override this
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: READ => READ_INTERPOL1D
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: PLOTDATA => PLOT_DATA_INTERPOL1D
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: PLOT => PLOT_INTERPOL_INTERPOL1D
+      PROCEDURE(getvalue_interpol1d),PUBLIC,DEFERRED :: getvalue ! child types, override this
+      PROCEDURE(getvalue_interpol1d),PUBLIC,DEFERRED :: getderiv ! child types, override this
 END TYPE Interpol1d
 !//////////////////////////////////////////////////////////////////////
+ABSTRACT INTERFACE
+   !###########################################################
+   !# FUNCTION: getvalue_interpol1d 
+   !###########################################################
+   !> @brief
+   !! Dummy function. Override it!!
+   !-----------------------------------------------------------
+   REAL(KIND=8) FUNCTION getvalue_interpol1d(this,x,shift) 
+      IMPORT Interpol1d
+      CLASS(Interpol1d),TARGET,INTENT(IN) :: this
+      REAL(KIND=8),INTENT(IN) :: x
+      REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
+   END FUNCTION getvalue_interpol1d
+   !-----------------------------------------------------------
+END INTERFACE
 CONTAINS
 !######################################################################
 ! SUBROUTINE: READ_INTERPOL1D #########################################
@@ -139,48 +154,4 @@ SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename)
 #endif
    CLOSE(11)
 END SUBROUTINE PLOT_INTERPOL_INTERPOL1D
-!###########################################################
-!# FUNCTION: getvalue_interpol1d 
-!###########################################################
-!> @brief
-!! Dummy function. Override it!!
-!-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getvalue_interpol1d(this,x,shift) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Interpol1d),TARGET,INTENT(IN) :: this
-   REAL(KIND=8),INTENT(IN) :: x
-   REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
-   ! Local variables
-   REAL(KIND=8) :: dummy
-   ! Run section
-   dummy=shift+x+this%x(1) ! just to avoid warnings during compilation
-   WRITE(0,*) "GET_VALUE_INTERPOL1D: If this routine was invoked, something is wrong"
-   CALL EXIT(1)
-   getvalue_interpol1d=dummy
-   RETURN
-END FUNCTION getvalue_interpol1d
-!###########################################################
-!# FUNCTION: getderiv_interpol1d 
-!###########################################################
-!> @brief
-!! Dummy function. Override it!!
-!-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getderiv_interpol1d(this,x,shift) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Interpol1d),TARGET,INTENT(IN) :: this
-   REAL(KIND=8),INTENT(IN) :: x
-   REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
-   ! Local variables
-   REAL(KIND=8) :: dummy
-   ! Run section
-   dummy=shift+x+this%x(1) ! Just to avoid warnings during compilation
-   WRITE(0,*) "GET_DERIV_INTERPOL1D: If this routine was invoked, something is wrong"
-   CALL EXIT(1)
-   getderiv_interpol1d=dummy
-   RETURN
-END FUNCTION getderiv_interpol1d
 END MODULE INTERPOL1D_MOD

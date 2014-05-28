@@ -1,5 +1,5 @@
 !########################################################
-! MODULE : FOURIER1D_4MM_MOD
+! MODULE : FOURIER1D_2_MOD
 !
 !> @brief
 !! Provides tools to perform 1D periodical interpolations with
@@ -8,7 +8,7 @@
 !> @warning
 !! - Includes Interpol1d_mod in its scope
 !########################################################
-MODULE FOURIER1D_4MM_MOD
+MODULE FOURIER1D_2_MOD
 USE INTERPOL1D_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
@@ -23,7 +23,8 @@ IMPLICIT NONE
 !----------------------------------------------------------------
 TYPE,ABSTRACT :: Termcalculator
 PRIVATE
-   ! some atributes
+   INTEGER(KIND=4) :: lastkpoint
+   LOGICAL :: average_last=.FALSE.
 CONTAINS
    PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getvalue 
    PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getderiv 
@@ -54,22 +55,21 @@ END INTERFACE
 !> @date ! type a date
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Termcalculator) :: term_A1
+TYPE,EXTENDS(Termcalculator) :: term_A
 PRIVATE
-   ! some atributes
 CONTAINS
-   PROCEDURE,PUBLIC:: getvalue => termfou1d_4mm_A1
-   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_4mm_A1
+   PROCEDURE,PUBLIC:: getvalue => termfou1d_2_A
+   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_2_A
 END TYPE term_A1
 !/////////////////////////////////////////////////
-! TYPE: FOURIER1D_4MM
+! TYPE: FOURIER1D_2
 !> @brief
 !! Class to store all information needed for a 1D REAL fourier interpolation
 !------------------------------------------------
-TYPE,EXTENDS(Interpol1d):: Fourier1d_4mm
+TYPE,EXTENDS(Interpol1d):: Fourier1d_2
    PRIVATE
    CHARACTER(LEN=2) :: irrep
-   REAL(KIND=8) :: period=2.D0*dacos(-1.D0) ! 2pi
+   REAL(KIND=8),PARAMETER :: period=2.D0*dacos(-1.D0) ! 2pi
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: klist
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extracoeff
@@ -77,22 +77,22 @@ TYPE,EXTENDS(Interpol1d):: Fourier1d_4mm
    CLASS(Termcalculator),ALLOCATABLE :: term
    CONTAINS
       ! get block
-      PROCEDURE,PUBLIC :: getvalue => getvalue_FOURIER1D_4MM
-      PROCEDURE,PUBLIC :: getderiv => getderiv_FOURIER1D_4MM
+      PROCEDURE,PUBLIC :: getvalue => getvalue_FOURIER1D_2
+      PROCEDURE,PUBLIC :: getderiv => getderiv_FOURIER1D_2
       ! Set block
-      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_4MM
+      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_2
       ! Tools
-      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_FOURIER1D_4MM
-      PROCEDURE,PUBLIC :: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D_4MM
-      PROCEDURE,PUBLIC :: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D_4MM
+      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_FOURIER1D_2
+      PROCEDURE,PUBLIC :: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D_2
+      PROCEDURE,PUBLIC :: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D_2
       ! Plotting tools
-      PROCEDURE,PUBLIC :: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D_4MM
-      PROCEDURE,PUBLIC :: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_4MM
-END TYPE FOURIER1D_4MM
+      PROCEDURE,PUBLIC :: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D_2
+      PROCEDURE,PUBLIC :: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_2
+END TYPE FOURIER1D_2
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# SUBROUTINE: SET_IRREP_FOURIER1D_4MM 
+!# SUBROUTINE: SET_IRREP_FOURIER1D_2 
 !###########################################################
 !> @brief
 !! Sets irrep for this fourier series
@@ -101,33 +101,53 @@ CONTAINS
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SET_IRREP_FOURIER1D_4MM(this,irrep)
+SUBROUTINE SET_IRREP_FOURIER1D_2(this,irrep)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d_4mm),INTENT(INOUT):: this
+   CLASS(Fourier1d_2),INTENT(INOUT):: this
    CHARACTER(LEN=2),INTENT(IN) :: irrep
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
+   INTEGER(KIND=4) :: npar
    ! Run section
+   ALLOCATE(this%klist(this%n))
    SELECT CASE(irrep)
-      CASE("A1")
-         ALLOCATE(Term_A1::this%term)
+      CASE("A")
+         ALLOCATE(Term_A::this%term)
          this%irrep=irrep
-         ALLOCATE(this%klist(this%n))
-         FORALL (i=1:this%n) this%klist(i)=(i-1)*4
+         SELECT CASE(mod(this%n,2) == 0) 
+            CASE(.TRUE.) ! case is even
+               this%term%average_last=.TRUE.
+               this%klist(1)=0
+               npar=(this%n-2)/2
+                DO i = 1, npar 
+                   this%klist(i+1)=2*i
+                   this%klist(i+1+npar)=-2*i
+                END DO
+                this%klist(this%n)=npar+1
+                this%term%lastkpoint=npar+1
+            CASE(.FALSE.) ! case is odd
+               this%klist(1)=0
+               npar=(this%n-1)/2
+                DO i = 1, npar 
+                   this%klist(i+1)=2*i
+                   this%klist(i+1+npar)=-2*i
+                END DO
+                this%term%lastkpoint=npar
+         END SELECT
       CASE DEFAULT
-         WRITE(0,*) "SET_IRREP_FOURIER1D_4MM ERR: irrep used is not implemented or does not exist"
-         WRITE(0,*) "List of irreps implemented: A1"
+         WRITE(0,*) "SET_IRREP_FOURIER1D_2 ERR: irrep used is not implemented or does not exist"
+         WRITE(0,*) "List of irreps implemented: A"
          CALL EXIT(1)
    END SELECT
    RETURN
-END SUBROUTINE SET_IRREP_FOURIER1D_4MM
+END SUBROUTINE SET_IRREP_FOURIER1D_2
 !###########################################################
-!# FUNCTION: termfou1d_4mm_A1
+!# FUNCTION: termfou1d_2_A1
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_4mm_A1(this,kpoint,x)
+REAL(KIND=8) FUNCTION termfou1d_2_A(this,kpoint,x)
    ! Initial declarations 
    USE CONSTANTS_MOD  
    IMPLICIT NONE
@@ -136,14 +156,29 @@ REAL(KIND=8) FUNCTION termfou1d_4mm_A1(this,kpoint,x)
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   termfou1d_4mm_A1=dcos(dfloat(kpoint)*x)
+   SELECT CASE(this%average_last .AND. kpoint == this%lastkpoint)
+      CASE(.TRUE.)
+         termfou1d_2_A=dcos(dfloat(kpoint)*x)+dsin(dfloat(kpoint)*x)
+      CASE(.FALSE.)
+         SELECT CASE(kpoint)
+            CASE(0)
+               termfou1d_2_A=1.D0
+            CASE(: -1)
+               termfou1d_2_A=dsin(dfloat(-kpoint)*x)
+            CASE(1 :)
+               termfou1d_2_A=dcos(dfloat(kpoint)*x)
+            CASE DEFAULT
+               WRITE(0,*) "Termfou1d_2_A ERR: Something went really wrong with kpoints of this interpolation"
+               CALL EXIT(1)
+         END SELECT
+   END SELECT
    RETURN
-END FUNCTION termfou1d_4mm_A1
+END FUNCTION termfou1d_2_A
 !###########################################################
-!# FUNCTION: termfou1d_dx_4mm_A1
+!# FUNCTION: termfou1d_dx_2_A1
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx_4mm_A1(this,kpoint,x)
+REAL(KIND=8) FUNCTION termfou1d_dx_2_A(this,kpoint,x)
    ! Initial declarations 
    USE CONSTANTS_MOD  
    IMPLICIT NONE
@@ -152,11 +187,26 @@ REAL(KIND=8) FUNCTION termfou1d_dx_4mm_A1(this,kpoint,x)
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   termfou1d_dx_4mm_A1=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+   SELECT CASE(this%average_last .AND. kpoint == this%lastkpoint)
+      CASE(.TRUE.)
+         termfou1d_dx_2_A=(-dsin(dfloat(kpoint)*x)+dcos(dfloat(kpoint)*x))*dfloat(kpoint)
+      CASE(.FALSE.)
+         SELECT CASE(kpoint)
+            CASE(0)
+               termfou1d_2_A=0.D0
+            CASE(: -1)
+               termfou1d_2_A=dfloat(-kpoint)*dcos(dfloat(-kpoint)*x)
+            CASE(1 :)
+               termfou1d_2_A=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+            CASE DEFAULT
+               WRITE(0,*) "Termfou1d_2_A ERR: Something went really wrong with kpoints of this interpolation"
+               CALL EXIT(1)
+         END SELECT
+   END SELECT
    RETURN
-END FUNCTION termfou1d_dx_4mm_A1
+END FUNCTION termfou1d_dx_2_A
 !###########################################################
-!# SUBROUTINE: GET_ALLFUNC_AND_DERIVS_FOURIER1D_4MM
+!# SUBROUTINE: GET_ALLFUNC_AND_DERIVS_FOURIER1D_2
 !###########################################################
 !> @brief
 !! Get value of the potential and derivs for an specific point x
@@ -166,11 +216,11 @@ END FUNCTION termfou1d_dx_4mm_A1
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D_4MM(this,x,f,dfdx)
+SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D_2(this,x,f,dfdx)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(FOURIER1D_4MM),INTENT(IN) :: this
+   CLASS(FOURIER1D_2),INTENT(IN) :: this
    REAL(KIND=8),INTENT(IN) :: x
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: f,dfdx
    ! Local variables
@@ -212,9 +262,9 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D_4MM(this,x,f,dfdx)
       dfdx(i)=dot_product(terms_dx,this%extracoeff(:,i-1))
    END DO
    RETURN
-END SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D_4MM
+END SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D_2
 !###########################################################
-!# SUBROUTINE: ADD_MORE_FUNCS_FOURIER1D_4MM
+!# SUBROUTINE: ADD_MORE_FUNCS_FOURIER1D_2
 !###########################################################
 !> @brief
 !! Adds a new set of functions to interpolate at the same time
@@ -223,11 +273,11 @@ END SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D_4MM
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE ADD_MORE_FUNCS_FOURIER1D_4MM(this,f)
+SUBROUTINE ADD_MORE_FUNCS_FOURIER1D_2(this,f)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(FOURIER1D_4MM),INTENT(INOUT) :: this
+   CLASS(FOURIER1D_2),INTENT(INOUT) :: this
    REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: f
    ! Local variables
    INTEGER(KIND=4) :: nfuncs, ndata
@@ -236,7 +286,7 @@ SUBROUTINE ADD_MORE_FUNCS_FOURIER1D_4MM(this,f)
    ndata=size(f(1,:)) ! number of columns
    SELECT CASE(ndata == this%n)
       CASE(.FALSE.)
-         WRITE(0,*) "ADD_MORE_FUNCS_FOURIER1D_4MM ERR: size mismatch between extra functions and the original one"
+         WRITE(0,*) "ADD_MORE_FUNCS_FOURIER1D_2 ERR: size mismatch between extra functions and the original one"
          CALL EXIT(1)
       CASE(.TRUE.)
          ! donothing
@@ -244,23 +294,23 @@ SUBROUTINE ADD_MORE_FUNCS_FOURIER1D_4MM(this,f)
    ALLOCATE(this%extrafuncs(nfuncs,ndata))
    this%extrafuncs=f
    RETURN
-END SUBROUTINE ADD_MORE_FUNCS_FOURIER1D_4MM
+END SUBROUTINE ADD_MORE_FUNCS_FOURIER1D_2
 !###########################################################
-!# SUBROUTINE: INTERPOL_FOURIER1D_4MM 
+!# SUBROUTINE: INTERPOL_FOURIER1D_2 
 !###########################################################
 !> @brief
-!! Performs a generic FOURIER1D_4MM interpolation
+!! Performs a generic FOURIER1D_2 interpolation
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Mar/2014 
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INTERPOL_FOURIER1D_4MM(this)
+SUBROUTINE INTERPOL_FOURIER1D_2(this)
    ! Initial declarations   
    USE MATHS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(FOURIER1D_4MM),INTENT(INOUT) :: this
+   CLASS(FOURIER1D_2),INTENT(INOUT) :: this
    ! Local variables
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: terms,inv_terms
    INTEGER(KIND=4) :: i,j ! counters
@@ -287,9 +337,9 @@ SUBROUTINE INTERPOL_FOURIER1D_4MM(this)
          ! do nothing
    END SELECT
    RETURN
-END SUBROUTINE INTERPOL_FOURIER1D_4MM
+END SUBROUTINE INTERPOL_FOURIER1D_2
 !###########################################################
-!# FUNCTION: getvalue_FOURIER1D_4MM 
+!# FUNCTION: getvalue_FOURIER1D_2 
 !###########################################################
 !> @brief 
 !! Get's fourier 1D interpolation value for a given point
@@ -299,12 +349,12 @@ END SUBROUTINE INTERPOL_FOURIER1D_4MM
 !> @date 03/03/2014
 !> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getvalue_FOURIER1D_4MM(this,x,shift)
+REAL(KIND=8) FUNCTION getvalue_FOURIER1D_2(this,x,shift)
    ! Initial declarations   
    USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(FOURIER1D_4MM),TARGET,INTENT(IN) :: this
+   CLASS(FOURIER1D_2),TARGET,INTENT(IN) :: this
    REAL(KIND=8),INTENT(IN) :: x
    REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
    ! Local variables
@@ -322,12 +372,12 @@ REAL(KIND=8) FUNCTION getvalue_FOURIER1D_4MM(this,x,shift)
    DO i = 1, this%n
       terms(i)=this%term%getvalue(this%klist(i),r)
    END DO
-   getvalue_FOURIER1D_4MM=dot_product(terms,this%coeff)
+   getvalue_FOURIER1D_2=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
    RETURN
-END FUNCTION getvalue_FOURIER1D_4MM
+END FUNCTION getvalue_FOURIER1D_2
 !###########################################################
-!# FUNCTION: getderiv_FOURIER1D_4MM 
+!# FUNCTION: getderiv_FOURIER1D_2 
 !###########################################################
 !> @brief 
 !! Get's derivative value at a given point X using the interpolation
@@ -336,12 +386,12 @@ END FUNCTION getvalue_FOURIER1D_4MM
 !> @date 03/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getderiv_FOURIER1D_4MM(this,x,shift)
+REAL(KIND=8) FUNCTION getderiv_FOURIER1D_2(this,x,shift)
    ! Initial declarations   
    USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(FOURIER1D_4MM),TARGET,INTENT(IN) :: this
+   CLASS(FOURIER1D_2),TARGET,INTENT(IN) :: this
    REAL(KIND=8),INTENT(IN) :: x
    REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
    ! Local variables
@@ -359,20 +409,20 @@ REAL(KIND=8) FUNCTION getderiv_FOURIER1D_4MM(this,x,shift)
    DO i = 1, this%n
       terms(i)=this%term%getvalue(this%klist(i),r)
    END DO
-   getderiv_FOURIER1D_4MM=dot_product(terms,this%coeff)
+   getderiv_FOURIER1D_2=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
    RETURN
-END FUNCTION getderiv_FOURIER1D_4MM
+END FUNCTION getderiv_FOURIER1D_2
 !######################################################################
-! SUBROUTINE: PLOT_INTERPOL_FOURIER1D_4MM ################################
+! SUBROUTINE: PLOT_INTERPOL_FOURIER1D_2 ################################
 !######################################################################
 !> @brief
 !! Creates a data file called @b filename with the interpolation graphic of
-!! this FOURIER1D_4MM type variable. The number of points in that graphic is defined
+!! this FOURIER1D_2 type variable. The number of points in that graphic is defined
 !! by @b npoints. Cannot be less than two. It also plots the first derivative.
 !! The graphic goes from 0 to @f$2\pi@f$
 !----------------------------------------------------------------------
-SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D_4MM(this,npoints,filename)
+SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D_2(this,npoints,filename)
    USE CONSTANTS_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
@@ -380,19 +430,19 @@ SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D_4MM(this,npoints,filename)
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints
-   CLASS(FOURIER1D_4MM),INTENT(IN) :: this
+   CLASS(FOURIER1D_2),INTENT(IN) :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables -----------------------------
    INTEGER :: inpoints,ndelta
    REAL(KIND=8) :: delta, interval, x
    INTEGER :: i ! Counter
-   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D_4MM: " 
+   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D_2: " 
    ! Pointers ------------------------------------
    REAL(KIND=8):: xmin, xmax
    INTEGER(KIND=4):: n
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOTCYCLIC_INTERPOL_FOURIER1D_4MM ERR: Less than 2 points"
+      WRITE(0,*) "PLOTCYCLIC_INTERPOL_FOURIER1D_2 ERR: Less than 2 points"
       STOP
    END IF
    !
@@ -416,17 +466,17 @@ SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D_4MM(this,npoints,filename)
    CALL DEBUG_WRITE(routinename,filename," file created")
 #endif
    CLOSE(11)
-END SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D_4MM
+END SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D_2
 !######################################################################
-! SUBROUTINE: PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_4MM ################################
+! SUBROUTINE: PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_2 ################################
 !######################################################################
 !> @brief
 !! Creates a data file called @b filename with the interpolation graphic of
-!! this FOURIER1D_4MM type variable. The number of points in that graphic is defined
+!! this FOURIER1D_2 type variable. The number of points in that graphic is defined
 !! by @b npoints. Cannot be less than two. It also plots the first derivative.
 !! The graphic goes from 0 to @f$2\pi@f$
 !----------------------------------------------------------------------
-SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_4MM(this,npoints,filename)
+SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_2(this,npoints,filename)
    USE CONSTANTS_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
@@ -434,20 +484,20 @@ SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_4MM(this,npoints,filename)
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints
-   CLASS(FOURIER1D_4MM),INTENT(IN) :: this
+   CLASS(FOURIER1D_2),INTENT(IN) :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables -----------------------------
    INTEGER :: inpoints,ndelta,nfunc
    REAL(KIND=8) :: delta, interval, x
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f,dfdx
    INTEGER :: i ! Counter
-   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D_4MM: " 
+   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D_2: " 
    ! Pointers ------------------------------------
    REAL(KIND=8):: xmin, xmax
    INTEGER(KIND=4):: n
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOTCYCLIC_INTERPOL_FOURIER1D_4MM ERR: Less than 2 points"
+      WRITE(0,*) "PLOTCYCLIC_INTERPOL_FOURIER1D_2 ERR: Less than 2 points"
       STOP
    END IF
    !
@@ -477,6 +527,6 @@ SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_4MM(this,npoints,filename)
    CALL DEBUG_WRITE(routinename,filename," file created")
 #endif
    CLOSE(11)
-END SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_4MM
+END SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D_2
 
-END MODULE FOURIER1D_4MM_MOD
+END MODULE FOURIER1D_2_MOD

@@ -692,7 +692,7 @@ Particular properties:
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -1073,7 +1073,7 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $F(\theta)$
+\begin_inset Formula $A_{i}(\theta)$
 \end_inset
 
 
@@ -1095,7 +1095,7 @@ status collapsed
 \end_layout
 
 \begin_layout Section
-4mm (
+[4mm] (
 \begin_inset Formula $C_{4v}$
 \end_inset
 
@@ -1523,9 +1523,10 @@ Character table for 4mm point symmetry group
 
 \begin_layout Standard
 \begin_inset Float table
+placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -1877,9 +1878,10 @@ Definition of
 
 \begin_layout Standard
 \begin_inset Float table
+placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -1893,7 +1895,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Formula $f_{l}^{A_{1}}(\theta)=\frac{\cos(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
-0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{2,6,10,14,...\}\\
+0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{2,6,10,14,...\}\\
 \cos\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
 \end{cases}$
 \end_inset
@@ -1910,7 +1912,7 @@ status open
 
 \begin_layout Plain Layout
 \begin_inset Formula $f_{l}^{A_{2}}(\theta)=\frac{\sin(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
-0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{2,6,10,14,...\}\\
+0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{1,3,5,<7,...\}\bigcup\{2,6,10,14,...\}\\
 \sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
 \end{cases}$
 \end_inset
@@ -2000,15 +2002,1696 @@ Symmetry adapted terms
 Remarks
 \end_layout
 
-\begin_layout Standard
+\begin_layout Itemize
 \begin_inset Formula $F^{A_{1}}(\theta)$
 \end_inset
 
- stands for a even Fourier series with periodicity 
+ stands for an even Fourier series with periodicity 
 \begin_inset Formula $a=\frac{\pi}{2}$
 \end_inset
 
 .
+ That means: 
+\begin_inset Formula 
+\[
+\left[F^{A_{1}}(\theta)=F^{A_{1}}(-\theta)\right]\bigwedge\left[F^{A_{1}}(\theta)=F^{A_{1}}(\theta+\frac{\pi}{2})\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A_{2}}(\theta)$
+\end_inset
+
+ stands for an odd Fourier series with periodicity 
+\begin_inset Formula $a=\frac{\pi}{2}$
+\end_inset
+
+.
+ That means: 
+\begin_inset Formula 
+\[
+\left[-F^{A_{2}}(\theta)=F^{A_{2}}(-\theta)\right]\bigwedge\left[F^{A_{2}}(\theta)=F^{A_{2}}(\theta+\frac{\pi}{2})\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+[mm2] (
+\begin_inset Formula $C_{2v}$
+\end_inset
+
+) group
+\end_layout
+
+\begin_layout Subsection
+Details
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="5">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{4v}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{yz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $A_{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $A_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $B_{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $B_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Character table for mm2 point symmetry group
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="3">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E(\theta)=\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E^{-1}(\theta)=\theta=E(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}(\theta)=\theta+\pi$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}^{-1}(\theta)=\theta-\pi=\theta+\pi=C_{2z}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}(\theta)=-\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}^{-1}(\theta)=-\theta=\sigma_{xz}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{yz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{yz}(\theta)=\pi-\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{yz}^{-1}(\theta)=\pi-\theta=\sigma_{yz}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Definition of 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+ functions assuming that 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is an angle
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="1">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A_{1}}(\theta)=\cos(l\theta)\cdot\rho_{l}=\begin{cases}
+0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
+\cos\left(l\theta\right) & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A_{2}}(\theta)=\sin(l\theta)\cdot\rho_{l}=\begin{cases}
+0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
+\sin\left(l\theta\right) & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{B_{1}}(\theta)=\cos(l\theta)\cdot\rho_{l+1}=\begin{cases}
+0 & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}\\
+\cos\left(l\theta\right) & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\sin(l\theta)\cdot\rho_{l+1}=\begin{cases}
+0 & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}\\
+\sin\left(l\theta\right) & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Symmetry adapted terms
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Remarks
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A_{1}}(\theta)$
+\end_inset
+
+ stands for an even Fourier series with periodicity 
+\begin_inset Formula $a=\pi$
+\end_inset
+
+.
+ That means: 
+\begin_inset Formula 
+\[
+\left[F^{A_{1}}(\theta)=F^{A_{1}}(-\theta)\right]\bigwedge\left[F^{A_{1}}(\theta)=F^{A_{1}}(\theta+\pi)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A_{2}}(\theta)$
+\end_inset
+
+ stands for an odd Fourier series with periodicity 
+\begin_inset Formula $a=\pi$
+\end_inset
+
+.
+ That means: 
+\begin_inset Formula 
+\[
+\left[-F^{A_{2}}(\theta)=F^{A_{2}}(-\theta)\right]\bigwedge\left[F^{A_{2}}(\theta)=F^{A_{2}}(\theta+\pi)\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+[2] (
+\begin_inset Formula $C_{2}$
+\end_inset
+
+) group
+\end_layout
+
+\begin_layout Subsection
+Details
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{4v}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $A$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $B$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Character table for mm2 point symmetry group
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="3">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E(\theta)=\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E^{-1}(\theta)=\theta=E(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2}(\theta)=\theta+\pi$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2}^{-1}(\theta)=\theta-\pi=\theta+\pi=C_{2}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Definition of 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+ functions assuming that 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is an angle
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="1">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A}(\theta)=\left[C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta)\right]\cdot\rho_{l}=\begin{cases}
+0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
+C_{l}^{\oplus}\cos\left(l\theta\right)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{B}(\theta)=\left[C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta)\right]\cdot\rho_{l+1}=\begin{cases}
+0 & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}\\
+C_{l}^{\oplus}\cos\left(l\theta\right)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Symmetry adapted terms
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Remarks
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A}(\theta)$
+\end_inset
+
+ stands for a general Fourier series (not specific parity) with periodicity
+ 
+\begin_inset Formula $a=\pi$
+\end_inset
+
+.
+ That means:
+\begin_inset Formula 
+\[
+F^{A_{1}}(\theta)=F^{A_{1}}(\theta+\pi)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{B}(\theta)$
+\end_inset
+
+ stands for a general Fourier series with periodicity 
+\begin_inset Formula $a=2\pi$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+[m] (
+\begin_inset Formula $C_{s}$
+\end_inset
+
+) group
+\end_layout
+
+\begin_layout Subsection
+Details
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{4v}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $A^{'}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $A^{''}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+-1
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Character table for [m] point symmetry group
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\sigma$
+\end_inset
+
+ can be defined in multiple ways:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E(\theta)=\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E^{-1}(\theta)=\theta=E(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}(\theta)=-\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}^{-1}(\theta)=-\theta=\sigma_{xz}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}(\theta)=\frac{\pi}{2}-\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\sigma_{d}\right)^{-1}(\theta)=\frac{\pi}{2}-\theta=\sigma_{d}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Definition of 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+ functions assuming that 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is an angle
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="1">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A^{'}}(\theta)=\cos(l\theta)\,\forall l\in\ge0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A^{''}}(\theta)=\sin(l\theta)\forall l\in\ge0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Symmetry adapted terms when 
+\begin_inset Formula $\sigma=\sigma_{xz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="1">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A^{'}}(\theta)=\left[C_{l}^{\oplus}\left(1+\tau_{l}\right)-C_{l}^{\ominus}\tau_{l+1}\right]\cos(l\theta)+\left[C_{l}^{\ominus}\left(1-\tau_{l}\right)-C_{l}^{\oplus}\tau_{l+1}\right]\sin(l\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A^{'}}(\theta)=\begin{cases}
+\cos(l\theta) & \iff l\in[0]_{4}=\{0,4,8,12,...\}\\
+\cos\left(l\theta\right)+\sin(l\theta) & \iff l\in[1]_{4}=\{1,5,9,13,...\}\\
+\sin(l\theta) & \iff l\in[2]_{4}=\{2,6,10,14,...\}\\
+\cos(l\theta)-\sin(l\theta) & \iff l\in[3]_{4}=\{3,7,11,15,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A^{''}}(\theta)=\left[C_{l}^{\oplus}\left(1-\tau_{l}\right)+C_{l}^{\ominus}\tau_{l+1}\right]\cos(l\theta)+\left[C_{l}^{\ominus}\left(1+\tau_{l}\right)+C_{l}^{\oplus}\tau_{l+1}\right]\sin(l\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A^{''}}(\theta)=\begin{cases}
+\sin(l\theta) & \iff l\in[0]_{4}=\{0,4,8,12,...\}\\
+\cos\left(l\theta\right)-\sin(l\theta) & \iff l\in[1]_{4}=\{1,5,9,13,...\}\\
+\cos(l\theta) & \iff l\in[2]_{4}=\{2,6,10,14,...\}\\
+\cos(l\theta)+\sin(l\theta) & \iff l\in[3]_{4}=\{3,7,11,15,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Symmetry adapted terms when 
+\begin_inset Formula $\sigma=\sigma_{d}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Remarks
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A^{'}}(\theta)$
+\end_inset
+
+ with 
+\begin_inset Formula $\sigma_{xz}$
+\end_inset
+
+ stands for an even Fourier series with periodicity 
+\begin_inset Formula $a=2\pi$
+\end_inset
+
+.
+ That means:
+\begin_inset Formula 
+\[
+F^{A^{'}}(-\theta)=F^{A^{'}}(\theta)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A^{''}}(\theta)$
+\end_inset
+
+ with 
+\begin_inset Formula $\sigma_{xz}$
+\end_inset
+
+ stands for an odd Fourier series with periodicity 
+\begin_inset Formula $a=2\pi$
+\end_inset
+
+.
+ That means:
+\begin_inset Formula 
+\[
+F^{A^{''}}(-\theta)=-F^{A^{''}}(\theta)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A^{'}}(\theta)$
+\end_inset
+
+ with 
+\begin_inset Formula $\sigma_{d}$
+\end_inset
+
+ stands for an even Fourier series (respect to the 
+\begin_inset Formula $x+y$
+\end_inset
+
+ plane) with periodicity 
+\begin_inset Formula $a=2\pi$
+\end_inset
+
+.
+ That means:
+\begin_inset Formula 
+\[
+F^{A^{'}}(\theta)=F^{A^{'}}(\frac{\pi}{2}-\theta)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $F^{A^{''}}(\theta)$
+\end_inset
+
+ with 
+\begin_inset Formula $\sigma_{d}$
+\end_inset
+
+ stands for an odd Fourier series (respect to the 
+\begin_inset Formula $x+y$
+\end_inset
+
+ plane) with periodicity 
+\begin_inset Formula $a=2\pi$
+\end_inset
+
+.
+ That means:
+\begin_inset Formula 
+\[
+F^{A^{''}}(-\theta)=-F^{A^{''}}(\frac{\pi}{2}-\theta)
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -2206,6 +3889,167 @@ Noticeable properties:
 
 \end_layout
 
+\begin_layout Subsection
+Tesseris switch function 
+\begin_inset Formula $\tau(x)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="4">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\tau\,:\,$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{Z}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\longrightarrow$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\{0,1,-1\}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $l$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\longrightarrow$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\tau(l)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Explicit form: 
+\begin_inset Formula $\tau(x)=i^{x}\rho(x)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Conceptual form: 
+\begin_inset Formula $\tau(x)=\begin{cases}
+0\,\,\iff & x\in[1]_{4}\bigcup[3]_{4}=[1]_{2}=\{1,3,5,7,...\}\\
+1\,\,\iff & x\in[0]_{4}=\{0,4,8,12,...\}\\
+-1\iff & x\in[2]_{4}=\{2,6,10,14,...\}
+\end{cases}$
+\end_inset
+
+ , where 
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Noticeable properties:
+\end_layout
+
 \begin_layout Section
 Interesting equivalences
 \end_layout
@@ -2222,32 +4066,8 @@ Interesting equivalences
 \end_layout
 
 \begin_layout Standard
-Explicit form:
-\begin_inset Formula $\cos\left(\frac{\pi}{2}x\right)=i^{x}\cdot\rho(x)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Conceptual form: 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\uuline off
-\uwave off
-\noun off
-\color none
-
-\begin_inset Formula $\cos\left(\frac{\pi}{2}x\right)=\begin{cases}
-0 & \iff x\in[1]_{2}\\
-1 & \iff x\in\left\{ 2n\,:\, n\in[0]_{2}\right\} =\left\{ 0,4,8,12,...\right\} \\
--1 & \iff x\in\left\{ 2n\,:\, n\in[1]_{2}\right\} =\left\{ 2,6,10,14,...\right\} 
-\end{cases}$
+Explicit form: 
+\begin_inset Formula $\cos\left(\frac{\pi}{2}x\right)=i^{x}\cdot\rho(x)=\tau(x)$
 \end_inset
 
 
@@ -2266,31 +4086,7 @@ Conceptual form:
 
 \begin_layout Standard
 Explicit form: 
-\begin_inset Formula $\sin\left(\frac{\pi}{2}x\right)=-i^{x+1}\cdot\rho(x+1)$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Conceptual form: 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\uuline off
-\uwave off
-\noun off
-\color none
-
-\begin_inset Formula $\sin\left(\frac{\pi}{2}x\right)=\begin{cases}
-0 & \iff x\in[0]_{2}\\
-1 & \iff x\in\left\{ 2n+1\,:\, n\in[0]_{2}\right\} =\left\{ 1,5,9,13,...\right\} \\
--1 & \iff x\in\left\{ 2n+1\,:\, n\in[1]_{2}\right\} =\left\{ 3,7,11,15,...\right\} 
-\end{cases}$
+\begin_inset Formula $\sin\left(\frac{\pi}{2}x\right)=-i^{x+1}\cdot\rho(x+1)=-\tau(x+1)$
 \end_inset
 
 
