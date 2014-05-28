@@ -1525,7 +1525,7 @@ Character table for 4mm point symmetry group
 \begin_inset Float table
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -1909,9 +1909,9 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{A_{2}}(\theta)=\frac{i\sin(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
+\begin_inset Formula $f_{l}^{A_{2}}(\theta)=\frac{\sin(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
 0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{2,6,10,14,...\}\\
-i\sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
+\sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
 \end{cases}$
 \end_inset
 
@@ -1943,9 +1943,9 @@ i\sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\frac{i\sin(l\theta)}{2}\left(1-i^{l}\right)\rho_{l}=\begin{cases}
+\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\frac{\sin(l\theta)}{2}\left(1-i^{l}\right)\rho_{l}=\begin{cases}
 0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{0,4,8,12,...\}\\
-i\sin\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14,...\}
+\sin\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14,...\}
 \end{cases}$
 \end_inset
 
@@ -1960,16 +1960,10 @@ i\sin\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{l}
-f_{l}^{E}(\theta)=e^{il\theta}\rho_{l}=\begin{cases}
-0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
-e^{il\theta} & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
-\end{cases}\\
-f_{l,\mathbb{R}}^{E}(\theta)=\left[C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta)\right]\rho_{l}=\begin{cases}
+\begin_inset Formula $f_{l,\mathbb{R}}^{E}(\theta)=\left[C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta)\right]\rho_{l}=\begin{cases}
 0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
 C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
-\end{cases}
-\end{array}$
+\end{cases}$
 \end_inset
 
 
@@ -2015,6 +2009,11 @@ Remarks
 \end_inset
 
 .
+ That means: 
+\begin_inset Formula $\left[F^{A_{1}}(\theta)=F^{A_{1}}(-\theta)\right]\bigwedge\left[F^{A_{1}}(\theta)=F^{A_{1}}(\theta+\frac{\pi}{2})\right]$
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section

@@ -9,7 +9,7 @@ folderlist= debug constants units surface PES interpol1d interpol1d/cubicsplines
 # Object list. There should be a rule for each object in this list
 objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier2d.o fourier.p4mm.o cubicsplines.o \
 				inicond.o initatom.o dynamics.o dynatom.o bicsplines.o CRP6D.o fourier1d.o wyckoff.generic.o wyckoff.p4mm.o \
-				extrapol.o interpolgrid2d.o
+				extrapol.o interpolgrid2d.o fourier.4mm.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
@@ -39,6 +39,7 @@ fourier.p4mm.o: debug.o constants.o surface.o fourier2d.o
 CRP3D.o: debug.o units.o maths.o cubicsplines.o fourier.p4mm.o PES.o surface.o 
 CRP6D.o: debug.o units.o maths.o CRP3D.o wyckoff.p4mm.o extrapol.o
 fourier1d.o: constants.o debug.o interpol1d.o
+fourier.4mm.o: constants.o debug.o interpol1d.o
 wyckoff.generic.o: debug.o fourier1d.o bicsplines.o
 wyckoff.p4mm.o: wyckoff.generic.o
 extrapol.o: units.o debug.o maths.o

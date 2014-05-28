@@ -572,21 +572,21 @@ reference "eq:general fourier"
 
 :
 \begin_inset Formula 
-\begin{equation}
-\hat{\mathcal{P}}{}^{\Gamma}F(\boldsymbol{x})=F^{\Gamma}(\boldsymbol{x})=\frac{d_{\Gamma}}{g}\cdot\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}\overset{g}{\underset{i=1}{\sum}}C_{\boldsymbol{k}}\mathcal{X}^{\Gamma}(A_{i})\cdot\hat{\mathcal{A}}{}_{i}f_{\boldsymbol{k}}(\boldsymbol{x})=\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}C_{\boldsymbol{k}}\overset{g}{\underset{i=1}{\sum}}\left[\frac{d_{\Gamma}}{g}\mathcal{X}^{\Gamma}(A_{i})\right]\cdot f_{\boldsymbol{k}}(A_{i}^{-1}\boldsymbol{x})\label{eq:fourier adapted}
-\end{equation}
+\[
+\hat{\mathcal{P}}{}^{\Gamma}F(\boldsymbol{x})=F^{\Gamma}(\boldsymbol{x})=\frac{d_{\Gamma}}{g}\cdot\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}\overset{g}{\underset{i=1}{\sum}}C_{\boldsymbol{k}}\mathcal{X}^{\Gamma}(A_{i})\cdot\hat{\mathcal{A}}{}_{i}f_{\boldsymbol{k}}(\boldsymbol{x})=\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}C_{\boldsymbol{k}}\overset{g}{\underset{i=1}{\sum}}\left[\frac{d_{\Gamma}}{g}\mathcal{X}^{\Gamma}(A_{i})\right]\cdot f_{\boldsymbol{k}}(A_{i}^{-1}\boldsymbol{x})
+\]
 
 \end_inset
 
 thus,
 \begin_inset Formula 
-\[
+\begin{equation}
 \begin{array}{c}
 F^{\Gamma}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}F(\boldsymbol{x})=\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}C_{\boldsymbol{k}}f_{\boldsymbol{k}}^{\Gamma}(\boldsymbol{x})\\
 f_{\boldsymbol{k}}^{\Gamma}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}f_{\boldsymbol{k}}(\boldsymbol{x})=\overset{g}{\underset{i=1}{\sum}}D_{i}^{\Gamma}f_{\boldsymbol{k}}(A_{i}^{-1}\boldsymbol{x})\\
 D_{i}^{\Gamma}=\frac{d_{\Gamma}}{g}\mathcal{X}^{\Gamma}(A_{i})
-\end{array}
-\]
+\end{array}\label{eq:fourier symm adapted}
+\end{equation}
 
 \end_inset
 
@@ -643,16 +643,15 @@ where symbol
 \end_layout
 
 \begin_layout Standard
-Once checked the meaning of Eq.
+Once checked the meaning of Eqs.
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "eq:fourier adapted"
+reference "eq:fourier symm adapted"
 
 \end_inset
 
-, we can obtain symmetry adapted linear combinations of Fourier terms for
- a given symmetry group calculating 
-\begin_inset Formula $f_{\boldsymbol{k}}(A_{i}^{-1}\boldsymbol{x})$
+, we can construct SALCFTs for a given symmetry group calculating 
+\begin_inset Formula $f_{\boldsymbol{k}}^{\odot}(A_{i}^{-1}\boldsymbol{x})$
 \end_inset
 
  functions.
@@ -1910,9 +1909,9 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{A_{2}}(\theta)=\frac{i\sin(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
+\begin_inset Formula $f_{l}^{A_{2}}(\theta)=\frac{\sin(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
 0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{2,6,10,14,...\}\\
-i\sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
+\sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
 \end{cases}$
 \end_inset
 
@@ -1944,9 +1943,9 @@ i\sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\frac{i\sin(l\theta)}{2}\left(1-i^{l}\right)\rho_{l}=\begin{cases}
+\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\frac{\sin(l\theta)}{2}\left(1-i^{l}\right)\rho_{l}=\begin{cases}
 0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{0,4,8,12,...\}\\
-i\sin\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14,...\}
+\sin\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14,...\}
 \end{cases}$
 \end_inset
 
@@ -1961,16 +1960,10 @@ i\sin\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{l}
-f_{l}^{E}(\theta)=e^{il\theta}\rho_{l}=\begin{cases}
-0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
-e^{il\theta} & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
-\end{cases}\\
-f_{l,\mathbb{R}}^{E}(\theta)=\left[C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta)\right]\rho_{l}=\begin{cases}
+\begin_inset Formula $f_{l,\mathbb{R}}^{E}(\theta)=\left[C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta)\right]\rho_{l}=\begin{cases}
 0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
 C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
-\end{cases}
-\end{array}$
+\end{cases}$
 \end_inset
 
 
