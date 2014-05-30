@@ -1,5 +1,5 @@
 !########################################################
-! MODULE : FOURIER1D_4MM_MOD
+! MODULE : FOURIER1D_M90_MOD
 !
 !> @brief
 !! Provides tools to perform 1D periodical interpolations with
@@ -8,11 +8,11 @@
 !> @warning
 !! - Includes FOURIER1D_mod in its scope
 !########################################################
-MODULE FOURIER1D_4MM_MOD
+MODULE FOURIER1D_M90_MOD
 USE FOURIER1D_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
-! TYPE: term_A1
+! TYPE: term_Ap
 !> @brief
 !! Child class of abstract termcalculator. Strcture to avoid unnecessary switches
 !
@@ -20,27 +20,27 @@ IMPLICIT NONE
 !> @date ! type a date
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Termcalculator) :: term_A1
+TYPE,EXTENDS(Termcalculator) :: term_Ap
 PRIVATE
    ! some atributes
 CONTAINS
-   PROCEDURE,PUBLIC:: getvalue => termfou1d_4mm_A1
-   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_4mm_A1
-END TYPE term_A1
+   PROCEDURE,PUBLIC:: getvalue => termfou1d_M90_Ap
+   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_M90_Ap
+END TYPE term_Ap
 !/////////////////////////////////////////////////
-! TYPE: FOURIER1D_4MM
+! TYPE: FOURIER1D_M90
 !> @brief
 !! Class to store all information needed for a 1D REAL fourier interpolation
 !------------------------------------------------
-TYPE,EXTENDS(Fourier1d):: Fourier1d_4mm
+TYPE,EXTENDS(FOURIER1D):: Fourier1d_M90
    CONTAINS
       ! Set block
-      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_4MM
-END TYPE FOURIER1D_4MM
+      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_M90
+END TYPE FOURIER1D_M90
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# SUBROUTINE: SET_IRREP_FOURIER1D_4MM 
+!# SUBROUTINE: SET_IRREP_FOURIER1D_M90 
 !###########################################################
 !> @brief
 !! Sets irrep for this fourier series
@@ -49,56 +49,57 @@ CONTAINS
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SET_IRREP_FOURIER1D_4MM(this,irrep)
+SUBROUTINE SET_IRREP_FOURIER1D_M90(this,irrep)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d_4mm),INTENT(INOUT):: this
+   CLASS(Fourier1d_M90),INTENT(INOUT):: this
    CHARACTER(LEN=2),INTENT(IN) :: irrep
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
    ! Run section
    SELECT CASE(irrep)
-      CASE("A1")
-         ALLOCATE(Term_A1::this%term)
+      CASE("Ap")
+         ALLOCATE(term_Ap::this%term)
          this%irrep=irrep
          ALLOCATE(this%klist(this%n))
-         FORALL (i=1:this%n) this%klist(i)=(i-1)*4
+         FORALL(i=1:this%n) this%klist(i)=i-1
+         
       CASE DEFAULT
-         WRITE(0,*) "SET_IRREP_FOURIER1D_4MM ERR: irrep used is not implemented or does not exist"
+         WRITE(0,*) "SET_IRREP_FOURIER1D_M90 ERR: irrep used is not implemented or does not exist"
          WRITE(0,*) "List of irreps implemented: A1"
          CALL EXIT(1)
    END SELECT
    RETURN
-END SUBROUTINE SET_IRREP_FOURIER1D_4MM
+END SUBROUTINE SET_IRREP_FOURIER1D_M90
 !###########################################################
-!# FUNCTION: termfou1d_4mm_A1
+!# FUNCTION: termfou1d_M90_Ap
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_4mm_A1(this,kpoint,x)
+REAL(KIND=8) FUNCTION termfou1d_M90_Ap(this,kpoint,x)
    ! Initial declarations 
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
+   CLASS(term_Ap),INTENT(IN) :: this
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   termfou1d_4mm_A1=dcos(dfloat(kpoint)*x)
+   termfou1d_M90_Ap=dcos(dfloat(kpoint)*x)
    RETURN
-END FUNCTION termfou1d_4mm_A1
+END FUNCTION termfou1d_M90_Ap
 !###########################################################
-!# FUNCTION: termfou1d_dx_4mm_A1
+!# FUNCTION: termfou1d_dx_M90_Ap
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx_4mm_A1(this,kpoint,x)
+REAL(KIND=8) FUNCTION termfou1d_dx_M90_Ap(this,kpoint,x)
    ! Initial declarations 
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
+   CLASS(term_Ap),INTENT(IN) :: this
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   termfou1d_dx_4mm_A1=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+   termfou1d_dx_M90_Ap=-dsin(dfloat(kpoint)*x)*dfloat(kpoint)
    RETURN
-END FUNCTION termfou1d_dx_4mm_A1
-END MODULE FOURIER1D_4MM_MOD
+END FUNCTION termfou1d_dx_M90_Ap
+END MODULE FOURIER1D_M90_MOD

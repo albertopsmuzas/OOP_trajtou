@@ -30,12 +30,16 @@ TYPE,ABSTRACT :: Interpol1d
    INTEGER(KIND=4) :: n
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: x
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f
+   CHARACTER(LEN=2) :: irrep="NO"
    CONTAINS
+      ! Initialization block
       PROCEDURE,NON_OVERRIDABLE,PUBLIC :: READ => READ_INTERPOL1D
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: PLOTDATA => PLOT_DATA_INTERPOL1D
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: PLOT => PLOT_INTERPOL_INTERPOL1D
+      ! Get functions block
       PROCEDURE(getvalue_interpol1d),PUBLIC,DEFERRED :: getvalue ! child types, override this
       PROCEDURE(getvalue_interpol1d),PUBLIC,DEFERRED :: getderiv ! child types, override this
+      ! Plot tools block
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: PLOTDATA => PLOT_DATA_INTERPOL1D
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: PLOT => PLOT_INTERPOL_INTERPOL1D
 END TYPE Interpol1d
 !//////////////////////////////////////////////////////////////////////
 ABSTRACT INTERFACE
@@ -51,7 +55,6 @@ ABSTRACT INTERFACE
       REAL(KIND=8),INTENT(IN) :: x
       REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
    END FUNCTION getvalue_interpol1d
-   !-----------------------------------------------------------
 END INTERFACE
 CONTAINS
 !######################################################################

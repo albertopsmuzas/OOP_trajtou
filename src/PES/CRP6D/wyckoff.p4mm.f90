@@ -7,7 +7,6 @@
 MODULE WYCKOFF_P4MM_MOD
 ! Initial declarations
 USE WYCKOFF_GENERIC_MOD
-USE FOURIER1D_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Wyckoffp4mm
@@ -49,6 +48,12 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    USE UNITS_MOD
 #endif
    USE CONSTANTS_MOD
+   USE FOURIER1D_2_MOD
+   USE FOURIER1D_4MM_MOD
+   USE FOURIER1D_M45_MOD
+   USE FOURIER1D_MM2_MOD
+   USE FOURIER1D_M90_MOD
+   USE FOURIER1D_E_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Wyckoffp4mm),INTENT(IN) :: this
@@ -58,10 +63,9 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    ! Local variables
    INTEGER(KIND=4) :: i,j,h ! counters
    REAL(KIND=8) :: dummy
-   REAL(KIND=8) :: period_phi,period_theta,phase_phi,phase_theta
    REAL(KIND=8) :: z,r,theta,phi
-   TYPE(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
-   TYPE(Fourier1d) :: thetacut
+   CLASS(Interpol1d),DIMENSION(:),ALLOCATABLE :: phicut
+   CLASS(Interpol1d),ALLOCATABLE :: thetacut
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdz
@@ -69,7 +73,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdphi
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philist
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: thetalist
-   LOGICAL :: phi_is_even,theta_is_even
    CHARACTER(LEN=30),PARAMETER :: routinename="GET_V_AND_DERIVS_WYCKOFFP4MM: "
 #ifdef DEBUG
    TYPE(Angle),DIMENSION(:),ALLOCATABLE :: beta
@@ -82,37 +85,55 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    theta=x(3)
    phi=x(4)
    ! CONDITIONS: edit this part to include/edit symmetries
-   SELECT CASE(this%is_homonucl)
-      CASE(.TRUE.)
-         period_theta=PI
-         phase_theta=0.D0
-      CASE(.FALSE.)
-         period_theta=2.D0*PI
-         phase_theta=0.D0
-   END SELECT
    SELECT CASE(this%id)
       CASE("a" : "b")
-         period_phi=PI/2.D0
-         phase_phi=0.D0
-         phi_is_even=.TRUE.
-         theta_is_even=.TRUE. ! due to inversion-point symmetry
+         ALLOCATE(Fourier1d_4mm::phicut(this%nphicuts))
+         DO i=1,this%nphicuts
+            CALL phicut(i)%SET_IRREP("A1")
+         END DO
+         SELECT CASE(this%is_homonucl)
+            CASE(.TRUE.)
+               ALLOCATE(Fourier1d_mm2::thetacut)
+               CALL thetacut%SET_IRREP("A1")
+            CASE(.FALSE.)
+               ALLOCATE(Fourier1d_m90::thetacut)
+               CALl thetacut%SET_IRREP("Ap")
+         END SELECT
+         
       CASE("c")
-         period_phi=PI
-         phase_phi=0.D0
-         phi_is_even=.TRUE.
-         theta_is_even=.TRUE. ! due to inversion-point symmetry
+         ALLOCATE(Fourier1d_mm2::phicut(this%nphicuts))
+         DO i = 1, this%nphicuts
+            CALL phicut(i)%SET_IRREP("A1") ! Totally symmetric irrep of 4mm point group symm
+         END DO
+         SELECT CASE(this%is_homonucl)
+            CASE(.TRUE.)
+               ALLOCATE(Fourier1d_mm2::thetacut)
+               CALL thetacut%SET_IRREP("A1")
+            CASE(.FALSE.)
+               ALLOCATE(Fourier1d_m90::thetacut)
+               CALl thetacut%SET_IRREP("Ap")
+         END SELECT
+
       CASE("f")
-         period_phi=2.D0*PI
-         phase_phi=-PI/2.D0
-         phi_is_even=.TRUE. 
-         theta_is_even=.FALSE. ! lack of inversion symmetry
+         ALLOCATE(Fourier1d_m90::phicut(this%nphicuts))
+         DO i = 1, this%nphicuts
+            CALL phicut(i)%SET_IRREP("A")
+         END DO
+         SELECT CASE(this%is_homonucl)
+            CASE(.TRUE.)
+               ALLOCATE(Fourier1d_2::thetacut)
+               CALL thetacut%SET_IRREP("Ap")
+            CASE(.FALSE.)
+               ALLOCATE(Fourier1d_e::thetacut)
+               CALl thetacut%SET_IRREP("A")
+         END SELECT
+
       CASE DEFAULT
          WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFP4MM: Unexpected error with Wyckoff id"
          CALL EXIT(1)
    END SELECT
    ! PHI INTERPOLATION ----------------------------------------------------
    h=0 ! initialize h
-   ALLOCATE(phicut(this%nphicuts))
    DO i = 1, this%nphicuts ! loop over sites
       ALLOCATE(f(this%nphipoints(i)))
       ALLOCATE(dfdr(this%nphipoints(i)))

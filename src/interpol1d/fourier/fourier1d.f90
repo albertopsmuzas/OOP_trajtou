@@ -1,8 +1,9 @@
 !########################################################
-! MODULE : FOURIER1D
+! MODULE : FOURIER1D_MOD
 !
 !> @brief
-!! Provides tools to perform 1D periodical interpolations
+!! Provides tools to perform 1D periodical interpolations with
+!! symmetry discrimination.
 !
 !> @warning
 !! - Includes Interpol1d_mod in its scope
@@ -10,56 +11,118 @@
 MODULE FOURIER1D_MOD
 USE INTERPOL1D_MOD
 IMPLICIT NONE
+!/////////////////////////////////////////////////////////////////
+! TYPE: Termcalculator
+!> @brief
+!! Abstract class to calculate terms of the series avoiding the use of
+!! unnecessary switches
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date May/2014 
+!> @version 1.0
+!----------------------------------------------------------------
+TYPE,ABSTRACT :: Termcalculator
+PRIVATE
+   INTEGER(KIND=4) :: lastkpoint
+   LOGICAL :: average_last=.FALSE.
+CONTAINS
+   PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getvalue 
+   PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getderiv 
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getlastkpoint => getlastkpoint
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE :: 
+END TYPE Termcalculator
+!
+ABSTRACT INTERFACE
+   !###########################################################
+   !# FUNCTION: getvalue_termcalculator_example 
+   !###########################################################
+   !> @brief 
+   !! Just an example that child objects should override
+   !-----------------------------------------------------------
+   REAL(KIND=8) FUNCTION getvalue_termcalculator_example(this,kpoint,x) 
+      IMPORT Termcalculator
+      CLASS(Termcalculator),INTENT(IN):: this
+      INTEGER(KIND=4),INTENT(IN) :: kpoint
+      REAL(KIND=8),INTENT(IN) :: x
+   END FUNCTION getvalue_termcalculator_example
+   !-------------------------------------------------------------
+END INTERFACE
 !/////////////////////////////////////////////////
 ! TYPE: FOURIER1D
 !> @brief
 !! Class to store all information needed for a 1D REAL fourier interpolation
 !------------------------------------------------
-TYPE,EXTENDS(Interpol1d):: Fourier1d
+TYPE,ABSTRACT,EXTENDS(Interpol1d):: FOURIER1D
    PRIVATE
-   LOGICAL :: even=.FALSE.
-   REAL(KIND=8) :: period
-   REAL(KIND=8) :: phase=0.D0
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: klist
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE,PUBLIC :: klist
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extracoeff
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extrafuncs
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: coupled
+   CLASS(Termcalculator),ALLOCATABLE,PUBLIC :: term
    CONTAINS
       ! get block
-      PROCEDURE,PUBLIC :: getperiod => getperiod_fourier1d
-      PROCEDURE,PUBLIC :: getvalue => getvalue_fourier1d
-      PROCEDURE,PUBLIC :: getderiv => getderiv_fourier1d
-      PROCEDURE,PUBLIC :: getphase => getphase_fourier1d
-      ! Initialization block
-      PROCEDURE,PUBLIC :: READ_EXTRA => READ_EXTRA_DETAILS_FOURIER1D
-      ! Enquire block
-      PROCEDURE,PUBLIC :: is_even => is_even_fourier1d
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getvalue => getvalue_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getderiv => getderiv_FOURIER1D
+      ! Set block
+      PROCEDURE(SET_IRREP_FOURIER1D),PUBLIC,DEFERRED :: SET_IRREP 
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_AVERAGE_LASTKPOINT => SET_AVERAGE_LASTKPOINT_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_LASTKPOINT => SET_LASTKPOINT_FOURIER1D
       ! Tools
-      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_FOURIER1D
-      PROCEDURE,PUBLIC :: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D
-      PROCEDURE,PUBLIC :: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: INTERPOL => INTERPOL_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D
       ! Plotting tools
-      PROCEDURE,PUBLIC :: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D
-      PROCEDURE,PUBLIC :: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
-END TYPE Fourier1d
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
+END TYPE FOURIER1D
+ABSTRACT INTERFACE
+   !###########################################################
+   !# SUBROUTINE: SET_IRREP_FOURIER1D 
+   !###########################################################
+   !> @brief
+   !! Sets irrep for this fourier series. Should be overriden by
+   !! child non-abstract classes
+   !-----------------------------------------------------------
+   SUBROUTINE SET_IRREP_FOURIER1D(this,irrep)
+      IMPORT Fourier1d
+      CLASS(FOURIER1D),INTENT(INOUT):: this
+      CHARACTER(LEN=2),INTENT(IN) :: irrep
+   END SUBROUTINE SET_IRREP_FOURIER1D
+END INTERFACE
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# FUNCTION: getphase_fourier1d 
+!# SUBROUTINE: SET_LASTKPOINT_FOURIER1D 
 !###########################################################
-!> @brief 
-!! Common get function. Gets value of atribute phase
+!> @brief
+!! Common set function. Sets term%lastkpoint atribute
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getphase_fourier1d(this)
+SUBROUTINE SET_LASTKPOINT_FOURIER1D(this,lastkpoint)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d),INTENT(IN) :: this
+   CLASS(Fourier1d),INTENT(INOUT):: this
+   INTEGER(KIND=4),INTENT(IN) :: lastkpoint
    ! Run section
-   getphase_fourier1d=this%phase
+   this%term%lastkpoint=lastkpoint
    RETURN
-END FUNCTION getphase_fourier1d
+END SUBROUTINE SET_LASTKPOINT_FOURIER1D
+!###########################################################
+!# SUBROUTINE: SET_AVERAGE_LASTKPOINT_FOURIER1D 
+!###########################################################
+!> @brief
+!! Common set function. Sets average_last_kpoint private atribute
+!-----------------------------------------------------------
+SUBROUTINE SET_AVERAGE_LASTKPOINT_FOURIER1D(this,bool)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Fourier1d),INTENT(INOUT):: this
+   LOGICAL,INTENT(IN) :: bool
+   ! Run section
+   this%term%average_last=bool
+   RETURN
+END SUBROUTINE SET_AVERAGE_LASTKPOINT_FOURIER1D
 !###########################################################
 !# SUBROUTINE: GET_ALLFUNC_AND_DERIVS_FOURIER1D
 !###########################################################
@@ -68,7 +131,7 @@ END FUNCTION getphase_fourier1d
 !! for the main function and extra ones
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date Apr/2014
+!> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
 SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
@@ -86,8 +149,8 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
    ! Check section
    SELECT CASE(allocated(this%extracoeff))
       CASE(.FALSE.)
-         WRITE(0,*) "GET_ALLFUNCS_AND DERIVS ERR: extra coefficients are not allocated"
-         WRITE(0,*) "GET_ALLFUNCS_AND DERIVS ERR: did you use ADD_MOREFUNCS and INTERPOL before this?"
+         WRITE(0,*) "GET_ALLFUNCS_AND_DERIVS ERR: extra coefficients are not allocated"
+         WRITE(0,*) "GET_ALLFUNCS_AND_DERIVS ERR: did you use ADD_MOREFUNCS and INTERPOL before this?"
          CALL EXIT(1)
       CASE(.TRUE.)
          ! do nothing
@@ -107,8 +170,8 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
    ALLOCATE(terms(this%n))
    ALLOCATE(terms_dx(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d(this%klist(i),this%coupled(i),this%period,this%phase,x)
-      terms_dx(i)=termfou1d_dx(this%klist(i),this%coupled(i),this%period,this%phase,x)
+      terms(i)=this%term%getvalue(this%klist(i),x)
+      terms_dx(i)=this%term%getderiv(this%klist(i),x)
    END DO
    f(1)=dot_product(terms,this%coeff)
    dfdx(1)=dot_product(terms_dx,this%coeff)
@@ -122,17 +185,17 @@ END SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D
 !# SUBROUTINE: ADD_MORE_FUNCS_FOURIER1D
 !###########################################################
 !> @brief
-!! brief description
+!! Adds a new set of functions to interpolate at the same time
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date ! type a date
+!> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
 SUBROUTINE ADD_MORE_FUNCS_FOURIER1D(this,f)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d),INTENT(INOUT) :: this
+   CLASS(FOURIER1D),INTENT(INOUT) :: this
    REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: f
    ! Local variables
    INTEGER(KIND=4) :: nfuncs, ndata
@@ -151,206 +214,10 @@ SUBROUTINE ADD_MORE_FUNCS_FOURIER1D(this,f)
    RETURN
 END SUBROUTINE ADD_MORE_FUNCS_FOURIER1D
 !###########################################################
-!# SUBROUTINE: READ_EXTRA_DETAILS_FOURIER1D 
-!###########################################################
-!> @brief
-!! Reads specific data for fourier interpolations
-!-----------------------------------------------------------
-SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D(this,period,klist,is_even,phase)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier1d),INTENT(INOUT):: this
-   REAL(KIND=8),INTENT(IN) :: period
-   INTEGER(KIND=4),DIMENSION(:) :: klist
-   REAL(KIND=8),INTENT(IN),OPTIONAL :: phase
-   LOGICAL, INTENT(IN),OPTIONAL:: is_even
-   ! Local variables
-   INTEGER(KIND=4) :: i,h,q  ! counters
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: newklist
-   INTEGER(KIND=4) :: nklist, ncouples
-   ! Run section
-   nklist=size(klist)
-   ALLOCATE(newklist(this%n))
-   ALLOCATE(this%coupled(this%n))
-   SELECT CASE(nklist == this%n)
-      CASE(.FALSE.)
-         SELECT CASE(nklist>this%n)
-            CASE(.TRUE.)
-               i=1
-               h=1
-               q=1
-               DO WHILE(i <= nklist)
-                  SELECT CASE(abs(klist(i)) == abs(klist(i+1)))
-                     CASE(.TRUE.)
-                        SELECT CASE(klist(i)>=klist(i+1))
-                           CASE(.TRUE.)
-                              this%coupled(h)=q
-                           CASE(.FALSE.)
-                              this%coupled(h)=-q
-                        END SELECT
-                        newklist(h)=abs(klist(i))
-                        q=q+1
-                        i=i+1
-                     CASE(.FALSE.) ! Not coupled
-                        this%coupled(i)=0
-                  END SELECT
-                  i=i+1
-                  h=h+1
-               END DO
-            CASE(.FALSE.)
-                WRITE(0,*) "READ_EXTRA_DETAILS_FOURIER ERR: More Kpoints needed"
-                CALL EXIT(1)
-         END SELECT
-      CASE(.TRUE.)
-         newklist=klist
-         FORALL(i=1:this%n)this%coupled(i)=0
-   END SELECT
-   this%period=period
-   ALLOCATE(this%klist(this%n))
-   this%klist=newklist
-   SELECT CASE(present(phase))
-      CASE(.TRUE.)
-         this%phase=phase
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(present(is_even))
-      CASE(.TRUE.)
-         this%even=is_even
-         DO i = 1, size(klist)
-            SELECT CASE(klist(i)<0 .AND. is_even)
-               CASE(.TRUE.)
-                  WRITE(0,*) "READ_EXTRA_DETAILS_FOURIER1D ERR: Kpoints incompatible with selected parity"
-                  CALL EXIT(1)
-               CASE(.FALSE.)
-                  ! do nothing
-            END SELECT
-         END DO
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   RETURN
-END SUBROUTINE READ_EXTRA_DETAILS_FOURIER1D
-!###########################################################
-!# FUNCTION: termfou1d 
-!###########################################################
-!> @brief 
-!! Value of the term of order kpoint of a one dimensional fourier
-!! expansion. Positive values stand for even terms of the series.
-!! Negative numbers stand for odd termns in the expansion
-!-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d(kpoint,coupled,period,phase,x)
-   ! Initial declarations 
-   USE CONSTANTS_MOD  
-   IMPLICIT NONE
-   ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: kpoint,coupled
-   REAL(KIND=8),INTENT(IN) :: x,period,phase
-   ! Run section
-   SELECT CASE(coupled)
-      CASE(0)
-         SELECT CASE(kpoint)
-            CASE(0)
-               termfou1d=1.D0
-            CASE(1 :) 
-               termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
-            CASE(: -1)
-               termfou1d=dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
-            CASE DEFAULT
-               WRITE(0,*) "Termfou1d ERR: This message was not supposed to be printed ever. Check the code"
-               CALL EXIT(1)
-         END SELECT
-      CASE(1 :)
-         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))+dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
-      CASE(: -1)
-         termfou1d=dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))-dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
-      CASE DEFAULT
-         WRITE(0,*) "Termfou1d ERR: Bad coupled mapping"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END FUNCTION termfou1d
-!###########################################################
-!# FUNCTION: termfou1d_dx
-!###########################################################
-!> @brief 
-!! Value of the d(term)/dx of order kpoint of a one dimensional fourier
-!! expansion. Positive values stand for even terms of the series.
-!! Negative numbers stand for odd termns in the expansion
-!-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx(kpoint,coupled,period,phase,x)
-   ! Initial declarations 
-   USE CONSTANTS_MOD  
-   IMPLICIT NONE
-   ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: kpoint,coupled
-   REAL(KIND=8),INTENT(IN) :: x,period,phase
-   ! Run section
-   SELECT CASE(coupled)
-      CASE(0)
-         SELECT CASE(kpoint)
-            CASE(0)
-               termfou1d_dx=0.D0
-            CASE(1 :) 
-               termfou1d_dx=-(2.D0*PI/period)*dfloat(kpoint)*dsin((2.D0*PI/period)*dfloat(kpoint)*(x+phase))
-            CASE(: -1)
-               termfou1d_dx=(2.D0*PI/period)*dfloat(-kpoint)*dcos((2.D0*PI/period)*dfloat(-kpoint)*(x+phase))
-            CASE DEFAULT
-               WRITE(0,*) "Termfou1d_dx ERR: This message was not supposed to be printed ever. Check the code"
-               CALL EXIT(1)
-         END SELECT
-      CASE(1 :)
-         termfou1d_dx=(2.D0*PI/period)*dfloat(kpoint)*(dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))&
-            -dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase)))
-      CASE(: -1)
-         termfou1d_dx=(2.D0*PI/period)*dfloat(kpoint)*(-dcos((2.D0*PI/period)*dfloat(kpoint)*(x+phase))&
-            -dsin((2.D0*PI/period)*dfloat(-kpoint)*(x+phase)))
-      CASE DEFAULT
-         WRITE(0,*) "Termfou1d_dx ERR: Bad coupled mapping"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END FUNCTION termfou1d_dx
-!###########################################################
-!# FUNCTION: getperiod_fourier1d 
-!###########################################################
-!> @brief 
-!! Simple get function
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 03/Mar/2014
-!> @version 1.0
-!-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getperiod_fourier1d(this) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier1d),INTENT(IN) :: this
-   ! Run section ---------------
-   getperiod_fourier1d=this%period
-   RETURN
-END FUNCTION getperiod_fourier1d  
-!##################################################
-! FUNCTION: is_even_fourier1d
-!> @brief
-!! Basic enquire function. If the function is even,
-!! sinus elements vanish from expansion
-!--------------------------------------------------
-LOGICAL FUNCTION is_even_fourier1d(this)
-   ! Initial declarations
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier1d),INTENT(IN) :: this
-   ! Run section ----------------
-   is_even_fourier1d = this%even
-   RETURN
-END FUNCTION is_even_fourier1d
-!###########################################################
 !# SUBROUTINE: INTERPOL_FOURIER1D 
 !###########################################################
 !> @brief
-!! Performs a generic fourier1d interpolation
+!! Performs a generic FOURIER1D interpolation
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Mar/2014 
@@ -361,7 +228,7 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
    USE MATHS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d),INTENT(INOUT) :: this 
+   CLASS(FOURIER1D),INTENT(INOUT) :: this
    ! Local variables
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: terms,inv_terms
    INTEGER(KIND=4) :: i,j ! counters
@@ -369,17 +236,9 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
    ALLOCATE(this%coeff(this%n))
    ALLOCATE(terms(this%n,this%n))
    ALLOCATE(inv_terms(this%n,this%n))
-   SELECT CASE(allocated(this%klist))
-      CASE(.TRUE.)
-         ! do nothing
-      CASE(.FALSE.)
-         WRITE(0,*) "INTERPOL_FOURIER ERR: Klist was not initialized before"
-         WRITE(0,*) "INTERPOL_FOURIER_ERR: Use READ_EXTRA subroutine"
-         CALL EXIT(1)
-   END SELECT
    DO i = 1, this%n ! loop over eq for different points
       DO j = 1, this%n ! loop over coefficients
-         terms(i,j)=termfou1d(this%klist(j),this%coupled(j),this%period,this%phase,this%x(i))
+         terms(i,j)=this%term%getvalue(this%klist(j),this%x(i))
       END DO
    END DO
    CALL INV_MTRX(this%n,terms,inv_terms)
@@ -398,7 +257,7 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
    RETURN
 END SUBROUTINE INTERPOL_FOURIER1D
 !###########################################################
-!# FUNCTION: getvalue_fourier1d 
+!# FUNCTION: getvalue_FOURIER1D 
 !###########################################################
 !> @brief 
 !! Get's fourier 1D interpolation value for a given point
@@ -408,12 +267,12 @@ END SUBROUTINE INTERPOL_FOURIER1D
 !> @date 03/03/2014
 !> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getvalue_fourier1d(this,x,shift)
+REAL(KIND=8) FUNCTION getvalue_FOURIER1D(this,x,shift)
    ! Initial declarations   
    USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d),TARGET,INTENT(IN) :: this
+   CLASS(FOURIER1D),TARGET,INTENT(IN) :: this
    REAL(KIND=8),INTENT(IN) :: x
    REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
    ! Local variables
@@ -429,14 +288,14 @@ REAL(KIND=8) FUNCTION getvalue_fourier1d(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d(this%klist(i),this%coupled(i),this%period,this%phase,r)
+      terms(i)=this%term%getvalue(this%klist(i),r)
    END DO
-   getvalue_fourier1d=dot_product(terms,this%coeff)
+   getvalue_FOURIER1D=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
    RETURN
-END FUNCTION getvalue_fourier1d
+END FUNCTION getvalue_FOURIER1D
 !###########################################################
-!# FUNCTION: getderiv_fourier1d 
+!# FUNCTION: getderiv_FOURIER1D 
 !###########################################################
 !> @brief 
 !! Get's derivative value at a given point X using the interpolation
@@ -445,12 +304,12 @@ END FUNCTION getvalue_fourier1d
 !> @date 03/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getderiv_fourier1d(this,x,shift)
+REAL(KIND=8) FUNCTION getderiv_FOURIER1D(this,x,shift)
    ! Initial declarations   
    USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourier1d),TARGET,INTENT(IN) :: this
+   CLASS(FOURIER1D),TARGET,INTENT(IN) :: this
    REAL(KIND=8),INTENT(IN) :: x
    REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
    ! Local variables
@@ -466,18 +325,18 @@ REAL(KIND=8) FUNCTION getderiv_fourier1d(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=termfou1d_dx(this%klist(i),this%coupled(i),this%period,this%phase,r)
+      terms(i)=this%term%getvalue(this%klist(i),r)
    END DO
-   getderiv_fourier1d=dot_product(terms,this%coeff)
+   getderiv_FOURIER1D=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
    RETURN
-END FUNCTION getderiv_fourier1d
+END FUNCTION getderiv_FOURIER1D
 !######################################################################
 ! SUBROUTINE: PLOT_INTERPOL_FOURIER1D ################################
 !######################################################################
 !> @brief
 !! Creates a data file called @b filename with the interpolation graphic of
-!! this fourier1d type variable. The number of points in that graphic is defined
+!! this FOURIER1D type variable. The number of points in that graphic is defined
 !! by @b npoints. Cannot be less than two. It also plots the first derivative.
 !! The graphic goes from 0 to @f$2\pi@f$
 !----------------------------------------------------------------------
@@ -489,13 +348,13 @@ SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D(this,npoints,filename)
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints
-   CLASS(Fourier1d),INTENT(IN) :: this
+   CLASS(FOURIER1D),INTENT(IN) :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables -----------------------------
    INTEGER :: inpoints,ndelta
    REAL(KIND=8) :: delta, interval, x
    INTEGER :: i ! Counter
-   CHARACTER(LEN=31), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D: " 
+   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D: " 
    ! Pointers ------------------------------------
    REAL(KIND=8):: xmin, xmax
    INTEGER(KIND=4):: n
@@ -531,7 +390,7 @@ END SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D
 !######################################################################
 !> @brief
 !! Creates a data file called @b filename with the interpolation graphic of
-!! this fourier1d type variable. The number of points in that graphic is defined
+!! this FOURIER1D type variable. The number of points in that graphic is defined
 !! by @b npoints. Cannot be less than two. It also plots the first derivative.
 !! The graphic goes from 0 to @f$2\pi@f$
 !----------------------------------------------------------------------
@@ -543,14 +402,14 @@ SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D(this,npoints,filename)
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints
-   CLASS(Fourier1d),INTENT(IN) :: this
+   CLASS(FOURIER1D),INTENT(IN) :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables -----------------------------
    INTEGER :: inpoints,ndelta,nfunc
    REAL(KIND=8) :: delta, interval, x
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f,dfdx
    INTEGER :: i ! Counter
-   CHARACTER(LEN=31), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D: " 
+   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D: " 
    ! Pointers ------------------------------------
    REAL(KIND=8):: xmin, xmax
    INTEGER(KIND=4):: n
