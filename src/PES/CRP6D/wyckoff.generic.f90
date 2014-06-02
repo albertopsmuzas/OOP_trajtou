@@ -49,7 +49,7 @@ TYPE Cut2d
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CUT2D
       PROCEDURE,PUBLIC :: CHANGEPOT_AT_GRIDPOINT => CHANGEPOT_AT_GRIDPOINT_CUT2D
 END TYPE Cut2d
-!//////////////////////////////////////////////////
+!////////////////////////////////////////////////////////////////////////////////////////////////////
 ! TYPE: WYCKOFFSITIO
 !
 !> @brief
@@ -65,7 +65,7 @@ END TYPE Cut2d
 !> @brief nphipoints - Array of integer numbers storing the number of points
 !!                     in which each phi interpolation is based
 !> 
-!--------------------------------------------------
+!---------------------------------------------------------------------------------------------------
 TYPE,ABSTRACT :: Wyckoffsitio
    !PRIVATE
    CHARACTER :: id
@@ -74,21 +74,33 @@ TYPE,ABSTRACT :: Wyckoffsitio
    REAL(KIND=8) :: x,y
    INTEGER(KIND=4) :: n2dcuts
    INTEGER(KIND=4) :: nphicuts
-   REAL(KIND=8) ::rinit,zinit
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: nphipoints
-   TYPE(Fouklist),DIMENSION(:),ALLOCATABLE :: klistphi
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: klisttheta
    TYPE(Cut2d),DIMENSION(:),ALLOCATABLE :: zrcut
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC :: READ => READ_WYCKOFFSITIO
-      PROCEDURE,PUBLIC :: SET_ID => SET_ID_WYCKOFFSITIO
-      PROCEDURE,PUBLIC :: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
-      PROCEDURE,PUBLIC :: SET_MYNUMBER => SET_MYNUMBER_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: READ => READ_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_ID => SET_ID_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_MYNUMBER => SET_MYNUMBER_WYCKOFFSITIO
       ! Interface procedures
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_WYCKOFFSITIO
+      !PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_WYCKOFFSITIO
+      PROCEDURE(GET_V_AND_DERIVS_WYCKOFFSITIO),PUBLIC,DEFERRED :: GET_V_AND_DERIVS
 END TYPE Wyckoffsitio
-!/////////////////////////////////////////////////////////////////
+
+ABSTRACT INTERFACE
+   !###########################################################
+   !# SUBROUTINE: GET_V_AND_DERIVS_WYCKOFFSITIO 
+   !###########################################################
+   !-----------------------------------------------------------
+   SUBROUTINE GET_V_AND_DERIVS_WYCKOFFSITIO(this,x,v,dvdu)
+      IMPORT Wyckoffsitio
+      CLASS(Wyckoffsitio),INTENT(IN) :: this
+      REAL(KIND=8),DIMENSION(4),INTENT(IN) ::x 
+      REAL(KIND=8),INTENT(OUT) :: v
+      REAL(KIND=8),DIMENSION(4),INTENT(OUT) :: dvdu
+   END SUBROUTINE GET_V_AND_DERIVS_WYCKOFFSITIO
+END INTERFACE
+!//////////////////////////////////////////////////////////////////////////////////////////////////
 CONTAINS
 !###########################################################
 !# SUBROUTINE: PRINT_INPUT_CUT2D 
@@ -190,24 +202,6 @@ SUBROUTINE SET_HOMONUCL_WYCKOFFSITIO(this,is_homonucl)
    RETURN
 END SUBROUTINE SET_HOMONUCL_WYCKOFFSITIO
 !###########################################################
-!# SUBROUTINE: GET_V_AND_DERIVS_WYCKOFFSITIO 
-!###########################################################
-!> @brief
-!! Dummy subroutine, acting as an interface 
-!-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_WYCKOFFSITIO(this,x,v,dvdu)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Wyckoffsitio),INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(4),INTENT(IN) ::x 
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(4),INTENT(OUT) :: dvdu
-   ! Run section
-   WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFSITIO ERR: if I was invoked, something went wrong with type allocation of wyckoffsitio"
-   CALL EXIT(1)
-END SUBROUTINE GET_V_AND_DERIVS_WYCKOFFSITIO
-!###########################################################
 !# FUNCTION: getpotatgridpoint_cut2d 
 !###########################################################
 !> @brief 
@@ -219,8 +213,6 @@ REAL(KIND=8) FUNCTION getpotatgridpoint_cut2d(this,i,j)
    ! I/O variables
    CLASS(Cut2d),INTENT(IN) :: this
    INTEGER(KIND=4),INTENT(IN) :: i,j
-   ! Local variables
-   ! local_vars
    ! Run section
    getpotatgridpoint_cut2d=this%interrz%fgrid(i,j)
    RETURN
@@ -533,24 +525,11 @@ SUBROUTINE READ_WYCKOFFSITIO(this,u)
    ALLOCATE(this%zrcut(this%n2dcuts))
    READ(u,'(I2)',advance="no") this%nphicuts
    ALLOCATE(this%nphipoints(this%nphicuts))
-   ALLOCATE(this%klistphi(this%nphicuts))
    READ(u,*) this%nphipoints(:)
-   DO i = 1, this%nphicuts
-         ALLOCATE(this%klistphi(i)%k(this%nphipoints(i)))
-         READ(u,*) this%klistphi(i)%k(:)
-   END DO
-   ALLOCATE(this%klisttheta(this%nphicuts))
-   READ(u,*) this%klisttheta(:)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"n2dcuts: ",this%n2dcuts)
    CALL VERBOSE_WRITE(routinename,"nphicuts: ",this%nphicuts)
    CALL VERBOSE_WRITE(routinename,this%nphipoints(:))
-   DO i = 1, this%nphicuts
-         CALL VERBOSE_WRITE(routinename,"Kpoins list for phi interpolations:")
-         CALL VERBOSE_WRITE(routinename,this%klistphi(i)%k(:))
-   END DO
-   CALL VERBOSE_WRITE(routinename,"Kpoints for theta interpolation: ")
-   CALL VERBOSE_WRITE(routinename,this%klisttheta)
 #endif
    DO i = 1, this%n2dcuts
       READ(u,*) filename

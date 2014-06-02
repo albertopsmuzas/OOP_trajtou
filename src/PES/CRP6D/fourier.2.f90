@@ -102,7 +102,7 @@ REAL(KIND=8) FUNCTION termfou1d_2_A(this,kpoint,x)
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   SELECT CASE(this%average_last .AND. kpoint == this%lastkpoint)
+   SELECT CASE(this%getaveragelast() .AND. kpoint == this%getlastkpoint())
       CASE(.TRUE.)
          termfou1d_2_A=dcos(dfloat(kpoint)*x)+dsin(dfloat(kpoint)*x)
       CASE(.FALSE.)
@@ -133,7 +133,7 @@ REAL(KIND=8) FUNCTION termfou1d_dx_2_A(this,kpoint,x)
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   SELECT CASE(this%average_last .AND. kpoint == this%lastkpoint)
+   SELECT CASE(this%getaveragelast() .AND. kpoint == this%getlastkpoint())
       CASE(.TRUE.)
          termfou1d_dx_2_A=(-dsin(dfloat(kpoint)*x)+dcos(dfloat(kpoint)*x))*dfloat(kpoint)
       CASE(.FALSE.)

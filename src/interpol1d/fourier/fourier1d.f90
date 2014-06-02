@@ -25,11 +25,13 @@ TYPE,ABSTRACT :: Termcalculator
 PRIVATE
    INTEGER(KIND=4) :: lastkpoint
    LOGICAL :: average_last=.FALSE.
-CONTAINS
-   PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getvalue 
-   PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getderiv 
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getlastkpoint => getlastkpoint
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE :: 
+   REAL(KIND=8) :: shift=0.D0
+   CONTAINS
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getshift => getshift_TERMCALCULATOR
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getlastkpoint => getlastkpoint_TERMCALCULATOR
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getaveragelast => getaveragelast_TERMCALCULATOR
+      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getvalue 
+      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getderiv 
 END TYPE Termcalculator
 !
 ABSTRACT INTERFACE
@@ -47,11 +49,11 @@ ABSTRACT INTERFACE
    END FUNCTION getvalue_termcalculator_example
    !-------------------------------------------------------------
 END INTERFACE
-!/////////////////////////////////////////////////
+!/////////////////////////////////////////////////////////////////////////////
 ! TYPE: FOURIER1D
 !> @brief
 !! Class to store all information needed for a 1D REAL fourier interpolation
-!------------------------------------------------
+!----------------------------------------------------------------------------
 TYPE,ABSTRACT,EXTENDS(Interpol1d):: FOURIER1D
    PRIVATE
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE,PUBLIC :: klist
@@ -67,6 +69,7 @@ TYPE,ABSTRACT,EXTENDS(Interpol1d):: FOURIER1D
       PROCEDURE(SET_IRREP_FOURIER1D),PUBLIC,DEFERRED :: SET_IRREP 
       PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_AVERAGE_LASTKPOINT => SET_AVERAGE_LASTKPOINT_FOURIER1D
       PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_LASTKPOINT => SET_LASTKPOINT_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_SHIFT => SET_SHIFT_FOURIER1D
       ! Tools
       PROCEDURE,PUBLIC,NON_OVERRIDABLE :: INTERPOL => INTERPOL_FOURIER1D
       PROCEDURE,PUBLIC,NON_OVERRIDABLE :: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D
@@ -89,8 +92,69 @@ ABSTRACT INTERFACE
       CHARACTER(LEN=2),INTENT(IN) :: irrep
    END SUBROUTINE SET_IRREP_FOURIER1D
 END INTERFACE
-!//////////////////////////////////////////////////
+!/////////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNCTION: getshift_TERMCALCULATOR 
+!###########################################################
+!> @brief 
+!! Common get function. Gets shift atribute
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getshift_TERMCALCULATOR(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Termcalculator),INTENT(IN):: this
+   ! Run section
+   getshift_TERMCALCULATOR=this%shift
+   RETURN
+END FUNCTION getshift_TERMCALCULATOR
+!###########################################################
+!# SUBROUTINE: SET_SHIFT_FOURIER1D 
+!###########################################################
+!> @brief
+!! Common set subroutine. Sets shift atribute
+!-----------------------------------------------------------
+SUBROUTINE SET_SHIFT_FOURIER1D(this,shift)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Fourier1d),INTENT(INOUT):: this
+   REAL(KIND=8),INTENT(IN):: shift
+   ! Run section
+   this%term%shift=shift
+   RETURN
+END SUBROUTINE SET_SHIFT_FOURIER1D
+!###########################################################
+!# FUNCTION: getaveragelast_TERMCALCULATOR 
+!###########################################################
+!> @brief 
+!! Common get function. Gets average_last atribute
+!-----------------------------------------------------------
+LOGICAL FUNCTION getaveragelast_TERMCALCULATOR(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Termcalculator),INTENT(IN):: this
+   ! Run section
+   getaveragelast_TERMCALCULATOR=this%average_last
+   RETURN
+END FUNCTION getaveragelast_TERMCALCULATOR
+!###########################################################
+!# FUNCTION: getlastkpoint_TERMCALCULATOR 
+!###########################################################
+!> @brief
+!! Common get functions. Gets lastkpoint atribute.
+!-----------------------------------------------------------
+INTEGER(KIND=4) FUNCTION getlastkpoint_TERMCALCULATOR(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Termcalculator),INTENT(IN):: this
+   ! Run section
+   getlastkpoint_TERMCALCULATOR=this%lastkpoint
+   RETURN
+END FUNCTION getlastkpoint_TERMCALCULATOR
 !###########################################################
 !# SUBROUTINE: SET_LASTKPOINT_FOURIER1D 
 !###########################################################

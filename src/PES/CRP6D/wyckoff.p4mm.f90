@@ -50,9 +50,8 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    USE CONSTANTS_MOD
    USE FOURIER1D_2_MOD
    USE FOURIER1D_4MM_MOD
-   USE FOURIER1D_M45_MOD
+   USE FOURIER1D_M_MOD
    USE FOURIER1D_MM2_MOD
-   USE FOURIER1D_M90_MOD
    USE FOURIER1D_E_MOD
    IMPLICIT NONE
    ! I/O variables
@@ -64,8 +63,8 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    INTEGER(KIND=4) :: i,j,h ! counters
    REAL(KIND=8) :: dummy
    REAL(KIND=8) :: z,r,theta,phi
-   CLASS(Interpol1d),DIMENSION(:),ALLOCATABLE :: phicut
-   CLASS(Interpol1d),ALLOCATABLE :: thetacut
+   CLASS(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
+   CLASS(Fourier1d),ALLOCATABLE :: thetacut
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdz
@@ -73,6 +72,8 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdphi
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philist
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: thetalist
+   CHARACTER(LEN=2) :: theta_irrep, phi_irrep
+   REAL(KIND=8) :: phi_shift
    CHARACTER(LEN=30),PARAMETER :: routinename="GET_V_AND_DERIVS_WYCKOFFP4MM: "
 #ifdef DEBUG
    TYPE(Angle),DIMENSION(:),ALLOCATABLE :: beta
@@ -88,44 +89,41 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    SELECT CASE(this%id)
       CASE("a" : "b")
          ALLOCATE(Fourier1d_4mm::phicut(this%nphicuts))
-         DO i=1,this%nphicuts
-            CALL phicut(i)%SET_IRREP("A1")
-         END DO
+         phi_irrep="A1"
+         phi_shift=0.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                ALLOCATE(Fourier1d_mm2::thetacut)
-               CALL thetacut%SET_IRREP("A1")
+               theta_irrep="A1"
             CASE(.FALSE.)
-               ALLOCATE(Fourier1d_m90::thetacut)
-               CALl thetacut%SET_IRREP("Ap")
+               ALLOCATE(Fourier1d_m::thetacut)
+               theta_irrep="Ap"
          END SELECT
          
       CASE("c")
          ALLOCATE(Fourier1d_mm2::phicut(this%nphicuts))
-         DO i = 1, this%nphicuts
-            CALL phicut(i)%SET_IRREP("A1") ! Totally symmetric irrep of 4mm point group symm
-         END DO
+         phi_irrep="A1"
+         phi_shift=0.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                ALLOCATE(Fourier1d_mm2::thetacut)
-               CALL thetacut%SET_IRREP("A1")
+               theta_irrep="A1"
             CASE(.FALSE.)
-               ALLOCATE(Fourier1d_m90::thetacut)
-               CALl thetacut%SET_IRREP("Ap")
+               ALLOCATE(Fourier1d_m::thetacut)
+               theta_irrep="Ap"
          END SELECT
 
       CASE("f")
-         ALLOCATE(Fourier1d_m90::phicut(this%nphicuts))
-         DO i = 1, this%nphicuts
-            CALL phicut(i)%SET_IRREP("A")
-         END DO
+         ALLOCATE(Fourier1d_m::phicut(this%nphicuts))
+         phi_irrep="Ap"
+         phi_shift=-PI/2.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                ALLOCATE(Fourier1d_2::thetacut)
-               CALL thetacut%SET_IRREP("Ap")
+               theta_irrep="A"
             CASE(.FALSE.)
                ALLOCATE(Fourier1d_e::thetacut)
-               CALl thetacut%SET_IRREP("A")
+               theta_irrep="A"
          END SELECT
 
       CASE DEFAULT
@@ -151,17 +149,13 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       aux(2,:)=dfdr(:)
       CALL phicut(i)%READ(philist,f)
       CALL phicut(i)%ADD_MOREFUNCS(aux)
-      CALL phicut(i)%READ_EXTRA(period_phi,this%klistphi(i)%k,phi_is_even,phase_phi)
+      CALL phicut(i)%SET_IRREP(phi_irrep)
+      CALL phicut(i)%SET_SHIFT(phi_shift)
       CALL phicut(i)%INTERPOL()
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"New phicut")
+      CALL VERBOSE_WRITE(routinename,"NEW PHICUT")
       CALL VERBOSE_WRITE(routinename,"For theta: ",this%zrcut(h)%theta)
       CALL VERBOSE_WRITE(routinename,"Is homonuclear: ",this%is_homonucl)
-      CALL VERBOSE_WRITE(routinename,"Period Phi: ",period_phi)
-      CALL VERBOSE_WRITE(routinename,"Phase Phi: ",phase_phi)
-      CALL VERBOSE_WRITE(routinename,"Period Theta:",period_theta)
-      CALL VERBOSE_WRITE(routinename,"Phi is even: ",phi_is_even)
-      CALL VERBOSE_WRITE(routinename,"Theta is even: ",theta_is_even)
       CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
       ALLOCATE(beta(size(philist)))
       ALLOCATE(philistdeg(size(philist)))
@@ -219,17 +213,16 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       dfdphi(i)=aux(2,1)
       DEALLOCATE(aux)
    END DO
-   CALL thetacut%READ(thetalist,f)
-   CALL thetacut%READ_EXTRA(period_theta,this%klisttheta,theta_is_even,phase_theta)
    ALLOCATE(aux(3,this%nphicuts))
    aux(1,:)=dfdz(:)
    aux(2,:)=dfdr(:)
    aux(3,:)=dfdphi(:)
+   CALL thetacut%READ(thetalist,f)
    CALL thetacut%ADD_MOREFUNCS(aux)
+   CALL thetacut%SET_IRREP(theta_irrep)
    CALL thetacut%INTERPOL()
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"New thetacut")
-   CALL VERBOSE_WRITE(routinename,"Theta phase: ",phase_theta)
+   CALL VERBOSE_WRITE(routinename,"NEW THETACUT")
    CALL VERBOSE_WRITE(routinename,"At Theta: (deg)")
    ALLOCATE(beta(size(thetalist)))
    ALLOCATE(philistdeg(size(thetalist)))

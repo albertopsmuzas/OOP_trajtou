@@ -205,10 +205,10 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
       CASE(.TRUE.)
          ! do nothing
       CASE(.FALSE.)
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH()"
+         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH())"
          CALl EXIT(1)
    END SELECT
-   SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastz()) 
+   SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastZ()) 
       CASE(.TRUE.)
          v=this%farpot%getpot(x(4))
          dvdu(1)=0.D0
@@ -294,7 +294,6 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
          WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
          CALL EXIT(1)
    END SELECT
-   v=aux1(1)+va+vb
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Contributions of the atomic potential: ")
    CALL VERBOSE_WRITE(routinename, "Position Atom A: ",atomicx(1:3))
@@ -304,6 +303,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    CALL VERBOSE_WRITE(routinename,"Vb: ",vb)
    CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
 #endif
+   v=aux1(1)+va+vb
    dvdu(1)=aux2(1,1)+dvdu_atomicA(1)+dvdu_atomicB(1)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
    dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
@@ -465,7 +465,7 @@ SUBROUTINE INTERPOL_CRP6D(this)
    !CALL this%SMOOTH_EXTRA()
    DO i = 1, this%nsites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
-         CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL
+         CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL()
       END DO
    END DO
    this%is_interpolated=.TRUE.
@@ -492,7 +492,7 @@ SUBROUTINE RAWINTERPOL_CRP6D(this)
    CALL this%EXTRACT_VACUUMSURF()   
    DO i = 1, this%nsites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
-         CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL
+         CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL()
       END DO
    END DO
    this%is_interpolated=.TRUE.
@@ -617,13 +617,13 @@ SUBROUTINE SMOOTH_CRP6D(this)
    ma=this%atomdat(1)%getmass()
    mb=this%atomdat(2)%getmass()
    DO i = 1, this%nsites ! cycle wyckoff sites
+      molcoord(1)=this%wyckoffsite(i)%x
+      molcoord(2)=this%wyckoffsite(i)%y
       DO j = 1, this%wyckoffsite(i)%n2dcuts
-         molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
-         molcoord(2)=this%wyckoffsite(i)%zrcut(j)%y
          molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
          molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
-         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
-         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
+         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizeR()
+         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizeZ()
          DO k = 1, nr
             DO l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
@@ -790,6 +790,7 @@ SUBROUTINE SMOOTH_EXTRA_CRP6D(this)
          END DO
       END DO
    END DO
+   this%is_smooth=.TRUE.
    RETURN
 END SUBROUTINE SMOOTH_EXTRA_CRP6D
 !###########################################################
@@ -821,8 +822,8 @@ SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
    ! Run section
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
-         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
-         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
+         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizeR()
+         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizeZ()
          DO k = 1, nr
             DO l = 1, nz
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)

@@ -3077,18 +3077,6 @@ F^{A_{1}}(\theta)=F^{A_{1}}(\theta+\pi)
 
 \end_layout
 
-\begin_layout Itemize
-\begin_inset Formula $F^{B}(\theta)$
-\end_inset
-
- stands for a general Fourier series with periodicity 
-\begin_inset Formula $a=2\pi$
-\end_inset
-
-.
- 
-\end_layout
-
 \begin_layout Section
 [m] (
 \begin_inset Formula $C_{s}$

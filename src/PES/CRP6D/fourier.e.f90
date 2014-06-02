@@ -65,7 +65,7 @@ SUBROUTINE SET_IRREP_FOURIER1D_E(this,irrep)
          this%irrep=irrep
          SELECT CASE(mod(this%n,2) == 0) 
             CASE(.TRUE.) ! case is even
-               this%term%average_last=.TRUE.
+               CALL this%SET_AVERAGE_LASTKPOINT(.TRUE.)
                this%klist(1)=0
                npar=(this%n-2)/2
                 DO i = 1, npar 
@@ -73,7 +73,7 @@ SUBROUTINE SET_IRREP_FOURIER1D_E(this,irrep)
                    this%klist(i+1+npar)=-i
                 END DO
                 this%klist(this%n)=npar+1
-                this%term%lastkpoint=npar+1
+                CALl this%SET_LASTKPOINT(npar+1)
             CASE(.FALSE.) ! case is odd
                this%klist(1)=0
                npar=(this%n-1)/2
@@ -81,7 +81,7 @@ SUBROUTINE SET_IRREP_FOURIER1D_E(this,irrep)
                    this%klist(i+1)=i
                    this%klist(i+1+npar)=-i
                 END DO
-                this%term%lastkpoint=npar
+                CALL this%SET_LASTKPOINT(npar)
          END SELECT
       CASE DEFAULT
          WRITE(0,*) "SET_IRREP_FOURIER1D_E ERR: irrep used is not implemented or does not exist"
@@ -103,7 +103,7 @@ REAL(KIND=8) FUNCTION termfou1d_E_A(this,kpoint,x)
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   SELECT CASE(this%average_last .AND. kpoint == this%lastkpoint)
+   SELECT CASE(this%getaveragelast() .AND. kpoint == this%getlastkpoint())
       CASE(.TRUE.)
          termfou1d_E_A=dcos(dfloat(kpoint)*x)+dsin(dfloat(kpoint)*x)
       CASE(.FALSE.)
@@ -134,7 +134,7 @@ REAL(KIND=8) FUNCTION termfou1d_dx_E_A(this,kpoint,x)
    INTEGER(KIND=4),INTENT(IN) :: kpoint
    REAL(KIND=8),INTENT(IN) :: x
    ! Run section
-   SELECT CASE(this%average_last .AND. kpoint == this%lastkpoint)
+   SELECT CASE(this%getaveragelast() .AND. kpoint == this%getlastkpoint())
       CASE(.TRUE.)
          termfou1d_dx_E_A=(-dsin(dfloat(kpoint)*x)+dcos(dfloat(kpoint)*x))*dfloat(kpoint)
       CASE(.FALSE.)

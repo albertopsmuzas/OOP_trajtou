@@ -9,6 +9,7 @@ REAL(KIND=8),DIMENSION(6) :: x
 REAL(KIND=8),DIMENSION(6) :: dvdu
 REAL(KIND=8) :: v
 CALL SET_VERBOSE_MODE(.TRUE.)
+!CALL SET_DEBUG_MODE(.TRUE.)
 READ(*,*) x
 WRITE(*,*) "*****************************************"
 WRITE(*,*) "********* GET CRP6D POTENTIAL************"

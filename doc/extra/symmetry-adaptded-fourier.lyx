@@ -1526,7 +1526,7 @@ Character table for 4mm point symmetry group
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -4032,10 +4032,6 @@ Conceptual form:
 \end_inset
 
  
-\end_layout
-
-\begin_layout Standard
-Noticeable properties:
 \end_layout
 
 \begin_layout Section
