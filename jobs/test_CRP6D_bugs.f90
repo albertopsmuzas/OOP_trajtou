@@ -76,6 +76,46 @@ pos=(/1.814453D0,0.907225D0,4.724315D0,1.511781D0,0.523599D0,0.D0/)
 CALL thispes%PLOT1D_PHI(1000,pos,"datagroup.12.dat")
 CALL thispes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupsmooth.12.dat")
 CALL thisrawpes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupraw.12.dat")
+! datagroup 13
+pos=(/0.D0,0.D0,4.724315D0,1.511781D0,0.D0,0.785398D0/)
+CALL thispes%PLOT1D_THETA(1000,pos,"datagroup.13.dat")
+CALL thispes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupsmooth.13.dat")
+CALL thisrawpes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupraw.13.dat")
+! datagroup 14
+pos=(/2.721678D0,2.721678D0,4.724315D0,1.511781D0,0.D0,0.785398D0/)
+CALL thispes%PLOT1D_THETA(1000,pos,"datagroup.14.dat")
+CALL thispes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupsmooth.14.dat")
+CALL thisrawpes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupraw.14.dat")
+! datagroup 15
+pos=(/1.360839D0,1.360839D0,5.669178D0,1.511781D0,1.570796D0,0D0/)
+CALL thispes%PLOT1D_PHI(1000,pos,"datagroup.15.dat")
+CALL thispes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupsmooth.15.dat")
+CALL thisrawpes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupraw.15.dat")
+! datagroup 16
+pos=(/1.360839D0,1.360839D0,5.669178D0,1.511781D0,0.523599D0,0D0/)
+CALL thispes%PLOT1D_PHI(1000,pos,"datagroup.16.dat")
+CALL thispes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupsmooth.16.dat")
+CALL thisrawpes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupraw.16.dat")
+! datagroup 17
+pos=(/1.360839D0,1.360839D0,5.669178D0,1.511781D0,0.D0,0.785398D0/)
+CALL thispes%PLOT1D_THETA(1000,pos,"datagroup.17.dat")
+CALL thispes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupsmooth.17.dat")
+CALL thisrawpes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupraw.17.dat")
+! datagroup 18
+pos=(/2.721678D0,0.D0,5.669178D0,1.511781D0,1.570796D0,0.D0/)
+CALL thispes%PLOT1D_PHI(1000,pos,"datagroup.18.dat")
+CALL thispes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupsmooth.18.dat")
+CALL thisrawpes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupraw.18.dat")
+! datagroup 19
+pos=(/2.721678D0,0.D0,5.669178D0,1.511781D0,0.523599D0,0.D0/)
+CALL thispes%PLOT1D_PHI(1000,pos,"datagroup.19.dat")
+CALL thispes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupsmooth.19.dat")
+CALL thisrawpes%PLOT1D_PHI_SMOOTH(1000,pos,"datagroupraw.19.dat")
+! datagroup 20
+pos=(/2.721678D0,0.D0,5.669178D0,1.511781D0,0.D0,0.785398D0/)
+CALL thispes%PLOT1D_THETA(1000,pos,"datagroup.20.dat")
+CALL thispes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupsmooth.20.dat")
+CALL thisrawpes%PLOT1D_THETA_SMOOTH(1000,pos,"datagroupraw.20.dat")
 
 CALL EXIT(0)
 END PROGRAM TEST_CRP6D
