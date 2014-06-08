@@ -51,6 +51,9 @@ DO i=1,thispes%nsites
       WRITE(filename,'(I1,A10)') j,"-inter.dat"
       WRITE(realname,'(I1,A1,A11)') i,"-",filename
       CALL thispes%PLOT_RZMAP(pos,100,100,r2-r1,z2-z1,realname)
+      WRITE(filename,'(I1,A10)') j,"-intat.dat"
+      WRITE(realname,'(I1,A1,A11)') i,"-",filename
+      CALL thispes%PLOT_ATOMIC_INTERAC_RZ(pos,100,100,r2-r1,z2-z1,realname)
       WRITE(filename1,'(I1,A14)') j,"-cut2d.raw.dat"
       WRITE(realname1,'(I1,A1,A15)') i,"-",filename1
       CALL thispesraw%wyckoffsite(i)%zrcut(j)%interrz%PLOTDATA(realname1)
