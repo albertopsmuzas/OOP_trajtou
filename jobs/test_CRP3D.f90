@@ -63,6 +63,13 @@ CALL thisrawpes%PLOT_XYMAP_SMOOTH("xymapsmooth.9.dat",r,200,200,l,l)
 CALL thispes%PLOT_DIRECTION1D("zscan.9.dat",500,45.D0,r(3),l2)
 CALL thispes%PLOT_DIRECTION1D_CORRECTION("zscancorrection.9.dat",500,45.D0,r(3),l2)
 CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.9.dat",500,45.D0,r(3),l2)
+r=(/0.D0,0.D0,10.D0/)
+CALL thispes%PLOT_XYMAP("xymap.10.dat",r,200,200,l,l)
+CALL thispes%PLOT_XYMAP_CORRECTION("xymapcorrection.10.dat",r,200,200,l,l)
+CALL thisrawpes%PLOT_XYMAP_SMOOTH("xymapsmooth.10.dat",r,200,200,l,l)
+CALL thispes%PLOT_DIRECTION1D("zscan.10.dat",500,45.D0,r(3),l2)
+CALL thispes%PLOT_DIRECTION1D_CORRECTION("zscancorrection.10.dat",500,45.D0,r(3),l2)
+CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.10.dat",500,45.D0,r(3),l2)
 CALL ETIME(tiempoarr,tiempo)
 WRITE(*,*) "Total tile: ", tiempo
 END PROGRAM CRP_TEST

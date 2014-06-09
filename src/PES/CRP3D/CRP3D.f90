@@ -133,7 +133,7 @@ END TYPE Sitio
 !
 !> @see newinput
 !------------------------------------------------------------------------------
-TYPE, EXTENDS(PES) :: CRP3D
+TYPE,EXTENDS(PES) :: CRP3D
    INTEGER(KIND=4) :: max_order
    TYPE(Pair_pot),DIMENSION(:),ALLOCATABLE :: all_pairpots
    TYPE(Sitio),DIMENSION(:),ALLOCATABLE :: all_sites
@@ -683,7 +683,6 @@ SUBROUTINE SMOOTH_CRP3D(thispes)
       DO j = 1, thispes%all_sites(i)%n ! loop over pairs v,z
          aux(3)=thispes%all_sites(i)%z(j)
          A=aux
-         A(1:2)=thispes%surf%cart2surf(aux(1:2))
          DO l = 1, npairpots ! loop over pairpots
             DO k = 0, thispes%max_order ! loop over environment orders
                CALL INTERACTION_AENV(k,A,thispes%surf,thispes%all_pairpots(l),interac(k),dvdzr(k),dummy,dummy)
@@ -783,11 +782,10 @@ END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !# SUBROUTINE: INTERACTION_AP #####################################
 !##################################################################
 !> @brief
-!! Calculates the interaction between two given 3D Points with X and Y
-!! in surface coordinates. The potential is extracted from pairpot,
-!! which should've been interpolated before
+!! Calculates the interaction between two given 3D Points.
+!! The potential is extracted from @b pairpot, which should've been interpolated before
 !
-!> @param[in] A, P - Pair of 3D points that are interacting through @ pairpot potential
+!> @param[in] A, P - Pair of 3D points that are interacting through a @b pairpot @b potential
 !> @param[in] surf - Periodic surface
 !> @param[in] pairpot - Pair potential. Source of @f$V(r)@f$, where @b r is the distance
 !!                      between @b A and @b P. @f$V(r)@f$ is just a shifted version of
@@ -796,9 +794,9 @@ END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !> @param[out] dvdz_corr - Corrections to first derivatives: 
 !!                         @f$\frac {\partial V(r)}{\partial z}@f$
 !> @param[out] dvdx_corr - Corrections to first derivatives: 
-!!                         @f$\frac {\partial V(r)}{\partial z}@f$
+!!                         @f$\frac {\partial V(r)}{\partial x}@f$
 !> @param[out] dvdy_corr - Corrections to first derivatives: 
-!!                         @f$\frac {\partial V(r)}{\partial y}@f$
+!!                         @f$\frac{\partial V(r)}{\partial y}@f$
 !
 !> @warning
 !! - Sitio and Pairpot should have been shifted so that the interaction
@@ -822,70 +820,31 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
    REAL(KIND=8),INTENT(OUT) :: interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! Local variables ------------------------------------------
    REAL(KIND=8) :: r ! distance
-   REAL(KIND=8) :: modA ! A modulus
-   REAL(KIND=8) :: modP_plus ! P modulus plus other term
-   REAL(KIND=8), DIMENSION(3) :: vect, vect2
    REAL(KIND=8) :: aux
    CHARACTER(LEN=16), PARAMETER :: routinename = "INTERACTION_AP: "
    INTEGER :: i ! Counter
    ! GABBA, GABBA HEY! ----------------------------------------
-   ! Find the distance between A and P
+   ! Find the distance between A and P, in a.u.
+   r=dsqrt((A(1)-P(1))**2.D0+(A(2)-P(2))**2.D0+(A(3)-P(3))**2.D0)
+   SELECT CASE(r>pairpot%z(pairpot%n))
+      CASE(.TRUE.) ! if distance too high, interaction 0 
+         interac = 0.D0
+         dvdz_corr = 0.D0
+         dvdx_corr = 0.D0
+         dvdy_corr = 0.D0
+      CASE(.FALSE.) ! Interaction between points and correcion to derivatives
+         CALL pairpot%interz%GET_V_AND_DERIVS(r,interac,aux,pairpot%rumpling)
+         dvdz_corr = aux*(A(3)-P(3))/r
+         dvdx_corr = aux*(A(1)-P(1))/r
+         dvdy_corr = aux*(A(2)-P(2))/r
+   END SELECT
 #ifdef DEBUG
-   CALL DEBUG_WRITE(routinename, "A vector: (In surface coordinates)")
-   CALL DEBUG_WRITE(routinename,"A_1: ",A(1))
-   CALL DEBUG_WRITE(routinename,"A_2: ",A(2))
-   CALL DEBUG_WRITE(routinename,"A_3: ",A(3))
-   CALL DEBUG_WRITE(routinename, "P vector: (In surface coordinates)")
-   CALL DEBUG_WRITE(routinename,"P_1: ",P(1))
-   CALL DEBUG_WRITE(routinename,"P_2: ",P(2))
-   CALL DEBUG_WRITE(routinename,"P_3: ",P(3))
-#endif  
-   vect=A
-   vect(1:2)=matmul(surf%metricsurf_mtrx,A(1:2))
-   modA = dot_product(A,vect)
-   FORALL(i=1:3) vect(i) = P(i)-2.D0*A(i)
-   vect2=vect
-   vect2(1:2)=matmul(surf%metricsurf_mtrx,vect(1:2))
-   modP_plus = dot_product(P,vect2)
-   r=dsqrt(modA+modP_plus)
-#ifdef DEBUG
-   CALL DEBUG_WRITE(routinename, "Distance: ",r)
-#endif
-   IF (r.GT.pairpot%z(pairpot%n)) THEN
-      interac = 0.D0 ! if distance too high, interaction 0 
-      dvdz_corr = 0.D0
-      dvdx_corr = 0.D0
-      dvdy_corr = 0.D0
-#ifdef DEBUG
-      CALL DEBUG_WRITE(routinename,"A is really far away from P. Negligible interaction.")
-#endif
-   ELSE
-      vect = A
-      vect(1:2) = surf%surf2cart(A(1:2))
-      vect2 = P
-      vect2(1:2) = surf%surf2cart(P(1:2))
-#ifdef DEBUG
-      CALL DEBUG_WRITE(routinename, "A vector: (In cartesian coordinates)")
-      CALL DEBUG_WRITE(routinename,"A_1: ",vect(1))
-      CALL DEBUG_WRITE(routinename,"A_2: ",vect(2))
-      CALL DEBUG_WRITE(routinename,"A_3: ",vect(3))
-      CALL DEBUG_WRITE(routinename, "P vector: (In cartesian coordinates)")
-      CALL DEBUG_WRITE(routinename,"P_1: ",vect2(1))
-      CALL DEBUG_WRITE(routinename,"P_2: ",vect2(2))
-      CALL DEBUG_WRITE(routinename,"P_3: ",vect2(3))
-#endif
-      ! We need the shifted version of the potential
-      interac = pairpot%interz%getvalue(r,pairpot%rumpling)
-      aux=pairpot%interz%getderiv(r,pairpot%rumpling) ! better performance
-      dvdz_corr = aux*(vect(3)-vect2(3))/r
-      dvdx_corr = aux*(vect(1)-vect2(1))/r
-      dvdy_corr = aux*(vect(2)-vect2(2))/r
-   END IF
-#ifdef DEBUG
-   CALL DEBUG_WRITE(routinename,"Repul. interaction: ",interac)
-   CALL DEBUG_WRITE(routinename,"Correction to derivative dvdx: ",dvdx_corr)
-   CALL DEBUG_WRITE(routinename,"Correction to derivative dvdy: ",dvdy_corr)
-   CALL DEBUG_WRITE(routinename,"Correction to derivative dvdz: ",dvdz_corr)
+   CALL DEBUG_WRITE(routinename,"Point A: ",A(:))
+   CALL DEBUG_WRITE(routinename,"Point P: ",P(:))
+   CALL DEBUG_WRITE(routinename,"Distance: ",r)
+   CALL DEBUG_WRITE(routinename,"Interaction: ",interac)
+   CALL DEBUG_WRITE(routinename,"Correction to derivatives: ",&
+      (/dvdx_corr,dvdy_corr,dvdz_corr/))
 #endif
    RETURN
 END SUBROUTINE INTERACTION_AP
@@ -897,32 +856,30 @@ END SUBROUTINE INTERACTION_AP
 !! environment of order @b n.
 !
 !> @param[in] n - Environment order
-!> @param[in] A - Point in space whose X and Y coordinates are in surface units
-!!                and inside the IWS cell defined by @b surf
+!> @param[in] A - Point in space
 !> @param[in] surf - Periodic surface 
 !> @param[in] pairpot - Pair potential which defines interaction potential
 !> @param[out] interac - Total interaction with the environment defined
 !> @param[out] dvdx_term - 
 !> @param[out] dvdy_term - 
 !> @param[out] dvdz_term - 
-!> @param[in] gnp - Optional logical variable which tells this routine to print extra
-!!                  output for GNP_MAP_INTERACT in file gnp-data.dat. Just for testing jobs
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 04/Feb/2014
-!> @version 1.0
+!> @date Feb/2014;Jun/2014
+!> @version 2.0
 !------------------------------------------------------------------
-SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_term,gnp)
+SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_term)
    IMPLICIT NONE
    ! I/O VAriables ------------------------------------------
    INTEGER,INTENT(IN) :: n
    REAL(KIND=8),DIMENSION(3), INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN) :: pairpot
    TYPE(Surface),INTENT(IN) :: surf
-   LOGICAL,INTENT(IN),OPTIONAL :: gnp
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P
+   REAL(KIND=8),DIMENSION(2) :: center_real
+   INTEGER(KIND=4),DIMENSION(2) :: center_int
    REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
    REAL(KIND=8) :: atomx, atomy
    INTEGER :: pairid
@@ -932,72 +889,72 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    ! Defining some aliases to make the program simpler:
    pairid = pairpot%id
    P(3) = pairpot%rumpling ! rumpling associated with pairpot
-   ! Case n = 0
    interac=0.D0
    dvdz_term=0.D0
    dvdx_term=0.D0
    dvdy_term=0.D0
-   IF (present(gnp).AND.gnp) OPEN(10,FILE="gnp-data.dat",STATUS="replace")
-   IF (n.EQ.0) THEN 
-      DO i=1, surf%atomtype(pairid)%n
-         P(1) = surf%atomtype(pairid)%atom(i,1)
-         P(2) = surf%atomtype(pairid)%atom(i,2)
-         CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
-         interac = interac +dummy1
-         dvdz_term = dvdz_term + dummy2
-         dvdx_term = dvdx_term + dummy3
-         dvdy_term = dvdy_term + dummy4
-         IF (present(gnp).AND.gnp) WRITE(10,*) P(:),dummy1,dummy2,dummy3,dummy4
-      END DO
-      IF (present(gnp).AND.gnp) CLOSE(10)
-      RETURN
-   ELSE IF (n.GT.0) THEN
-      DO i=1, surf%atomtype(pairid)%n
-         atomx = surf%atomtype(pairid)%atom(i,1)
-         atomy = surf%atomtype(pairid)%atom(i,2)
-         DO k= -n,n
-            P(1) = atomx + DFLOAT(n)
-            P(2) = atomy + DFLOAT(k)
+   center_real=surf%cart2surf(A(1:2))
+   center_int(1)=int(center_real(1))
+   center_int(2)=int(center_real(2))
+   center_real(1)=dfloat(center_int(1))
+   center_real(2)=dfloat(center_int(2))
+   center_real=surf%surf2cart(center_real)
+   SELECT CASE(n)
+      CASE(0)
+         DO i=1, surf%atomtype(pairid)%n
+            P(1) = surf%atomtype(pairid)%atom(i,1)+center_real(1)
+            P(2) = surf%atomtype(pairid)%atom(i,2)+center_real(2)
             CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
-            interac = interac+dummy1
-            dvdz_term = dvdz_term+dummy2
-            dvdx_term = dvdx_term+dummy3
-            dvdy_term = dvdy_term+dummy4
-            IF (present(gnp).AND.gnp) WRITE(10,*) P(:),dummy1,dummy2,dummy3,dummy4
-            P(1) = atomx + DFLOAT(-n)
-            P(2) = atomy + DFLOAT(k)
-            CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
-            interac = interac+dummy1
-            dvdz_term = dvdz_term+dummy2
-            dvdx_term = dvdx_term+dummy3
-            dvdy_term = dvdy_term+dummy4
-            IF (present(gnp).AND.gnp) WRITE(10,*) P(:),dummy1,dummy2,dummy3,dummy4
+            interac = interac +dummy1
+            dvdz_term = dvdz_term + dummy2
+            dvdx_term = dvdx_term + dummy3
+            dvdy_term = dvdy_term + dummy4
          END DO
-         DO k= -n+1, n-1
-            P(1) = atomx + DFLOAT(k)
-            P(2) = atomy + DFLOAT(n)
-            CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
-            interac = interac+dummy1
-            dvdz_term = dvdz_term+dummy2
-            dvdx_term = dvdx_term+dummy3
-            dvdy_term = dvdy_term+dummy4
-            IF (present(gnp).AND.gnp) WRITE(10,*) P(:),dummy1,dummy2,dummy3,dummy4
-            P(1) = atomx + DFLOAT(k)
-            P(2) = atomy + DFLOAT(-n)
-            CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
-            interac = interac+dummy1
-            dvdz_term = dvdz_term+dummy2
-            dvdx_term = dvdx_term+dummy3
-            dvdy_term = dvdy_term+dummy4
-            IF (present(gnp).AND.gnp) WRITE(10,*) P(:),dummy1,dummy2,dummy3,dummy4
+         RETURN
+
+      CASE(1 :)
+         DO i=1, surf%atomtype(pairid)%n
+            atomx = surf%atomtype(pairid)%atom(i,1)
+            atomy = surf%atomtype(pairid)%atom(i,2)
+            DO k= -n,n
+               P(1) = atomx + DFLOAT(n) + center_real(1)
+               P(2) = atomy + DFLOAT(k) + center_real(2)
+               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               interac = interac+dummy1
+               dvdz_term = dvdz_term+dummy2
+               dvdx_term = dvdx_term+dummy3
+               dvdy_term = dvdy_term+dummy4
+               P(1) = atomx + DFLOAT(-n) + center_real(1)
+               P(2) = atomy + DFLOAT(k) + center_real(2)
+               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               interac = interac+dummy1
+               dvdz_term = dvdz_term+dummy2
+               dvdx_term = dvdx_term+dummy3
+               dvdy_term = dvdy_term+dummy4
+            END DO
+            DO k= -n+1, n-1
+               P(1) = atomx + DFLOAT(k) + center_real(1)
+               P(2) = atomy + DFLOAT(n) + center_real(2)
+               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               interac = interac+dummy1
+               dvdz_term = dvdz_term+dummy2
+               dvdx_term = dvdx_term+dummy3
+               dvdy_term = dvdy_term+dummy4
+               P(1) = atomx + DFLOAT(k) + center_real(1)
+               P(2) = atomy + DFLOAT(-n) + center_real(2)
+               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               interac = interac+dummy1
+               dvdz_term = dvdz_term+dummy2
+               dvdx_term = dvdx_term+dummy3
+               dvdy_term = dvdy_term+dummy4
+            END DO
          END DO
-      END DO
-      IF(present(gnp).AND.gnp) CLOSE(10)
-      RETURN
-   ELSE
-      WRITE(0,*) "INTERACTION_AENV ERR: Wrong Environment order."
-      CALL EXIT(1)
-   END IF
+         RETURN
+
+      CASE DEFAULT
+         WRITE(0,*) "INTERACTION_AENV ERR: Wrong environment order."
+         CALL EXIT(1)
+   END SELECT
 END SUBROUTINE INTERACTION_AENV
 !############################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_CRP3D #########################
@@ -1052,10 +1009,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
       v = 0.D0
       RETURN
    END IF
-   ! For the corrugation addition, we need to project upon IWS cell
    A = X
-   A(1:2) = thispes%surf%project_unitcell(X(1:2))
-   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
    !
    pot = 0.D0 ! Initialization value
    v = 0.D0 ! Initialization value
@@ -1153,10 +1107,7 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-   ! For the corrugation addition, we need to project upon IWS cell
    A = X
-   A(1:2) = thispes%surf%project_unitcell(X(1:2))
-   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
    ! Initializing variables
    pot = 0.D0 
    v = 0.D0 
@@ -1208,7 +1159,7 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(thispes,X,v,dvdu)
    ! Local variables
    TYPE(Fourierp4mm):: interpolxy
    INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),DIMENSION(3) :: A,deriv
+   REAL(KIND=8),DIMENSION(3) :: deriv
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
@@ -1226,10 +1177,6 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(thispes,X,v,dvdu)
       v = 0.D0
       RETURN
    END IF
-   ! For the corrugation addition, we need to project upon IWS cell
-   A = X
-   A(1:2) = thispes%surf%project_unitcell(X(1:2))
-   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
    !
    v = 0.D0 ! Initialization value
    FORALL(i=1:3) 

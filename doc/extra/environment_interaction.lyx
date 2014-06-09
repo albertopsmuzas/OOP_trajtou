@@ -1,0 +1,586 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1cm
+\rightmargin 1cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Environment interaction
+\end_layout
+
+\begin_layout Author
+Alberto Pablo Sánchez Muzas
+\end_layout
+
+\begin_layout Section
+Notation
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathbb{N}=\left\{ 0,1,2,..\right\} $
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathbb{N}^{+}=\mathbb{N}\setminus\left\{ 0\right\} $
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Definitions
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Definitions"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We will define an environment of order 
+\begin_inset Formula $N$
+\end_inset
+
+ as a set 
+\begin_inset Formula $\mathfrak{E}_{N}:=\overset{N}{\underset{i=0}{\bigcup}}\mathcal{E}_{i}$
+\end_inset
+
+ wich defines a partition of 
+\begin_inset Formula $\mathbb{Z}^{2}$
+\end_inset
+
+.
+ Such a set must satisfy the following properties: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\left(\mathbb{Z}^{2}=\mathfrak{E}_{\infty}\right)\bigwedge\left[\left(\mathcal{E}_{i}\bigcap\mathcal{E}_{j}=\phi\right)\iff\left(i\ne j\right)\right]
+\]
+
+\end_inset
+
+For the purpose of this document, we will restric the way of constructing
+ the 
+\begin_inset Formula $\mathcal{E}_{i}$
+\end_inset
+
+ subsets:
+\begin_inset Formula 
+\[
+\#\mathcal{E}_{i}<\infty
+\]
+
+\end_inset
+
+we will only allow those ones with a finite number of elements inside.
+ 
+\end_layout
+
+\begin_layout Standard
+Now, let's define a basis set 
+\begin_inset Formula $S=\left\{ \boldsymbol{s}_{i}\in\mathbb{R}^{2}\right\} _{i=1}^{2}$
+\end_inset
+
+ and a pattern 
+\begin_inset Formula $\mathfrak{P}=\left\{ \boldsymbol{r}_{i}\in\left(\underset{[0,1)}{\mathcal{L}}(S)\oplus\mathbb{R}\right)\right\} _{i=1}^{Q}$
+\end_inset
+
+ .
+ With these tools we can generate the collection of elements of a periodic
+ periodic surface 
+\begin_inset Formula $\mathfrak{S}$
+\end_inset
+
+ with pattern 
+\begin_inset Formula $\mathfrak{P}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\mathfrak{S}\left(\mathfrak{P}\right)=\left\{ \boldsymbol{w}\in\mathbb{R}^{3}\,:\,\boldsymbol{w}=\boldsymbol{t}+\boldsymbol{r}\,,\,\boldsymbol{r}\in\mathfrak{P}\,,\,\boldsymbol{t}\in\underset{\mathbb{Z}}{\mathcal{L}(S)}\right\} \,;\,\#\mathfrak{S}\left(\mathfrak{P}\right)=\aleph_{0}
+\]
+
+\end_inset
+
+which means that each element of 
+\begin_inset Formula $\mathfrak{S}\left(\mathfrak{P}\right)$
+\end_inset
+
+ can be generated as the sum of a linear combination (with integer coefficients)
+ of 
+\begin_inset Formula $S$
+\end_inset
+
+ vectors and one element of the pattern set 
+\begin_inset Formula $\mathfrak{P}$
+\end_inset
+
+.
+ The vector 
+\begin_inset Formula $\boldsymbol{t}\in\underset{\mathbb{Z}}{\mathcal{L}(S)}$
+\end_inset
+
+ can be written as: 
+\begin_inset Formula $\boldsymbol{t}=\underline{n}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}$
+\end_inset
+
+, where 
+\begin_inset Formula $\underline{n}\in\mathbb{Z}^{2}$
+\end_inset
+
+.
+ We can define the equivalence relationship 
+\begin_inset Formula $\diamond$
+\end_inset
+
+ given elements 
+\begin_inset Formula $\boldsymbol{w},\boldsymbol{v}\in\mathfrak{S}(\mathfrak{P})$
+\end_inset
+
+; 
+\begin_inset Formula $\boldsymbol{t},\boldsymbol{q}\in\underset{\mathbb{Z}}{\mathcal{L}(S)}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{r}\in\mathfrak{P}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\boldsymbol{w}\diamond\boldsymbol{v}\,\implies\,\left(\boldsymbol{w}=\boldsymbol{t}+\boldsymbol{r}\right)\bigwedge\left(\boldsymbol{v}=\boldsymbol{q}+\boldsymbol{r}\right)
+\]
+
+\end_inset
+
+which defines the class 
+\begin_inset Formula $[i]_{\diamond}=\left\{ \boldsymbol{w}\in\mathfrak{S}(\mathfrak{P})\,:\,\boldsymbol{w}\diamond\boldsymbol{r}_{i}\right\} $
+\end_inset
+
+.
+ Notice that 
+\begin_inset Formula $\boldsymbol{r}_{i}$
+\end_inset
+
+ is an element of 
+\begin_inset Formula $\mathfrak{P}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathfrak{S}(\mathfrak{P})$
+\end_inset
+
+.
+ Of course:
+\begin_inset Formula 
+\[
+\left(\mathfrak{S}\left(\mathfrak{P}\right)=\underset{i=1}{\overset{Q}{\bigcup}}\left[i\right]_{\diamond}\right)\bigwedge\left(\#\left[i\right]_{\diamond}=\aleph_{0}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Extraction of corrugation with 1D functions
+\end_layout
+
+\begin_layout Standard
+If we want to calculate the interaction of a given atom with a periodic
+ surface with pattern 
+\begin_inset Formula $\mathfrak{P}$
+\end_inset
+
+, we can use the tools presented in Sec.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Definitions"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Let's consider that it exists a set of functions 
+\begin_inset Formula $\{f_{i}\}_{i=1}^{L}$
+\end_inset
+
+; 
+\begin_inset Formula $\begin{array}{cccc}
+f_{i}\,: & \mathbb{R}^{3}\otimes\mathfrak{S}\left(\mathfrak{P}\right) & \longrightarrow & \mathbb{R}\\
+ & \left(\boldsymbol{p},\boldsymbol{w}\right) & \longrightarrow & f_{i}\left(\boldsymbol{p},\boldsymbol{w}\right)
+\end{array}$
+\end_inset
+
+ which contains the interaction between an atom at position 
+\begin_inset Formula $\boldsymbol{p}\in\mathbb{R}^{3}$
+\end_inset
+
+ with a pattern of nature 
+\begin_inset Formula $\boldsymbol{r}_{i}\in\mathfrak{P}$
+\end_inset
+
+.
+ They define a new equivalence relationship 
+\begin_inset Formula $\underset{i}{\star}$
+\end_inset
+
+, given elements 
+\begin_inset Formula $\boldsymbol{x},\boldsymbol{y}\in\mathfrak{S}\left(\mathfrak{P}\right)$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\boldsymbol{x}\underset{i}{\star}\boldsymbol{y}\,\implies\left(\forall\boldsymbol{t}\in\mathbb{R}^{3}\right)\left(f(\boldsymbol{t},\boldsymbol{x})=f(\boldsymbol{t},\boldsymbol{y})=f_{i}(\boldsymbol{t},\boldsymbol{r}_{i})\right)
+\]
+
+\end_inset
+
+and therefore, the class:
+\begin_inset Formula 
+\[
+[i]_{\star}=\left\{ \boldsymbol{w}\in\mathfrak{S}(\mathfrak{P})\,:\,\boldsymbol{w}\star\boldsymbol{r}_{i}\right\} 
+\]
+
+\end_inset
+
+Usually, 
+\begin_inset Formula $\left[i\right]_{\star}=\left[i\right]_{\diamond}$
+\end_inset
+
+ , but there are cases in which we have to set two atoms of the same type
+ in the pattern.
+ That yields to 
+\begin_inset Formula $\left[i\right]_{\star}\ne\left[i\right]_{\diamond}$
+\end_inset
+
+ .
+ An interaction function 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ commonly satisfies the following statements:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\underset{\delta\rightarrow\infty}{\lim}f_{i}\left(\boldsymbol{p},\boldsymbol{w}\right)=a<\infty$
+\end_inset
+
+, being 
+\begin_inset Formula $\delta$
+\end_inset
+
+ the distance from 
+\begin_inset Formula $\boldsymbol{p}$
+\end_inset
+
+ to 
+\begin_inset Formula $\boldsymbol{w}$
+\end_inset
+
+.
+ For convenience, it is good to chose 
+\begin_inset Formula $a=0$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ is not linear.
+\end_layout
+
+\begin_layout Standard
+As the interaction with a given surface have infinite terms, we will use
+ the definition of 
+\begin_inset Formula $\mathfrak{E_{\infty}}$
+\end_inset
+
+ in order to truncate the series.
+ In general, the total interaction 
+\begin_inset Formula $\begin{array}{cccc}
+F\,: & \mathbb{R}^{3} & \longrightarrow & \mathbb{R}\\
+ & \left(\boldsymbol{p}\right) & \longrightarrow & F\left(\boldsymbol{p}\right)
+\end{array}$
+\end_inset
+
+ can be written:
+\begin_inset Formula 
+\[
+F\left(\boldsymbol{p}\right)=\overset{L}{\underset{i=1}{\sum}}\underset{\forall\boldsymbol{w}\in\left[i\right]_{\star}}{\sum}f_{i}\left(\boldsymbol{p},\boldsymbol{w}\right)=\overset{L}{\underset{i=1}{\sum}}\left(\underset{\forall\boldsymbol{r}\in\left[i\right]_{\star}\bigcap\mathfrak{P}}{\sum}\right)\underset{\forall\underline{n}\in\mathbb{Z}^{2}}{\sum}f_{i}\left(\boldsymbol{p}\,,\,\underline{n}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}\right)
+\]
+
+\end_inset
+
+thus, we can define the truncated interaction at order 
+\begin_inset Formula $N$
+\end_inset
+
+ as 
+\begin_inset Formula $F_{N}\left(\boldsymbol{p}\right)$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+F_{N}\left(\boldsymbol{p}\right)=\overset{L}{\underset{i=1}{\sum}}\left(\underset{\forall\boldsymbol{r}\in\left[i\right]_{\star}\bigcap\mathfrak{P}}{\sum}\right)\underset{\forall\underline{n}\in\mathfrak{E}_{N}}{\sum}f_{i}\left(\boldsymbol{p}\,,\,\underline{n}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}\right)
+\]
+
+\end_inset
+
+or expanded:
+\begin_inset Formula 
+\[
+F_{N}\left(\boldsymbol{p}\right)=\overset{L}{\underset{i=1}{\sum}}\left(\underset{\forall\boldsymbol{r}\in\left[i\right]_{\star}\bigcap\mathfrak{P}}{\sum}\right)\left\{ \underset{\forall\underline{n}\in\mathcal{E}_{1}}{\sum}\ldots\underset{\forall\underline{n}\in\mathcal{E}_{N}}{\sum}f_{i}\left(\boldsymbol{p}\,,\,\underline{n}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}\right)\right\} 
+\]
+
+\end_inset
+
+the common condition
+\begin_inset Formula $\left(\left[i\right]_{\star}=\left[i\right]_{\diamond}\right)$
+\end_inset
+
+ simplifies the equation to:
+\begin_inset Formula 
+\begin{equation}
+F_{N}\left(\boldsymbol{p}\right)=\overset{Q}{\underset{i=1}{\sum}}\left\{ \underset{\forall\underline{n}\in\mathcal{E}_{0}}{\sum}\ldots\underset{\forall\underline{n}\in\mathcal{E}_{N}}{\sum}f_{i}\left(\boldsymbol{p}\,,\,\underline{n}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}_{i}\right)\right\} \label{eq:general clases equal}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Environment with square/rectangular partition of space
+\end_layout
+
+\begin_layout Standard
+Definition:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathcal{E}_{i}=\begin{cases}
+\left\{ \begin{pmatrix}0\\
+0
+\end{pmatrix}\right\}  & \begin{array}{cc}
+\iff & i=0\end{array}\\
+\overset{i}{\underset{k=-i}{\bigcup}}\left\{ \begin{pmatrix}i\\
+k
+\end{pmatrix},\begin{pmatrix}-i\\
+k
+\end{pmatrix}\right\} \overset{i-1}{\underset{k=-i+1}{\bigcup}}\left\{ \begin{pmatrix}k\\
+i
+\end{pmatrix},\begin{pmatrix}k\\
+-i
+\end{pmatrix}\right\}  & \begin{array}{cc}
+\iff & i\in\mathbb{N}^{+}\end{array}
+\end{cases}
+\]
+
+\end_inset
+
+We can easily calculate the cardinal of each subset 
+\begin_inset Formula $\mathcal{E}_{i}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\#\mathcal{E}_{i}=\begin{cases}
+1 & \begin{array}{cc}
+\iff & i=0\end{array}\\
+8i & \begin{array}{cc}
+\iff & i\in\mathbb{N}^{+}\end{array}
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now let's apply the general equation Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:general clases equal"
+
+\end_inset
+
+ to this specific case:
+\begin_inset Formula 
+\begin{eqnarray*}
+F_{N}\left(\boldsymbol{p}\right) & = & \overset{Q}{\underset{j=1}{\sum}}f_{j}\left(\boldsymbol{p},\boldsymbol{r}_{j}\right)+\overset{Q}{\underset{j=1}{\sum}}\overset{N}{\underset{i=1}{\sum}}\overset{i}{\underset{k=-i}{\sum}}\left\{ f_{j}\left(\boldsymbol{p},\begin{bmatrix}i\\
+k
+\end{bmatrix}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}_{j}\right)+f_{j}\left(\boldsymbol{p},\begin{bmatrix}-i\\
+k
+\end{bmatrix}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}_{j}\right)\right\} +\\
+ &  & +\overset{Q}{\underset{j=1}{\sum}}\overset{N}{\underset{i=1}{\sum}}\overset{i-1}{\underset{k=-i+1}{\sum}}\left\{ f_{j}\left(\boldsymbol{p},\begin{bmatrix}k\\
+i
+\end{bmatrix}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}_{j}\right)+f_{j}\left(\boldsymbol{p},\begin{bmatrix}k\\
+-i
+\end{bmatrix}^{T}\cdot\begin{bmatrix}\boldsymbol{s}_{1}\\
+\boldsymbol{s}_{2}
+\end{bmatrix}+\boldsymbol{r}_{j}\right)\right\} 
+\end{eqnarray*}
+
+\end_inset
+
+but this will only stand for those 
+\begin_inset Formula $\boldsymbol{p}$
+\end_inset
+
+ which are inside the unit cell of the surface, since 
+\begin_inset Formula $\mathcal{E}_{0}$
+\end_inset
+
+ is centered at the origin.
+ In order to generalize this formula, avoiding the projection of 
+\begin_inset Formula $\boldsymbol{p}$
+\end_inset
+
+ inside the unit cell, we can redefine 
+\begin_inset Formula $\mathcal{E}_{i}$
+\end_inset
+
+ centered at 
+\begin_inset Formula $\boldsymbol{c}\in\mathbb{Z}^{2}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathcal{E}_{i}\left(\boldsymbol{c}\right)=\begin{cases}
+\left\{ \boldsymbol{c}\right\}  & \begin{array}{cc}
+\iff & i=0\end{array}\\
+\overset{i}{\underset{k=-i}{\bigcup}}\left\{ \boldsymbol{c}+\begin{pmatrix}i\\
+k
+\end{pmatrix},\boldsymbol{c}+\begin{pmatrix}-i\\
+k
+\end{pmatrix}\right\} \overset{i-1}{\underset{k=-i+1}{\bigcup}}\left\{ \boldsymbol{c}+\begin{pmatrix}k\\
+i
+\end{pmatrix},\boldsymbol{c}+\begin{pmatrix}k\\
+-i
+\end{pmatrix}\right\}  & \begin{array}{cc}
+\iff & i\in\mathbb{N}^{+}\end{array}
+\end{cases}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\boldsymbol{c}$
+\end_inset
+
+ is the integer coefficients of 
+\begin_inset Formula $\boldsymbol{p}$
+\end_inset
+
+ in basis 
+\begin_inset Formula $S$
+\end_inset
+
+.
+ 
+\end_layout
+
+\end_body
+\end_document

@@ -275,7 +275,7 @@ SUBROUTINE DEBUG_WRITE_STRING_VECT(routinename,msg,x)
 	CHARACTER(LEN=*), INTENT(IN) :: msg, routinename
    REAL(KIND=8),DIMENSION(:) :: x
 	! RUN ---
-	IF(verbosemode.EQV..true.) WRITE(*,*) routinename, msg, x
+	IF(debugmode.EQV..true.) WRITE(*,*) routinename, msg, x
 END SUBROUTINE DEBUG_WRITE_STRING_VECT
 
 SUBROUTINE DEBUG_WRITE_VECTINT(routinename,a)
