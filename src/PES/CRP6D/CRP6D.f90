@@ -38,6 +38,7 @@ TYPE,EXTENDS(PES) :: CRP6D
       ! Get block
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC :: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_CRP6D
       ! Tools block
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: SMOOTH_EXTRA => SMOOTH_EXTRA_CRP6D
@@ -50,8 +51,10 @@ TYPE,EXTENDS(PES) :: CRP6D
       ! Plot tools
       PROCEDURE,PUBLIC :: PLOT1D_THETA => PLOT1D_THETA_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_PHI => PLOT1D_PHI_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC :: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_R => PLOT1D_R_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: PLOT1D_Z => PLOT1D_Z_CRP6D
@@ -61,6 +64,44 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
 END TYPE CRP6D
 CONTAINS
+!###########################################################
+!# SUBROUTINE: GET_ATOMICPOT_AND_DERIVS_CRP6D 
+!###########################################################
+!> @brief
+!! Get atomic potentials and derivatives
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: molecx
+   REAL(KIND=8),DIMENSION(2),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dvdu
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: atomicx
+   ! Local variables
+   REAL(KIND=8) :: ma,mb
+   ! Run section
+   ma=this%atomdat(1)%getmass()
+   mb=this%atomdat(2)%getmass()
+   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecx,atomicx)
+   SELECT CASE(this%natomic)
+      CASE(1)
+         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),v(1),dvdu(1:3))
+         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),v(2),dvdu(4:6))
+      CASE(2)
+         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),v(1),dvdu(1:3))
+         CALL this%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),v(2),dvdu(4:6))
+      CASE DEFAULT
+         WRITE(0,*) "GET_ATOMICPOT_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
+END SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D
 !###########################################################
 !# SUBROUTINE: SET_SMOOTH_CRP6D
 !###########################################################
@@ -304,8 +345,8 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    CALL VERBOSE_WRITE(routinename,"Vb: ",vb)
    CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
 #endif
-   !v=aux1(1)+va+vb
-   v=aux1(1)+va+vb+0.8*dexp(-x(4))+this%farpot%getpot(x(4))
+   v=aux1(1)+va+vb
+   !v=aux1(1)+va+vb+0.8*dexp(-x(4))+this%farpot%getpot(x(4))
 
    dvdu(1)=aux2(1,1)+dvdu_atomicA(1)+dvdu_atomicB(1)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
@@ -464,8 +505,8 @@ SUBROUTINE INTERPOL_CRP6D(this)
    INTEGER(KIND=4) :: i,j ! counters
    ! Run section
    CALL this%EXTRACT_VACUUMSURF()   
-   !CALL this%SMOOTH()
-   CALL this%SMOOTH_EXTRA()
+   CALL this%SMOOTH()
+   !CALL this%SMOOTH_EXTRA()
    DO i = 1, this%nsites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
          CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL()
@@ -1079,6 +1120,73 @@ SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
    CLOSE(11)
 END SUBROUTINE PLOT1D_PHI_CRP6D
 !#######################################################################
+! SUBROUTINE: PLOT1D_ATOMIC_INTERAC_PHI_CRP6D #######################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the atomic interaction
+!! PES
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0. Initial PHI value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER,INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta
+   REAL(KIND=8),DIMENSION(2) :: v
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8),DIMENSION(6) :: r, dvdu, ratom
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = 0.D0
+   xmax = 2.D0*PI
+   r(1:5)=x(1:5)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(6)=xmin
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   WRITE(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(6)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+      WRITE(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
+   END DO
+   ! Final value
+   r(6) = xmax
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   WRITE(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
+!#######################################################################
 ! SUBROUTINE: PLOT1D_PHI_SMOOTH_CRP6D #######################################
 !#######################################################################
 !> @brief
@@ -1209,6 +1317,74 @@ SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT1D_THETA_CRP6D
+!#######################################################################
+! SUBROUTINE: PLOT1D_ATOMIC_INTERAC_THETA_CRP6D ########################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the atomic PES 
+!
+!> @param[in] thispes - CRP6D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!
+!> @warning
+!! - The graph starts always at 0,0, Initial THETA value in X array is ignored
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Apr/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D(thispes,npoints,X,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL(KIND=8) :: delta
+   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8), DIMENSION(6) :: r,dvdu,ratom
+   REAL(KIND=8),DIMENSION(2) :: v
+   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=20),PARAMETER :: routinename = "PLOT1D_THETA_CRP6D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   xmin = 0.D0
+   xmax = 2.D0*PI
+   r(1:4)=x(1:4)
+   r(6)=x(6)
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=2.D0*PI/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(5)=xmin
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   WRITE(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)  
+
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(5)=xmin+DFLOAT(i)*delta
+      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+      WRITE(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)
+   END DO
+   ! Final value
+   r(5) = xmax
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   WRITE(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)  
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_THETA_SMOOTH_CRP6D #########################################
 !#######################################################################
@@ -1770,15 +1946,14 @@ SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,
    REAL(KIND=8),INTENT(IN) :: Ly
    ! Local variables
    REAL(KIND=8) :: xmin, ymin, xmax, ymax
-   REAL(KIND=8),DIMENSION(6) :: r,dvdu
+   REAL(KIND=8),DIMENSION(6) :: r
    REAL(KIND=8) :: xdelta, ydelta
    INTEGER :: xinpoints, nxdelta
    INTEGER :: yinpoints, nydelta
-   REAL(KIND=8) :: va,vb,ma,mb
+   REAL(KIND=8),DIMENSION(2) :: v
    REAL(KIND=8),DIMENSION(6) :: atomicx
-   REAL(KIND=8),DIMENSION(3) :: dvdu_atomicA,dvdu_atomicB
+   REAL(KIND=8),DIMENSION(6) :: dvdu
    INTEGER :: i, j ! counters
-   REAL(KIND=8) :: v ! potential
    ! GABBA, GABBA HEY! ---------
    xmin = init_point(4)
    ymin = init_point(3)
@@ -1794,159 +1969,49 @@ SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   ma=thispes%atomdat(1)%getmass()
-   mb=thispes%atomdat(2)%getmass()
    OPEN(11,file=filename,status="replace")
    r(4) = xmin
    r(3) = ymin
    r(1:2)=init_point(1:2)
    r(5:6)=init_point(5:6)
-   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-   SELECT CASE(thispes%natomic)
-      CASE(1)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE(2)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE DEFAULT
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-         CALL EXIT(1)
-   END SELECT
-   v=va+vb
-   WRITE(11,*) r(4),r(3),v,va,vb
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    DO i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
-      CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-      SELECT CASE(thispes%natomic)
-         CASE(1)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-         CASE(2)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE DEFAULT
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-         CALL EXIT(1)
-      END SELECT
-      v=va+vb
-      WRITE(11,*) r(4),r(3),v,va,vb
+      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    END DO
    r(3) = ymax
-   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-   SELECT CASE(thispes%natomic)
-      CASE(1)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE(2)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-   CASE DEFAULT
-      WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-      CALL EXIT(1)
-   END SELECT
-   v=va+vb
-   WRITE(11,*) r(4),r(3),v,va,vb
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    ! inpoints in XY
    DO i = 1, xinpoints
       r(4) = xmin+DFLOAT(i)*xdelta
       r(3) = ymin
-      CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-      SELECT CASE(thispes%natomic)
-         CASE(1)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-         CASE(2)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE DEFAULT
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-         CALL EXIT(1)
-      END SELECT
-      v=va+vb
-      WRITE(11,*) r(4),r(3),v,va,vb
+      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
       DO j = 1, yinpoints
          r(3) = ymin + DFLOAT(j)*ydelta
-         CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-         SELECT CASE(thispes%natomic)
-            CASE(1)
-               CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-               CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-            CASE(2)
-               CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-               CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-         CASE DEFAULT
-            WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-            CALL EXIT(1)
-         END SELECT
-         v=va+vb
-         WRITE(11,*) r(4),r(3),v,va,vb
+         CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+         WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
       END DO
       r(3) = ymax
-      CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-      SELECT CASE(thispes%natomic)
-         CASE(1)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-         CASE(2)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE DEFAULT
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-         CALL EXIT(1)
-      END SELECT
-      v=va+vb
-      WRITE(11,*) r(4),r(3),v,va,vb
+      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    END DO
    ! Last point in XY plane
    r(4) = xmax
    r(3) = ymax
-   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-   SELECT CASE(thispes%natomic)
-      CASE(1)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE(2)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-   CASE DEFAULT
-      WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-      CALL EXIT(1)
-   END SELECT
-   v=va+vb
-   WRITE(11,*) r(4),r(3),v,va,vb
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    DO i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
-      CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-      SELECT CASE(thispes%natomic)
-         CASE(1)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-         CASE(2)
-            CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-            CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE DEFAULT
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-         CALL EXIT(1)
-      END SELECT
-      v=va+vb
-      WRITE(11,*) r(4),r(3),v,va,vb
+      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    END DO
    r(3) = ymax
-   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,r,atomicx)
-   SELECT CASE(thispes%natomic)
-      CASE(1)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE(2)
-         CALL thispes%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL thispes%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-   CASE DEFAULT
-      WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-      CALL EXIT(1)
-   END SELECT
-   v=va+vb
-   WRITE(11,*) r(4),r(3),v,va,vb
+   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    CLOSE(11)
    RETURN
 END SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D

@@ -144,6 +144,8 @@ TYPE, EXTENDS(PES) :: CRP3D
       PROCEDURE,PUBLIC :: READ => READ_CRP3D
       ! Get block 
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_CORRECTION => GET_V_AND_DERIVS_CORRECTION_CRP3D
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP3D
       PROCEDURE,PUBLIC :: getpot => getpot_crp3d
       PROCEDURE,PUBLIC :: getrumpling => getrumpling_CRP3D
       ! Enquire block
@@ -152,9 +154,14 @@ TYPE, EXTENDS(PES) :: CRP3D
       PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
       PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP3D
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_Z_CRP3D
+      PROCEDURE,PUBLIC :: RAWINTERPOL => RAWINTERPOL_Z_CRP3D
       ! Plot tools
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP3D
+      PROCEDURE,PUBLIC :: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_CRP3D
+      PROCEDURE,PUBLIC :: PLOT_XYMAP_CORRECTION => PLOT_XYMAP_CORRECTION_CRP3D
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
+      PROCEDURE,PUBLIC :: PLOT_DIRECTION1D_SMOOTH => PLOT_DIRECTION1D_SMOOTH_CRP3D
+      PROCEDURE,PUBLIC :: PLOT_DIRECTION1D_CORRECTION => PLOT_DIRECTION1D_CORRECTION_CRP3D
 END TYPE CRP3D
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -734,6 +741,44 @@ SUBROUTINE INTERPOL_Z_CRP3D(thispes)
    END DO
    RETURN
 END SUBROUTINE INTERPOL_Z_CRP3D
+!############################################################
+! SUBROUTINE: RAWINTERPOL_Z_CRP3D ################################
+!############################################################
+!> @brief
+!! Interpolates all sitios and pairpot potentials that belong
+!! to an specific CRP3D PES. Sitio potentials aren't smoothed
+!
+!> @param[in,out] thispes - CRP3D PES to be interpolated 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE RAWINTERPOL_Z_CRP3D(thispes)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP3D) :: thispes
+   ! Local variables
+   INTEGER(KIND=4) :: nsites,npairpots
+   REAL(KIND=8) :: dz1,dz2
+   INTEGER(KIND=4) :: i ! counters
+   ! Run secton------------------------
+   nsites=size(thispes%all_sites)
+   npairpots=size(thispes%all_pairpots)
+   CALL thispes%EXTRACT_VASINT()
+   DO i = 1, npairpots ! loop pairpots
+      dz1=thispes%all_pairpots(i)%dz1
+      dz2=thispes%all_pairpots(i)%dz2
+      CALL thispes%all_pairpots(i)%interz%INTERPOL(dz1,1,dz2,1)
+   END DO
+   DO i = 1, nsites
+      dz1=thispes%all_sites(i)%dz1
+      dz2=thispes%all_sites(i)%dz2
+      CALL thispes%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
+   END DO
+   RETURN
+END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !##################################################################
 !# SUBROUTINE: INTERACTION_AP #####################################
 !##################################################################
@@ -1055,6 +1100,169 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CRP3D
 !############################################################
+!# SUBROUTINE: GET_V_AND_DERIVS_CORRECTION_CRP3D ############
+!############################################################
+!> @brief
+!! Subroutine that calculates the correction to the 3D PES for a point A and
+!! its derivatives in cartesian coordinates.
+!
+!> @param[in] thispes - CRP3D PES
+!> @param[in] X - Point in space to calculate the potential and it's derivatives. Cartesian's
+!> @param[out] v - Value of the potential at X
+!> @param[out] dvdu - derivatives, cartesian coordinates 
+!
+!> @warning
+!! - All sitios should have been interpolated in Z direction previously. It
+!!   is optinal to extract "vasint".
+!! - Corrugation, MUST have been extracted from sitios previously (smoothed) 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 06/Feb/2014
+!> @version 1.0
+!------------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP3D),TARGET,INTENT(IN) :: thispes
+   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
+   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
+   ! Local variables
+   TYPE(Fourierp4mm):: interpolxy
+   INTEGER(KIND=4) :: nsites,npairpots
+   REAL(KIND=8),DIMENSION(3) :: A,deriv
+   REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
+   INTEGER :: i, j,k ! counters
+   ! Pointers
+	REAL(KIND=8), POINTER :: zmax
+   TYPE(Pair_pot),POINTER :: pairpot
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
+   zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
+   npairpots = size(thispes%all_pairpots)
+   nsites = size(thispes%all_sites)
+   ! GABBA, GABBA HEY! ----------------------
+   SELECT CASE(X(3)>zmax)
+      CASE(.TRUE.)
+         dvdu = (/0.D0,0.D0,0.D0/)
+         v = 0.D0
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   ! For the corrugation addition, we need to project upon IWS cell
+   A = X
+   A(1:2) = thispes%surf%project_unitcell(X(1:2))
+   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
+   ! Initializing variables
+   pot = 0.D0 
+   v = 0.D0 
+   dvdu=(/0.D0,0.D0,0.D0/)
+   deriv=(/0.D0,0.D0,0.D0/)
+   ! Compute
+   DO j=1, npairpots
+      pairpot => thispes%all_pairpots(j)
+      DO k=0,thispes%max_order
+         CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+         v = v + pot
+         FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D
+!############################################################
+!# SUBROUTINE: GET_V_AND_DERIVS_SMOOTH_CRP3D #########################
+!############################################################
+!> @brief
+!! Subroutine that calculates the 3D potential for a point A and
+!! its derivatives in cartesian coordinates without any correction to
+!! the smooth potential
+!
+!> @param[in] thispes - CRP3D PES
+!> @param[in] X - Point in space to calculate the potential and it's derivatives. Cartesian's
+!> @param[out] v - Value of the potential at X
+!> @param[out] dvdu - derivatives, cartesian coordinates 
+!
+!> @warning
+!! - All sitios should have been interpolated in Z direction previously. It
+!!   is optinal to extract "vasint".
+!! - Corrugation, MUST have been extracted from sitios previously (smoothed) 
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!------------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(thispes,X,v,dvdu)
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP3D),TARGET,INTENT(IN) :: thispes
+   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
+   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
+   ! Local variables
+   TYPE(Fourierp4mm):: interpolxy
+   INTEGER(KIND=4) :: nsites,npairpots
+   REAL(KIND=8),DIMENSION(3) :: A,deriv
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
+   INTEGER :: i, j,k ! counters
+   ! Pointers
+	REAL(KIND=8), POINTER :: zmax
+   TYPE(Pair_pot),POINTER :: pairpot
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
+   zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
+   npairpots = size(thispes%all_pairpots)
+   nsites = size(thispes%all_sites)
+   ! GABBA, GABBA HEY! ----------------------
+   IF (X(3).GT.zmax) THEN
+      dvdu = 0.D0
+      v = 0.D0
+      RETURN
+   END IF
+   ! For the corrugation addition, we need to project upon IWS cell
+   A = X
+   A(1:2) = thispes%surf%project_unitcell(X(1:2))
+   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
+   !
+   v = 0.D0 ! Initialization value
+   FORALL(i=1:3) 
+      dvdu(i) = 0.D0 ! Initialization value
+      deriv(i) = 0.D0 ! Initialization value
+   END FORALL 
+   ! Let's get v and derivatives from xy interpolation of the corrugationless function
+   ! f(1,i) ==> v values interpolated for Z at site "i"
+   ! f(2,i) ==> dvdz values interpolated for Z at site "i"
+   ALLOCATE(f(2,nsites))
+   ALLOCATE(xy(nsites,2))
+   ! potarr(1) ==> v interpolated at X,Y for a given Z
+   ! potarr(2) ==> dvdz interpolated at X,Y for a given Z
+   ALLOCATE(potarr(2))
+   ! derivarr(1,1:2) ==> dvdx, dvdy interpolated at X,Y
+   ! derivarr(2,1:2) ==> d(dvdz)/dx, d(dvdz)/dy interpolated at X,Y. It is not needed
+   ALLOCATE(derivarr(2,2))
+   DO i=1,nsites
+      xy(i,1)=thispes%all_sites(i)%x
+      xy(i,2)=thispes%all_sites(i)%y
+      CALL thispes%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
+   END DO
+   CALL interpolxy%READ(xy,f,thispes%klist)
+   CALL interpolxy%INTERPOL(thispes%surf)
+   CALL interpolxy%GET_F_AND_DERIVS(thispes%surf,X,potarr,derivarr)
+   ! Corrections from the smoothing procedure
+   v = v + potarr(1)
+   dvdu(1)=dvdu(1)+derivarr(1,1)
+   dvdu(2)=dvdu(2)+derivarr(1,2)
+   dvdu(3)=dvdu(3)+potarr(2)
+   RETURN
+END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D
+!############################################################
 !# FUNCTION: getpot_crp3d ###################################
 !############################################################
 !> @brief
@@ -1162,7 +1370,7 @@ SUBROUTINE PLOT_DATA_SYMMPOINT(this,filename)
    WRITE(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
 END SUBROUTINE PLOT_DATA_SYMMPOINT
 !#######################################################################
-! SUBROUTINE: GRAPH_V3D_POTMAP_XY
+! SUBROUTINE: PLOT_XYMAP_CRP3D
 !#######################################################################
 !> @brief
 !! Creates a file with name "filename" with a 2D cut (X,Y) of the PES. 
@@ -1262,7 +1470,209 @@ SUBROUTINE PLOT_XYMAP_CRP3D(thispes,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
    RETURN
 END SUBROUTINE PLOT_XYMAP_CRP3D
 !#######################################################################
-! SUBROUTINE: PLOT_DIRECTION1D #########################################
+! SUBROUTINE: PLOT_XYMAP_CORRECTION_CRP3D
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 2D cut (X,Y) of the corrections
+!! to the PES
+!
+!> @param[in] thispes - CRP3D PES used
+!> @param[in] filename - Name of the file to print the output
+!> @param[in] init_xyz - Initial position to start the scan (a.u.)
+!> @param[in] nxpoints - Number of points in X axis (auxiliar cartesian coordinates)
+!> @param[in] nypoints - Number of points in Y axis (auxiliar cartesian coordinates)
+!> @param[in] Lx - Length of X axis (a.u.)
+!> @param[in] Ly - Length of Y axis (a.u.)
+!
+!> @warning
+!! - Z parameter is taken from @b init_xyz and is constant
+!
+!> @author A.S. Muzas
+!> @date 08/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D(thispes,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+   IMPLICIT NONE
+   CLASS(CRP3D),INTENT(IN) :: thispes
+   REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
+   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
+   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
+   REAL*8,INTENT(IN) :: Lx ! Length of X axis 
+   REAL*8,INTENT(IN) :: Ly ! Length of X axis 
+   ! Local variables
+   REAL*8 :: xmin, ymin, xmax, ymax, z
+   REAL*8, DIMENSION(3) :: r, dvdu
+   REAL*8 :: xdelta, ydelta
+   INTEGER :: xinpoints, nxdelta
+   INTEGER :: yinpoints, nydelta
+   INTEGER :: i, j ! counters
+   REAL*8 :: v ! potential
+	! GABBA, GABBA HEY! ---------
+   xmin = init_xyz(1)
+   ymin = init_xyz(2)
+   z = init_xyz(3)
+   xmax = init_xyz(1)+Lx
+   ymax = init_xyz(2)+Ly
+   ! For X, grid parameters
+   xinpoints=nxpoints-2
+   nxdelta=nxpoints-1
+   xdelta=Lx/DFLOAT(nxdelta)
+   ! For Y, grid parameters
+   yinpoints=nypoints-2
+   nydelta=nypoints-1
+   ydelta=(ymax-ymin)/DFLOAT(nydelta)
+   ! Let's go! 
+   ! 1st XY point
+   OPEN(11,file=filename,status="replace")
+   r(1) = xmin
+   r(2) = ymin
+   r(3) = z
+   CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   ! inpoints in XY
+   DO i = 1, xinpoints
+      r(1) = xmin+DFLOAT(i)*xdelta
+      r(2) = ymin
+      r(3) = z
+      CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+      DO j = 1, yinpoints
+         r(2) = ymin + DFLOAT(j)*ydelta
+         CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+         WRITE(11,*) r(1), r(2), v
+      END DO
+      r(2) = ymax
+      CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   ! Last point in XY plane
+   r(1) = xmax
+   r(2) = ymax
+   r(3) = z
+   CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   CLOSE(11)
+   RETURN
+END SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D
+!#######################################################################
+! SUBROUTINE: PLOT_XYMAP_SMOOTH_CRP3D
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 2D cut (X,Y) of the PES without
+!! corrections to the potential
+!
+!> @param[in] thispes - CRP3D PES used
+!> @param[in] filename - Name of the file to print the output
+!> @param[in] init_xyz - Initial position to start the scan (a.u.)
+!> @param[in] nxpoints - Number of points in X axis (auxiliar cartesian coordinates)
+!> @param[in] nypoints - Number of points in Y axis (auxiliar cartesian coordinates)
+!> @param[in] Lx - Length of X axis (a.u.)
+!> @param[in] Ly - Length of Y axis (a.u.)
+!
+!> @warning
+!! - Z parameter is taken from @b init_xyz and is constant
+!
+!> @author A.S. Muzas
+!> @date 08/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_XYMAP_SMOOTH_CRP3D(thispes,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+   IMPLICIT NONE
+   CLASS(CRP3D),INTENT(IN) :: thispes
+   REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
+   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
+   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
+   REAL*8,INTENT(IN) :: Lx ! Length of X axis 
+   REAL*8,INTENT(IN) :: Ly ! Length of X axis 
+   ! Local variables
+   REAL*8 :: xmin, ymin, xmax, ymax, z
+   REAL*8, DIMENSION(3) :: r, dvdu
+   REAL*8 :: xdelta, ydelta
+   INTEGER :: xinpoints, nxdelta
+   INTEGER :: yinpoints, nydelta
+   INTEGER :: i, j ! counters
+   REAL*8 :: v ! potential
+	! GABBA, GABBA HEY! ---------
+   xmin = init_xyz(1)
+   ymin = init_xyz(2)
+   z = init_xyz(3)
+   xmax = init_xyz(1)+Lx
+   ymax = init_xyz(2)+Ly
+   ! For X, grid parameters
+   xinpoints=nxpoints-2
+   nxdelta=nxpoints-1
+   xdelta=Lx/DFLOAT(nxdelta)
+   ! For Y, grid parameters
+   yinpoints=nypoints-2
+   nydelta=nypoints-1
+   ydelta=(ymax-ymin)/DFLOAT(nydelta)
+   ! Let's go! 
+   ! 1st XY point
+   OPEN(11,file=filename,status="replace")
+   r(1) = xmin
+   r(2) = ymin
+   r(3) = z
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   ! inpoints in XY
+   DO i = 1, xinpoints
+      r(1) = xmin+DFLOAT(i)*xdelta
+      r(2) = ymin
+      r(3) = z
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+      DO j = 1, yinpoints
+         r(2) = ymin + DFLOAT(j)*ydelta
+         CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+         WRITE(11,*) r(1), r(2), v
+      END DO
+      r(2) = ymax
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   ! Last point in XY plane
+   r(1) = xmax
+   r(2) = ymax
+   r(3) = z
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1), r(2), v
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1), r(2), v
+   CLOSE(11)
+   RETURN
+END SUBROUTINE PLOT_XYMAP_SMOOTH_CRP3D
+!#######################################################################
+! SUBROUTINE: PLOT_DIRECTION1D_CRP3D ###################################
 !#######################################################################
 !> @brief
 !! Creates a file with name "filename" with a 1D cut of the PES. To define 
@@ -1340,6 +1750,165 @@ SUBROUTINE PLOT_DIRECTION1D_CRP3D(thispes,filename,npoints,angle,z,L)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT_DIRECTION1D_CRP3D
+!#######################################################################
+! SUBROUTINE: PLOT_DIRECTION1D_CORRECTION_CRP3D ###################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the corrections to the PES. To define 
+!! the direction, the angle alpha is given. 
+!
+!> @param[in] thispes - CRP3D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] angle - Angle between the surface vector S1 and the direction of the
+!!                    cut. It should be given in degrees.
+!> @param[in] z - Distance to the surface. All points have the same z.
+!> @param[in] L - Length of the graphic
+!
+!> @warning
+!! - The graph starts always at 0,0
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 09/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(thispes,filename,npoints,angle,z,L)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP3D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*), INTENT(IN) :: filename
+   REAL*8, INTENT(IN) :: z, angle
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL*8 :: delta,L,v,s,alpha
+   REAL*8 :: xmax, xmin, ymax, ymin 
+   REAL*8, DIMENSION(3) :: r, dvdu
+   INTEGER :: i ! Counter
+   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   ! Change alpha to radians
+   alpha = angle * PI / 180.D0
+   !
+   xmin = 0.D0
+   ymin = 0.D0
+   xmax = L*DCOS(alpha)
+   ymax = L*DSIN(alpha)
+   r(3) = z
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=L/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(1) = xmin
+   r(2) = ymin
+   s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+   CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
+      r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
+      s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+      CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   END DO
+   ! Final value
+   r(1) = xmax
+   r(2) = ymax
+   s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+   CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D
+!#######################################################################
+! SUBROUTINE: PLOT_DIRECTION1D_SMOOTH_CRP3D ############################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut of the PES. To define 
+!! the direction, the angle alpha is given. There's not any correction to
+!! PES values.
+!
+!> @param[in] thispes - CRP3D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!> @param[in] angle - Angle between the surface vector S1 and the direction of the
+!!                    cut. It should be given in degrees.
+!> @param[in] z - Distance to the surface. All points have the same z.
+!> @param[in] L - Length of the graphic
+!
+!> @warning
+!! - The graph starts always at 0,0
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 09/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D(thispes,filename,npoints,angle,z,L)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP3D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*), INTENT(IN) :: filename
+   REAL*8, INTENT(IN) :: z, angle
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL*8 :: delta,L,v,s,alpha
+   REAL*8 :: xmax, xmin, ymax, ymin 
+   REAL*8, DIMENSION(3) :: r, dvdu
+   INTEGER :: i ! Counter
+   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   ! Change alpha to radians
+   alpha = angle * PI / 180.D0
+   !
+   xmin = 0.D0
+   ymin = 0.D0
+   xmax = L*DCOS(alpha)
+   ymax = L*DSIN(alpha)
+   r(3) = z
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=L/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(1) = xmin
+   r(2) = ymin
+   s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
+      r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
+      s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   END DO
+   ! Final value
+   r(1) = xmax
+   r(2) = ymax
+   s = DSQRT(r(1)**2.D0+r(2)**2.D0)
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D
 !###########################################################
 !# FUNCTION: is_allowed_CRP3D
 !###########################################################

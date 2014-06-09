@@ -5,7 +5,7 @@ USE CRP3D_MOD
 USE UNITS_MOD
 IMPLICIT NONE
 ! Variables
-TYPE(CRP3D) :: crp_pes
+TYPE(CRP3D) :: thispes, thisrawpes
 CHARACTER(LEN=40) :: filename1,filename2,filename3
 INTEGER(KIND=4) :: nsites, npairpots
 REAL(KIND=8),DIMENSION(3) :: r
@@ -20,26 +20,49 @@ CALL SET_VERBOSE_MODE(.TRUE.)
 CALL ETIME(tiempoarr,tiempo)
 ! STEP 1: HELLO!
 WRITE(*,*) "***************************************" 
-WRITE(*,*) "CRP_PES program executed"
+WRITE(*,*) "thispes program executed"
 WRITE(*,*) "***************************************" 
 
 ! STEP 2: INITIALIZE CRP PES:
-CALL crp_pes%READ("INcrp3d.inp")
+CALL thispes%READ("INcrp3d.inp")
+CALL thisrawpes%READ("INcrp3d.inp")
 
 ! STEP 3: DO Z INTERPOLATION EXTRACTING VASINT AND SMOOTHING SITES
-CALL crp_pes%INTERPOL()
-
+CALL thispes%INTERPOL()
+CALL thisrawpes%RAWINTERPOL()
 ! STEP 4: PLOT SOME GRAPHS
-nsites=size(crp_pes%all_sites)
-npairpots=size(crp_pes%all_pairpots)
-r=(/0.D0,0.D0,3.34D0/)
-l=5.44335612578
+nsites=size(thispes%all_sites)
+npairpots=size(thispes%all_pairpots)
+l=5.44335612578D0
 l2=12.D0
-!CALL crp_pes%PLOT_XYMAP("xymap.dat",r,10,10,l,l)
-WRITE(*,*) "popodolto"
-CALL crp_pes%PLOT_DIRECTION1D("zscan.dat",500,45.D0,r(3),l2)
-WRITE(*,*) "papadelta"
-!CALL crp_pes%all_sites(3)%interz%PLOT_INTERPOL(50,"Site3graph")
+r=(/0.D0,0.D0,3.D0/)
+CALL thispes%PLOT_XYMAP("xymap.3.dat",r,200,200,l,l)
+CALL thispes%PLOT_XYMAP_CORRECTION("xymapcorrection.3.dat",r,200,200,l,l)
+CALL thisrawpes%PLOT_XYMAP_SMOOTH("xymapsmooth.3.dat",r,200,200,l,l)
+CALL thispes%PLOT_DIRECTION1D("zscan.3.dat",500,45.D0,r(3),l2)
+CALL thispes%PLOT_DIRECTION1D_CORRECTION("zscancorrection.3.dat",500,45.D0,r(3),l2)
+CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.3.dat",500,45.D0,r(3),l2)
+r=(/0.D0,0.D0,5.D0/)
+CALL thispes%PLOT_XYMAP("xymap.5.dat",r,200,200,l,l)
+CALL thispes%PLOT_XYMAP_CORRECTION("xymapcorrection.5.dat",r,200,200,l,l)
+CALL thisrawpes%PLOT_XYMAP_SMOOTH("xymapsmooth.5.dat",r,200,200,l,l)
+CALL thispes%PLOT_DIRECTION1D("zscan.5.dat",500,45.D0,r(3),l2)
+CALL thispes%PLOT_DIRECTION1D_CORRECTION("zscancorrection.5.dat",500,45.D0,r(3),l2)
+CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.5.dat",500,45.D0,r(3),l2)
+r=(/0.D0,0.D0,7.D0/)
+CALL thispes%PLOT_XYMAP("xymap.7.dat",r,200,200,l,l)
+CALL thispes%PLOT_XYMAP_CORRECTION("xymapcorrection.7.dat",r,200,200,l,l)
+CALL thisrawpes%PLOT_XYMAP_SMOOTH("xymapsmooth.7.dat",r,200,200,l,l)
+CALL thispes%PLOT_DIRECTION1D("zscan.7.dat",500,45.D0,r(3),l2)
+CALL thispes%PLOT_DIRECTION1D_CORRECTION("zscancorrection.7.dat",500,45.D0,r(3),l2)
+CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.7.dat",500,45.D0,r(3),l2)
+r=(/0.D0,0.D0,9.D0/)
+CALL thispes%PLOT_XYMAP("xymap.9.dat",r,200,200,l,l)
+CALL thispes%PLOT_XYMAP_CORRECTION("xymapcorrection.9.dat",r,200,200,l,l)
+CALL thisrawpes%PLOT_XYMAP_SMOOTH("xymapsmooth.9.dat",r,200,200,l,l)
+CALL thispes%PLOT_DIRECTION1D("zscan.9.dat",500,45.D0,r(3),l2)
+CALL thispes%PLOT_DIRECTION1D_CORRECTION("zscancorrection.9.dat",500,45.D0,r(3),l2)
+CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.9.dat",500,45.D0,r(3),l2)
 CALL ETIME(tiempoarr,tiempo)
 WRITE(*,*) "Total tile: ", tiempo
 END PROGRAM CRP_TEST
