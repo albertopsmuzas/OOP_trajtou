@@ -486,7 +486,7 @@ REAL(KIND=8) FUNCTION get_csplines_value(this,x,shift)
    ! Local variables
    INTEGER,POINTER :: n
    REAL(KIND=8),DIMENSION(:),POINTER :: z,v
-   REAL(KIND=8),POINTER :: z1, z2, a, b, c, d
+   REAL(KIND=8):: z1, z2, a, b, c, d
    INTEGER :: i ! Counter
    REAL(KIND=8) :: margen, r
    ! MAY THE FORCE BE WITH YOU --------------------------------------
@@ -496,27 +496,43 @@ REAL(KIND=8) FUNCTION get_csplines_value(this,x,shift)
    v => this%f(1:n)
    !
    r=x
-   IF(present(shift)) r=r+shift
-   IF ((r.lt.(z(1)-margen)).or.(r.gt.(z(n)+margen))) THEN
-      WRITE(0,*) "get_csplines_value ERR: r outside the interpolation interval"
-      WRITE(0,*) "get_csplines_value ERR: r = ", r
-      WRITE(0,*) "get_csplines_value ERR: range from ", z(1)-margen, "to", z(n)+margen
-      STOP
-   ELSE IF ((r.LE.(z(n)+margen)).AND.(r.GT.z(n))) THEN
-      get_csplines_value=z(n)
-      RETURN
-   ELSE IF ((r.GE.(z(n)+margen)).AND.(r.LT.z(n))) THEN
-      get_csplines_value=z(1)
-      RETURN
-   END IF
+   SELECT CASE(present(shift))
+      CASE(.TRUE.)
+         r=r+shift
+         SELECT CASE(r<this%x(1)+shift .OR. r>this%x(n)+shift)
+            CASE(.TRUE.)
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval with shift: ",shift
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1)+shift, "to", z(n)+shift
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+      CASE(.FALSE.)
+         SELECT CASE(r<this%x(1) .OR. r>this%x(n))
+            CASE(.TRUE.)
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+   END SELECT
+   !
    DO i=1,n-1
-      z1 => z(i)
-      z2 => z(i+1)
-      a => this%coeff(i,1)
-      b => this%coeff(i,2)
-      c => this%coeff(i,3)
-      d => this%coeff(i,4)
-      IF ((r.le.z2).and.(r.ge.z1)) EXIT
+      z1 = z(i)
+      z2 = z(i+1)
+      a = this%coeff(i,1)
+      b = this%coeff(i,2)
+      c = this%coeff(i,3)
+      d = this%coeff(i,4)
+      SELECT CASE((r<=z2).AND.(r>=z1))
+         CASE(.TRUE.)
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
    END DO
    ! Now, counter i has the correct label
    get_csplines_value=a*((r-z1)**3.D0)+b*((r-z1)**2.D0)+c*(r-z1)+d
@@ -553,7 +569,7 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
    REAL(KIND=8) :: margen, r
    ! Pointers 
    INTEGER,POINTER :: n
-   REAL(KIND=8),POINTER :: z1,z2,a,b,c,d
+   REAL(KIND=8):: z1,z2,a,b,c,d
    REAL(KIND=8),DIMENSION(:),POINTER :: z,v
    ! Run section -----------------------------------
    n => this%n
@@ -561,23 +577,43 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
    v => this%f(1:n)
    margen=1D-6
    r=x
-   IF(present(shift)) r=r+shift
-   !
-   IF ((r.lt.this%x(1)).or.(r.gt.this%x(n))) THEN
-      WRITE(0,*) "get_csplines_dfdx_value ERR: r outside interpolation interval"
-      WRITE(0,*) "get_csplines_dfdx_value ERR: r = ", r
-      WRITE(0,*) "get_csplines_dfdx_value ERR: range from ", z(1), "to", z(n)
-      CALL EXIT(1)
-   END IF
+   SELECT CASE(present(shift))
+      CASE(.TRUE.)
+         r=r+shift
+         SELECT CASE(r<this%x(1)+shift .OR. r>this%x(n)+shift)
+            CASE(.TRUE.)
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval with shift: ",shift
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1)+shift, "to", z(n)+shift
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+      CASE(.FALSE.)
+         SELECT CASE(r<this%x(1) .OR. r>this%x(n))
+            CASE(.TRUE.)
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+   END SELECT
    !
    DO i=1,n-1
-      z1 => this%x(i)
-      z2 => this%x(i+1)
-      a => this%coeff(i,1)
-      b => this%coeff(i,2)
-      c => this%coeff(i,3)
-      d => this%coeff(i,4)
-      IF ((r.le.z2).and.(r.ge.z1)) EXIT
+      z1 = this%x(i)
+      z2 = this%x(i+1)
+      a = this%coeff(i,1)
+      b = this%coeff(i,2)
+      c = this%coeff(i,3)
+      d = this%coeff(i,4)
+      SELECT CASE((r<=z2).AND.(r>=z1))
+         CASE(.TRUE.)
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
    END DO
    ! Now, counter i has the correct label
    get_csplines_dfdx_value=3.D0*(a*((r-z1)**2.D0))+2.D0*b*(r-z1)+c
@@ -599,30 +635,50 @@ SUBROUTINE GET_V_AND_DERIVS_CSPLINES(this,x,pot,deriv,shift)
    REAL(KIND=8) ::  r
    ! Pointers 
    INTEGER,POINTER :: n
-   REAL(KIND=8),POINTER :: z1,z2,a,b,c,d
+   REAL(KIND=8) :: z1,z2,a,b,c,d
    REAL(KIND=8),DIMENSION(:),POINTER :: z,v
    ! Run section -----------------------------------
    n => this%n
    z => this%x(1:n)
    v => this%f(1:n)
    r=x
-   IF(present(shift)) r=r+shift
-   !
-   IF ((r.lt.this%x(1)).or.(r.gt.this%x(n))) THEN
-      WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
-      WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
-      WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
-      CALL EXIT(1)
-   END IF
+   SELECT CASE(present(shift))
+      CASE(.TRUE.)
+         r=r+shift
+         SELECT CASE(r<this%x(1)+shift .OR. r>this%x(n)+shift)
+            CASE(.TRUE.)
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval with shift: ",shift
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1)+shift, "to", z(n)+shift
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+      CASE(.FALSE.) 
+         SELECT CASE(r<this%x(1) .OR. r>this%x(n))
+            CASE(.TRUE.)
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+   END SELECT
    !
    DO i=1,n-1
-      z1 => this%x(i)
-      z2 => this%x(i+1)
-      a => this%coeff(i,1)
-      b => this%coeff(i,2)
-      c => this%coeff(i,3)
-      d => this%coeff(i,4)
-      IF ((r.le.z2).and.(r.ge.z1)) EXIT
+      z1=this%x(i)
+      z2=this%x(i+1)
+      a=this%coeff(i,1)
+      b=this%coeff(i,2)
+      c=this%coeff(i,3)
+      d=this%coeff(i,4)
+      SELECT CASE((r<=z2).AND.(r>=z1))
+         CASE(.TRUE.)
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
    END DO
    ! Now, counter i has the correct label
    pot = a*((r-z1)**3.D0)+b*((r-z1)**2.D0)+c*(r-z1)+d

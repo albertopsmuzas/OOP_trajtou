@@ -16,8 +16,8 @@ IMPLICIT NONE
 !> @param atom - Matrix of positions of each atom in this list
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 03/Feb/2014
-!> @version 1.1
+!> @date Feb/2014; Jun/2014
+!> @version 2.0
 !-------------------------------------------------------------------------------------
 TYPE,PRIVATE :: Atom_list
 	INTEGER(KIND=4) :: n ! number of atoms in this list
@@ -53,8 +53,8 @@ END TYPE
 !-------------------------------------------------------------------------------------
 TYPE Surface
 PRIVATE
-	CHARACTER(LEN=30) :: alias
-	CHARACTER(LEN=30) :: filename
+   CHARACTER(LEN=30) :: alias
+   CHARACTER(LEN=30) :: filename
 	LOGICAL :: initialized=.FALSE.
 	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx 
 	REAL(KIND=8),DIMENSION(2,2) :: cart2surf_mtrx
@@ -62,22 +62,22 @@ PRIVATE
 	REAL(KIND=8),DIMENSION(2,2) :: cart2surfunit_mtrx 
 	REAL(KIND=8),DIMENSION(2,2) :: recip2cart_mtrx 
 	REAL(KIND=8),DIMENSION(2,2) :: cart2recip_mtrx 
-	INTEGER(KIND=4) :: diff_atoms 
-	TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype 
+   INTEGER(KIND=4) :: diff_atoms 
+   TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype 
 	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx 
    CHARACTER(LEN=10),PUBLIC :: units
 	REAL(KIND=8),PUBLIC :: norm_s1, norm_s2 
-	CHARACTER(LEN=4) :: symmlabel
+   CHARACTER(LEN=4) :: symmlabel
 CONTAINS
-	! Initiallize
-	PROCEDURE, PUBLIC :: INITIALIZE
-	! Operations block
-	PROCEDURE,PUBLIC :: surf2cart
-	PROCEDURE,PUBLIC :: cart2surf
-	PROCEDURE,PUBLIC :: surfunit2cart
-	PROCEDURE,PUBLIC :: cart2surfunit
-	PROCEDURE,PUBLIC :: recip2cart
-	PROCEDURE,PUBLIC :: cart2recip
+   ! Initiallize
+   PROCEDURE, PUBLIC :: INITIALIZE
+   ! Operations block
+   PROCEDURE,PUBLIC :: surf2cart
+   PROCEDURE,PUBLIC :: cart2surf
+   PROCEDURE,PUBLIC :: surfunit2cart
+   PROCEDURE,PUBLIC :: cart2surfunit
+   PROCEDURE,PUBLIC :: recip2cart
+   PROCEDURE,PUBLIC :: cart2recip
    PROCEDURE,PUBLIC :: project_unitcell
    PROCEDURE,PUBLIC :: project_iwscell
    ! Enquire block
@@ -198,8 +198,6 @@ SUBROUTINE INITIALIZE(surf,filename)
          CALL DEBUG_WRITE(routinename,surf%surf2cart_mtrx(i,:))
       END DO
 #endif
-      ! Storing actual surface units (now, everything is in atomic units)
-      surf%units = "au"
       ! Read number of different atom types in the surface
       READ(10,*) surf%diff_atoms
 #ifdef DEBUG
@@ -214,21 +212,38 @@ SUBROUTINE INITIALIZE(surf,filename)
             WRITE(0,*) "INITIALIZE_SURF ERR: Atom type definitions are not in the correct order"
             CALL EXIT(1)
          END IF
-         ALLOCATE(surf%atomtype(i)%atom(surf%atomtype(i)%n,2))
+         ALLOCATE(surf%atomtype(i)%atom(surf%atomtype(i)%n,3))
       END DO
+#ifdef DEBUG
+      CALL VERBOSE_SEPARATOR1()
+      CALL VERBOSE_WRITE(routinename,"ATOMS IN THE PATTERN (au):")
+#endif
       DO i=1, surf%diff_atoms
             DO j=1, surf%atomtype(i)%n
-               READ(10,*) control,surf%atomtype(i)%atom(j,1),surf%atomtype(i)%atom(j,2)
+               READ(10,*) control,surf%atomtype(i)%atom(j,1),surf%atomtype(i)%atom(j,2),surf%atomtype(i)%atom(j,3)
+               CALL len%READ(surf%atomtype(i)%atom(j,1),surf%units) 
+               CALL len%TO_STD()
+               surf%atomtype(i)%atom(j,1)=len%getvalue()
+               CALL len%READ(surf%atomtype(i)%atom(j,2),surf%units) 
+               CALL len%TO_STD()
+               surf%atomtype(i)%atom(j,2)=len%getvalue()
+               CALL len%READ(surf%atomtype(i)%atom(j,3),surf%units) 
+               CALL len%TO_STD()
+               surf%atomtype(i)%atom(j,3)=len%getvalue()
                IF (control.NE.i) THEN
                   WRITE(0,*) "INITIALIZE_SURF ERR: Atom type definitions are not in the correct order"
                   CALL EXIT(1)
                END IF
 #ifdef DEBUG
-               CALL DEBUG_WRITE(routinename,"Atom type: (surf. coord.)",i)
-               CALL DEBUG_WRITE(routinename,surf%atomtype(i)%atom(j,1),surf%atomtype(i)%atom(j,2))
+               CALL VERBOSE_WRITE(routinename,"Atom type: (surf. coord.)",i)
+               CALL VERBOSE_WRITE(routinename,surf%atomtype(i)%alias,surf%atomtype(i)%atom(j,:))
 #endif
             END DO
       END DO
+#ifdef DEBUG
+      CALL VERBOSE_SEPARATOR1()
+#endif
+      surf%units="au"
       CLOSE(10)
       ! Set metric matrix associated with surface coordinates.
       surf%metricsurf_mtrx=MATMUL(TRANSPOSE(surf%surf2cart_mtrx),surf%surf2cart_mtrx)

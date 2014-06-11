@@ -56,6 +56,7 @@ TYPE :: Symmpoint
       PROCEDURE,PUBLIC :: READ_RAW => READ_SYMMPOINT_RAW
       PROCEDURE,PUBLIC :: GEN_SYMM_RAW => GEN_SYMMETRIZED_RAW_INPUT
       PROCEDURE,PUBLIC :: PLOT_DATA => PLOT_DATA_SYMMPOINT
+      PROCEDURE,PUBLIC :: PLOT => PLOT_INTERPOL_SYMMPOINT
 END TYPE Symmpoint
 !///////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Pair potential  
@@ -74,7 +75,6 @@ END TYPE Symmpoint
 !!                      in the surface, the position of the coulomb repulsive singularity
 !!                      may not be situated at Z=0. This rumpling is the shift so that
 !!                      the singularity is plazed at zero.
-!> @param vecnet - Collection of neightbour atoms
 !
 !> @author A.P. Muzas
 !> @version 1.0
@@ -85,9 +85,11 @@ TYPE,EXTENDS(Symmpoint) :: Pair_pot
    INTEGER(KIND=4) :: id 
    REAL(KIND=8) :: vasint
 	REAL(KIND=8) :: rumpling
-	REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: vecnet
    CONTAINS
+      ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_STANDARD_PAIRPOT
+      ! Tools block
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_PAIRPOT
 END TYPE Pair_pot
 !/////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Sitio
@@ -162,9 +164,32 @@ TYPE,EXTENDS(PES) :: CRP3D
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D_SMOOTH => PLOT_DIRECTION1D_SMOOTH_CRP3D
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D_CORRECTION => PLOT_DIRECTION1D_CORRECTION_CRP3D
+      PROCEDURE,PUBLIC :: PLOT_SITIOS => PLOT_SITIOS_CRP3D
+      PROCEDURE,PUBLIC :: PLOT_PAIRPOTS => PLOT_PAIRPOTS_CRP3D
 END TYPE CRP3D
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: GET_V_AND_DERIVS_PAIRPOT 
+!###########################################################
+!> @brief
+!! Gets the pairpot potential shifted to 0 (maximum interaction is at 0)
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_PAIRPOT(this,x,v,dvdu)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Pair_pot),INTENT(IN):: this
+   REAL(KIND=8),INTENT(IN) :: x
+   REAL(KIND=8),INTENT(OUT) :: v,dvdu
+   ! Run section
+   CALL this%interz%GET_V_AND_DERIVS(x,v,dvdu,this%rumpling)
+   RETURN
+END SUBROUTINE GET_V_AND_DERIVS_PAIRPOT
 !###########################################################
 !# FUNCTION: getrumpling_CRP3D 
 !###########################################################
@@ -666,7 +691,7 @@ SUBROUTINE SMOOTH_CRP3D(thispes)
    IMPLICIT NONE
    CLASS(CRP3D),INTENT(INOUT) :: thispes
    ! Local variables
-   REAL(KIND=8),DIMENSION(3) :: A,aux
+   REAL(KIND=8),DIMENSION(3) :: A
    REAL(KIND=8) :: dummy
    INTEGER(KIND=4) :: i,j,k,l ! counters
    INTEGER(KIND=4) :: npairpots,nsites
@@ -678,11 +703,10 @@ SUBROUTINE SMOOTH_CRP3D(thispes)
    ALLOCATE(interac(0:thispes%max_order))
    ALLOCATE(dvdzr(0:thispes%max_order))
    DO i = 1, nsites ! loop over sites
-      aux(1) = thispes%all_sites(i)%x
-      aux(2) = thispes%all_sites(i)%y
+      A(1) = thispes%all_sites(i)%x
+      A(2) = thispes%all_sites(i)%y
       DO j = 1, thispes%all_sites(i)%n ! loop over pairs v,z
-         aux(3)=thispes%all_sites(i)%z(j)
-         A=aux
+         A(3)=thispes%all_sites(i)%z(j)
          DO l = 1, npairpots ! loop over pairpots
             DO k = 0, thispes%max_order ! loop over environment orders
                CALL INTERACTION_AENV(k,A,thispes%surf,thispes%all_pairpots(l),interac(k),dvdzr(k),dummy,dummy)
@@ -833,7 +857,7 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
          dvdx_corr = 0.D0
          dvdy_corr = 0.D0
       CASE(.FALSE.) ! Interaction between points and correcion to derivatives
-         CALL pairpot%interz%GET_V_AND_DERIVS(r,interac,aux,pairpot%rumpling)
+         CALL pairpot%GET_V_AND_DERIVS(r,interac,aux)
          dvdz_corr = aux*(A(3)-P(3))/r
          dvdx_corr = aux*(A(1)-P(1))/r
          dvdy_corr = aux*(A(2)-P(2))/r
@@ -872,13 +896,13 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    IMPLICIT NONE
    ! I/O VAriables ------------------------------------------
    INTEGER,INTENT(IN) :: n
-   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: A
+   REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN) :: pairpot
    TYPE(Surface),INTENT(IN) :: surf
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P
-   REAL(KIND=8),DIMENSION(2) :: center_real
+   REAL(KIND=8),DIMENSION(2) :: center_real,aux
    INTEGER(KIND=4),DIMENSION(2) :: center_int
    REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
    REAL(KIND=8) :: atomx, atomy
@@ -888,7 +912,6 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    ! SUSY IS A HEADBANGER !!!! -------------------
    ! Defining some aliases to make the program simpler:
    pairid = pairpot%id
-   P(3) = pairpot%rumpling ! rumpling associated with pairpot
    interac=0.D0
    dvdz_term=0.D0
    dvdx_term=0.D0
@@ -902,30 +925,38 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    SELECT CASE(n)
       CASE(0)
          DO i=1, surf%atomtype(pairid)%n
-            P(1) = surf%atomtype(pairid)%atom(i,1)+center_real(1)
-            P(2) = surf%atomtype(pairid)%atom(i,2)+center_real(2)
+            P(1)=surf%atomtype(pairid)%atom(i,1)+center_real(1)
+            P(2)=surf%atomtype(pairid)%atom(i,2)+center_real(2)
+            P(3)=surf%atomtype(pairid)%atom(i,3)
             CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
-            interac = interac +dummy1
-            dvdz_term = dvdz_term + dummy2
-            dvdx_term = dvdx_term + dummy3
-            dvdy_term = dvdy_term + dummy4
+            interac=interac+dummy1
+            dvdz_term=dvdz_term+dummy2
+            dvdx_term=dvdx_term+dummy3
+            dvdy_term=dvdy_term+dummy4
          END DO
          RETURN
 
       CASE(1 :)
          DO i=1, surf%atomtype(pairid)%n
-            atomx = surf%atomtype(pairid)%atom(i,1)
-            atomy = surf%atomtype(pairid)%atom(i,2)
+            atomx=surf%atomtype(pairid)%atom(i,1)
+            atomy=surf%atomtype(pairid)%atom(i,2)
+            P(3)=surf%atomtype(pairid)%atom(i,3)
             DO k= -n,n
-               P(1) = atomx + DFLOAT(n) + center_real(1)
-               P(2) = atomy + DFLOAT(k) + center_real(2)
+               P(1)=dfloat(n)
+               P(2)=dfloat(k)
+               P(1:2)=surf%surf2cart(P(1:2))
+               P(1)=P(1)+atomx+center_real(1)
+               P(2)=P(2)+atomy+center_real(2)
                CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
-               interac = interac+dummy1
-               dvdz_term = dvdz_term+dummy2
-               dvdx_term = dvdx_term+dummy3
-               dvdy_term = dvdy_term+dummy4
-               P(1) = atomx + DFLOAT(-n) + center_real(1)
-               P(2) = atomy + DFLOAT(k) + center_real(2)
+               interac=interac+dummy1
+               dvdz_term=dvdz_term+dummy2
+               dvdx_term=dvdx_term+dummy3
+               dvdy_term=dvdy_term+dummy4
+               P(1)=dfloat(-n)
+               P(2)=dfloat(k)
+               P(1:2)=surf%surf2cart(P(1:2))
+               P(1)=P(1)+atomx+center_real(1)
+               P(2)=P(2)+atomy+center_real(2)
                CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
@@ -933,15 +964,21 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
                dvdy_term = dvdy_term+dummy4
             END DO
             DO k= -n+1, n-1
-               P(1) = atomx + DFLOAT(k) + center_real(1)
-               P(2) = atomy + DFLOAT(n) + center_real(2)
+               P(1) =dfloat(k)
+               P(2) =dfloat(n)
+               P(1:2)=surf%surf2cart(P(1:2))
+               P(1)=P(1)+atomx+center_real(1)
+               P(2)=P(2)+atomy+center_real(2)
                CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
                dvdy_term = dvdy_term+dummy4
-               P(1) = atomx + DFLOAT(k) + center_real(1)
-               P(2) = atomy + DFLOAT(-n) + center_real(2)
+               P(1)=dfloat(k)
+               P(2)=dfloat(-n)
+               P(1:2)=surf%surf2cart(P(1:2))
+               P(1)=P(1)+atomx+center_real(1)
+               P(2)=P(2)+atomy+center_real(2)
                CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
@@ -990,7 +1027,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
    ! Local variables
    TYPE(Fourierp4mm):: interpolxy
    INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),DIMENSION(3) :: A,deriv
+   REAL(KIND=8),DIMENSION(3) :: deriv
    REAL(KIND=8) :: pot
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
@@ -1004,23 +1041,24 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
    npairpots = size(thispes%all_pairpots)
    nsites = size(thispes%all_sites)
    ! GABBA, GABBA HEY! ----------------------
-   IF (X(3).GT.zmax) THEN
-      dvdu = 0.D0
-      v = 0.D0
-      RETURN
-   END IF
-   A = X
+   SELECT CASE(X(3)>zmax)
+      CASE(.TRUE.)
+         dvdu = (/0.D0,0.D0,0.D0/)
+         v = 0.D0
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   ! Initialization section
+   pot = 0.D0 
+   v = 0.D0 
+   dvdu=(/0.D0,0.D0,0.D0/)
+   deriv=(/0.D0,0.D0,0.D0/)
    !
-   pot = 0.D0 ! Initialization value
-   v = 0.D0 ! Initialization value
-   FORALL(i=1:3) 
-      dvdu(i) = 0.D0 ! Initialization value
-      deriv(i) = 0.D0 ! Initialization value
-   END FORALL 
    DO j=1, npairpots
       pairpot => thispes%all_pairpots(j)
       DO k=0,thispes%max_order
-         CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+         CALL INTERACTION_AENV(k,X,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
          v = v + pot
          FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
       END DO
@@ -1036,7 +1074,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
    ! potarr(2) ==> dvdz interpolated at X,Y for a given Z
    ALLOCATE(potarr(2))
    ! derivarr(1,1:2) ==> dvdx, dvdy interpolated at X,Y
-   ! derivarr(2,1:2) ==> d(dvdz)/dx, d(dvdz)/dy interpolated at X,Y. It is not needed
+   ! derivarr(2,1:2) ==> d(dvdz)/dx, d(dvdz)/dy interpolated at X,Y. This is not needed
    ALLOCATE(derivarr(2,2))
    DO i=1,nsites
       xy(i,1)=thispes%all_sites(i)%x
@@ -1087,7 +1125,7 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
    ! Local variables
    TYPE(Fourierp4mm):: interpolxy
    INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),DIMENSION(3) :: A,deriv
+   REAL(KIND=8),DIMENSION(3) :: deriv
    REAL(KIND=8) :: pot
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
    INTEGER :: i, j,k ! counters
@@ -1107,7 +1145,6 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-   A = X
    ! Initializing variables
    pot = 0.D0 
    v = 0.D0 
@@ -1117,7 +1154,7 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
    DO j=1, npairpots
       pairpot => thispes%all_pairpots(j)
       DO k=0,thispes%max_order
-         CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+         CALL INTERACTION_AENV(k,X,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
          v = v + pot
          FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
       END DO
@@ -1261,17 +1298,13 @@ REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-   ! For the corrugation addition, we need to project upon IWS cell
-   A = X
-   A(1:2) = thispes%surf%project_unitcell(X(1:2))
-   A(1:2) = thispes%surf%cart2surf(A(1:2)) ! go to surface coordinates, but now, inside the unit cell 
    !
    pot = 0.D0 ! Initialization value
    v = 0.D0 ! Initialization value
    DO j=1, npairpots
       pairpot => thispes%all_pairpots(j)
       DO k=0,thispes%max_order
-         CALL INTERACTION_AENV(k,A,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
+         CALL INTERACTION_AENV(k,X,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
          v = v + pot
       END DO
    END DO
@@ -1856,6 +1889,93 @@ SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D(thispes,filename,npoints,angle,z,L)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D
+!###########################################################
+!# SUBROUTINE: PLOT_INTERPOL_SYMMPOINT 
+!###########################################################
+!> @brief
+!! Plots a Z scan along a symmpoint once it's been interpolated
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE PLOT_INTERPOL_SYMMPOINT(this,npoints,filename)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Symmpoint),INTENT(IN):: this
+   INTEGER(KIND=4),INTENT(IN) :: npoints
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! Run section
+   CALL this%interz%PLOT(npoints,filename)
+   RETURN
+END SUBROUTINE PLOT_INTERPOL_SYMMPOINT
+!###########################################################
+!# SUBROUTINE: PLOT_PAIRPOTS_CRP3D 
+!###########################################################
+!> @brief
+!! Plots all pairpot potentials
+!
+!> @warning
+!! - It only works if there are less than 9 pairpotentials defined
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE PLOT_PAIRPOTS_CRP3D(this,npoints)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP3D),INTENT(IN)::this
+   INTEGER(KIND=4),INTENT(IN) :: npoints
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counters
+   INTEGER(KIND=4) :: npairpots
+   CHARACTER(LEN=12) :: stringbase
+   CHARACTER(LEN=13) :: filename
+   ! Run section
+   npairpots=size(this%all_pairpots)
+   WRITE(stringbase,'(A12)') "-pairpot.dat"
+   DO i = 1, npairpots
+      WRITE(filename,'(I1,A12)') i,stringbase
+      CALL this%all_pairpots(i)%PLOT(npoints,filename)
+   END DO
+   RETURN
+END SUBROUTINE PLOT_PAIRPOTS_CRP3D
+!###########################################################
+!# SUBROUTINE: PLOT_SITIOS_CRP3D 
+!###########################################################
+!> @brief
+!! Plots all sitio potentials
+!
+!> @warning
+!! - It only works if there are less than 9 sitio potentials defined
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE PLOT_SITIOS_CRP3D(this,npoints)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP3D),INTENT(IN)::this
+   INTEGER(KIND=4),INTENT(IN) :: npoints
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counters
+   INTEGER(KIND=4) :: nsitios
+   CHARACTER(LEN=10) :: stringbase
+   CHARACTER(LEN=11) :: filename
+   ! Run section
+   nsitios=size(this%all_sites)
+   WRITE(stringbase,'(A10)') "-sitio.dat"
+   DO i = 1, nsitios
+      WRITE(filename,'(I1,A10)') i,stringbase
+      CALL this%all_sites(i)%PLOT(npoints,filename)
+   END DO
+   RETURN
+END SUBROUTINE PLOT_SITIOS_CRP3D
 !###########################################################
 !# FUNCTION: is_allowed_CRP3D
 !###########################################################

@@ -113,7 +113,7 @@ END SUBROUTINE PLOT_DATA_INTERPOL1D
 !! this interpol1d type variable. The number of points in that graphic is defined
 !! by @b npoints. Cannot be less than two. It also plots the first derivative
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename)
+SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename,shift)
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
@@ -122,6 +122,7 @@ SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename)
    INTEGER,INTENT(IN) :: npoints
    CLASS(Interpol1d),INTENT(IN),TARGET :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
+   REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL*8 :: delta, interval, x
@@ -146,6 +147,12 @@ SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename)
    delta=interval/dfloat(ndelta)
    !
    OPEN(11,file=filename,status="replace")
+   SELECT CASE(present(shift))
+      CASE(.TRUE.)
+         ! body
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    WRITE(11,*) xmin,this%getvalue(xmin),this%getderiv(xmin)
    DO i=1, inpoints
       x=xmin+(dfloat(i)*delta)

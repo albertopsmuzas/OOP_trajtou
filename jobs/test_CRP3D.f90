@@ -70,6 +70,10 @@ CALL thisrawpes%PLOT_XYMAP_SMOOTH("xymapsmooth.10.dat",r,200,200,l,l)
 CALL thispes%PLOT_DIRECTION1D("zscan.10.dat",500,45.D0,r(3),l2)
 CALL thispes%PLOT_DIRECTION1D_CORRECTION("zscancorrection.10.dat",500,45.D0,r(3),l2)
 CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.10.dat",500,45.D0,r(3),l2)
+! CRP3D sites and pairpots
+CALL thispes%PLOT_SITIOS(1000)
+CALL thispes%PLOT_PAIRPOTS(1000)
+
 CALL ETIME(tiempoarr,tiempo)
-WRITE(*,*) "Total tile: ", tiempo
+WRITE(*,*) "Total time: ", tiempo
 END PROGRAM CRP_TEST
