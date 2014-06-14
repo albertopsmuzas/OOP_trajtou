@@ -74,7 +74,7 @@ END TYPE Symmpoint
 !!                      are built on top sites and are related to different kinds of atoms
 !!                      in the surface, the position of the coulomb repulsive singularity
 !!                      may not be situated at Z=0. This rumpling is the shift so that
-!!                      the singularity is plazed at zero.
+!!                      the singularity is plazed at zero. Should be a negative number o 0.D0.
 !
 !> @author A.P. Muzas
 !> @version 1.0
@@ -187,7 +187,13 @@ SUBROUTINE GET_V_AND_DERIVS_PAIRPOT(this,x,v,dvdu)
    REAL(KIND=8),INTENT(IN) :: x
    REAL(KIND=8),INTENT(OUT) :: v,dvdu
    ! Run section
-   CALL this%interz%GET_V_AND_DERIVS(x,v,dvdu,this%rumpling)
+   SELECT CASE(X>this%z(this%n)-this%rumpling)
+      CASE(.TRUE.)
+         v=0.D0
+         dvdu=0.D0
+      CASE(.FALSE.)
+         CALL this%interz%GET_V_AND_DERIVS(x,v,dvdu,this%rumpling)
+   END SELECT
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_PAIRPOT
 !###########################################################
@@ -850,18 +856,10 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! GABBA, GABBA HEY! ----------------------------------------
    ! Find the distance between A and P, in a.u.
    r=dsqrt((A(1)-P(1))**2.D0+(A(2)-P(2))**2.D0+(A(3)-P(3))**2.D0)
-   SELECT CASE(r>pairpot%z(pairpot%n))
-      CASE(.TRUE.) ! if distance too high, interaction 0 
-         interac = 0.D0
-         dvdz_corr = 0.D0
-         dvdx_corr = 0.D0
-         dvdy_corr = 0.D0
-      CASE(.FALSE.) ! Interaction between points and correcion to derivatives
-         CALL pairpot%GET_V_AND_DERIVS(r,interac,aux)
-         dvdz_corr = aux*(A(3)-P(3))/r
-         dvdx_corr = aux*(A(1)-P(1))/r
-         dvdy_corr = aux*(A(2)-P(2))/r
-   END SELECT
+   CALL pairpot%GET_V_AND_DERIVS(r,interac,aux)
+   dvdz_corr = aux*(A(3)-P(3))/r
+   dvdx_corr = aux*(A(1)-P(1))/r
+   dvdy_corr = aux*(A(2)-P(2))/r
 #ifdef DEBUG
    CALL DEBUG_WRITE(routinename,"Point A: ",A(:))
    CALL DEBUG_WRITE(routinename,"Point P: ",P(:))
@@ -1037,7 +1035,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
 	REAL(KIND=8), POINTER :: zmax
    TYPE(Pair_pot),POINTER :: pairpot
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
-   zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
+   zmax => thispes%all_sites(1)%z(thispes%all_sites(1)%n)
    npairpots = size(thispes%all_pairpots)
    nsites = size(thispes%all_sites)
    ! GABBA, GABBA HEY! ----------------------
@@ -1120,11 +1118,11 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
    ! I/O variables
    CLASS(CRP3D),TARGET,INTENT(IN) :: thispes
    REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
-   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
    ! Local variables
    TYPE(Fourierp4mm):: interpolxy
-   INTEGER(KIND=4) :: nsites,npairpots
+   INTEGER(KIND=4) :: npairpots
    REAL(KIND=8),DIMENSION(3) :: deriv
    REAL(KIND=8) :: pot
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
@@ -1135,30 +1133,38 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
    npairpots = size(thispes%all_pairpots)
-   nsites = size(thispes%all_sites)
+   SELECT CASE(size(v)==npairpots+1)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         WRITE(*,*) "GET_V_AND_DERIVS_CORRECTION_CRP3D ERR: wrong number of dimensions array v"
+         CALL EXIT(1)
+   END SELECT
    ! GABBA, GABBA HEY! ----------------------
    SELECT CASE(X(3)>zmax)
       CASE(.TRUE.)
          dvdu = (/0.D0,0.D0,0.D0/)
-         v = 0.D0
+         FORALL(i=1:npairpots+1) v(i) = 0.D0
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    ! Initializing variables
    pot = 0.D0 
-   v = 0.D0 
+   FORALL(i=1:npairpots+1) v(i) = 0.D0
    dvdu=(/0.D0,0.D0,0.D0/)
    deriv=(/0.D0,0.D0,0.D0/)
    ! Compute
    DO j=1, npairpots
       pairpot => thispes%all_pairpots(j)
+      v(1+j)=0.D0
       DO k=0,thispes%max_order
          CALL INTERACTION_AENV(k,X,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
-         v = v + pot
+         v(1+j)=v(1+j)+pot
          FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
       END DO
    END DO
+   v(1)=sum(v(2:npairpots+1))
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D
 !############################################################
@@ -1483,11 +1489,13 @@ SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D(thispes,filename,init_xyz,nxpoints,nypoin
    REAL*8 :: xmin, ymin, xmax, ymax, z
    REAL*8, DIMENSION(3) :: r, dvdu
    REAL*8 :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta
+   INTEGER :: xinpoints, nxdelta, npairpots
    INTEGER :: yinpoints, nydelta
    INTEGER :: i, j ! counters
-   REAL*8 :: v ! potential
+   REAL*8,DIMENSION(:),ALLOCATABLE :: v ! potential
 	! GABBA, GABBA HEY! ---------
+   npairpots=size(thispes%all_pairpots)
+   ALLOCATE(v(npairpots+1))
    xmin = init_xyz(1)
    ymin = init_xyz(2)
    z = init_xyz(3)
@@ -1508,45 +1516,45 @@ SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D(thispes,filename,init_xyz,nxpoints,nypoin
    r(2) = ymin
    r(3) = z
    CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1), r(2), v(:)
    DO i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
       CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v(:)
    END DO
    r(2) = ymax
    CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1), r(2), v(:)
    ! inpoints in XY
    DO i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
       r(3) = z
       CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v(:)
       DO j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
-         CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-         WRITE(11,*) r(1), r(2), v
+         CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+         WRITE(11,*) r(1), r(2), v(:)
       END DO
       r(2) = ymax
       CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v(:)
    END DO
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
    r(3) = z
    CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1), r(2), v(:)
    DO i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
       CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v(:)
    END DO
    r(2) = ymax
    CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1), r(2), v(:)
    CLOSE(11)
    RETURN
 END SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D
@@ -1761,10 +1769,11 @@ SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(thispes,filename,npoints,angle,z,L)
    CHARACTER(LEN=*), INTENT(IN) :: filename
    REAL*8, INTENT(IN) :: z, angle
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL*8 :: delta,L,v,s,alpha
+   INTEGER :: inpoints, ndelta,npairpots
+   REAL*8 :: delta,L,s,alpha
    REAL*8 :: xmax, xmin, ymax, ymin 
    REAL*8, DIMENSION(3) :: r, dvdu
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: v
    INTEGER :: i ! Counter
    CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
    ! HE HO ! LET'S GO ----------------------------
@@ -1772,6 +1781,8 @@ SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(thispes,filename,npoints,angle,z,L)
       WRITE(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
       CALL EXIT(1)
    END IF
+   npairpots=size(thispes%all_pairpots)
+   ALLOCATE(v(npairpots+1))
    ! Change alpha to radians
    alpha = angle * PI / 180.D0
    !
@@ -1791,21 +1802,21 @@ SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(thispes,filename,npoints,angle,z,L)
    r(2) = ymin
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
    CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   WRITE(11,*) s, v(:)
    ! cycle for inpoints
    DO i=1, inpoints
       r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
       r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
       s = DSQRT(r(1)**2.D0+r(2)**2.D0)
       CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+      WRITE(11,*) s, v(:)
    END DO
    ! Final value
    r(1) = xmax
    r(2) = ymax
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
    CALL thispes%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   WRITE(11,*) s, v(:)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D

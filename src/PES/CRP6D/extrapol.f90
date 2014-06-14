@@ -208,7 +208,6 @@ SUBROUTINE INITIALIZE_VACUUMPOT(this,filename)
 #endif
          SELECT CASE(size(this%rpot%xmin))
             CASE(1)
-               !do nothing
                this%potmin = this%rpot%getvalue(this%rpot%xmin(1))
             CASE DEFAULT
                WRITE(0,*) "INITIALIZE_VACUUMPOT ERR: More than one minimum. Something is wrong"

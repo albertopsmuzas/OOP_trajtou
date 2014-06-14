@@ -488,36 +488,26 @@ REAL(KIND=8) FUNCTION get_csplines_value(this,x,shift)
    REAL(KIND=8),DIMENSION(:),POINTER :: z,v
    REAL(KIND=8):: z1, z2, a, b, c, d
    INTEGER :: i ! Counter
-   REAL(KIND=8) :: margen, r
+   REAL(KIND=8) :: r
    ! MAY THE FORCE BE WITH YOU --------------------------------------
-   margen = 1.0D-6
    n => this%n
    z => this%x(1:n)
    v => this%f(1:n)
    !
-   r=x
    SELECT CASE(present(shift))
       CASE(.TRUE.)
-         r=r+shift
-         SELECT CASE(r<this%x(1)+shift .OR. r>this%x(n)+shift)
-            CASE(.TRUE.)
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval with shift: ",shift
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1)+shift, "to", z(n)+shift
-               CALL EXIT(1)
-            CASE(.FALSE.)
-               ! do nothing
-         END SELECT
+         r=x+shift
       CASE(.FALSE.)
-         SELECT CASE(r<this%x(1) .OR. r>this%x(n))
-            CASE(.TRUE.)
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
-               CALL EXIT(1)
-            CASE(.FALSE.)
-               ! do nothing
-         END SELECT
+         r=x
+   END SELECT
+   SELECT CASE(r<this%x(1) .OR. r>this%x(n))
+      CASE(.TRUE.)
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
    END SELECT
    !
    DO i=1,n-1
@@ -566,7 +556,7 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
    REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
    ! Local variables
    INTEGER :: i ! Counter
-   REAL(KIND=8) :: margen, r
+   REAL(KIND=8) :: r
    ! Pointers 
    INTEGER,POINTER :: n
    REAL(KIND=8):: z1,z2,a,b,c,d
@@ -575,30 +565,20 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
    n => this%n
    z => this%x(1:n)
    v => this%f(1:n)
-   margen=1D-6
-   r=x
    SELECT CASE(present(shift))
       CASE(.TRUE.)
-         r=r+shift
-         SELECT CASE(r<this%x(1)+shift .OR. r>this%x(n)+shift)
-            CASE(.TRUE.)
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval with shift: ",shift
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1)+shift, "to", z(n)+shift
-               CALL EXIT(1)
-            CASE(.FALSE.)
-               ! do nothing
-         END SELECT
+         r=x+shift
       CASE(.FALSE.)
-         SELECT CASE(r<this%x(1) .OR. r>this%x(n))
-            CASE(.TRUE.)
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
-               CALL EXIT(1)
-            CASE(.FALSE.)
-               ! do nothing
-         END SELECT
+         r=x
+   END SELECT
+   SELECT CASE(r<this%x(1) .OR. r>this%x(n))
+      CASE(.TRUE.)
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
    END SELECT
    !
    DO i=1,n-1
@@ -623,6 +603,15 @@ END FUNCTION get_csplines_dfdx_value
 ! SUBROUTINE: GET_V_AND_DERIVS_CSPLINE
 !> @brief
 !! Computes F(X) and F'(X) at the same time. Better time performance
+!> @details
+!! Some guidelines: let's call @f$f(x)=f(r)@f$ where @f$r=x+\delta@f$
+!! f(x) is the function shifted and f(r) the old one. Take this into
+!! account to use correctly the shift option.
+!
+!> @param[in]  x  - point to evaluate the function (shifted function) 
+!> @param[out] pot   - f(x)
+!> @param[out] deriv - @f$\over{df(x)}{dx}@f$
+!> @param[in,optional] shift - Turns on the shifted option
 !---------------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_CSPLINES(this,x,pot,deriv,shift)
    IMPLICIT NONE
@@ -641,29 +630,20 @@ SUBROUTINE GET_V_AND_DERIVS_CSPLINES(this,x,pot,deriv,shift)
    n => this%n
    z => this%x(1:n)
    v => this%f(1:n)
-   r=x
    SELECT CASE(present(shift))
       CASE(.TRUE.)
-         r=r+shift
-         SELECT CASE(r<this%x(1)+shift .OR. r>this%x(n)+shift)
-            CASE(.TRUE.)
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval with shift: ",shift
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1)+shift, "to", z(n)+shift
-               CALL EXIT(1)
-            CASE(.FALSE.)
-               ! do nothing
-         END SELECT
+         r=x+shift
       CASE(.FALSE.) 
-         SELECT CASE(r<this%x(1) .OR. r>this%x(n))
-            CASE(.TRUE.)
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
-               WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
-               CALL EXIT(1)
-            CASE(.FALSE.)
-               ! do nothing
-         END SELECT
+         r=x 
+   END SELECT
+   SELECT CASE(r<this%x(1).OR. r>this%x(n))
+      CASE(.TRUE.)
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
    END SELECT
    !
    DO i=1,n-1
