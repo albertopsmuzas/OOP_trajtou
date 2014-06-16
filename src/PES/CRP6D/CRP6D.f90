@@ -674,10 +674,8 @@ SUBROUTINE SMOOTH_CRP6D(this)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
                CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
 #ifdef DEBUG
-               CALL DEBUG_WRITE(routinename,"Molecular coords:")
-               CALL DEBUG_WRITE(routinename,molcoord)
-               CALL DEBUG_WRITE(routinename,"Atomic coords:")
-               CALL DEBUG_WRITE(routinename,atomcoord)
+               CALL DEBUG_WRITE(routinename,"Molecular coords: ",molcoord)
+               CALL DEBUG_WRITE(routinename,"Atomic coords: ",atomcoord)
 #endif
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
                SELECT CASE(this%natomic)

@@ -9,7 +9,7 @@ folderlist= debug constants units surface PES interpol1d interpol1d/cubicsplines
 # Object list. There should be a rule for each object in this list
 objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier2d.o fourier.p4mm.o cubicsplines.o \
 				inicond.o initatom.o dynamics.o dynatom.o bicsplines.o CRP6D.o fourier1d.o wyckoff.generic.o wyckoff.p4mm.o \
-				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o
+				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
@@ -44,8 +44,9 @@ fourier.2mm.o: debug.o fourier1d.o
 fourier.2.o: debug.o fourier1d.o
 fourier.e.o: debug.o fourier1d.o
 fourier.m.o: debug.o fourier1d.o
+fourier.m45.o: debug.o fourier1d.o
 wyckoff.generic.o: debug.o fourier1d.o bicsplines.o
-wyckoff.p4mm.o: wyckoff.generic.o fourier.4mm.o fourier.mm2.o fourier.2.o fourier.e.o fourier.m.o
+wyckoff.p4mm.o: wyckoff.generic.o fourier.4mm.o fourier.mm2.o fourier.2.o fourier.e.o fourier.m.o fourier.m45.o
 extrapol.o: units.o debug.o maths.o
 # Clean rule
 .PHONY: clean

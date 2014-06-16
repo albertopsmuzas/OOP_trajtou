@@ -65,6 +65,7 @@ TYPE,ABSTRACT,EXTENDS(Interpol1d):: FOURIER1D
       ! get block
       PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getvalue => getvalue_FOURIER1D
       PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getderiv => getderiv_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getklist => getklist_FOURIER1D
       ! Set block
       PROCEDURE(SET_IRREP_FOURIER1D),PUBLIC,DEFERRED :: SET_IRREP 
       PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_AVERAGE_LASTKPOINT => SET_AVERAGE_LASTKPOINT_FOURIER1D
@@ -94,6 +95,23 @@ ABSTRACT INTERFACE
 END INTERFACE
 !/////////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNCTION: getklist_FOURIER1D 
+!###########################################################
+!> @brief 
+!! Common get function. Gets Klist atribute
+!-----------------------------------------------------------
+FUNCTION getklist_FOURIER1D(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Fourier1d),INTENT(IN):: this
+   INTEGER(KIND=4),ALLOCATABLE,DIMENSION(:):: getklist_FOURIER1D
+   ! Run section
+   ALLOCATE(getklist_FOURIER1D(size(this%klist)))
+   getklist_FOURIER1D=this%klist
+   RETURN
+END FUNCTION getklist_FOURIER1D
 !###########################################################
 !# FUNCTION: getshift_TERMCALCULATOR 
 !###########################################################

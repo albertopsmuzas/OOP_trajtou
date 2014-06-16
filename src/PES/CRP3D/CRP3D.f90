@@ -839,9 +839,6 @@ END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !> @see extra documentation
 !------------------------------------------------------------------
 SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O VAriables --------------------------------------------
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A, P
@@ -860,14 +857,6 @@ SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr
    dvdz_corr = aux*(A(3)-P(3))/r
    dvdx_corr = aux*(A(1)-P(1))/r
    dvdy_corr = aux*(A(2)-P(2))/r
-#ifdef DEBUG
-   CALL DEBUG_WRITE(routinename,"Point A: ",A(:))
-   CALL DEBUG_WRITE(routinename,"Point P: ",P(:))
-   CALL DEBUG_WRITE(routinename,"Distance: ",r)
-   CALL DEBUG_WRITE(routinename,"Interaction: ",interac)
-   CALL DEBUG_WRITE(routinename,"Correction to derivatives: ",&
-      (/dvdx_corr,dvdy_corr,dvdz_corr/))
-#endif
    RETURN
 END SUBROUTINE INTERACTION_AP
 !##################################################################

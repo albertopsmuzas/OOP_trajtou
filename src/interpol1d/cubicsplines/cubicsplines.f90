@@ -52,14 +52,13 @@ CONTAINS
 !
 !> @see interpol_cubic_splines
 !-----------------------------------------------------------
-SUBROUTINE REINTERPOL_CSPLINES(this,dz1,id1,dz2,id2,filename)
+SUBROUTINE REINTERPOL_CSPLINES(this,dz1,id1,dz2,id2)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Csplines),INTENT(INOUT) :: this
    REAL(KIND=8),INTENT(IN) :: dz1,dz2
    INTEGER(KIND=4),INTENT(IN) :: id1,id2
-   CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
    ! Local variables
    ! Run section
    SELECT CASE(this%is_initialized)
@@ -73,14 +72,7 @@ SUBROUTINE REINTERPOL_CSPLINES(this,dz1,id1,dz2,id2,filename)
    DEALLOCATE(this%d2fdx)
    DEALLOCATE(this%coeff)
    this%is_initialized=.FALSE.
-   !
-   SELECT CASE(present(filename))
-      CASE(.TRUE.)
-         CALL this%INTERPOL(dz1,id1,dz2,id2,filename)
-      CASE(.FALSE.)
-         CALL this%INTERPOL(dz1,id1,dz2,id2)
-   END SELECT
-   !
+   CALL this%INTERPOL(dz1,id1,dz2,id2)
    SELECT CASE(ALLOCATED(this%xmin))
       CASE(.TRUE.)
          DEALLOCATE(this%xmin)
@@ -191,9 +183,6 @@ END SUBROUTINE SET_MINIMUM_CSPLINES
 !> @see debug_mod 
 !----------------------------------------------------------------------
 SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
-#ifdef DEBUG
-        USE DEBUG_MOD
-#endif
         USE MATHS_MOD 
         IMPLICIT NONE
         ! I/O Variables
@@ -306,9 +295,6 @@ SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
         ELSE
                 CALL TRIDIA(n,subdiag,diag,supdiag,indep,d2sdx)
         END IF
-#ifdef DEBUG
-        CALL DEBUG_WRITE(routinename,"Second derivatives at nodes calculated -----> Done")
-#endif
 END SUBROUTINE DSPLIN
 !######################################################################
 ! SUBROUTINE: SET_CUBIC_SPLINES_COEFF #################################
@@ -327,14 +313,10 @@ END SUBROUTINE DSPLIN
 !
 !> @see dsplin 
 !----------------------------------------------------------------------
-SUBROUTINE SET_CUBIC_SPLINES_COEFF(this,filename)
-#ifdef DEBUG
-        USE DEBUG_MOD
-#endif
+SUBROUTINE SET_CUBIC_SPLINES_COEFF(this)
         IMPLICIT NONE
         ! I/O variable ==============================================
         CLASS(Csplines),TARGET,INTENT(INOUT) :: this
-        CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
         ! Internal Variables
         INTEGER :: i ! counter
         REAL(KIND=8) :: h ! step between nodes
@@ -351,18 +333,14 @@ SUBROUTINE SET_CUBIC_SPLINES_COEFF(this,filename)
         z => this%x(1:n)
         v => this%f(1:n)
         !
-        IF (this%is_initialized) THEN
-           WRITE(0,*) "SET_SPLINES ERR: this splines were initialized before"
-           CALL EXIT(1)
-        END IF
-        IF (size(z)/=size(v)) THEN
-           WRITE(0,*) "SET SPLINES ERR: v and z arrays don't have the same size"
-           WRITE(0,*) "SET_SPLINES ERR: Z size is:",size(z)
-           WRITE(0,*) "SET SPLINES ERR: V size is:",size(v)
-           CALL EXIT(1)
-        END IF
+        SELECT CASE(this%is_initialized)
+           CASE(.TRUE.)
+               WRITE(0,*) "SET_SPLINES ERR: this splines were initialized before"
+               CALL EXIT(1)
+           CASE(.FALSE.)
+              ! do nothing
+        END SELECT
         ALLOCATE (this%coeff(n -1,4)) ! There are N-1 Splines and 4 coefficients for each one of them
-        IF ((filename.NE."None").AND.(present(filename))) OPEN(11, file=filename, status="replace")
         DO i=1, n-1
                 a => this%coeff(i,1)
                 b => this%coeff(i,2)
@@ -380,14 +358,7 @@ SUBROUTINE SET_CUBIC_SPLINES_COEFF(this,filename)
                 b=m1/2.D0
                 c=((y2-y1)/h)-((m2+2.D0*m1)/6.D0)*h
                 d=y1
-!
-                IF ((filename.NE."None").AND.(present(filename))) WRITE(11,*) x1, x2, a, b, c, d
         END DO
-#ifdef DEBUG
-        CALL DEBUG_WRITE(routinename,"Set coefficients  -----> Done")
-        IF ((filename.NE."None").AND.(present(filename))) CALL VERBOSE_WRITE(routinename,"Data stored inside ", filename)
-#endif
-        IF ((filename.NE."None").AND.(present(filename))) CLOSE(11)
         this%is_initialized=.TRUE.
         RETURN
 END SUBROUTINE SET_CUBIC_SPLINES_COEFF
@@ -417,17 +388,13 @@ END SUBROUTINE SET_CUBIC_SPLINES_COEFF
 !
 !> @see interpol_cubic_splines
 !----------------------------------------------------------------------
-SUBROUTINE INTERPOL_CUBIC_SPLINES(this,dz1,id1,dz2,id2,filename)
+SUBROUTINE INTERPOL_CUBIC_SPLINES(this,dz1,id1,dz2,id2)
         ! Initial declarations
-#ifdef DEBUG
-        USE DEBUG_MOD
-#endif
         IMPLICIT NONE
         ! I/O variables ==================================
         CLASS(Csplines),TARGET,INTENT(INOUT) :: this 
         REAL(KIND=8),INTENT(IN) :: dz1,dz2 
         INTEGER(KIND=4),INTENT(IN) :: id1,id2 
-        CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename !> file name to store interpolation coefficients
         ! Local variables
         CHARACTER(LEN=24),PARAMETER :: routinename="INTERPOL_CUBIC_SPLINES: "
         ! Pointers
@@ -438,25 +405,8 @@ SUBROUTINE INTERPOL_CUBIC_SPLINES(this,dz1,id1,dz2,id2,filename)
         n => this%n
         z => this%x(1:n)
         v => this%f(1:n)
-        IF (size(z)/=size(v)) THEN
-           WRITE(0,*) "INTERPOL_CUBIC_SPLINES ERR: v and z arrays don't have the same size"
-           WRITE(0,*) "INTERPOL_CUBIC_SPLINES ERR: Z size is:",size(z)
-           WRITE(0,*) "INTERPOL_CUBIC_SPLINES ERR: V size is:",size(v)
-           CALL EXIT(1)
-        END IF
-        !
         CALL this%SET_SECOND_DERIVS(dz1,id1,dz2,id2)
-        !
-        IF(present(filename)) THEN
-           CALL this%SET_COEFF(filename)
-        ELSE
-           CALL this%SET_COEFF()
-        END IF
-#ifdef DEBUG
-        IF (present(filename)) THEN
-           CALL VERBOSE_WRITE(routinename,"1D interpolation stored in",filename)
-        END IF
-#endif
+        CALL this%SET_COEFF()
         RETURN
 END SUBROUTINE INTERPOL_CUBIC_SPLINES
 !###########################################################

@@ -224,7 +224,6 @@ END SUBROUTINE INTERPOL_FOURIERP4MM
 !-----------------------------------------------------------
 SUBROUTINE SET_TERMMAP_FOURIERP4MM(this)
    ! Initial declarations   
-   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourierp4mm),INTENT(INOUT)::this
@@ -274,10 +273,6 @@ SUBROUTINE SET_TERMMAP_FOURIERP4MM(this)
             CALL EXIT(1)
       END SELECT
    END DO
-#ifdef DEBUG
-   CALL DEBUG_WRITE(routinename,"Klist structure: ")
-   CALL DEBUG_WRITE(routinename,this%termmap)
-#endif
    RETURN
 END SUBROUTINE SET_TERMMAP_FOURIERP4MM
 !###########################################################

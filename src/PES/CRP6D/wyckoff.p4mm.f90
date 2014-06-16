@@ -51,6 +51,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    USE FOURIER1D_2_MOD
    USE FOURIER1D_4MM_MOD
    USE FOURIER1D_M_MOD
+   USE FOURIER1D_M45_MOD
    USE FOURIER1D_MM2_MOD
    USE FOURIER1D_E_MOD
    IMPLICIT NONE
@@ -114,9 +115,9 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
          END SELECT
 
       CASE("f")
-         ALLOCATE(Fourier1d_m::phicut(this%nphicuts))
+         ALLOCATE(Fourier1d_m45::phicut(this%nphicuts))
          phi_irrep="Ap"
-         phi_shift=-PI/2.D0
+         phi_shift=0.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                ALLOCATE(Fourier1d_2::thetacut)
@@ -156,7 +157,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       CALL VERBOSE_WRITE(routinename,"NEW PHICUT")
       CALL VERBOSE_WRITE(routinename,"For theta: ",this%zrcut(h)%theta)
       CALL VERBOSE_WRITE(routinename,"Is homonuclear: ",this%is_homonucl)
-      CALL VERBOSE_WRITE(routinename,"At Phi: (deg)")
       ALLOCATE(beta(size(philist)))
       ALLOCATE(philistdeg(size(philist)))
       DO j = 1, size(philist)
@@ -164,19 +164,14 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
          CALL beta(j)%TO_DEG()
          philistdeg(j)=beta(j)%getvalue()
       END DO
-      CALl VERBOSE_WRITE(routinename,philistdeg)
-      CALL VERBOSE_WRITE(routinename,"At Phi: (rad)")
-      CALl VERBOSE_WRITE(routinename,philist)
-      CALL VERBOSE_WRITE(routinename,"f:")
-      CALl VERBOSE_WRITE(routinename,f)
-      CALL VERBOSE_WRITE(routinename,"dfdz:")
-      CALL VERBOSE_WRITE(routinename,aux(1,:))
-      CALL VERBOSE_WRITE(routinename,"dfdr:")
-      CALL VERBOSE_WRITE(routinename,aux(2,:))
+      CALL VERBOSE_WRITE(routinename,"At Phi: (deg)",philistdeg)
+      CALL VERBOSE_WRITE(routinename,"At Phi: (rad)",philist)
+      CALL VERBOSE_WRITE(routinename,"Klist: ",phicut(i)%getklist())
+      CALL VERBOSE_WRITE(routinename,"f: ",f)
+      CALL VERBOSE_WRITE(routinename,"dfdz: ",aux(1,:))
+      CALL VERBOSE_WRITE(routinename,"dfdr: ",aux(2,:))
       SELECT CASE(get_debugmode())
          CASE(.TRUE.)
-            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.dat" 
-            CALL phicut(i)%PLOT(100,filename)
             WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.raw" 
             CALL phicut(i)%PLOTDATA(filename)
             WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
@@ -223,7 +218,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    CALL thetacut%INTERPOL()
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"NEW THETACUT")
-   CALL VERBOSE_WRITE(routinename,"At Theta: (deg)")
    ALLOCATE(beta(size(thetalist)))
    ALLOCATE(philistdeg(size(thetalist)))
    DO j = 1, size(thetalist)
@@ -231,21 +225,15 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       CALL beta(j)%TO_DEG()
       philistdeg(j)=beta(j)%getvalue()
    END DO
-   CALl VERBOSE_WRITE(routinename,philistdeg)
-   CALL VERBOSE_WRITE(routinename,"At Theta: (rad)")
-   CALl VERBOSE_WRITE(routinename,thetalist)
-   CALL VERBOSE_WRITE(routinename,"f:")
-   CALl VERBOSE_WRITE(routinename,f)
-   CALL VERBOSE_WRITE(routinename,"dfdz:")
-   CALL VERBOSE_WRITE(routinename,dfdz)
-   CALL VERBOSE_WRITE(routinename,"dfdr:")
-   CALL VERBOSE_WRITE(routinename,dfdr)
-   CALL VERBOSE_WRITE(routinename,"dfdphi:")
-   CALL VERBOSE_WRITE(routinename,dfdphi)
+   CALL VERBOSE_WRITE(routinename,"At Theta: (deg) ",philistdeg)
+   CALL VERBOSE_WRITE(routinename,"At Theta: (rad) ",thetalist)
+   CALL VERBOSE_WRITE(routinename,"Klist:          ",thetacut%getklist())
+   CALL VERBOSE_WRITE(routinename,"f:              ",f)
+   CALL VERBOSE_WRITE(routinename,"dfdz:           ",dfdz)
+   CALL VERBOSE_WRITE(routinename,"dfdr:           ",dfdr)
+   CALL VERBOSE_WRITE(routinename,"dfdphi:         ",dfdphi)
    SELECT CASE(get_debugmode())
       CASE(.TRUE.)
-         WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.dat" 
-         CALL thetacut%PLOT(100,filename)
          WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.raw" 
          CALL thetacut%PLOTDATA(filename)
          WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.cyc" 

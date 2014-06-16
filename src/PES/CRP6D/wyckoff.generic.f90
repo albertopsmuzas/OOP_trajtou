@@ -509,7 +509,9 @@ END SUBROUTINE INTERPOl_CUT2D
 !> @version 1.0
 !-----------------------------------------------------------
 SUBROUTINE READ_WYCKOFFSITIO(this,u)
+#ifdef DEBUG
    USE DEBUG_MOD
+#endif
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
