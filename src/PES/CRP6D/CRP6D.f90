@@ -230,16 +230,16 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dvdu
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
-   REAL(KIND=8) :: ma,mb ! masses
+   REAL(KIND=8) :: ma,mb
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f ! smooth function and derivs
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: dfdu ! smooth derivatives
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux2
    REAL(KIND=8),DIMENSION(6) :: atomicx
-   REAL(KIND=8) :: va,vb
-   REAL(KIND=8),DIMENSION(3) :: dvdu_atomicA
-   REAL(KIND=8),DIMENSION(3) :: dvdu_atomicB
+   REAL(KIND=8),DIMENSION(2) :: atomic_v
+   REAL(KIND=8),DIMENSION(6) :: atomic_dvdu
+   REAL(KIND=8),DIMENSION(3) :: dvdu_atomicA,dvdu_atomicB
    TYPE(Fourierp4mm) :: xyinterpol
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
@@ -322,32 +322,23 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    !--------------------------------------
    ! Results for the real potential
    !-------------------------------------
-   ma=this%atomdat(1)%getmass()
-   mb=this%atomdat(2)%getmass()
-   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,x,atomicx)
-   SELECT CASE(this%natomic)
-      CASE(1)
-         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE(2)
-         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),va,dvdu_atomicA)
-         CALL this%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),vb,dvdu_atomicB)
-      CASE DEFAULT
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-         CALL EXIT(1)
-   END SELECT
+   CALL this%GET_ATOMICPOT_AND_DERIVS(x,atomicx,atomic_v,atomic_dvdu)
+   dvdu_atomicA=atomic_dvdu(1:3)
+   dvdu_atomicB=atomic_dvdu(4:6)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Contributions of the atomic potential: ")
    CALL VERBOSE_WRITE(routinename, "Position Atom A: ",atomicx(1:3))
-   CALL VERBOSE_WRITE(routinename,"Va: ",va)
+   CALL VERBOSE_WRITE(routinename,"Va: ",atomic_v(1))
    CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVa/dya: ",dvdu_atomicA)
    CALL VERBOSE_WRITE(routinename, "Position Atom B: ",atomicx(4:6))
-   CALL VERBOSE_WRITE(routinename,"Vb: ",vb)
+   CALL VERBOSE_WRITE(routinename,"Vb: ",atomic_v(2))
    CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
 #endif
-   v=aux1(1)+va+vb
+   v=aux1(1)+sum(atomic_v)
    !v=aux1(1)+va+vb+0.8*dexp(-x(4))+this%farpot%getpot(x(4))
 
+   ma=this%atomdat(1)%getmass()
+   mb=this%atomdat(2)%getmass()
    dvdu(1)=aux2(1,1)+dvdu_atomicA(1)+dvdu_atomicB(1)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
    dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
@@ -651,15 +642,13 @@ SUBROUTINE SMOOTH_CRP6D(this)
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
+   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord,dvdu
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
-   REAL(KIND=8) :: ma,mb
    CHARACTER(LEN=14),PARAMETER :: routinename="SMOOTH_CRP6D: "
    REAL(KIND=8) :: newpot
+   REAL(KIND=8),DIMENSION(2) :: atomic_v
    ! Run section
-   ma=this%atomdat(1)%getmass()
-   mb=this%atomdat(2)%getmass()
    DO i = 1, this%nsites ! cycle wyckoff sites
       molcoord(1)=this%wyckoffsite(i)%x
       molcoord(2)=this%wyckoffsite(i)%y
@@ -672,25 +661,9 @@ SUBROUTINE SMOOTH_CRP6D(this)
             DO l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
-               CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
-#ifdef DEBUG
-               CALL DEBUG_WRITE(routinename,"Molecular coords: ",molcoord)
-               CALL DEBUG_WRITE(routinename,"Atomic coords: ",atomcoord)
-#endif
-               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
-               SELECT CASE(this%natomic)
-                  CASE(1)
-                     newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))-&
-                        this%atomiccrp(1)%getpot(atomcoord(4:6))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE(2)
-                     newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))-&
-                        this%atomiccrp(2)%getpot(atomcoord(4:6))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE DEFAULT
-                     WRITE(0,*) "SMOOTH_CRP6D ERR: Something is wrong with number of atomic crp potentials"
-                     CALL EXIT(1)
-               END SELECT
+               CALL this%GET_ATOMICPOT_AND_DERIVS(molcoord,atomcoord,atomic_v,dvdu)
+               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)-sum(atomic_v)
+               CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
             END DO
          END DO
       END DO

@@ -1526,7 +1526,7 @@ Character table for 4mm point symmetry group
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -1864,10 +1864,6 @@ Definition of
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Plain Layout
 
 \end_layout
 
@@ -2358,6 +2354,18 @@ Character table for mm2 point symmetry group
 \end_layout
 
 \begin_layout Standard
+\begin_inset Formula $\sigma_{xz}$
+\end_inset
+
+ and 
+\begin_inset Formula $\sigma_{yz}$
+\end_inset
+
+ can be defined in multiple ways, they only have to be perpendicular to
+ each other:
+\end_layout
+
+\begin_layout Standard
 \begin_inset Float table
 placement H
 wide false
@@ -2543,7 +2551,8 @@ Definition of
 \begin_inset Formula $\theta$
 \end_inset
 
- is an angle
+ is an angle.
+ Choice 1 [mm2]
 \end_layout
 
 \end_inset
@@ -2554,6 +2563,211 @@ Definition of
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="3">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E(\theta)=\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E^{-1}(\theta)=\theta=E(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}(\theta)=\theta+\pi$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}^{-1}(\theta)=\theta-\pi=\theta+\pi=C_{2z}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}^{\oplus}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}^{\oplus}(\theta)=\frac{\pi}{2}-\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\sigma_{d}^{\oplus}\right)^{-1}(\theta)=\frac{\pi}{2}-\theta=\left(\sigma_{d}^{\oplus}\right)^{-1}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}^{\ominus}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}(\theta)=\frac{3\pi}{2}-\theta$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\sigma_{d}^{\ominus}\right)^{-1}(\theta)=\frac{3\pi}{2}-\theta=\left(\sigma_{d}^{\ominus}\right)^{-1}(\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Definition of 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+ functions assuming that 
+\begin_inset Formula $\theta$
+\end_inset
+
+ is an angle.
+ Choice 2 [m45.m135.2]
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Therefore, we can build two Furier tables.
+ Here comes tanble based on choice 1:
 \end_layout
 
 \begin_layout Standard
@@ -2648,7 +2862,180 @@ status collapsed
 \begin_inset Caption
 
 \begin_layout Plain Layout
-Symmetry adapted terms
+Symmetry adapted terms for choice 1
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and now, table based on choice 2:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="1">
+<features booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A_{1}}(\theta)=C_{l}^{\oplus}\left[\rho_{l}+\tau_{l}\right]\cos(l\theta)+C_{l}^{\ominus}\left[\rho_{l}-\tau_{l}\right]\sin(l\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A_{1}}(\theta)=\begin{cases}
+\cos(l\theta) & \iff l\in[0]_{4}=\{0,4,8,12,...\}\\
+0 & \iff l\in[1]_{4}=\{1,5,9,13,...\}\\
+\sin(l\theta) & \iff l\in[2]_{4}=\{2,6,10,14,...\}\\
+0 & \iff l\in[3]_{4}=\{3,7,11,15,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A_{2}}(\theta)=C_{l}^{\oplus}\left[\rho_{l}-\tau_{l}\right]\cos(l\theta)+C_{l}^{\ominus}\left[\rho_{l}+\tau_{l}\right]\sin(l\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{A_{2}}(\theta)=\begin{cases}
+\sin(l\theta) & \iff l\in[0]_{4}=\{0,4,8,12,...\}\\
+0 & \iff l\in[1]_{4}=\{1,5,9,13,...\}\\
+\cos(l\theta) & \iff l\in[2]_{4}=\{2,6,10,14,...\}\\
+0 & \iff l\in[3]_{4}=\{3,7,11,15,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{B_{1}}(\theta)=\left(C_{l}^{\oplus}-C_{l}^{\ominus}i^{l+1}\right)o_{l}\cos(l\theta)+\left(C_{l}^{\ominus}-C_{l}^{\oplus}i^{l+1}\right)o_{l}\sin(l\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{B_{1}}(\theta)=\begin{cases}
+0 & \iff l\in[0]_{4}=\{0,4,8,12,...\}\\
+\cos(l\theta)+\sin(l\theta) & \iff l\in[1]_{2}=\{1,5,9,13,...\}\\
+0 & \iff l\in[2]=\{2,6,10,14,...\}\\
+C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[3]_{4}=\{3,7,11,15,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\left(C_{l}^{\oplus}+C_{l}^{\ominus}i^{l+1}\right)o_{l}\cos(l\theta)+\left(C_{l}^{\ominus}+C_{l}^{\oplus}i^{l+1}\right)o_{l}\sin(l\theta)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\begin{cases}
+0 & \iff l\in[0]_{4}=\{0,4,8,12,...\}\\
+C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[1]_{2}=\{1,5,9,13,...\}\\
+0 & \iff l\in[2]=\{2,6,10,14,...\}\\
+\cos(l\theta)+\sin(l\theta) & \iff l\in[3]_{4}=\{3,7,11,15,...\}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Symmetry adapted terms for choice 2
 \end_layout
 
 \end_inset
@@ -2986,7 +3373,7 @@ Definition of
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -3242,7 +3629,7 @@ Character table for [m] point symmetry group
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3403,7 +3790,7 @@ Definition of
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3472,7 +3859,7 @@ Symmetry adapted terms when
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3704,7 +4091,7 @@ Even switch function
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3779,7 +4166,7 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $l$
+\begin_inset Formula $x$
 \end_inset
 
 
@@ -3803,7 +4190,7 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\rho(l)$
+\begin_inset Formula $\rho(x)$
 \end_inset
 
 
@@ -3852,26 +4239,218 @@ Conceptual form:
 \end_layout
 
 \begin_layout Standard
-Noticeable properties:
+Noticeable properties 
+\begin_inset Formula $\forall x\in\mathbb{Z}$
+\end_inset
+
+:
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula 
-\[
-\rho(x)+\rho(x+1)=1,\,\forall x\in\mathbb{\mathbb{Z}}
-\]
-
+\begin_inset Formula $\rho(x)+\rho(x+1)=1$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Itemize
-\begin_inset Formula 
-\[
-\rho(x)\cdot\rho(x+1)=0,\,\forall x\in\mathbb{Z}
-\]
+\begin_inset Formula $\rho(x)-\rho(x+1)=(-1)^{x}$
+\end_inset
 
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\rho(x)\cdot\rho(x+1)=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $(-1)^{x}\cdot\rho(x)=\rho(x)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $(-1)^{x}\cdot\rho(x+1)=\rho(x)-1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Odd switch function 
+\begin_inset Formula $o(x)$
+\end_inset
+
+ or 
+\begin_inset Formula $o_{x}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="4">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $o\,:\,$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{Z}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\longrightarrow$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\{0,1\}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $x$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\longrightarrow$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\rho(x)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Explicit form: 
+\begin_inset Formula $o(x)=\frac{1-(-1)^{x}}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Conceptual form: 
+\begin_inset Formula $o(x)=\begin{cases}
+0\,\,\iff & x\in[0]_{2}\\
+1\,\,\iff & x\in[1]_{2}
+\end{cases}$
+\end_inset
+
+ , where 
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+Noticeable properties 
+\begin_inset Formula $\forall x\in\mathbb{Z}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $o(x)=1-\rho(x)$
 \end_inset
 
 
@@ -4034,12 +4613,38 @@ Conceptual form:
  
 \end_layout
 
+\begin_layout Standard
+Noticeable properties 
+\begin_inset Formula $\forall x\in\mathbb{Z}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $(-1)^{x}\cdot\tau(x)=\tau(x)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $(-1)^{x}\cdot\tau(x+1)=i^{l+1}\cdot\left(\rho(x)-1\right)=i\cdot\left(\tau(x)-i^{l}\right)$
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 Interesting equivalences
 \end_layout
 
 \begin_layout Subsection
 \begin_inset Formula $\cos\left(\frac{\pi}{2}x\right)$
+\end_inset
+
+ and 
+\begin_inset Formula $\cos\left(\frac{3\pi}{2}x\right)$
 \end_inset
 
  when 
@@ -4050,7 +4655,6 @@ Interesting equivalences
 \end_layout
 
 \begin_layout Standard
-Explicit form: 
 \begin_inset Formula $\cos\left(\frac{\pi}{2}x\right)=i^{x}\cdot\rho(x)=\tau(x)$
 \end_inset
 
@@ -4069,8 +4673,25 @@ Explicit form:
 \end_layout
 
 \begin_layout Standard
-Explicit form: 
 \begin_inset Formula $\sin\left(\frac{\pi}{2}x\right)=-i^{x+1}\cdot\rho(x+1)=-\tau(x+1)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+\begin_inset Formula $\sin\left(\frac{3\pi}{2}x\right)$
+\end_inset
+
+ when 
+\begin_inset Formula $x\in\mathbb{Z}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\sin\left(\frac{3\pi}{2}x\right)=-i\left[\tau(x)-i^{x}\right]=-i^{l+1}\left[\rho(x)-1\right]$
 \end_inset
 
 
