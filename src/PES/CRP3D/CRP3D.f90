@@ -178,7 +178,7 @@ CONTAINS
 !# SUBROUTINE: GET_REPUL_CORRECTIONS_CRP3D 
 !###########################################################
 !> @brief
-!! brief description
+!! Collects interactions 
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Jun/2014
@@ -206,7 +206,7 @@ SUBROUTINE GET_REPUL_CORRECTIONS_CRP3D(this,P,v,dvdz,dvdx,dvdy)
    END FORALL
    DO l = 1, npairpots
       DO k = 0, this%max_order
-         CALL INTERACTION_AENV(k,P,this%surf,this%all_pairpots(l),aux1,aux2,aux3,aux4)
+         CALL INTERACTION_AENV(k,P,this%surf,this%all_pairpots(l),this%dampfunc,aux1,aux2,aux3,aux4)
          v(l)=v(l)+aux1
          dvdz(l)=dvdz(l)+aux2
          dvdx(l)=dvdx(l)+aux3
@@ -899,25 +899,29 @@ END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !
 !> @see extra documentation
 !------------------------------------------------------------------
-SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,interac,dvdz_corr,dvdx_corr,dvdy_corr)
+SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_corr)
    IMPLICIT NONE
    ! I/O VAriables --------------------------------------------
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A, P
    TYPE(Surface),INTENT(IN) :: surf
    TYPE(Pair_pot),INTENT(IN) :: pairpot
+   CLASS(Function1d),INTENT(IN) :: dampfunc
    REAL(KIND=8),INTENT(OUT) :: interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! Local variables ------------------------------------------
    REAL(KIND=8) :: r ! distance
-   REAL(KIND=8) :: aux
+   REAL(KIND=8) :: v,pre
+   REAL(KIND=8) :: aux ! dv/dr
    CHARACTER(LEN=16), PARAMETER :: routinename = "INTERACTION_AP: "
    INTEGER :: i ! Counter
    ! GABBA, GABBA HEY! ----------------------------------------
    ! Find the distance between A and P, in a.u.
    r=dsqrt((A(1)-P(1))**2.D0+(A(2)-P(2))**2.D0+(A(3)-P(3))**2.D0)
-   CALL pairpot%GET_V_AND_DERIVS(r,interac,aux)
-   dvdz_corr = aux*(A(3)-P(3))/r
-   dvdx_corr = aux*(A(1)-P(1))/r
-   dvdy_corr = aux*(A(2)-P(2))/r
+   CALL pairpot%GET_V_AND_DERIVS(r,v,aux)
+   interac=v*dampfunc%getvalue(r)
+   pre=aux*dampfunc%getvalue(r)+v*dampfunc%getderiv(r)
+   dvdz_corr=pre*(A(3)-P(3))/r
+   dvdx_corr=pre*(A(1)-P(1))/r
+   dvdy_corr=pre*(A(2)-P(2))/r
    RETURN
 END SUBROUTINE INTERACTION_AP
 !##################################################################
@@ -940,12 +944,13 @@ END SUBROUTINE INTERACTION_AP
 !> @date Feb/2014;Jun/2014
 !> @version 2.0
 !------------------------------------------------------------------
-SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_term)
+SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
    IMPLICIT NONE
    ! I/O VAriables ------------------------------------------
    INTEGER,INTENT(IN) :: n
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN) :: pairpot
+   CLASS(Function1d),INTENT(IN) :: dampfunc
    TYPE(Surface),INTENT(IN) :: surf
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
@@ -973,7 +978,7 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
       CASE(0)
          DO i=1, surf%atomtype(pairid)%n
             P(:)=surf%atomtype(pairid)%atom(i,:)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac=interac+dummy1
             dvdz_term=dvdz_term+dummy2
             dvdx_term=dvdx_term+dummy3
@@ -992,7 +997,7 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
                aux=surf%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac=interac+dummy1
                dvdz_term=dvdz_term+dummy2
                dvdx_term=dvdx_term+dummy3
@@ -1003,7 +1008,7 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
                aux=surf%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1015,7 +1020,7 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
                aux=surf%surf2cart(aux)
                P(1) =atomx+aux(1)
                P(2) =atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1026,7 +1031,7 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
                aux=surf%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1075,7 +1080,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
    TYPE(Fourierp4mm):: interpolxy
    INTEGER(KIND=4) :: nsites,npairpots
    REAL(KIND=8),DIMENSION(3) :: deriv
-   REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dvdz,dvdx,dvdy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
@@ -1097,19 +1102,15 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(thispes,X,v,dvdu)
          ! do nothing
    END SELECT
    ! Initialization section
-   pot = 0.D0 
-   v = 0.D0 
-   dvdu=(/0.D0,0.D0,0.D0/)
-   deriv=(/0.D0,0.D0,0.D0/)
-   !
-   DO j=1, npairpots
-      pairpot => thispes%all_pairpots(j)
-      DO k=0,thispes%max_order
-         CALL INTERACTION_AENV(k,X,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
-         v = v + pot
-         FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
-      END DO
-   END DO
+   ALLOCATE(pot(npairpots))
+   ALLOCATE(dvdz(npairpots))
+   ALLOCATE(dvdx(npairpots))
+   ALLOCATE(dvdy(npairpots))
+   CALL thispes%GET_REPUL_CORRECTIONS(X,pot,dvdz,dvdx,dvdy)
+   v=sum(pot)
+   dvdu(1)=sum(dvdx)
+   dvdu(2)=sum(dvdy)
+   dvdu(3)=sum(dvdz)
    ! Now, we have all the repulsive interaction and corrections to the derivarives
    ! stored in v(:) and dvdu(:) respectively.
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
@@ -1170,15 +1171,12 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
    ! Local variables
-   TYPE(Fourierp4mm):: interpolxy
    INTEGER(KIND=4) :: npairpots
-   REAL(KIND=8),DIMENSION(3) :: deriv
-   REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dvdz,dvdx,dvdy
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
    INTEGER :: i, j,k ! counters
    ! Pointers
 	REAL(KIND=8), POINTER :: zmax
-   TYPE(Pair_pot),POINTER :: pairpot
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => thispes%all_sites(1)%interz%x(thispes%all_sites(1)%n)
    npairpots = size(thispes%all_pairpots)
@@ -1199,21 +1197,18 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(thispes,X,v,dvdu)
          ! do nothing
    END SELECT
    ! Initializing variables
-   pot = 0.D0 
+   ALLOCATE(pot(npairpots))
+   ALLOCATE(dvdz(npairpots))
+   ALLOCATE(dvdx(npairpots))
+   ALLOCATE(dvdy(npairpots))
    FORALL(i=1:npairpots+1) v(i) = 0.D0
-   dvdu=(/0.D0,0.D0,0.D0/)
-   deriv=(/0.D0,0.D0,0.D0/)
    ! Compute
-   DO j=1, npairpots
-      pairpot => thispes%all_pairpots(j)
-      v(1+j)=0.D0
-      DO k=0,thispes%max_order
-         CALL INTERACTION_AENV(k,X,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
-         v(1+j)=v(1+j)+pot
-         FORALL (i=1:3) dvdu(i) = dvdu(i) + deriv(i)
-      END DO
-   END DO
-   v(1)=sum(v(2:npairpots+1))
+   CALL thispes%GET_REPUL_CORRECTIONS(X,pot,dvdz,dvdx,dvdy)
+   v(1)=sum(pot)
+   FORALL(i=2:npairpots+1) v(i)=pot(i-1)
+   dvdu(1)=sum(dvdx)
+   dvdu(2)=sum(dvdy)
+   dvdu(3)=sum(dvdz)
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D
 !############################################################
@@ -1333,7 +1328,7 @@ REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
    TYPE(Fourierp4mm) :: interpolxy
    INTEGER(KIND=4) :: nsites,npairpots
    REAL(KIND=8),DIMENSION(3) :: A,deriv
-   REAL(KIND=8) :: pot
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dummy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
@@ -1346,23 +1341,18 @@ REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
    npairpots = size(thispes%all_pairpots)
    nsites = size(thispes%all_sites)
    ! GABBA, GABBA HEY! ----------------------
-   SELECT CASE(X(3).GT.zmax)
+   ALLOCATE(pot(npairpots))
+   ALLOCATE(dummy(npairpots))
+   SELECT CASE(X(3)>zmax)
       CASE(.TRUE.)
-         getpot_crp3d = 0.D0
+         getpot_crp3d=0.D0
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    !
-   pot = 0.D0 ! Initialization value
-   v = 0.D0 ! Initialization value
-   DO j=1, npairpots
-      pairpot => thispes%all_pairpots(j)
-      DO k=0,thispes%max_order
-         CALL INTERACTION_AENV(k,X,thispes%surf,pairpot,pot,deriv(3),deriv(1),deriv(2))
-         v = v + pot
-      END DO
-   END DO
+   CALL thispes%GET_REPUL_CORRECTIONS(X,pot,dummy,dummy,dummy)
+   v=sum(pot)
    ! Now, we have all the repulsive interaction and corrections to the derivarives
    ! stored in v(:) and dvdu(:) respectively.
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
@@ -1379,7 +1369,7 @@ REAL(KIND=8) FUNCTION getpot_crp3d(thispes,X)
    CALL interpolxy%INTERPOL(thispes%surf)
    CALL interpolxy%GET_F_AND_DERIVS(thispes%surf,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
-   getpot_crp3d = v + potarr(1)
+   getpot_crp3d=v+potarr(1)
    RETURN
 END FUNCTION getpot_crp3d
 !######################################################################
