@@ -14,6 +14,8 @@ USE CRP3D_MOD
 USE EXTRAPOL_TO_VACUUM_MOD
 USE FOURIER_P4MM_MOD
 USE WYCKOFF_P4MM_MOD
+USE LOGISTIC_FUNCTION_MOD
+USE ONE_FUNCTION_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////
 ! TYPE: CRP6D
@@ -29,6 +31,7 @@ TYPE,EXTENDS(PES) :: CRP6D
    CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE :: wyckoffsite
    TYPE(CRP3D),DIMENSION(:),ALLOCATABLE :: atomiccrp
    TYPE(Vacuumpot) :: farpot
+   CLASS(Function1d),ALLOCATABLE :: dumpfunc
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: xyklist
    CONTAINS
       ! Initialization block
@@ -100,6 +103,8 @@ SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
          WRITE(0,*) "GET_ATOMICPOT_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
          CALL EXIT(1)
    END SELECT
+   v(1)=v(1)*this%dumpfunc%getvalue(atomicx(3))
+   v(2)=v(2)*this%dumpfunc%getvalue(atomicx(6))
    RETURN
 END SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D
 !###########################################################
@@ -924,6 +929,7 @@ SUBROUTINE READ_CRP6D(this,filename)
    INTEGER(KIND=4) :: natomic ! number of atomic potentials
    INTEGER(KIND=4) :: auxint 
    REAL(KIND=8) :: auxr
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: param_dump
    CHARACTER(LEN=30) :: cut2dfilename, string
    CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP6D: "
    CHARACTER,DIMENSION(:),ALLOCATABLE :: letter
@@ -980,9 +986,26 @@ SUBROUTINE READ_CRP6D(this,filename)
             ! do nothing
       END SELECT
    END DO
+   ! Read Far potential file -----------------------
    READ(180,*) string
    CALL this%farpot%INITIALIZE(string)
-   ! Read number of wyckoff sites and its letters
+   ! Read dumping function ------------------------
+   READ(180,*) string
+   SELECT CASE(string)
+      CASE("Logistic")
+         ALLOCATE(Logistic_func::this%dumpfunc)
+         ALLOCATE(param_dump(2))
+         READ(180,*) param_dump
+         CALL this%dumpfunc%READ(param_dump)
+      CASE("None") 
+         ALLOCATE(One_func::this%dumpfunc)
+         READ(180,*) ! dummy line
+      CASE DEFAULT
+         WRITE(0,*) "READ_CRP6D ERR: Keyword for dumping function needed"
+         WRITE(*,*) "Currently implemented: Logistical, None"
+         CALL EXIT(1)
+   END SELECT
+   ! Read number of wyckoff sites and its letters ----------------
    READ(180,'(I2)',advance="no") this%nsites
    ALLOCATE(letter(this%nsites))
    READ(180,*) letter(:)

@@ -70,20 +70,20 @@ PRIVATE
    CHARACTER(LEN=4) :: symmlabel
 CONTAINS
    ! Initiallize
-   PROCEDURE, PUBLIC :: INITIALIZE
+   PROCEDURE, PUBLIC :: INITIALIZE => INITIALIZE_SURFACE
    ! Operations block
-   PROCEDURE,PUBLIC :: surf2cart
-   PROCEDURE,PUBLIC :: cart2surf
-   PROCEDURE,PUBLIC :: surfunit2cart
-   PROCEDURE,PUBLIC :: cart2surfunit
-   PROCEDURE,PUBLIC :: recip2cart
-   PROCEDURE,PUBLIC :: cart2recip
-   PROCEDURE,PUBLIC :: project_unitcell
-   PROCEDURE,PUBLIC :: project_iwscell
+   PROCEDURE,PUBLIC :: surf2cart => surf2cart_SURFACE
+   PROCEDURE,PUBLIC :: cart2surf => cart2surf_SURFACE
+   PROCEDURE,PUBLIC :: surfunit2cart => surfunit2cart_SURFACE
+   PROCEDURE,PUBLIC :: cart2surfunit => cart2surfunit_SURFACE
+   PROCEDURE,PUBLIC :: recip2cart => recip2cart_SURFACE
+   PROCEDURE,PUBLIC :: cart2recip => cart2recip_SURFACE
+   PROCEDURE,PUBLIC :: project_unitcell => project_unitcell_SURFACE
+   PROCEDURE,PUBLIC :: project_iwscell => project_iwscell_SURFACE
    ! Enquire block
-   PROCEDURE,PUBLIC :: is_initialized
-   PROCEDURE,PUBLIC :: tellsymmlabel
-   PROCEDURE,PUBLIC :: tellfilename
+   PROCEDURE,PUBLIC :: is_initialized => is_initialized_SURFACE
+   PROCEDURE,PUBLIC :: tellsymmlabel => tellsymmlabel_SURFACE
+   PROCEDURE,PUBLIC :: tellfilename => tellfilename_SURFACE
 END TYPE
 ! MODULE CONTAINS 
 CONTAINS
@@ -93,44 +93,44 @@ CONTAINS
 !> @brief
 !! Typical enquire function
 !-----------------------------------------------------------
-CHARACTER(LEN=30) FUNCTION tellfilename(this) 
+CHARACTER(LEN=30) FUNCTION tellfilename_SURFACE(this) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: this
    ! Run section
-   tellfilename=this%filename
+   tellfilename_SURFACE=this%filename
    RETURN
-END FUNCTION tellfilename
+END FUNCTION tellfilename_SURFACE
 !###########################################################
 !# FUNCTION: tellsymmlabel 
 !###########################################################
 !> @brief
 !! typical enquire function
 !-----------------------------------------------------------
-CHARACTER(LEN=4) FUNCTION tellsymmlabel(this) 
+CHARACTER(LEN=4) FUNCTION tellsymmlabel_SURFACE(this) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN):: this
    ! Run section
-   tellsymmlabel=this%symmlabel
+   tellsymmlabel_SURFACE=this%symmlabel
    RETURN
-END FUNCTION tellsymmlabel   
+END FUNCTION tellsymmlabel_SURFACE
 !###########################################################
 !# FUNCTION: is_initialized 
 !###########################################################
 ! - Check if surface type is already initialized
 !-----------------------------------------------------------
-LOGICAL FUNCTION is_initialized(surf) 
+LOGICAL FUNCTION is_initialized_SURFACE(surf) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
    ! Run section
-   is_initialized=surf%initialized
+   is_initialized_SURFACE=surf%initialized
    RETURN
-END FUNCTION is_initialized
+END FUNCTION is_initialized_SURFACE
   
 !###############################################################################
 !# SUBROUTINE: INITIALIZE ######################################################
@@ -138,7 +138,7 @@ END FUNCTION is_initialized
 !> @brief
 !! Initializes surface from file @b filename
 !-------------------------------------------------------------------------------
-SUBROUTINE INITIALIZE(surf,filename)
+SUBROUTINE INITIALIZE_SURFACE(surf,filename)
    USE UNITS_MOD
    USE MATHS_MOD 
    USE CONSTANTS_MOD
@@ -309,109 +309,109 @@ SUBROUTINE INITIALIZE(surf,filename)
       CALL EXIT(1)
    END IF
    RETURN
-END SUBROUTINE INITIALIZE
+END SUBROUTINE INITIALIZE_SURFACE
 !###########################################################
 !# FUNCTION: cart2surf 
 !###########################################################
 ! - Goes from auxiliar cartesian coordinates to surface coordinates
 !-----------------------------------------------------------
-FUNCTION cart2surf(surf,r) 
+FUNCTION cart2surf_SURFACE(surf,r) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
    REAL(KIND=8), DIMENSION(2), INTENT(IN) :: r
    ! Local variables
-   REAL(KIND=8),DIMENSION(2) :: cart2surf
+   REAL(KIND=8),DIMENSION(2) :: cart2surf_SURFACE
    ! Run section
-   cart2surf=matmul(surf%cart2surf_mtrx,r)
+   cart2surf_SURFACE=matmul(surf%cart2surf_mtrx,r)
    RETURN
-END FUNCTION cart2surf
+END FUNCTION cart2surf_SURFACE
 !###########################################################
 !# FUNCTION: surf2cart 
 !###########################################################
 ! - Goes from surface to auxiliar cartesian coordinates
 !-----------------------------------------------------------
-FUNCTION surf2cart(surf,r) 
+FUNCTION surf2cart_SURFACE(surf,r) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
    REAL(KIND=8), DIMENSION(2),INTENT(IN) :: r
    ! Local variables
-   REAL(KIND=8),DIMENSION(2) :: surf2cart
+   REAL(KIND=8),DIMENSION(2) :: surf2cart_SURFACE
    ! Run section
-   surf2cart=matmul(surf%surf2cart_mtrx,r)
+   surf2cart_SURFACE=matmul(surf%surf2cart_mtrx,r)
    RETURN
-END FUNCTION surf2cart
+END FUNCTION surf2cart_SURFACE
 !###########################################################
 !# FUNCTION: surfunit2cart 
 !###########################################################
 ! - Goes from unit surface to auxiliar cartesian coordinates
 !-----------------------------------------------------------
-FUNCTION surfunit2cart(surf,r) 
+FUNCTION surfunit2cart_SURFACE(surf,r) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
    REAL(KIND=8), DIMENSION(2),INTENT(IN) :: r
    ! Local variables
-   REAL(KIND=8),DIMENSION(2) :: surfunit2cart
+   REAL(KIND=8),DIMENSION(2) :: surfunit2cart_SURFACE
    ! Run section
-   surfunit2cart=matmul(surf%surfunit2cart_mtrx,r)
+   surfunit2cart_SURFACE=matmul(surf%surfunit2cart_mtrx,r)
    RETURN
-END FUNCTION surfunit2cart
+END FUNCTION surfunit2cart_SURFACE
 !###########################################################
 !# FUNCTION: cart2surfunit
 !###########################################################
 ! - Goes from auxiliar cartesian coordinates to surface coordinates
 !-----------------------------------------------------------
-FUNCTION cart2surfunit(surf,r) 
+FUNCTION cart2surfunit_SURFACE(surf,r) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
    REAL(KIND=8), DIMENSION(2), INTENT(IN) :: r
    ! Local variables
-   REAL(KIND=8),DIMENSION(2) :: cart2surfunit
+   REAL(KIND=8),DIMENSION(2) :: cart2surfunit_SURFACE
    ! Run section
-   cart2surfunit=matmul(surf%cart2surfunit_mtrx,r)
+   cart2surfunit_SURFACE=matmul(surf%cart2surfunit_mtrx,r)
    RETURN
-END FUNCTION cart2surfunit
+END FUNCTION cart2surfunit_SURFACE
 !###########################################################
 !# FUNCTION: cart2recip
 !###########################################################
 ! - Goes from auxiliar cartesian to reciprocal space coordinates
 !-----------------------------------------------------------
-FUNCTION cart2recip(surf,r) 
+FUNCTION cart2recip_SURFACE(surf,r) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
    REAL(KIND=8), DIMENSION(2),INTENT(IN) :: r
    ! Local variables
-   REAL(KIND=8),DIMENSION(2) :: cart2recip
+   REAL(KIND=8),DIMENSION(2) :: cart2recip_SURFACE
    ! Run section
-   cart2recip=matmul(surf%cart2recip_mtrx,r)
+   cart2recip_SURFACE=matmul(surf%cart2recip_mtrx,r)
    RETURN
-END FUNCTION cart2recip
+END FUNCTION cart2recip_SURFACE
 !###########################################################
 !# FUNCTION: recip2cart 
 !###########################################################
 ! - Goes from auxiliar cartesian to surface coordinates
 !-----------------------------------------------------------
-FUNCTION recip2cart(surf,r) 
+FUNCTION recip2cart_SURFACE(surf,r) 
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
    REAL(KIND=8), DIMENSION(2), INTENT(IN) :: r
    ! Local variables
-   REAL(KIND=8),DIMENSION(2) :: recip2cart
+   REAL(KIND=8),DIMENSION(2) :: recip2cart_SURFACE
    ! Run section
-   recip2cart=matmul(surf%recip2cart_mtrx,r)
+   recip2cart_SURFACE=matmul(surf%recip2cart_mtrx,r)
    RETURN
-END FUNCTION recip2cart
+END FUNCTION recip2cart_SURFACE
 !################################################################
 !# SUBROUTINE: PROJECT_UNITCELL #################################
 !################################################################
@@ -421,24 +421,24 @@ END FUNCTION recip2cart
 !> @warning
 !! - Input/output in cartesian coordinates (r)
 !----------------------------------------------------------------
-FUNCTION project_unitcell(surf,r)
+FUNCTION project_unitcell_SURFACE(surf,r)
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(Surface),INTENT(IN) :: surf
 	REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
 	! Local variables
-   REAL(KIND=8),DIMENSION(2) :: project_unitcell
+   REAL(KIND=8),DIMENSION(2) :: project_unitcell_SURFACE
 	REAL(KIND=8), DIMENSION(2) :: aux
 	INTEGER :: i ! counters
 	! HEY, HO! LET'S GO !!! ----------------------
-   project_unitcell = surf%cart2surf(r)
+   project_unitcell_SURFACE = surf%cart2surf(r)
 	FORALL (i=1:2) 
-		aux(i)=DFLOAT(INT(project_unitcell(i)))
-		project_unitcell(i)=project_unitcell(i)-aux(i)
+		aux(i)=dfloat(int(project_unitcell_SURFACE(i),8))
+		project_unitcell_SURFACE(i)=project_unitcell_SURFACE(i)-aux(i)
 	END FORALL
-   project_unitcell = surf%surf2cart(project_unitcell)
+   project_unitcell_SURFACE = surf%surf2cart(project_unitcell_SURFACE)
 	RETURN
-END FUNCTION project_unitcell
+END FUNCTION project_unitcell_SURFACE
 !################################################################
 ! SUBROUTINE: project_iwscell ###################################
 !################################################################
@@ -453,7 +453,7 @@ END FUNCTION project_unitcell
 !! - r is in cartesian coordinates (Input and output)
 !! - Only C4v symmetry
 !----------------------------------------------------------------
-FUNCTION project_iwscell(surf,x)
+FUNCTION project_iwscell_SURFACE(surf,x)
    USE CONSTANTS_MOD
 	IMPLICIT NONE
 	! I/O variables
@@ -465,14 +465,14 @@ FUNCTION project_iwscell(surf,x)
 	REAL*8,DIMENSION(2) :: aux
 	REAL*8 :: angle, radius, alpha
 	INTEGER :: i ! counters
-   REAL(KIND=8),DIMENSION(2) :: project_iwscell
+   REAL(KIND=8),DIMENSION(2) :: project_iwscell_SURFACE
 	! HEY, HO! LET'S GO! ------------------
 	! Go to surface coordinates
    r = x
 	r = surf%cart2surf(r)
 	FORALL (i=1:2) 
-		aux(i)=DFLOAT(INT(r(i)))
-		r(i)=r(i)-aux(i)
+      aux(i)=DFLOAT(INT(r(i),8))
+      r(i)=r(i)-aux(i)
 	END FORALL
 	! Now, r vector is inside the unit cell. Let's define this vector
 	! taking as the origin the center of the cell (in surface units is 0.5,0.5):
@@ -518,7 +518,7 @@ FUNCTION project_iwscell(surf,x)
 	FORALL (i=1:2) r(i)=r(i)+0.5D0
 	! Go to cartesian coordinates
    r = surf%surf2cart(r)
-   project_iwscell = r
+   project_iwscell_SURFACE = r
 	RETURN
-END FUNCTION project_iwscell
+END FUNCTION project_iwscell_SURFACE
 END MODULE SURFACE_MOD

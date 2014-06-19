@@ -9,8 +9,8 @@ TYPE(CRP3D) :: crp_pes
 REAL(KIND=8),DIMENSION(3) :: r,dvdu
 REAL(KIND=8) :: v
 ! Run section===================================================================================0
-CALL SET_DEBUG_MODE(.FALSE.)
-CALL SET_VERBOSE_MODE(.TRUE.)
+!CALL SET_DEBUG_MODE(.FALSE.)
+!CALL SET_VERBOSE_MODE(.TRUE.)
 ! STEP 1: INSERT VALUE FROM STD INPUT
 READ(*,*) r
 ! STEP 2: INITIALIZE CRP PES:

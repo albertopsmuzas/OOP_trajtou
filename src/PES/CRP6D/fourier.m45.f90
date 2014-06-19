@@ -15,10 +15,6 @@ IMPLICIT NONE
 ! TYPE: term_Ap
 !> @brief
 !! Child class of abstract termcalculator. Strcture to avoid unnecessary switches
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date ! type a date
-!> @version 1.0
 !----------------------------------------------------------------
 TYPE,EXTENDS(Termcalculator) :: term_Ap
 PRIVATE
@@ -27,6 +23,18 @@ CONTAINS
    PROCEDURE,PUBLIC:: getvalue => termfou1d_M45_Ap
    PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_M45_Ap
 END TYPE term_Ap
+!/////////////////////////////////////////////////////////////////
+! TYPE: term_expanded_m45m1352_A1
+!> @brief
+!! Child class of abstract termcalculator. Strcture to avoid unnecessary switches
+!----------------------------------------------------------------
+TYPE,EXTENDS(Termcalculator) :: term_expanded_m45m1352_A1
+PRIVATE
+   ! some atributes
+CONTAINS
+   PROCEDURE,PUBLIC:: getvalue => termfou1d_expanded_m45m1352_A1
+   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_expanded_m45m1352_A1
+END TYPE term_expanded_m45m1352_A1
 !/////////////////////////////////////////////////
 ! TYPE: FOURIER1D_M45
 !> @brief
@@ -64,14 +72,65 @@ SUBROUTINE SET_IRREP_FOURIER1D_M45(this,irrep)
          this%irrep=irrep
          ALLOCATE(this%klist(this%n))
          FORALL(i=1:this%n) this%klist(i)=i-1
-         
+      CASE("A1") ! expanded symmetry
+         ALLOCATE(term_expanded_m45m1352_A1::this%term)
+         this%irrep=irrep
+         ALLOCATE(this%klist(this%n))
+         FORALL(i=1:this%n) this%klist(i)=(i-1)*2
       CASE DEFAULT
          WRITE(0,*) "SET_IRREP_FOURIER1D_M45 ERR: irrep used is not implemented or does not exist"
-         WRITE(0,*) "List of irreps implemented: A1"
+         WRITE(0,*) "List of irreps implemented: Ap, A1"
+         WRITE(0,*) "Be careful with A1, it is an expanded symmetry flag. In this case we're using symmetry m45m1352_A1"
          CALL EXIT(1)
    END SELECT
    RETURN
 END SUBROUTINE SET_IRREP_FOURIER1D_M45
+!###########################################################
+!# FUNCTION: termfou1d_expanded_m45m1352_A1 
+!###########################################################
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION termfou1d_expanded_m45m1352_A1(this,kpoint,x) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Term_expanded_m45m1352_A1),INTENT(IN) :: this
+   INTEGER(KIND=4),INTENT(IN) :: kpoint
+   REAL(KIND=8),INTENT(IN) :: x
+   ! Run section
+   SELECT CASE(mod(kpoint,4))
+      CASE(0)
+         termfou1d_expanded_m45m1352_A1=dcos(dfloat(kpoint)*x)
+      CASE(2)
+         termfou1d_expanded_m45m1352_A1=dsin(dfloat(kpoint)*x)
+      CASE DEFAULT
+          WRITE(0,*) "termfou1d_expanded_m45m1352_A1 ERR: Unclassificable kpoint"
+          CALL EXIT(1)
+   END SELECT
+   RETURN
+END FUNCTION termfou1d_expanded_m45m1352_A1
+!###########################################################
+!# FUNCTION: termfou1d_dx_expanded_m45m1352_A1 
+!###########################################################
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION termfou1d_dx_expanded_m45m1352_A1(this,kpoint,x) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Term_expanded_m45m1352_A1),INTENT(IN) :: this
+   INTEGER(KIND=4),INTENT(IN) :: kpoint
+   REAL(KIND=8),INTENT(IN) :: x
+   ! Run section
+   SELECT CASE(mod(kpoint,4))
+      CASE(0)
+         termfou1d_dx_expanded_m45m1352_A1=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+      CASE(2)
+         termfou1d_dx_expanded_m45m1352_A1=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
+      CASE DEFAULT
+          WRITE(0,*) "termfou1d_dx_expanded_m45m1352_A1 ERR: Unclassificable kpoint"
+          CALL EXIT(1)
+   END SELECT
+   RETURN
+END FUNCTION termfou1d_dx_expanded_m45m1352_A1
 !###########################################################
 !# FUNCTION: termfou1d_M45_Ap
 !###########################################################
@@ -94,7 +153,7 @@ REAL(KIND=8) FUNCTION termfou1d_M45_Ap(this,kpoint,x)
       CASE(3)   
          termfou1d_M45_Ap=dcos(dfloat(kpoint)*x)-dsin(dfloat(kpoint)*x)
       CASE DEFAULT
-          WRITE(0,*) "termfou_m45_Ap ERR: Unclassificable kpoint"
+          WRITE(0,*) "termfou1d_m45_Ap ERR: Unclassificable kpoint"
           CALL EXIT(1)
    END SELECT
    RETURN
@@ -121,7 +180,7 @@ REAL(KIND=8) FUNCTION termfou1d_dx_M45_Ap(this,kpoint,x)
       CASE(3)   
          termfou1d_dx_M45_Ap=(-dsin(dfloat(kpoint)*x)-cos(dfloat(kpoint)*x))*dfloat(kpoint)
       CASE DEFAULT
-          WRITE(0,*) "termfou_m45_Ap ERR: Unclassificable kpoint"
+          WRITE(0,*) "termfou1d_m45_Ap ERR: Unclassificable kpoint"
           CALL EXIT(1)
    END SELECT
    RETURN

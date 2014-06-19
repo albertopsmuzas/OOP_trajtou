@@ -74,6 +74,11 @@ CALL thisrawpes%PLOT_DIRECTION1D_SMOOTH("zscansmooth.10.dat",500,45.D0,r(3),l2)
 CALL thispes%PLOT_SITIOS(1000)
 CALL thispes%PLOT_PAIRPOTS(1000)
 
+r=(/2.04125854717D0,0.680419515722D0,-1.D0/)
+CALL thispes%PLOT_Z(1000,r,12.D0,"3-1-scan.dat")
+r=(/0.680419515722D0,0.680419515722D0,-1.D0/)
+CALL thispes%PLOT_Z(1000,r,12.D0,"1-1-scan.dat")
+
 CALL ETIME(tiempoarr,tiempo)
 WRITE(*,*) "Total time: ", tiempo
 END PROGRAM CRP_TEST

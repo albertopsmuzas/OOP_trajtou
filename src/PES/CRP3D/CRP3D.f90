@@ -13,6 +13,8 @@ MODULE CRP3D_MOD
    USE SURFACE_MOD
    USE CUBICSPLINES_MOD
    USE FOURIER_P4MM_MOD
+   USE LOGISTIC_FUNCTION_MOD
+   USE ONE_FUNCTION_MOD
 ! Initial declarations
 IMPLICIT NONE
 !///////////////////////////////////////////////////////////////////////////////
@@ -141,6 +143,7 @@ TYPE,EXTENDS(PES) :: CRP3D
    TYPE(Sitio),DIMENSION(:),ALLOCATABLE :: all_sites
    TYPE(Surface) :: surf
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: klist
+   CLASS(Function1d),ALLOCATABLE:: dampfunc
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_CRP3D
@@ -148,6 +151,7 @@ TYPE,EXTENDS(PES) :: CRP3D
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_CORRECTION => GET_V_AND_DERIVS_CORRECTION_CRP3D
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP3D
+      PROCEDURE,PUBLIC :: GET_REPUL_CORRECTIONS => GET_REPUL_CORRECTIONS_CRP3D
       PROCEDURE,PUBLIC :: getpot => getpot_crp3d
       PROCEDURE,PUBLIC :: getrumpling => getrumpling_CRP3D
       ! Enquire block
@@ -166,9 +170,51 @@ TYPE,EXTENDS(PES) :: CRP3D
       PROCEDURE,PUBLIC :: PLOT_DIRECTION1D_CORRECTION => PLOT_DIRECTION1D_CORRECTION_CRP3D
       PROCEDURE,PUBLIC :: PLOT_SITIOS => PLOT_SITIOS_CRP3D
       PROCEDURE,PUBLIC :: PLOT_PAIRPOTS => PLOT_PAIRPOTS_CRP3D
+      PROCEDURE,PUBLIC :: PLOT_Z => PLOT_Z_CRP3D
 END TYPE CRP3D
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: GET_REPUL_CORRECTIONS_CRP3D 
+!###########################################################
+!> @brief
+!! brief description
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE GET_REPUL_CORRECTIONS_CRP3D(this,P,v,dvdz,dvdx,dvdy)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP3D),INTENT(IN) :: this
+   REAL(KIND=8),DIMENSION(3),INTENT(IN) :: P
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdx,dvdy,dvdz ! corrections to the derivatives
+   ! Local variables
+   INTEGER(KIND=4) :: npairpots
+   INTEGER(KIND=4) :: l,k ! counters
+   REAL(KIND=8) :: aux1,aux2,aux3,aux4
+   ! Run section
+   npairpots=size(this%all_pairpots)
+   FORALL(l=1:npairpots)
+      v(l)=0.D0
+      dvdz(l)=0.D0
+      dvdx(l)=0.D0
+      dvdy(l)=0.D0
+   END FORALL
+   DO l = 1, npairpots
+      DO k = 0, this%max_order
+         CALL INTERACTION_AENV(k,P,this%surf,this%all_pairpots(l),aux1,aux2,aux3,aux4)
+         v(l)=v(l)+aux1
+         dvdz(l)=dvdz(l)+aux2
+         dvdx(l)=dvdx(l)+aux3
+         dvdy(l)=dvdy(l)+aux4
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE GET_REPUL_CORRECTIONS_CRP3D
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_PAIRPOT 
 !###########################################################
@@ -533,6 +579,8 @@ SUBROUTINE READ_CRP3D(this,filename)
    INTEGER(KIND=4) :: n_pairpots,n_sites,max_order
    CHARACTER(LEN=30) :: file_surf
    CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_sites
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: param
+   CHARACTER(LEN=30) :: string
    CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_pairpots
    CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP3D: "
    CHARACTER(LEN=2),DIMENSION(1) :: symbol
@@ -567,6 +615,23 @@ SUBROUTINE READ_CRP3D(this,filename)
       CALL VERBOSE_WRITE(routinename,files_pairpots(i))
 #endif
    END DO
+   READ(11,*) string
+   SELECT CASE(string)
+      CASE("Logistic")
+         ALLOCATE(Logistic_func::this%dampfunc)
+         ALLOCATE(param(2))
+         READ(11,*) param
+         CALL this%dampfunc%READ(param)
+      CASE("None")
+         ALLOCATE(One_func::this%dampfunc)
+         READ(11,*) ! dummy
+      CASE DEFAULT
+         WRITE(0,*) "READ_CRP3D ERR: dampfunction keyword is not implemented"
+         WRITE(0,*) "Implemented ones: Logistic, None"
+         WRITE(0,*) "Case sensitive"
+         CALL EXIT(1)
+   END SELECT
+   ! Read Sitios----------------------
    READ(11,*) n_sites
 #ifdef DEBUG
    CALL DEBUG_WRITE(routinename,"Sitios: ",n_sites)
@@ -698,32 +763,28 @@ SUBROUTINE SMOOTH_CRP3D(thispes)
    CLASS(CRP3D),INTENT(INOUT) :: thispes
    ! Local variables
    REAL(KIND=8),DIMENSION(3) :: A
-   REAL(KIND=8) :: dummy
    INTEGER(KIND=4) :: i,j,k,l ! counters
    INTEGER(KIND=4) :: npairpots,nsites
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: interac,dvdzr ! collects interactions and corrections to
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: v,dvdzr,dummy
    CHARACTER(LEN=14) :: routinename="SMOOTH_CRP3D: "
    ! Run section ----------
    nsites = size(thispes%all_sites)
    npairpots = size(thispes%all_pairpots)
-   ALLOCATE(interac(0:thispes%max_order))
-   ALLOCATE(dvdzr(0:thispes%max_order))
+   ALLOCATE(v(npairpots))
+   ALLOCATE(dvdzr(npairpots))
+   ALLOCATE(dummy(npairpots))
    DO i = 1, nsites ! loop over sites
       A(1) = thispes%all_sites(i)%x
       A(2) = thispes%all_sites(i)%y
       DO j = 1, thispes%all_sites(i)%n ! loop over pairs v,z
          A(3)=thispes%all_sites(i)%z(j)
-         DO l = 1, npairpots ! loop over pairpots
-            DO k = 0, thispes%max_order ! loop over environment orders
-               CALL INTERACTION_AENV(k,A,thispes%surf,thispes%all_pairpots(l),interac(k),dvdzr(k),dummy,dummy)
-            END DO
-            thispes%all_sites(i)%interz%f(j)=thispes%all_sites(i)%interz%f(j)-sum(interac)
-            IF (j.EQ.1) THEN
-               thispes%all_sites(i)%dz1=thispes%all_sites(i)%dz1-SUM(dvdzr) ! correct first derivative
-            ELSE IF (j.EQ.thispes%all_sites(i)%n) THEN
-               thispes%all_sites(i)%dz2=thispes%all_sites(i)%dz2-SUM(dvdzr) ! correct first derivative
-            END IF
-         END DO
+         CALL thispes%GET_REPUL_CORRECTIONS(A,v,dvdzr,dummy,dummy)
+         thispes%all_sites(i)%interz%f(j)=thispes%all_sites(i)%interz%f(j)-sum(v)
+         IF (j.EQ.1) THEN
+            thispes%all_sites(i)%dz1=thispes%all_sites(i)%dz1-sum(dvdzr) ! correct first derivative
+         ELSE IF (j.EQ.thispes%all_sites(i)%n) THEN
+            thispes%all_sites(i)%dz2=thispes%all_sites(i)%dz2-sum(dvdzr) ! correct first derivative
+         END IF
       END DO
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Site smoothed: ",i)
@@ -867,7 +928,7 @@ END SUBROUTINE INTERACTION_AP
 !! environment of order @b n.
 !
 !> @param[in] n - Environment order
-!> @param[in] A - Point in space
+!> @param[in] A - Point in space, cartesian coordinates
 !> @param[in] surf - Periodic surface 
 !> @param[in] pairpot - Pair potential which defines interaction potential
 !> @param[out] interac - Total interaction with the environment defined
@@ -889,7 +950,8 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P
-   REAL(KIND=8),DIMENSION(2) :: center_real,aux
+   REAL(KIND=8),DIMENSION(3) :: ghost_A ! A in cartesians, but inside unitcell
+   REAL(KIND=8),DIMENSION(2) :: aux
    INTEGER(KIND=4),DIMENSION(2) :: center_int
    REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
    REAL(KIND=8) :: atomx, atomy
@@ -903,19 +965,15 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
    dvdz_term=0.D0
    dvdx_term=0.D0
    dvdy_term=0.D0
-   center_real=surf%cart2surf(A(1:2))
-   center_int(1)=int(center_real(1))
-   center_int(2)=int(center_real(2))
-   center_real(1)=dfloat(center_int(1))
-   center_real(2)=dfloat(center_int(2))
-   center_real=surf%surf2cart(center_real)
+   ! ghost A definition
+   ghost_A(1:2)=surf%project_unitcell(A(1:2))
+   ghost_A(3)=A(3)
+
    SELECT CASE(n)
       CASE(0)
          DO i=1, surf%atomtype(pairid)%n
-            P(1)=surf%atomtype(pairid)%atom(i,1)+center_real(1)
-            P(2)=surf%atomtype(pairid)%atom(i,2)+center_real(2)
-            P(3)=surf%atomtype(pairid)%atom(i,3)
-            CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+            P(:)=surf%atomtype(pairid)%atom(i,:)
+            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
             interac=interac+dummy1
             dvdz_term=dvdz_term+dummy2
             dvdx_term=dvdx_term+dummy3
@@ -929,44 +987,46 @@ SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,interac,dvdz_term,dvdx_term,dvdy_te
             atomy=surf%atomtype(pairid)%atom(i,2)
             P(3)=surf%atomtype(pairid)%atom(i,3)
             DO k= -n,n
-               P(1)=dfloat(n)
-               P(2)=dfloat(k)
-               P(1:2)=surf%surf2cart(P(1:2))
-               P(1)=P(1)+atomx+center_real(1)
-               P(2)=P(2)+atomy+center_real(2)
-               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               aux(1)=dfloat(n)
+               aux(2)=dfloat(k)
+               aux=surf%surf2cart(aux)
+               P(1)=atomx+aux(1)
+               P(2)=atomy+aux(2)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
                interac=interac+dummy1
                dvdz_term=dvdz_term+dummy2
                dvdx_term=dvdx_term+dummy3
                dvdy_term=dvdy_term+dummy4
-               P(1)=dfloat(-n)
-               P(2)=dfloat(k)
-               P(1:2)=surf%surf2cart(P(1:2))
-               P(1)=P(1)+atomx+center_real(1)
-               P(2)=P(2)+atomy+center_real(2)
-               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               !
+               aux(1)=dfloat(-n)
+               aux(2)=dfloat(k)
+               aux=surf%surf2cart(aux)
+               P(1)=atomx+aux(1)
+               P(2)=atomy+aux(2)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
                dvdy_term = dvdy_term+dummy4
             END DO
             DO k= -n+1, n-1
-               P(1) =dfloat(k)
-               P(2) =dfloat(n)
-               P(1:2)=surf%surf2cart(P(1:2))
-               P(1)=P(1)+atomx+center_real(1)
-               P(2)=P(2)+atomy+center_real(2)
-               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               aux(1)=dfloat(k)
+               aux(2)=dfloat(n)
+               aux=surf%surf2cart(aux)
+               P(1) =atomx+aux(1)
+               P(2) =atomy+aux(2)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
                dvdy_term = dvdy_term+dummy4
-               P(1)=dfloat(k)
-               P(2)=dfloat(-n)
-               P(1:2)=surf%surf2cart(P(1:2))
-               P(1)=P(1)+atomx+center_real(1)
-               P(2)=P(2)+atomy+center_real(2)
-               CALL INTERACTION_AP(A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
+               !
+               aux(1)=dfloat(k)
+               aux(2)=dfloat(-n)
+               aux=surf%surf2cart(aux)
+               P(1)=atomx+aux(1)
+               P(2)=atomy+aux(2)
+               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1809,6 +1869,72 @@ SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(thispes,filename,npoints,angle,z,L)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D
+!#######################################################################
+! SUBROUTINE: PLOT_Z_CRP3D #############################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut along z direction
+!
+!> @param[in] thispes - CRP3D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!!                    cut. It should be given in degrees.
+!> @param[in] xyz - Initial point
+!> @param[in] L - Length of the graphic
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 09/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+SUBROUTINE PLOT_Z_CRP3D(thispes,npoints,xyz,L,filename)
+   USE CONSTANTS_MOD
+   IMPLICIT NONE
+   ! I/O variables -------------------------------
+   CLASS(CRP3D),INTENT(IN) :: thispes
+   INTEGER, INTENT(IN) :: npoints
+   CHARACTER(LEN=*), INTENT(IN) :: filename
+   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: xyz
+   ! Local variables -----------------------------
+   INTEGER :: inpoints, ndelta
+   REAL*8 :: delta,L,s,alpha
+   REAL*8 :: zmax, zmin 
+   REAL*8, DIMENSION(3) :: r, dvdu
+   REAL(KIND=8) :: v
+   INTEGER :: i ! Counter
+   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   ! HE HO ! LET'S GO ----------------------------
+   IF (npoints.lt.2) THEN
+      WRITE(0,*) "PLOT_Z_CRP3D ERR: Less than 2 points"
+      CALL EXIT(1)
+   END IF
+   !
+   r(1)=xyz(1)
+   r(2)=xyz(2)
+   zmin=xyz(3)
+   zmax=xyz(3)+L
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=L/dfloat(ndelta)
+   !
+   OPEN(11,file=filename,status="replace")
+   ! Initial value
+   r(3) = zmin
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(3),v
+   ! cycle for inpoints
+   DO i=1, inpoints
+      r(3)=zmin+(DFLOAT(i)*delta)
+      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      WRITE(11,*) r(3), v
+   END DO
+   ! Final value
+   r(3) = zmax
+   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   WRITE(11,*) r(3), v
+   WRITE(*,*) routinename, "file created ",filename
+   CLOSE(11)
+END SUBROUTINE PLOT_Z_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_DIRECTION1D_SMOOTH_CRP3D ############################
 !#######################################################################

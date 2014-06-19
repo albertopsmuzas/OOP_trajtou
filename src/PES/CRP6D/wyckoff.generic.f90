@@ -56,12 +56,16 @@ END TYPE Cut2d
 !! Stores all data related to a single X,Y position
 !! of the molecule on the surface.
 !
+!> @param id - Letter that specifies the symmetry subgroup
+!!             related to this site. Its meaning changes for
+!!             each wallpaper group
+!> @param mynumber - Number that identifies this wyckoff site
+!> @param x,y - Position in XY plane of this wyckoffsite
+!> @param is_homonuclear - True if the molecule is homonuclear
 !> @param  n2dcuts - Number of Z,R cuts for this site
 !> @param nphicuts - Number of Phi interpolations that will exist
 !!                   for different Theta values. 
-!> @param letter - Letter that specifies the symmetry subgroup
-!!                related to this site. Its meaning changes for
-!!                each planar group
+!
 !> @brief nphipoints - Array of integer numbers storing the number of points
 !!                     in which each phi interpolation is based
 !> 

@@ -66,8 +66,8 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    REAL(KIND=8) :: dummy
    REAL(KIND=8) :: z,r,theta,phi
    CLASS(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
-   CLASS(Fourier1d),ALLOCATABLE ::phicutspecial
    CLASS(Fourier1d),ALLOCATABLE :: thetacut
+   REAL(KIND=8) :: aux_theta
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdz
@@ -118,7 +118,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
 
       CASE("f")
          ALLOCATE(Fourier1d_m45::phicut(this%nphicuts))
-         phi_irrep="Ap"
+         !phi_irrep="Ap" ! should be decided later. There are special symmetries depending upon theta
          phi_shift=0.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
@@ -135,7 +135,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    END SELECT
    ! PHI INTERPOLATION ----------------------------------------------------
    h=0 ! initialize h
-   DO i = 1, this%nphicuts ! loop over sites
+   DO i = 1, this%nphicuts ! loop over specific phi cuts (each one for a different theta value) 
       ALLOCATE(f(this%nphipoints(i)))
       ALLOCATE(dfdr(this%nphipoints(i)))
       ALLOCATE(dfdz(this%nphipoints(i)))
@@ -147,7 +147,19 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
          dfdr(j)=this%zrcut(h)%interrz%getderivx((/r,z/)) ! storing d/dr at this site
          dfdz(j)=this%zrcut(h)%interrz%getderivy((/r,z/)) ! storing d/dz at this site
          philist(j)=this%zrcut(h)%phi
+         aux_theta=this%zrcut(h)%theta
       END DO
+      SELECT CASE(this%id=="f" .AND. this%is_homonucl) ! "f" has special simmetry if theta=90 and we've a homonuclear molecule
+         CASE(.TRUE.)
+            SELECT CASE(aux_theta>=dacos(0.D0)-1.D-6 .AND. aux_theta<=dacos(0.D0)+1.D-6) ! check if theta is pi/2
+               CASE(.TRUE.)
+                  phi_irrep="A1" ! expanded symmetry m45 -> m45m1352
+               CASE(.FALSE.)
+                  phi_irrep="Ap"
+            END SELECT
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
       aux(1,:)=dfdz(:)
       aux(2,:)=dfdr(:)
       CALL phicut(i)%READ(philist,f)
@@ -168,6 +180,7 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       END DO
       CALL VERBOSE_WRITE(routinename,"At Phi: (deg)",philistdeg)
       CALL VERBOSE_WRITE(routinename,"At Phi: (rad)",philist)
+      CALL VERBOSE_WRITE(routinename,"Irrep: ",phi_irrep)
       CALL VERBOSE_WRITE(routinename,"Klist: ",phicut(i)%getklist())
       CALL VERBOSE_WRITE(routinename,"f: ",f)
       CALL VERBOSE_WRITE(routinename,"dfdz: ",aux(1,:))
