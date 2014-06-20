@@ -39,7 +39,7 @@ REAL(KIND=8) FUNCTION getvalue_logistic(this,x)
    REAL(KIND=8),DIMENSION(2) :: a
    ! Run section
    a=this%getparam()
-   getvalue_logistic=1.D0/(1.D0+dexp(a(1)*x-a(2)))
+   getvalue_logistic=1.D0/(1.D0+dexp(a(1)*(x-a(2))))
    RETURN
 END FUNCTION getvalue_logistic
 !###########################################################
@@ -58,7 +58,7 @@ REAL(KIND=8) FUNCTION getderiv_logistic(this,x)
    REAL(KIND=8),DIMENSION(2) :: a
    ! Run section
    a=this%getparam()
-   getderiv_logistic=-a(1)*dexp(a(1)*x-a(2))/((1.D0+dexp(a(1)*x-a(2)))**2.D0)
+   getderiv_logistic=-a(1)*dexp(a(1)*(x-a(2)))/((1.D0+dexp(a(1)*(x-a(2))))**2.D0)
    RETURN
 END FUNCTION getderiv_logistic
 

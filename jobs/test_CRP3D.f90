@@ -15,7 +15,6 @@ INTEGER(KIND=4) :: i ! counters
 REAL(KIND=4) :: tiempo
 REAL(KIND=4),DIMENSION(2) :: tiempoarr
 ! Run section===================================================================================0
-CALL SET_DEBUG_MODE(.FALSE.)
 CALL SET_VERBOSE_MODE(.TRUE.)
 CALL ETIME(tiempoarr,tiempo)
 ! STEP 1: HELLO!
@@ -78,6 +77,7 @@ r=(/2.04125854717D0,0.680419515722D0,-1.D0/)
 CALL thispes%PLOT_Z(1000,r,12.D0,"3-1-scan.dat")
 r=(/0.680419515722D0,0.680419515722D0,-1.D0/)
 CALL thispes%PLOT_Z(1000,r,12.D0,"1-1-scan.dat")
+CALL thispes%dampfunc%PLOT(1000,-1.D0,10D0,"dampfunction.dat")
 
 CALL ETIME(tiempoarr,tiempo)
 WRITE(*,*) "Total time: ", tiempo
