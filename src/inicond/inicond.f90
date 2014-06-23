@@ -11,7 +11,7 @@ IMPLICIT NONE
 !////////////////////////////////////////////////////////
 ! TYPE: Dynobject
 !> @brief
-!! General object prepared to perform dynamics simulation
+!! General object prepared to perform dynamics simulation. It can be an atom, molecule, etc.
 !
 !> @param E - Energy of the object
 !> @param init_r - Initial position
