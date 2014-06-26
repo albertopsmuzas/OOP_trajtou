@@ -210,165 +210,211 @@ END SUBROUTINE RUN_DYNATOM
 !! in @b this
 !--------------------------------------------------------------
 SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(Dynatom),TARGET,INTENT(INOUT) :: this
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Dynatom),TARGET,INTENT(INOUT) :: this
    INTEGER(KIND=4),INTENT(IN) :: idtraj
-	! Local variables
-	INTEGER :: i, cycles ! counters
-	REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
-	REAL(KIND=8),DIMENSION(3) :: r0, p0, dummy
-	REAL(KIND=8),DIMENSION(6) :: atom_dofs, s, dfdt
-	LOGICAL :: switch, file_exists, in_list
-	CHARACTER(LEN=18),PARAMETER :: routinename = "DO_DYNAMICS_ATOM: "
-	CHARACTER(LEN=18) :: filename_follow
-	CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
-	CHARACTER(LEN=10) :: x1
-	INTEGER :: control
+   ! Local variables
+   INTEGER :: i, cycles ! counters
+   REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
+   REAL(KIND=8),DIMENSION(3) :: r0, p0, dummy
+   REAL(KIND=8),DIMENSION(6) :: atom_dofs, s, dfdt
+   LOGICAL :: switch, file_exists, in_list
+   CHARACTER(LEN=18),PARAMETER :: routinename = "DO_DYNAMICS_ATOM: "
+   CHARACTER(LEN=21) :: filename_follow
+   CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
+   CHARACTER(LEN=10) :: x1
+   INTEGER :: control
    CLASS(Dynobject),POINTER:: atomo
    REAL(KIND=8) :: masa
-	! HEY HO!, LET'S GO!!! -------------------------
+   ! HEY HO!, LET'S GO!!! -------------------------
    atomo => this%thisinicond%trajs(idtraj)
    masa = this%thispes%atomdat(1)%getmass()
-	INQUIRE(FILE="OUTdynamics3d.out",EXIST=file_exists)
-	IF(file_exists) THEN 
-		OPEN(11, FILE="OUTdynamics3d.out",STATUS="old",ACCESS="append")
-	ELSE
-		OPEN(11,FILE="OUTdynamics3d.out",STATUS="new")
-		WRITE(11,*) "# DYNAMICS RESULTS -----------------------------------------------------------"
-		WRITE(11,*) "# Format: id, status, ireb, ixyboun, Etot, t, X,Y,Z (a.u.), Px,Py,Pz (a.u.)"
-		WRITE(11,*) "# ----------------------------------------------------------------------------"
-	END IF
-	INQUIRE(FILE="OUTturning3d.out",EXIST=file_exists)
-	IF(file_exists) THEN
-		OPEN(12, FILE="OUTturning3d.out",STATUS="old",ACCESS="append")
-	ELSE
-		OPEN(12,FILE="OUTturning3d.out",STATUS="new")
-		WRITE(12,*) "# TURNING POINTS --------------------------------------------"
-		WRITE(12,*) "# Description: positions of scattered atoms at their lowest"
-		WRITE(12,*) "#              Z value reached during the dynamics."
-		WRITE(12,*) "#               XY values, projected into IWS cell"
-		WRITE(12,*) "# Format: id, X,Y,Z (a.u.)"
-		WRITE(12,*) "# -----------------------------------------------------------"
-	END IF
-	in_list = .FALSE.
-	IF(this%nfollow.NE.0) THEN
-		DO i=1,this%nfollow
-			IF (this%followtraj(i).EQ.idtraj) in_list = .TRUE.
-		END DO
-		IF (in_list) THEN
-			WRITE(x1,format_string) idtraj
-			filename_follow = 'traj'//TRIM(x1)//'.out'
-			OPEN(13,FILE=filename_follow,STATUS="replace")
-			WRITE(13,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
-			WRITE(13,*) "# Format: t, dt, Etot,Enorm,Pot(a.u) X,Y,Z(a.u.) Px,Py,Pz (a.u.)  "
-			WRITE(13,*) "# First and last position are not printed here                    "
-			WRITE(13,*) "# You can find them in INdynamics3d.out and INinicond3d.out       "
-			WRITE(13,*) "# ----------------------------------------------------------------"
-		END IF
-	END IF
-	cycles = 0 
-	zmin = atomo%init_r(3)
-	t=0.D0
-	atomo%ireb = 0
-	atomo%ixyboun = 0
-	dt = this%delta_t%getvalue()
-	! Iterations
-	DO
-		switch = .FALSE.
-		cycles = cycles+1
-		! We cannot go beyond maximum time defined
-		IF (t+dt.GT.this%max_t%getvalue()) THEN
-			dt = this%max_t%getvalue()-t
-		END IF
-		init_t = t
-		! Storing atomic DOF's in only one array
-		FORALL (i=1:3) 
-			atom_dofs(i) = atomo%r(i)
-			atom_dofs(i+3) = atomo%p(i)
-		END FORALL 
+   INQUIRE(FILE="OUTdynamics3d.out",EXIST=file_exists)
+   SELECT CASE(file_exists)
+      CASE(.TRUE.)
+         OPEN(11, FILE="OUTdynamics3d.out",STATUS="old",ACCESS="append")
+      CASE(.FALSE.)
+         OPEN(11,FILE="OUTdynamics3d.out",STATUS="new")
+         WRITE(11,*) "# DYNAMICS RESULTS -----------------------------------------------------------"
+         WRITE(11,*) "# Format: id, status, ireb, ixyboun, Etot, t, X,Y,Z (a.u.), Px,Py,Pz (a.u.)   "
+         WRITE(11,*) "# ----------------------------------------------------------------------------"
+   END SELECT
+   INQUIRE(FILE="OUTturning3d.out",EXIST=file_exists)
+   SELECT CASE(file_exists)
+      CASE(.TRUE.)
+         OPEN(12, FILE="OUTturning3d.out",STATUS="old",ACCESS="append")
+      CASE(.FALSE.)
+         OPEN(12,FILE="OUTturning3d.out",STATUS="new")
+         WRITE(12,*) "# TURNING POINTS --------------------------------------------"
+         WRITE(12,*) "# Description: positions of scattered atoms at their lowest  "
+         WRITE(12,*) "#              Z value reached during the dynamics.          "
+         WRITE(12,*) "#               XY values, projected into IWS cell           "
+         WRITE(12,*) "# Format: id, X,Y,Z (a.u.)                                   "
+         WRITE(12,*) "# -----------------------------------------------------------"
+   END SELECT
+   in_list = .FALSE.
+   SELECT CASE(this%nfollow)
+      CASE(0)
+         ! do nothing
+      CASE DEFAULT
+         DO i=1,this%nfollow
+            SELECT CASE(this%followtraj(i)==idtraj)
+               CASE(.TRUE.)
+                  in_list=.TRUE.
+               CASE(.FALSE.)
+                  ! do nothing
+            END SELECT
+         END DO
+         SELECT CASE(in_list)
+            CASE(.TRUE.)
+               WRITE(x1,format_string) idtraj
+               filename_follow = 'OUTtraj'//TRIM(x1)//'.out'
+               OPEN(13,FILE=filename_follow,STATUS="replace")
+               WRITE(13,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
+               WRITE(13,*) "# Format: t, dt, Etot,Enorm,Pot(a.u) X,Y,Z(a.u.) Px,Py,Pz (a.u.)  "
+               WRITE(13,*) "# First and last position are not printed here                    "
+               WRITE(13,*) "# You can find them in INdynamics3d.out and INinicond3d.out       "
+               WRITE(13,*) "# ----------------------------------------------------------------"
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+   END SELECT
+   cycles=0 
+   zmin = atomo%init_r(3)
+   t=0.D0
+   atomo%ireb=0
+   atomo%ixyboun=0
+   dt=this%delta_t%getvalue()
+   ! Iterations
+   DO
+      switch = .FALSE.
+      cycles = cycles+1
+      ! We cannot go beyond maximum time defined
+      SELECT CASE(t+dt > this%max_t%getvalue())
+         CASE(.TRUE.)
+            dt=this%max_t%getvalue()-t
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+      init_t = t
+      ! Storing atomic DOF's in only one array
+      atom_dofs(1:3)=atomo%r(1:3)
+      atom_dofs(4:6)=atomo%p(1:3)
       ! Initial values for the derivatives
-		CALL this%TIME_DERIVS(atom_dofs,dfdt,switch)
-		IF (switch) THEN
-			IF (cycles.EQ.1) THEN ! first cycle
-				WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: Initial position is not adequate"
-				WRITE(0,*) "Atomo id: ", idtraj
-				WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
-				CALL EXIT(1)
-			ELSE ! other steps
-				WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: This error is quite uncommon, guess what is happening by your own."
-				WRITE(0,*) "Atom id: ", idtraj
-				WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
-				CALL EXIT(1)
-			END IF
-		END IF
-		! Construct scaling array
-		IF(this%scaling.EQ."Smart") FORALL (i=1:6) s(i) = DABS(atom_dofs(i))+DABS(dt*dfdt(i)) ! Numerical Recipes.  
-		IF(this%scaling.EQ."Equal") FORALL (i=1:6) s(i) = 1.D0 ! same scaling
-		! Energy before time-integration (a.u.)
-		init_E = atomo%E
-		! Integrate and choose the correct time-step
-		CALL this%BSSTEP(atom_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
-		IF(switch) THEN
-			! Problem detected in integration, reducing time-step
-			! reboot to previous step values 
-			dt = dt/2.D0 
-			t = init_t
-			CYCLE
-		END IF
-		! At this point, atom_dofs contains the new values for position and momenta
-		! Let's obtain the potential value for this configuration
-		CALL this%thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy) ! just to  obtain the potential, should work
-		E = (atom_dofs(4)**2.D0+atom_dofs(5)**2.D0+atom_dofs(6)**2.D0)/(2.D0*masa)+v
-		IF (DABS(E-atomo%E).GT.100.D0*this%eps*atomo%E) THEN
-			! Problems with energy conservation
-			! reboot to previous step values
-			dt = dt/2.D0
-			t = init_t
-			CYCLE
-		END IF
-		! Check  bouncing points in Z direction (Z- Turning point)
-		IF ((atomo%p(3).LT.0.D0).AND.(atom_dofs(6).GT.0.D0)) THEN
-			atomo%ireb = atomo%ireb +1
-		END IF
-		! Check bouncing points in XY (sign of Px or Py changes respect to previous integration step)
-		IF((DSIGN(atom_dofs(4),atom_dofs(4)).NE.DSIGN(atom_dofs(4),atomo%p(1))).OR. &
-		   (DSIGN(atom_dofs(5),atom_dofs(5)).NE.DSIGN(atom_dofs(5),atomo%p(2)))) THEN
-			atomo%ixyboun = atomo%ixyboun+1
-		END IF
-		! Store last minimum Z value reached. This will be the turning-point
-		IF (atom_dofs(3).LE.zmin) THEN
-			zmin = atom_dofs(3)
-			FORALL(i=1:3) atomo%turning_point(i) = atom_dofs(i)
-		END IF
-		! EXIT CHANNELS -------------------------------------------
-		IF ((atom_dofs(3).LE.this%zstop%getvalue()+this%dzstop%getvalue()).AND. &
-		   (atom_dofs(3).GT.this%zstop%getvalue()-this%dzstop%getvalue())) THEN
-			atomo%stat = "Stopped"
-			FORALL (i=1:3) 
-				atomo%r(i) = atom_dofs(i)
-				atomo%p(i) = atom_dofs(i+3)
-			END FORALL
-			atomo%E = E
-			EXIT
-		ELSE IF ((atomo%r(3).GE.this%zscatt%getvalue()).AND.(atomo%p(3).GT.0.D0)) THEN ! Scattering: Z position equal or higher than initial Z
-			atomo%stat = "Scattered"                                            ! and Pz pointing to the vacuum
-			FORALL (i=1:3) 
-				atomo%r(i) = atom_dofs(i)
-				atomo%p(i) = atom_dofs(i+3)
-			END FORALL
-			atomo%E = E
-         atomo%turning_point(1:2) = this%thispes%surf%project_iwscell(atomo%turning_point(1:2))
-			WRITE(12,'(I7,1X,3(F10.5,1X))') idtraj, atomo%turning_point(:)
-			EXIT
-		ELSE IF ((atom_dofs(3).LE.this%zabs%getvalue()).AND.(atom_dofs(6).LT.0.D0)) THEN
-			atomo%stat = "Absorbed"
-			FORALL (i=1:3) 
-				atomo%r(i) = atom_dofs(i)
-				atomo%p(i) = atom_dofs(i+3)
-			END FORALL
-			atomo%E = E
-			EXIT
+      CALL this%TIME_DERIVS(atom_dofs,dfdt,switch)
+      SELECT CASE(switch)
+         CASE(.TRUE.)
+            SELECT CASE(cycles)
+               CASE(1)
+                  WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: Initial position is not adequate"
+                  WRITE(0,*) "Atomo id: ", idtraj
+                  WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
+                  CALL EXIT(1)
+               CASE DEFAULT
+                  WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: This error is quite uncommon, guess what is happening by your own."
+                  WRITE(0,*) "Atom id: ", idtraj
+                  WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
+                  CALL EXIT(1)
+            END SELECT
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+      ! Construct scaling array
+      SELECT CASE(this%scaling)
+         CASE("Smart")
+            FORALL (i=1:6) s(i) = DABS(atom_dofs(i))+DABS(dt*dfdt(i)) ! Numerical Recipes.  
+         CASE("Equal")
+            s(1:6)=1.D0
+         CASE DEFAULT
+            WRITE(0,*) "DO_DYNAMICS ERR: incorrect scaling Keyword"
+            CALL EXIT(1)
+      END SELECT
+      ! Energy before time-integration (a.u.)
+      init_E = atomo%E
+      ! Integrate and choose the correct time-step
+      CALL this%BSSTEP(atom_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
+      SELECT CASE(switch)
+         CASE(.TRUE.)
+            ! Problem detected in integration, reducing time-step
+            ! reboot to previous step values 
+            dt = dt/2.D0 
+            t = init_t
+            CYCLE
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+      ! At this point, atom_dofs contains the new values for position and momenta
+      ! Let's obtain the potential value for this configuration
+      CALL this%thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy) ! just to  obtain the potential, should work
+      E = (atom_dofs(4)**2.D0+atom_dofs(5)**2.D0+atom_dofs(6)**2.D0)/(2.D0*masa)+v
+      SELECT CASE (DABS(E-atomo%E) > 100.D0*this%eps*atomo%E)
+         CASE(.TRUE.)
+            ! Problems with energy conservation
+            ! reboot to previous step values
+            dt = dt/2.D0
+            t = init_t
+            CYCLE
+      CASE(.FALSE.)
+         ! do nothing
+      END SELECT
+      ! Check  bouncing points in Z direction (Z- Turning point)
+      SELECT CASE((atomo%p(3) < 0.D0).AND.(atom_dofs(6) > 0.D0)) THEN
+         CASE(.TRUE.)
+            atomo%ireb = atomo%ireb +1
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+      ! Check bouncing points in XY (sign of Px or Py changes respect to previous integration step)
+      SELECT CASE ((DSIGN(atom_dofs(4),atom_dofs(4)).NE.DSIGN(atom_dofs(4),atomo%p(1))).OR. &
+                  (DSIGN(atom_dofs(5),atom_dofs(5)).NE.DSIGN(atom_dofs(5),atomo%p(2))))
+         CASE(.TRUE.)
+            atomo%ixyboun = atomo%ixyboun+1
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+      ! Store last minimum Z value reached. This will be the turning-point
+      SELECT CASE (atom_dofs(3) <= zmin)
+         CASE(.TRUE.)
+            zmin = atom_dofs(3)
+            atomo%turning_point(1:3) = atom_dofs(1:3)
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+      ! EXIT CHANNELS -------------------------------------------
+      SELECT CASE ((atom_dofs(3) <= this%zstop%getvalue()+this%dzstop%getvalue()).AND. &
+                  (atom_dofs(3) > this%zstop%getvalue()-this%dzstop%getvalue()))
+         CASE(.TRUE.)
+            atomo%stat = "Stopped"
+            atomo%r(1:3) = atom_dofs(1:3)
+            atomo%p(1:3) = atom_dofs(4:6)
+            atomo%E = E
+            EXIT
+        CASE(.FALSE.)
+           ! do nothing, next switch
+      END SELECT
+      SELECT CASE ((atomo%r(3) >= this%zscatt%getvalue()).AND.(atomo%p(3) > 0.D0))
+         CASE(.TRUE.)
+            atomo%stat="Scattered"                                            
+            atomo%r(1:3)=atom_dofs(1:3)
+            atomo%p(1:3)=atom_dofs(4:6)
+            atomo%E=E
+            atomo%turning_point(1:2) = this%thispes%surf%project_iwscell(atomo%turning_point(1:2))
+            WRITE(12,'(I7,1X,3(F10.5,1X))') idtraj, atomo%turning_point(:)
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing next switch
+      END SELECT
+      SELECT CASE ((atom_dofs(3) <= this%zabs%getvalue()).AND.(atom_dofs(6) < 0.D0))
+         CASE(.TRUE.)
+            atomo%stat = "Absorbed"
+            atomo%r(1:3) = atom_dofs(1:3)
+            atomo%p(1:3) = atom_dofs(4:6)
+            atomo%E = E
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing, next switch
+      END SELECT
 		ELSE IF (t.GE.this%max_t%getvalue()) THEN ! exit channels evaluated when time is out
 			IF ((v.LT.0.D0).AND.(atom_dofs(3).LE.this%zads%getvalue())) THEN ! Adsorption: interaction potential v lower than zero and Z lower than a certain value 
 				atomo%stat = "Adsorbed"

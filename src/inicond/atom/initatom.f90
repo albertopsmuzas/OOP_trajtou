@@ -14,9 +14,6 @@ IMPLICIT NONE
 ! TYPE: Atoms
 !> @brief
 !! Atom subtype dynamics object
-!
-!> @param ireb - Number of times this atom has changed Pz's direction
-!> @param ixyboun  - Number of times this atom has changed parallel momentum's direction
 !----------------------------------------------------
 TYPE,EXTENDS(Dynobject) ::  Atom
    CONTAINS
@@ -40,7 +37,7 @@ END TYPE Initatom
 !////////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# SUBROUTINE: INITIALIZE_ATOM 
+!# SUBROUTINE: INITIALIZE_ATOM #############################
 !###########################################################
 !> @brief
 !! Initializes type atom
@@ -67,7 +64,7 @@ SUBROUTINE INITIALIZE_ATOM(this)
    RETURN
 END SUBROUTINE INITIALIZE_ATOM
 !##################################################################################
-!# SUBROUTINE: INITIALIZE_INITATOM ############################################
+!# SUBROUTINE: INITIALIZE_INITATOM ################################################
 !##################################################################################
 !> @brief
 !! Reads from an input file enough data to generate initial conditions

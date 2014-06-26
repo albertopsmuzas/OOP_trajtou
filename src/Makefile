@@ -27,8 +27,8 @@ constants.o:
 units.o: debug.o constants.o
 surface.o: debug.o units.o constants.o maths.o 
 # Potential energy surfaces section -----------------------------------------------------
-PES.o: surface.o
 link_PES.o: PES.o CRP3D.o CRP6D.o
+PES.o: surface.o
 CRP3D.o: debug.o units.o maths.o cubicsplines.o fourier.p4mm.o PES.o one.o logistic.o
 CRP6D.o: debug.o units.o maths.o CRP3D.o wyckoff.p4mm.o extrapol.o logistic.o one.o
 #----------------------------------------------------------------------------------------
