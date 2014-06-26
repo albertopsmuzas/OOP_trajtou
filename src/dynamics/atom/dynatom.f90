@@ -6,7 +6,11 @@
 !! - Generalize the use of different PES, not only CRP3D
 !##########################################################
 MODULE DYNATOM_MOD
-USE DYNAMICS_MOD
+   USE DYNAMICS_MOD
+   USE INITATOM_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////
 ! TYPE: Dynatom
@@ -25,108 +29,147 @@ IMPLICIT NONE
 TYPE,EXTENDS(Dynamics) :: Dynatom
    CHARACTER(LEN=8) :: extrapol
    CHARACTER(LEN=10) :: scaling
-   REAL*8 :: eps
+   REAL(KIND=8) :: eps
    TYPE(Length) :: zstop, dzstop
    TYPE(Length) :: zscatt,zads,zabs
    CONTAINS
-      PROCEDURE,PUBLIC :: READ => READ_DYNATOM
-      PROCEDURE,PUBLIC :: RUN => RUN_DYNAMICS_ATOMS
+      ! Initialization block
+      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_DYNATOM
+      ! Tools block
+      PROCEDURE,PUBLIC :: RUN => RUN_DYNATOM
+      ! Private block
+      PROCEDURE,PRIVATE :: DO_DYNAMICS => DO_DYNAMICS_DYNATOM
+      PROCEDURE,PRIVATE :: TIME_DERIVS => TIME_DERIVS_DYNATOM
+      PROCEDURE,PRIVATE :: MMID => MMID_DYNATOM
+      PROCEDURE,PRIVATE :: BSSTEP => BSSTEP_DYNATOM
+      PROCEDURE,PRIVATE :: POLINOM_EXTRAPOL => PZEXTR_DYNATOM
+      PROCEDURE,PRIVATE :: RATIONAL_EXTRAPOL => RZEXTR_DYNATOM
 END TYPE Dynatom
 !//////////////////////////////////////////////////////////
 CONTAINS
-!###############################################################
-!# SUBROUTINE: READ_DYNATOM ####################################
-!###############################################################
+!#####################################################################
+!# SUBROUTINE: INITIALIZE_DYNATOM ####################################
+!#####################################################################
 !> @brief 
-!! Reads from file specifications for a dynamics job (atoms)
-!
-!---------------------------------------------------------------
-SUBROUTINE READ_DYNATOM(dinamica,filename)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
+!! Specific implementation of READ subroutine for atomic dynamics
+!---------------------------------------------------------------------
+SUBROUTINE INITIALIZE_DYNATOM(this,filename)
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(Dynatom),INTENT(OUT) :: dinamica
+	CLASS(Dynatom),INTENT(OUT) :: this
 	CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! IMPORTANT: unit used to read info
+   INTEGER(KIND=4),PARAMETER :: runit=11
 	! Local variables
+   CHARACTER(LEN=20) :: filenameinicond,filenamepes
 	CHARACTER(LEN=14), PARAMETER :: routinename = "READ_DYNATOM: "
 	CHARACTER(LEN=6) :: follow
    CHARACTER(LEN=10) :: units
    REAL(KIND=8) :: aux
 	INTEGER :: i ! counters
 	! YIPEE KI YAY -----------------------------
-	dinamica%filename = filename
-	OPEN (11,FILE=dinamica%filename, STATUS="old")
-	READ(11,*) dinamica%alias
-	READ(11,*) dinamica%kind
-	IF(dinamica%kind.EQ."Atoms") THEN
+	this%filename = filename
+	OPEN (runit,FILE=this%filename, STATUS="old")
+   READ(runit,*) ! dummy line
+	READ(runit,*) this%alias
+	READ(runit,*) this%kind
+	IF(this%kind.EQ."Atoms") THEN
+      READ(runit,*) filenamepes
 #ifdef DEBUG
-		CALL VERBOSE_WRITE(routinename,"Read: precision of integration (dimensionless factor)")
+      CALL VERBOSE_WRITE(routinename,"File for PES: ",filenamepes)
 #endif
-		READ(11,*) dinamica%eps
-		READ(11,*) dinamica%scaling
-		IF((dinamica%scaling.NE."Equal").AND.(dinamica%scaling.NE."Smart")) THEN
+      SELECT CASE(filenamepes)
+         CASE("INcrp3d.inp")
+            ALLOCATE(CRP3D::this%thispes)
+            CALL this%thispes%INITIALIZE(filenamepes)
+         CASE DEFAULT
+            WRITE(0,*) "READ_DYNATOM ERR: PES file not implemented"
+            WRITE(0,*) "Available files: INcrp3d.inp"
+            CALL EXIT(1)
+      END SELECT
+      READ(runit,*) filenameinicond
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"File for Initial conditions: ",filenameinicond)
+#endif
+      SELECT CASE(filenameinicond)
+         CASE("INinicond3d.inp")
+            ALLOCATE(Initatom::this%thisinicond)
+            CALL this%thisinicond%INITIALIZE(filenameinicond)
+            CALL this%thisinicond%GENERATE_TRAJS(this%thispes)
+         CASE DEFAULT
+            WRITE(0,*) "READ_DYNATOM ERR: Initial conditions file not implemented"
+            WRITE(0,*) "Available files: INinicond3d.inp"
+            CALL EXIT(1)
+      END SELECT
+		READ(runit,*) this%eps
+#ifdef DEBUG
+		CALL VERBOSE_WRITE(routinename,"Read: precision of integration (dimensionless factor): ",this%eps)
+#endif
+		READ(runit,*) this%scaling
+		IF((this%scaling.NE."Equal").AND.(this%scaling.NE."Smart")) THEN
 			WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong error scaling keyword: "
 			WRITE(0,*) "Only available: Equal and Smart"
-			WRITE(0,*) "You have written: ", dinamica%scaling
+			WRITE(0,*) "You have written: ", this%scaling
 			CALL EXIT(1)
 		END IF
-		READ(11,*) dinamica%extrapol
-		IF ((dinamica%extrapol.NE."Polinomi").AND.(dinamica%extrapol.NE."Rational")) THEN
+		READ(runit,*) this%extrapol
+		IF ((this%extrapol.NE."Polinomi").AND.(this%extrapol.NE."Rational")) THEN
 			WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong extrapolation keyword: "
 			WRITE(0,*) "Only available: Polinomi and Rational"
-			WRITE(0,*) "You have written: ", dinamica%extrapol
+			WRITE(0,*) "You have written: ", this%extrapol
 			CALL EXIT(1)
 		END IF
 		
-      READ(11,*) aux,units
-		CALL dinamica%delta_t%READ(aux,units)
-		CALL dinamica%delta_t%TO_STD()
+      READ(runit,*) aux,units
+		CALL this%delta_t%READ(aux,units)
+		CALL this%delta_t%TO_STD()
 		
-      READ(11,*) aux,units
-		CALL dinamica%max_t%READ(aux,units)
-		CALL dinamica%max_t%TO_STD()
+      READ(runit,*) aux,units
+		CALL this%max_t%READ(aux,units)
+		CALL this%max_t%TO_STD()
 		
-      READ(11,*) aux,units
-		CALL dinamica%zstop%READ(aux,units)
-		CALL dinamica%zstop%TO_STD()
+      READ(runit,*) aux,units
+		CALL this%zstop%READ(aux,units)
+		CALL this%zstop%TO_STD()
 		
-      READ(11,*) aux,units
-		CALL dinamica%dzstop%READ(aux,units)
-		CALL dinamica%dzstop%TO_STD()
+      READ(runit,*) aux,units
+		CALL this%dzstop%READ(aux,units)
+		CALL this%dzstop%TO_STD()
 		
-      READ(11,*) aux,units
-		CALL dinamica%zscatt%READ(aux,units)
-		CALL dinamica%zscatt%TO_STD()
+      READ(runit,*) aux,units
+		CALL this%zscatt%READ(aux,units)
+		CALL this%zscatt%TO_STD()
 		
-      READ(11,*) aux,units
-		CALL dinamica%zads%READ(aux,units)
-		CALL dinamica%zads%TO_STD()
+      READ(runit,*) aux,units
+		CALL this%zads%READ(aux,units)
+		CALL this%zads%TO_STD()
 		
-      READ(11,*) aux,units
-		CALL dinamica%zabs%READ(aux,units)
-		CALL dinamica%zabs%TO_STD()
+      READ(runit,*) aux,units
+		CALL this%zabs%READ(aux,units)
+		CALL this%zabs%TO_STD()
 #ifdef DEBUG
-		CALL VERBOSE_WRITE(routinename,"Initial time step in au: ",dinamica%delta_t%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Maximum time in au: ",dinamica%max_t%getvalue())
-		CALL VERBOSE_WRITE(routinename,"ZSTOP in au: ",dinamica%zstop%getvalue())
-		CALL VERBOSE_WRITE(routinename,"DZSTOP in au: ",dinamica%dzstop%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Z scattering benchmark in au: ",dinamica%zscatt%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Z adsorption benchmark in au: ",dinamica%zads%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Z absortion benchmark in au: ",dinamica%zabs%getvalue())
+		CALL VERBOSE_WRITE(routinename,"Initial time step in au: ",this%delta_t%getvalue())
+		CALL VERBOSE_WRITE(routinename,"Maximum time in au: ",this%max_t%getvalue())
+		CALL VERBOSE_WRITE(routinename,"ZSTOP in au: ",this%zstop%getvalue())
+		CALL VERBOSE_WRITE(routinename,"DZSTOP in au: ",this%dzstop%getvalue())
+		CALL VERBOSE_WRITE(routinename,"Z scattering benchmark in au: ",this%zscatt%getvalue())
+		CALL VERBOSE_WRITE(routinename,"Z adsorption benchmark in au: ",this%zads%getvalue())
+		CALL VERBOSE_WRITE(routinename,"Z absortion benchmark in au: ",this%zabs%getvalue())
 #endif
-		READ(11,*) follow, dinamica%nfollow
+		READ(runit,*) follow, this%nfollow
 		IF (follow.NE."FOLLOW") THEN
 			WRITE(0,*) "INITIALIZE_DYNATOM ERR: wrong FOLLOW keyword"
 			CALL EXIT(1)
-		ELSE IF (dinamica%nfollow.NE.0) THEN
+		ELSE IF (this%nfollow.NE.0) THEN
 #ifdef DEBUG
 			CALL VERBOSE_WRITE(routinename,"There are trajectories to follow")
 #endif
-			ALLOCATE(dinamica%follow_atom(1:dinamica%nfollow))
-			DO i=1, dinamica%nfollow
-				READ(11,*) dinamica%follow_atom(i)
+			ALLOCATE(this%followtraj(this%nfollow))
+			DO i=1, this%nfollow
+				READ(runit,*) this%followtraj(i)
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,"Follow trajectories: ",this%followtraj(i))
+#endif
 			END DO
 		ELSE
 #ifdef DEBUG
@@ -134,106 +177,94 @@ SUBROUTINE READ_DYNATOM(dinamica,filename)
 #endif
 		END IF
 	END IF
-	CLOSE(11)
+	CLOSE(runit)
 	RETURN
-END SUBROUTINE READ_DYNATOM
+END SUBROUTINE INITIALIZE_DYNATOM
 !###############################################################
-!# SUBROUTINE: RUN_DYNAMICS_ATOMS ##############################
+!# SUBROUTINE: RUN_DYNATOM #####################################
 !###############################################################
 !> @brief
 !! Launch trajectories as said in @b inicondat variable
-!
 !---------------------------------------------------------------
-SUBROUTINE RUN_DYNAMICS_ATOMS(dinamica,inicondat,thispes,trajs)
-   USE INITATOM_MOD
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
-   USE CRP3D_MOD
+SUBROUTINE RUN_DYNATOM(this)
    IMPLICIT NONE
    ! I/O variables 
-   CLASS(Dynatom),INTENT(IN) :: dinamica
-   TYPE(Initatom),INTENT(IN) :: inicondat
-   TYPE(CRP3D),INTENT(IN) :: thispes
-   TYPE(Atom_trajs),INTENT(INOUT) :: trajs
+   CLASS(Dynatom),INTENT(INOUT) :: this
    ! Local variables 
    INTEGER :: i ! counters
-   CHARACTER(LEN=20), PARAMETER :: routinename = "RUN_DYNAMICS_ATOMS: "
+   CHARACTER(LEN=20),PARAMETER :: routinename = "RUN_DYNAMICS_ATOMS: "
    ! HEY HO! LET'S GO !!! ------
-   DO i=inicondat%nstart, inicondat%ntraj
+   DO i=this%thisinicond%nstart, this%thisinicond%ntraj
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Start trajectory: ", i)
+      CALL VERBOSE_WRITE(routinename,"Start trajectory: ",i)
 #endif
-      CALL DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,trajs%atomo(i))
+      CALL this%DO_DYNAMICS(i)
    END DO
    RETURN
-END SUBROUTINE RUN_DYNAMICS_ATOMS
+END SUBROUTINE RUN_DYNATOM
 !##############################################################
-!# SUBROUTINE : DO DYNAMICS ATOM ##############################
+!# SUBROUTINE : DO_DYNAMICS_DYNATOM ###########################
 !##############################################################
 !> @brief
 !! Integrates equation of motion following specifications stored
-!! in @b dinamica and @b inicondat
+!! in @b this
 !--------------------------------------------------------------
-SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
-   USE INITATOM_MOD
-   USE CRP3D_MOD
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
+SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
 	IMPLICIT NONE
 	! I/O variables
-	TYPE(Dynatom),INTENT(IN) :: dinamica
-	TYPE(Initatom),INTENT(IN) :: inicondat
-   TYPE(CRP3D),INTENT(IN) :: thispes
-	TYPE(Atom),INTENT(INOUT) :: atomo
+	CLASS(Dynatom),TARGET,INTENT(INOUT) :: this
+   INTEGER(KIND=4),INTENT(IN) :: idtraj
 	! Local variables
 	INTEGER :: i, cycles ! counters
-	REAL*8 :: t, dt, E, init_t, init_E, v, dt_did, dt_next, zmin, angle
-	REAL*8, DIMENSION(3) :: r0, p0, dummy
-	REAL*8, DIMENSION(6) :: atom_dofs, s, dfdt
+	REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
+	REAL(KIND=8),DIMENSION(3) :: r0, p0, dummy
+	REAL(KIND=8),DIMENSION(6) :: atom_dofs, s, dfdt
 	LOGICAL :: switch, file_exists, in_list
-	CHARACTER(LEN=18), PARAMETER :: routinename = "DO_DYNAMICS_ATOM: "
+	CHARACTER(LEN=18),PARAMETER :: routinename = "DO_DYNAMICS_ATOM: "
 	CHARACTER(LEN=18) :: filename_follow
-	CHARACTER(LEN=9), PARAMETER :: format_string = '(I10.10)'
+	CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
 	CHARACTER(LEN=10) :: x1
 	INTEGER :: control
+   CLASS(Dynobject),POINTER:: atomo
+   REAL(KIND=8) :: masa
 	! HEY HO!, LET'S GO!!! -------------------------
-	INQUIRE(FILE="dynamics.out",EXIST=file_exists)
+   atomo => this%thisinicond%trajs(idtraj)
+   masa = this%thispes%atomdat(1)%getmass()
+	INQUIRE(FILE="OUTdynamics3d.out",EXIST=file_exists)
 	IF(file_exists) THEN 
-		OPEN(11, FILE="dynamics.out",STATUS="old",ACCESS="append")
+		OPEN(11, FILE="OUTdynamics3d.out",STATUS="old",ACCESS="append")
 	ELSE
-		OPEN(11,FILE="dynamics.out",STATUS="new")
+		OPEN(11,FILE="OUTdynamics3d.out",STATUS="new")
 		WRITE(11,*) "# DYNAMICS RESULTS -----------------------------------------------------------"
 		WRITE(11,*) "# Format: id, status, ireb, ixyboun, Etot, t, X,Y,Z (a.u.), Px,Py,Pz (a.u.)"
-		WRITE(11,*) "#------------------------------------------------------------------------------"
+		WRITE(11,*) "# ----------------------------------------------------------------------------"
 	END IF
-	INQUIRE(FILE="turning.out",EXIST=file_exists)
+	INQUIRE(FILE="OUTturning3d.out",EXIST=file_exists)
 	IF(file_exists) THEN
-		OPEN(12, FILE="turning.out",STATUS="old",ACCESS="append")
+		OPEN(12, FILE="OUTturning3d.out",STATUS="old",ACCESS="append")
 	ELSE
-		OPEN(12,FILE="turning.out",STATUS="new")
+		OPEN(12,FILE="OUTturning3d.out",STATUS="new")
 		WRITE(12,*) "# TURNING POINTS --------------------------------------------"
 		WRITE(12,*) "# Description: positions of scattered atoms at their lowest"
 		WRITE(12,*) "#              Z value reached during the dynamics."
 		WRITE(12,*) "#               XY values, projected into IWS cell"
 		WRITE(12,*) "# Format: id, X,Y,Z (a.u.)"
-		WRITE(12,*) "#-------------------------------------------------------------"
+		WRITE(12,*) "# -----------------------------------------------------------"
 	END IF
 	in_list = .FALSE.
-	IF(dinamica%nfollow.NE.0) THEN
-		DO i=1,dinamica%nfollow
-			IF (dinamica%follow_atom(i).EQ.atomo%id) in_list = .TRUE.
+	IF(this%nfollow.NE.0) THEN
+		DO i=1,this%nfollow
+			IF (this%followtraj(i).EQ.idtraj) in_list = .TRUE.
 		END DO
 		IF (in_list) THEN
-			WRITE(x1,format_string) atomo%id
+			WRITE(x1,format_string) idtraj
 			filename_follow = 'traj'//TRIM(x1)//'.out'
 			OPEN(13,FILE=filename_follow,STATUS="replace")
-			WRITE(13,*) "# TIME EVOLUTION FOR A TRAJECTORY ---------------------"
+			WRITE(13,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
 			WRITE(13,*) "# Format: t, dt, Etot,Enorm,Pot(a.u) X,Y,Z(a.u.) Px,Py,Pz (a.u.)  "
-			WRITE(13,*) "# First and last position are not printed here"
-			WRITE(13,*) "# You can find them in dynamics.out and inicond.out    "
-			WRITE(13,*) "#------------------------------------------------------"
+			WRITE(13,*) "# First and last position are not printed here                    "
+			WRITE(13,*) "# You can find them in INdynamics3d.out and INinicond3d.out       "
+			WRITE(13,*) "# ----------------------------------------------------------------"
 		END IF
 	END IF
 	cycles = 0 
@@ -241,14 +272,14 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 	t=0.D0
 	atomo%ireb = 0
 	atomo%ixyboun = 0
-	dt = dinamica%delta_t%getvalue()
+	dt = this%delta_t%getvalue()
 	! Iterations
 	DO
 		switch = .FALSE.
 		cycles = cycles+1
 		! We cannot go beyond maximum time defined
-		IF (t+dt.GT.dinamica%max_t%getvalue()) THEN
-			dt = dinamica%max_t%getvalue()-t
+		IF (t+dt.GT.this%max_t%getvalue()) THEN
+			dt = this%max_t%getvalue()-t
 		END IF
 		init_t = t
 		! Storing atomic DOF's in only one array
@@ -257,27 +288,27 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 			atom_dofs(i+3) = atomo%p(i)
 		END FORALL 
       ! Initial values for the derivatives
-		CALL ATOM_H_DERIVS(inicondat,thispes,t,atom_dofs,dfdt,switch)
+		CALL this%TIME_DERIVS(atom_dofs,dfdt,switch)
 		IF (switch) THEN
 			IF (cycles.EQ.1) THEN ! first cycle
 				WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: Initial position is not adequate"
-				WRITE(0,*) "Atomo id: ", atomo%id
+				WRITE(0,*) "Atomo id: ", idtraj
 				WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
 				CALL EXIT(1)
 			ELSE ! other steps
 				WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: This error is quite uncommon, guess what is happening by your own."
-				WRITE(0,*) "Atom id: ", atomo%id
+				WRITE(0,*) "Atom id: ", idtraj
 				WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
 				CALL EXIT(1)
 			END IF
 		END IF
 		! Construct scaling array
-		IF(dinamica%scaling.EQ."Smart") FORALL (i=1:6) s(i) = DABS(atom_dofs(i))+DABS(dt*dfdt(i)) ! Numerical Recipes.  
-		IF(dinamica%scaling.EQ."Equal") FORALL (i=1:6) s(i) = 1.D0 ! same scaling
+		IF(this%scaling.EQ."Smart") FORALL (i=1:6) s(i) = DABS(atom_dofs(i))+DABS(dt*dfdt(i)) ! Numerical Recipes.  
+		IF(this%scaling.EQ."Equal") FORALL (i=1:6) s(i) = 1.D0 ! same scaling
 		! Energy before time-integration (a.u.)
 		init_E = atomo%E
 		! Integrate and choose the correct time-step
-		CALL BSSTEP_ATOM(inicondat,dinamica,thispes,atom_dofs,dfdt,t,dt,dinamica%eps,s,dt_did,dt_next,switch)
+		CALL this%BSSTEP(atom_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
 		IF(switch) THEN
 			! Problem detected in integration, reducing time-step
 			! reboot to previous step values 
@@ -287,9 +318,9 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 		END IF
 		! At this point, atom_dofs contains the new values for position and momenta
 		! Let's obtain the potential value for this configuration
-		CALL thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy) ! just to  obtain the potential, should work
-		E = (atom_dofs(4)**2.D0+atom_dofs(5)**2.D0+atom_dofs(6)**2.D0)/(2.D0*inicondat%masss%getvalue())+v
-		IF (DABS(E-atomo%E).GT.100.D0*dinamica%eps*atomo%E) THEN
+		CALL this%thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy) ! just to  obtain the potential, should work
+		E = (atom_dofs(4)**2.D0+atom_dofs(5)**2.D0+atom_dofs(6)**2.D0)/(2.D0*masa)+v
+		IF (DABS(E-atomo%E).GT.100.D0*this%eps*atomo%E) THEN
 			! Problems with energy conservation
 			! reboot to previous step values
 			dt = dt/2.D0
@@ -311,8 +342,8 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 			FORALL(i=1:3) atomo%turning_point(i) = atom_dofs(i)
 		END IF
 		! EXIT CHANNELS -------------------------------------------
-		IF ((atom_dofs(3).LE.dinamica%zstop%getvalue()+dinamica%dzstop%getvalue()).AND. &
-		   (atom_dofs(3).GT.dinamica%zstop%getvalue()-dinamica%dzstop%getvalue())) THEN
+		IF ((atom_dofs(3).LE.this%zstop%getvalue()+this%dzstop%getvalue()).AND. &
+		   (atom_dofs(3).GT.this%zstop%getvalue()-this%dzstop%getvalue())) THEN
 			atomo%stat = "Stopped"
 			FORALL (i=1:3) 
 				atomo%r(i) = atom_dofs(i)
@@ -320,17 +351,17 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 			END FORALL
 			atomo%E = E
 			EXIT
-		ELSE IF ((atomo%r(3).GE.dinamica%zscatt%getvalue()).AND.(atomo%p(3).GT.0.D0)) THEN ! Scattering: Z position equal or higher than initial Z
+		ELSE IF ((atomo%r(3).GE.this%zscatt%getvalue()).AND.(atomo%p(3).GT.0.D0)) THEN ! Scattering: Z position equal or higher than initial Z
 			atomo%stat = "Scattered"                                            ! and Pz pointing to the vacuum
 			FORALL (i=1:3) 
 				atomo%r(i) = atom_dofs(i)
 				atomo%p(i) = atom_dofs(i+3)
 			END FORALL
 			atomo%E = E
-         atomo%turning_point(1:2) = thispes%surf%project_iwscell(atomo%turning_point(1:2))
-			WRITE(12,'(I7,1X,3(F10.5,1X))') atomo%id, atomo%turning_point(:)
+         atomo%turning_point(1:2) = this%thispes%surf%project_iwscell(atomo%turning_point(1:2))
+			WRITE(12,'(I7,1X,3(F10.5,1X))') idtraj, atomo%turning_point(:)
 			EXIT
-		ELSE IF ((atom_dofs(3).LE.dinamica%zabs%getvalue()).AND.(atom_dofs(6).LT.0.D0)) THEN
+		ELSE IF ((atom_dofs(3).LE.this%zabs%getvalue()).AND.(atom_dofs(6).LT.0.D0)) THEN
 			atomo%stat = "Absorbed"
 			FORALL (i=1:3) 
 				atomo%r(i) = atom_dofs(i)
@@ -338,8 +369,8 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 			END FORALL
 			atomo%E = E
 			EXIT
-		ELSE IF (t.GE.dinamica%max_t%getvalue()) THEN ! exit channels evaluated when time is out
-			IF ((v.LT.0.D0).AND.(atom_dofs(3).LE.dinamica%zads%getvalue())) THEN ! Adsorption: interaction potential v lower than zero and Z lower than a certain value 
+		ELSE IF (t.GE.this%max_t%getvalue()) THEN ! exit channels evaluated when time is out
+			IF ((v.LT.0.D0).AND.(atom_dofs(3).LE.this%zads%getvalue())) THEN ! Adsorption: interaction potential v lower than zero and Z lower than a certain value 
 				atomo%stat = "Adsorbed"
 				FORALL (i=1:3) 
 					atomo%r(i) = atom_dofs(i)
@@ -347,7 +378,7 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 				END FORALL
 				atomo%E = E
 				EXIT
-			ELSE IF (atom_dofs(3).LE.dinamica%zads%getvalue()) THEN
+			ELSE IF (atom_dofs(3).LE.this%zads%getvalue()) THEN
 				atomo%stat = "Trapped"
 				FORALL (i=1:3) 
 					atomo%r(i) = atom_dofs(i)
@@ -379,74 +410,58 @@ SUBROUTINE DO_DYNAMICS_ATOM(dinamica,inicondat,thispes,atomo)
 			END FORALL
 			atomo%E = E
 			dt = dt_next
-			IF((dinamica%nfollow.NE.0).AND.(in_list)) WRITE(13,*) t, dt_did, atomo%E, &
-				(atomo%p(3)**2.D0)/(2.D0*inicondat%masss%getvalue()), v, atomo%r(:), atomo%p(:) 
+			IF((this%nfollow.NE.0).AND.(in_list)) WRITE(13,*) t, dt_did, atomo%E, &
+				(atomo%p(3)**2.D0)/(2.D0*masa), v, atomo%r(:), atomo%p(:) 
 			CYCLE
 		END IF
 	END DO
 #ifdef DEBUG
 	CALL VERBOSE_WRITE(routinename,"Writing in dynamics.out")
 #endif
-	WRITE(11,'(I7,1X,A10,1X,I4,1X,I5,1X,8(F15.5,1X))') atomo%id, atomo%stat, atomo%ireb, atomo%ixyboun, atomo%E, t, atomo%r, atomo%p
+	WRITE(11,'(I7,1X,A10,1X,I4,1X,I5,1X,8(F15.5,1X))') idtraj, atomo%stat, atomo%ireb, atomo%ixyboun, atomo%E, t, atomo%r, atomo%p
 	CLOSE(11)
 	CLOSE(12)
-	IF(dinamica%nfollow.NE.0) CLOSE(13)
+	IF(this%nfollow.NE.0) CLOSE(13)
 	RETURN
-END SUBROUTINE DO_DYNAMICS_ATOM
+END SUBROUTINE DO_DYNAMICS_DYNATOM
 !###############################################################
-!# SUBROUTINE : ATOM_H_DIFFERENTIAL_EQ #########################
+!# SUBROUTINE : TIME_DERIVS_DYNATOM ########################
 !###############################################################
 !> @brief
 !! Gives dzdt at z and t values from Hamilton equations of motion
 !
-!> @param[in] inicondat - Initial conditions needed
-!> @param[in] thispes - PES used
+!> @param[in] this - Provides some data
 !> @param[in] z - array of positions and momenta. z(1:3) -> positions, z(4:6) -> momenta 
-!> @param[out] dzdt - equations of motion for positions and momenta
+!> @param[out] dzdt - time derivatives of position and momenta
 !> @param[out] fin - controls errors
 !--------------------------------------------------------------
-SUBROUTINE ATOM_H_DERIVS(inicondat,thispes,t,z,dzdt,fin)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
-   USE INITATOM_MOD
-   USE CRP3D_MOD
-	IMPLICIT NONE
-	! I/O variables
-	TYPE(Initatom), INTENT(IN) :: inicondat
-   TYPE(CRP3D),INTENT(IN) :: thispes
-	REAL*8, DIMENSION(6), INTENT(IN) :: z
-	REAL*8, DIMENSION(6), INTENT(OUT) :: dzdt
-	REAL*8, INTENT(IN) :: t ! time?
-	LOGICAL, INTENT(OUT) :: fin
-	! Local variables
-	INTEGER :: i ! counters
-	REAL*8 :: v ! really a dummy variable
-	CHARACTER(LEN=15), PARAMETER :: routinename = "ATOM_H_DERIVS: "
-	LOGICAL :: deb_mode, verb_mode
-	! ROCK THE CASBAH ! ---------------------
-	fin = .FALSE. ! initial value
-   IF (.NOT.thispes%is_allowed(z(1:3))) THEN
-		fin = .TRUE.
-		RETURN
-   END IF
-   DO i = 1, 3
-	   dzdt(i) = z(i+3)/inicondat%masss%getvalue() ! Px/m,  etc...
-   END DO
-#ifdef DEBUG
-	deb_mode = get_debugmode()
-	verb_mode = get_verbosemode()
-   CALL SET_VERBOSE_MODE(.FALSE.) ! we don't want much output
-	CALL SET_DEBUG_MODE(.FALSE.)
-#endif
-	CALL thispes%GET_V_AND_DERIVS(z(1:3),v,dzdt(4:6))
-	FORALL (i=4:6) dzdt(i) = -dzdt(i) ! -dV/dx (minus sign comes from here)
-#ifdef DEBUG
-	CALL SET_VERBOSE_MODE(verb_mode)
-	CALL SET_DEBUG_MODE(deb_mode)
-#endif
-	RETURN
-END SUBROUTINE ATOM_H_DERIVS
+SUBROUTINE TIME_DERIVS_DYNATOM(this,z,dzdt,fin)
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Dynatom),INTENT(IN) :: this
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: z
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dzdt
+   LOGICAL, INTENT(OUT) :: fin
+   ! Local variables
+   INTEGER :: i ! counters
+   REAL(KIND=8) :: mass
+   REAL(KIND=8) :: v ! dummy variable
+   CHARACTER(LEN=21),PARAMETER :: routinename = "TIME_DERIVS_DYNATOM: "
+   ! ROCK THE CASBAH ! ---------------------
+   SELECT CASE(this%thispes%is_allowed(z(1:3)))
+      CASE(.FALSE.)
+         fin = .TRUE.
+      CASE(.TRUE.)
+         fin=.FALSE.
+         mass=this%thispes%atomdat(1)%getmass() ! there'd be only one atom defined in the PES
+         DO i = 1, 3
+            dzdt(i) = z(i+3)/mass ! Px/m,  etc...
+         END DO
+         CALL this%thispes%GET_V_AND_DERIVS(z(1:3),v,dzdt(4:6))
+         FORALL (i=4:6) dzdt(i) = -dzdt(i) ! -dV/dx (minus sign comes from here)
+   END SELECT
+   RETURN
+END SUBROUTINE TIME_DERIVS_DYNATOM
 !#########################################################################################
 !# SUBROUTINE: MMID_ATOM #################################################################
 !#########################################################################################
@@ -459,7 +474,7 @@ END SUBROUTINE ATOM_H_DERIVS
 !! - Adapted from Numerical recipes FORTRAN 77
 !! - Adapted for the integration of the equations of motion of an atom
 !
-!> @param[in] inicondat - We need information stored in this variable
+!> @param[in] this - We need information stored in this variable
 !> @param[in] y(1:6) - array with positions and momenta
 !> @param[in] dydx - derivatives of y
 !> @param[in] xs - X at which y and dydx are meassured
@@ -471,50 +486,55 @@ END SUBROUTINE ATOM_H_DERIVS
 !
 !> @see Fortran 77 numerical recipes
 !-----------------------------------------------------------------------------------------
-SUBROUTINE MMID_ATOM(inicondat,thispes,y,dydx,xs,htot,nstep,yout,switch)
-   USE CRP3D_MOD
-   USE INITATOM_MOD
-	IMPLICIT NONE
-	! I/O variables
-   TYPE(CRP3D),INTENT(IN) :: thispes
-	TYPE(Initatom), INTENT(IN) :: inicondat
-	INTEGER, INTENT(IN) :: nstep
-	REAL*8, DIMENSION(6), INTENT(IN) :: y,dydx
-	REAL*8, DIMENSION(6), INTENT(OUT) :: yout
-	REAL*8, INTENT(IN) :: xs,htot
-	LOGICAL,INTENT(INOUT) :: switch
-	! Local variables
-	REAL*8, DIMENSION(6) :: ym,yn
-	INTEGER :: i,n ! counters
-	INTEGER, PARAMETER :: nvar = 6
-	REAL*8 :: h,h2,swap,x
-	! ROCK THE CASBAH !!! ---------------------
-	h=htot/DFLOAT(nstep) ! Stepsize this trip.
-	DO i=1,nvar
-		ym(i)=y(i)
-		yn(i)=y(i)+h*dydx(i) ! First step.
-	END DO
-	x=xs+h
-	CALL ATOM_H_DERIVS(inicondat,thispes,x,yn,yout,switch) ! Will use yout for temporary storage of derivatives.
-	IF (switch) RETURN
-	h2=2.D0*h
-	DO n=2,nstep ! General step.
-		DO i=1,nvar
-			swap=ym(i)+h2*yout(i)
-			ym(i)=yn(i)
-			yn(i)=swap
-		END DO
-		x=x+h
-		CALL ATOM_H_DERIVS(inicondat,thispes,x,yn,yout,switch)
-		IF (switch) RETURN
-	END DO
-	DO i=1,nvar ! Last step.
-		yout(i)=0.5D0*(ym(i)+yn(i)+h*yout(i))
-	END DO 
-	RETURN
-END SUBROUTINE MMID_ATOM
+SUBROUTINE MMID_DYNATOM(this,y,dydx,xs,htot,nstep,yout,switch)
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Dynatom),INTENT(IN) :: this
+   INTEGER,INTENT(IN) :: nstep
+   REAL(KIND=8),DIMENSION(6), INTENT(IN) :: y,dydx
+   REAL(KIND=8),DIMENSION(6), INTENT(OUT) :: yout
+   REAL(KIND=8),INTENT(IN) :: xs,htot
+   LOGICAL,INTENT(INOUT) :: switch
+   ! Local variables
+   REAL(KIND=8),DIMENSION(6) :: ym,yn
+   INTEGER :: i,n ! counters
+   INTEGER,PARAMETER :: nvar = 6
+   REAL(KIND=8) :: h,h2,swap,x
+   ! ROCK THE CASBAH !!! ---------------------
+   h=htot/DFLOAT(nstep) ! Stepsize this trip.
+   FORALL(i=1:nvar)
+      ym(i)=y(i)
+      yn(i)=y(i)+h*dydx(i) ! First step.
+   END FORALL
+   x=xs+h
+   CALL this%TIME_DERIVS(yn,yout,switch) ! Will use yout for temporary storage of derivatives.
+   SELECT CASE(switch)
+      CASE(.TRUE.)
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   h2=2.D0*h
+   DO n=2,nstep ! General step.
+      FORALL(i=1:nvar)
+         swap=ym(i)+h2*yout(i)
+         ym(i)=yn(i)
+         yn(i)=swap
+      END FORALL
+      x=x+h
+      CALL this%TIME_DERIVS(yn,yout,switch)
+      SELECT CASE(switch)
+         CASE(.TRUE.)
+            RETURN
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+   END DO
+   FORALL(i=1:nvar) yout(i)=0.5D0*(ym(i)+yn(i)+h*yout(i))
+   RETURN
+END SUBROUTINE MMID_DYNATOM
 !##################################################################################################
-!# SUBROUTINE: RZEXTR #############################################################################
+!# SUBROUTINE: RZEXTR_DYNATOM #####################################################################
 !################################################################################################## 
 !> @brief 
 !! - A part of the Burlich-Stoer algorithm. Uses diagonal rational function extrapolation. 
@@ -523,20 +543,21 @@ END SUBROUTINE MMID_ATOM
 !! Taken from Numerical recipes in Fortran 77
 !> @see pzextr
 !--------------------------------------------------------------------------------------------------
-SUBROUTINE RZEXTR (iest,xest,yest,yz,dy,nv)
+SUBROUTINE RZEXTR_DYNATOM(this,iest,xest,yest,yz,dy,nv)
 	IMPLICIT NONE
 	! I/O variables
-	INTEGER, INTENT(IN) :: iest, nv
-	REAL*8, INTENT(IN) :: xest
-	REAL*8, DIMENSION(nv), INTENT(IN) :: yest
-	REAL*8, DIMENSION(nv), INTENT(OUT) :: dy, yz
+   CLASS(Dynatom),INTENT(IN):: this
+	INTEGER,INTENT(IN) :: iest, nv
+	REAL(KIND=8),INTENT(IN) :: xest
+	REAL(KIND=8),DIMENSION(nv), INTENT(IN) :: yest
+	REAL(KIND=8),DIMENSION(nv), INTENT(OUT) :: dy, yz
 	! Local variables 	
 	INTEGER, PARAMETER :: IMAX = 13
 	INTEGER, PARAMETER :: NMAX = 50
 	INTEGER :: j,k
-	REAL*8, DIMENSION(NMAX,IMAX) :: d
-	REAL*8, DIMENSION(IMAX) :: fx, x
-	REAL*8 :: b,b1,c,ddy,v,yy
+	REAL(KIND=8), DIMENSION(NMAX,IMAX) :: d
+	REAL(KIND=8), DIMENSION(IMAX) :: fx, x
+	REAL(KIND=8) :: b,b1,c,ddy,v,yy
 	SAVE d,x
 	! HEY, HO!, LETS GO!! ------------------------
 	x(iest)=xest
@@ -577,9 +598,9 @@ SUBROUTINE RZEXTR (iest,xest,yest,yz,dy,nv)
 		END DO
 	END IF
 	RETURN
-END SUBROUTINE RZEXTR
+END SUBROUTINE RZEXTR_DYNATOM
 !############################################################################################
-!# SUBROUTINE : PZEXTR ######################################################################
+!# SUBROUTINE : PZEXTR_DYNATOM ##############################################################
 !############################################################################################
 !!> @brief
 !! Uses polynomial extrapolation to evaluate nv functions at x = 0 by fitting a polynomial to a
@@ -593,55 +614,56 @@ END SUBROUTINE RZEXTR
 !
 !> @see Numerical recipes in fortran 77 
 !--------------------------------------------------------------------------------------------
-SUBROUTINE PZEXTR(iest,xest,yest,yz,dy,nv)
-	IMPLICIT NONE
-	! I/O variables
-	INTEGER, INTENT(IN) :: iest, nv
-	REAL*8, INTENT(IN) :: xest
-	REAL*8, DIMENSION(nv), INTENT(IN) :: yest
-	REAL*8, DIMENSION(nv), INTENT(OUT) :: dy, yz
-	! Local Variables
-	INTEGER, PARAMETER :: IMAX = 13
-	INTEGER, PARAMETER :: NMAX = 50 
-	INTEGER :: j, k1 ! counters
-	REAL*8, DIMENSION(NMAX) :: d
-	REAL*8, DIMENSION(IMAX) :: x
-	REAL*8, DIMENSION(NMAX,IMAX) :: qcol
-	REAL*8 :: delta,f1,f2,q
-	! ROCK THE CASBAH !!!! --------------
-	SAVE qcol,x
-	x(iest)=xest !Save current independent variable.
-	DO j=1,nv
-		dy(j)=yest(j)
-		yz(j)=yest(j)
-	END DO
-	IF (iest.eq.1) THEN ! Store rst estimate in rst column.
-		DO j=1,nv
-			qcol(j,1)=yest(j)
-		END DO
-	ELSE
-		DO j=1,nv
-			d(j)=yest(j)
-		END DO
-		DO k1=1,iest-1
-			delta=1./(x(iest-k1)-xest)
-			f1=xest*delta
-			f2=x(iest-k1)*delta
-			DO j=1,nv ! Propagate tableau 1 diagonal more.
-				q=qcol(j,k1)
-				qcol(j,k1)=dy(j)
-				delta=d(j)-q
-				dy(j)=f1*delta
-				d(j)=f2*delta
-				yz(j)=yz(j)+dy(j)
-			END DO
-		END DO
-		DO j=1,nv
-			qcol(j,iest)=dy(j)
-		END DO
-	END IF
-	RETURN
-END SUBROUTINE PZEXTR
+SUBROUTINE PZEXTR_DYNATOM(this,iest,xest,yest,yz,dy,nv)
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Dynatom),INTENT(IN):: this
+   INTEGER,INTENT(IN) :: iest, nv
+   REAL(KIND=8),INTENT(IN) :: xest
+   REAL(KIND=8),DIMENSION(nv),INTENT(IN) :: yest
+   REAL(KIND=8),DIMENSION(nv),INTENT(OUT) :: dy, yz
+   ! Local Variables
+   INTEGER,PARAMETER :: IMAX = 13
+   INTEGER,PARAMETER :: NMAX = 50 
+   INTEGER :: j, k1 ! counters
+   REAL(KIND=8),DIMENSION(NMAX) :: d
+   REAL(KIND=8),DIMENSION(IMAX) :: x
+   REAL(KIND=8),DIMENSION(NMAX,IMAX) :: qcol
+   REAL(KIND=8):: delta,f1,f2,q
+   ! ROCK THE CASBAH !!!! --------------
+   SAVE qcol,x
+   x(iest)=xest !Save current independent variable.
+   DO j=1,nv
+      dy(j)=yest(j)
+      yz(j)=yest(j)
+   END DO
+   IF (iest.eq.1) THEN ! Store 1st estimate in 1st column.
+      DO j=1,nv
+         qcol(j,1)=yest(j)
+      END DO
+   ELSE
+      DO j=1,nv
+         d(j)=yest(j)
+      END DO
+      DO k1=1,iest-1
+         delta=1./(x(iest-k1)-xest)
+         f1=xest*delta
+         f2=x(iest-k1)*delta
+         DO j=1,nv ! Propagate tableau 1 diagonal more.
+            q=qcol(j,k1)
+            qcol(j,k1)=dy(j)
+            delta=d(j)-q
+            dy(j)=f1*delta
+            d(j)=f2*delta
+            yz(j)=yz(j)+dy(j)
+         END DO
+      END DO
+      DO j=1,nv
+         qcol(j,iest)=dy(j)
+      END DO
+   END IF
+   RETURN
+END SUBROUTINE PZEXTR_DYNATOM
 !###############################################################################################
 !# SUBROUTINE : BSSTEP_ATOM ####################################################################
 !###############################################################################################
@@ -670,43 +692,39 @@ END SUBROUTINE PZEXTR
 !! - Should be generalized (pending task)
 !! - Should use dynamic memory (pending task)
 !------------------------------------------------------------------------------------------------
-SUBROUTINE BSSTEP_ATOM (inicondat,dinamica,thispes,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
-   USE INITATOM_MOD
-   USE CRP3D_MOD
+SUBROUTINE BSSTEP_DYNATOM(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	IMPLICIT NONE
+	! I/O variables
+	CLASS(Dynatom),INTENT(IN) :: this
+	REAL(KIND=8), INTENT(IN) :: eps     ! required accuracy
+	REAL(KIND=8), INTENT(IN) ::  htry   ! step to try
+	REAL(KIND=8), DIMENSION(6) :: yscal ! factors to scale error 
+	REAL(KIND=8), DIMENSION(6), INTENT(IN) :: dydx 
+	REAL(KIND=8), DIMENSION(6), INTENT(INOUT) :: y ! initial/final values for: X,Y,Z,Px,Py,Pz (in this order)
+	REAL(KIND=8), INTENT(INOUT) :: x
+	LOGICAL, INTENT(INOUT) :: switch ! .TRUE. if potential could not be calculated
+	REAL(KIND=8), INTENT(OUT) :: hdid  ! step actually used
+	REAL(KIND=8), INTENT(OUT) :: hnext ! guess of the next step
 	! Parameters for this routine
 	INTEGER, PARAMETER :: nv = 6
-	REAL*8, PARAMETER :: SAFE1 = 0.25D0
-	REAL*8, PARAMETER :: SAFE2 = 0.7D0
-	REAL*8, PARAMETER :: TINY = 1.D-30 
-	REAL*8, PARAMETER :: SCALMX = 0.1D0
-	REAL*8, PARAMETER :: REDMIN = 0.7D0
-	REAL*8, PARAMETER :: REDMAX = 1.D-5
-	INTEGER, PARAMETER :: NMAX = 50
-	INTEGER, PARAMETER :: KMAXX = 8
-	INTEGER, PARAMETER :: IMAX = KMAXX+1
+	REAL(KIND=8),PARAMETER :: SAFE1 = 0.25D0
+	REAL(KIND=8),PARAMETER :: SAFE2 = 0.7D0
+	REAL(KIND=8),PARAMETER :: TINY = 1.D-30 
+	REAL(KIND=8),PARAMETER :: SCALMX = 0.1D0
+	REAL(KIND=8),PARAMETER :: REDMIN = 0.7D0
+	REAL(KIND=8),PARAMETER :: REDMAX = 1.D-5
+	INTEGER,PARAMETER :: NMAX = 50
+	INTEGER,PARAMETER :: KMAXX = 8
+	INTEGER,PARAMETER :: IMAX = KMAXX+1
 	CHARACTER(LEN=13), PARAMETER :: routinename = "BSSTEP_ATOM: "
-	! I/O variables
-	TYPE(Initatom),INTENT(IN) :: inicondat
-	TYPE(Dynatom),INTENT(IN) :: dinamica
-   TYPE(CRP3D),INTENT(IN) :: thispes
-	REAL*8, INTENT(IN) :: eps     ! required accuracy
-	REAL*8, INTENT(IN) ::  htry   ! step to try
-	REAL*8, DIMENSION(6) :: yscal ! factors to scale error 
-	REAL*8, DIMENSION(6), INTENT(IN) :: dydx 
-	REAL*8, DIMENSION(6), INTENT(INOUT) :: y ! initial/final values for: X,Y,Z,Px,Py,Pz (in this order)
-	REAL*8, INTENT(INOUT) :: x
-	LOGICAL, INTENT(INOUT) :: switch ! .TRUE. if potential could not be calculated
-	REAL*8, INTENT(OUT) :: hdid  ! step actually used
-	REAL*8, INTENT(OUT) :: hnext ! guess of the next step
 	! Local variables
 	INTEGER, DIMENSION(IMAX) :: nseq
-	REAL*8, DIMENSION(KMAXX) :: err
-	REAL*8, DIMENSION(NMAX) :: yerr, ysav, yseq
-	REAL*8, DIMENSION(IMAX) :: a
-	REAL*8, DIMENSION(KMAXX,KMAXX) :: alf
+	REAL(KIND=8), DIMENSION(KMAXX) :: err
+	REAL(KIND=8), DIMENSION(NMAX) :: yerr, ysav, yseq
+	REAL(KIND=8), DIMENSION(IMAX) :: a
+	REAL(KIND=8), DIMENSION(KMAXX,KMAXX) :: alf
 	INTEGER :: i,iq,k,kk,km,kmax,kopt
-	REAL*8 :: eps1,epsold,errmax,fact,h,red,scale,work,wrkmin,xest, xnew
+	REAL(KIND=8) :: eps1,epsold,errmax,fact,h,red,scale,work,wrkmin,xest, xnew
 	LOGICAL :: first,reduct
 	SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
 	DATA first/.TRUE./,epsold/-1./
@@ -743,16 +761,16 @@ SUBROUTINE BSSTEP_ATOM (inicondat,dinamica,thispes,y,dydx,x,htry,eps,yscal,hdid,
 	reduct=.false.
 2 DO k=1,kmax             ! Evaluate the sequence of modified midpoint
 		xnew=x+h  ! integrations.
-		CALL MMID_ATOM(inicondat,thispes,ysav,dydx,x,h,nseq(k),yseq,switch)
+		CALL this%MMID(ysav,dydx,x,h,nseq(k),yseq,switch)
 		IF(switch) RETURN
 		xest=(h/nseq(k))**2.D0 ! Squared, since error series is even.
-		IF(dinamica%extrapol.EQ."Rational") THEN
-			CALL RZEXTR (k,xest,yseq,y,yerr,nv) ! Perform extrapolation with Rational funcions
-		ELSE IF (dinamica%extrapol.EQ."Polinomi") THEN
-			CALL PZEXTR(k,xest,yseq,y,yerr,nv) ! Perform extrapolation with Polinoms
+		IF(this%extrapol.EQ."Rational") THEN
+			CALL this%RATIONAL_EXTRAPOL(k,xest,yseq,y,yerr,nv) ! Perform extrapolation with Rational funcions
+		ELSE IF (this%extrapol.EQ."Polinomi") THEN
+			CALL this%POLINOM_EXTRAPOL(k,xest,yseq,y,yerr,nv) ! Perform extrapolation with Polinoms
 		ELSE
 			WRITE(0,*) "BSSTEP_ATOM ERR: Wrong keyword for extrapolation variable"
-			STOP 1
+			CALL EXIT(1)
 		END IF
 		IF(k.NE.1) THEN ! Compute normalized error estimate 
 			errmax=TINY
@@ -813,5 +831,5 @@ SUBROUTINE BSSTEP_ATOM (inicondat,dinamica,thispes,y,dydx,x,htry,eps,yscal,hdid,
 		END IF
 	END IF
 	RETURN
-END SUBROUTINE BSSTEP_ATOM
+END SUBROUTINE BSSTEP_DYNATOM
 END MODULE DYNATOM_MOD

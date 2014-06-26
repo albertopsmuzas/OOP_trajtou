@@ -22,20 +22,23 @@ IMPLICIT NONE
 !
 !-------------------------------------------------
 TYPE,EXTENDS(PES) :: CRP6D
-   INTEGER(KIND=4) :: nsites
-   INTEGER(KIND=4) :: natomic
-   LOGICAL :: is_interpolated=.FALSE.
-   LOGICAL :: is_homonucl=.FALSE.
-   LOGICAL :: is_smooth=.FALSE.
-   LOGICAL :: is_shifted=.FALSE.
-   CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE :: wyckoffsite
-   TYPE(CRP3D),DIMENSION(:),ALLOCATABLE :: atomiccrp
-   TYPE(Vacuumpot) :: farpot
-   CLASS(Function1d),ALLOCATABLE :: dumpfunc
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: xyklist
+   INTEGER(KIND=4):: nsites
+   INTEGER(KIND=4):: natomic
+   LOGICAL:: is_interpolated=.FALSE.
+   LOGICAL:: is_homonucl=.FALSE.
+   LOGICAL:: is_smooth=.FALSE.
+   LOGICAL:: is_shifted=.FALSE.
+   LOGICAL:: is_resized=.FALSE.
+   INTEGER(KIND=4),DIMENSION(2) :: grid=(/0,0/)
+   CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE:: wyckoffsite
+   TYPE(CRP3D),DIMENSION(:),ALLOCATABLE:: atomiccrp
+   TYPE(Vacuumpot):: farpot
+   CLASS(Function1d),ALLOCATABLE:: dumpfunc
+   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: xyklist
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: READ => READ_CRP6D
+      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_CRP6D
       ! Set block
       PROCEDURE,PUBLIC :: SET_SMOOTH => SET_SMOOTH_CRP6D
       ! Get block
@@ -65,8 +68,37 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP6D
       PROCEDURE,PUBLIC :: PLOT_RZMAP => PLOT_RZMAP_CRP6D
       PROCEDURE,PUBLIC :: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
+      ! Enquire block
+      PROCEDURE,PUBLIC :: is_allowed => is_allowed_CRP6D
 END TYPE CRP6D
 CONTAINS
+!###########################################################
+!# SUBROUTINE: INITIALIZE_CRP6D 
+!###########################################################
+!> @brief
+!! Specific implementation of initialize PES from file
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE INITIALIZE_CRP6D(this,filename)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),INTENT(OUT)::this
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! Run section
+   CALL this%READ(filename)
+   CALL this%INTERPOL()
+   SELECT CASE(this%is_resized)
+      CASE(.TRUE.)
+         CALL this%INTERPOL_NEW_RZGRID(this%grid(1),this%grid(2))
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   RETURN
+END SUBROUTINE INITIALIZE_CRP6D
 !###########################################################
 !# SUBROUTINE: GET_ATOMICPOT_AND_DERIVS_CRP6D 
 !###########################################################
@@ -229,10 +261,10 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
    USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(CRP6D),INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: x
+   CLASS(CRP6D),TARGET,INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
    REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dvdu
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: dvdu
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
    REAL(KIND=8) :: ma,mb
@@ -924,6 +956,8 @@ SUBROUTINE READ_CRP6D(this,filename)
    ! I/O variables
    CLASS(CRP6D),INTENT(OUT) :: this
    CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! IMPORTANT: unit used to read
+   INTEGER(KIND=4),PARAMETER :: runit=180
    ! Local variables
    INTEGER(KIND=4) :: i,j ! counters
    INTEGER(KIND=4) :: natomic ! number of atomic potentials
@@ -936,23 +970,24 @@ SUBROUTINE READ_CRP6D(this,filename)
    REAL(KIND=8),DIMENSION(2) :: masslist
    CHARACTER(LEN=2),DIMENSION(2) :: symbollist
    CHARACTER(LEN=10) :: units
+   CHARACTER(LEN=6) :: resize
    TYPE(Mass) :: masss
    ! Run section -----------------------
    CALL this%SET_ALIAS("CRP6D PES")
    CALL this%SET_DIMENSIONS(6)
    ! set up molecular crp
-   OPEN (UNIT=180,FILE=filename,STATUS="old",ACTION="read")
-   READ(180,*) ! dummy line
-   READ(180,*) symbollist(1),auxr,units
+   OPEN (UNIT=runit,FILE=filename,STATUS="old",ACTION="read")
+   READ(runit,*) ! dummy line
+   READ(runit,*) symbollist(1),auxr,units
    CALL masss%READ(auxr,units)
    CALL masss%TO_STD()
    masslist(1)=masss%getvalue()
-   READ(180,*) symbollist(2),auxr,units
+   READ(runit,*) symbollist(2),auxr,units
    CALL masss%READ(auxr,units)
    CALL masss%TO_STD()
    masslist(2)=masss%getvalue()
    CALL this%SET_ATOMS(2,symbollist,masslist)
-   READ(180,*) this%natomic
+   READ(runit,*) this%natomic
    SELECT CASE(this%natomic)
       CASE(1)
          this%is_homonucl=.TRUE.
@@ -969,7 +1004,7 @@ SUBROUTINE READ_CRP6D(this,filename)
 #endif
    ! Prepare atomic potentials
    DO i = 1, this%natomic
-      READ(180,*) string
+      READ(runit,*) string
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Load from file: ",string)
 #endif
@@ -987,28 +1022,36 @@ SUBROUTINE READ_CRP6D(this,filename)
       END SELECT
    END DO
    ! Read Far potential file -----------------------
-   READ(180,*) string
+   READ(runit,*) string
    CALL this%farpot%INITIALIZE(string)
    ! Read dumping function ------------------------
-   READ(180,*) string
+   READ(runit,*) string
    SELECT CASE(string)
       CASE("Logistic")
          ALLOCATE(Logistic_func::this%dumpfunc)
          ALLOCATE(param_dump(2))
-         READ(180,*) param_dump
+         READ(runit,*) param_dump
          CALL this%dumpfunc%READ(param_dump)
       CASE("None") 
          ALLOCATE(One_func::this%dumpfunc)
-         READ(180,*) ! dummy line
+         READ(runit,*) ! dummy line
       CASE DEFAULT
          WRITE(0,*) "READ_CRP6D ERR: Keyword for dumping function needed"
          WRITE(*,*) "Currently implemented: Logistical, None"
          CALL EXIT(1)
    END SELECT
+   ! Read Resize options
+   READ(runit,'(A6,L1)',advance="no") resize,this%is_resized
+   SELECT CASE( resize=="RESIZE" .AND. this%is_resized )
+      CASE(.TRUE.)
+         READ(runit,*) this%grid(:)
+      CASE(.FALSE.)
+         READ(runit,*) ! just ignore the rest of the line
+   END SELECT
    ! Read number of wyckoff sites and its letters ----------------
-   READ(180,'(I2)',advance="no") this%nsites
+   READ(runit,'(I2)',advance="no") this%nsites
    ALLOCATE(letter(this%nsites))
-   READ(180,*) letter(:)
+   READ(runit,*) letter(:)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Wyckoff sites found: ",this%nsites)
    CALL VERBOSE_WRITE(routinename,"Wyckoff letters map:")
@@ -1028,16 +1071,16 @@ SUBROUTINE READ_CRP6D(this,filename)
    END SELECT
    ! Now that we have the correct type:
    DO i = 1, this%nsites
-      CALL this%wyckoffsite(i)%READ(180)
+      CALL this%wyckoffsite(i)%READ(runit)
       CALL this%wyckoffsite(i)%SET_ID(letter(i))
       CALL this%wyckoffsite(i)%SET_HOMONUCL(this%is_homonucl)
       CALL this%wyckoffsite(i)%SET_MYNUMBER(i)
    END DO
    ! Read the final part of the input: kpoints for XY interpolation
    ALLOCATE(this%xyklist(this%nsites,2))
-   READ(180,*) ! dummy line
+   READ(runit,*) ! dummy line
    DO i = 1, this%nsites
-      READ(180,*) this%xyklist(i,:)
+      READ(runit,*) this%xyklist(i,:)
    END DO
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"xyklist found:")
@@ -1045,7 +1088,7 @@ SUBROUTINE READ_CRP6D(this,filename)
       CALL VERBOSE_WRITE(routinename,this%xyklist(i,:))
    END DO
 #endif
-   CLOSE(180)
+   CLOSE(runit)
    RETURN
 END SUBROUTINE READ_CRP6D
 !#######################################################################
@@ -2009,5 +2052,33 @@ SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,
    CLOSE(11)
    RETURN
 END SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D
+!###########################################################
+!# FUNCTION: is_allowed_CRP6D 
+!###########################################################
+!> @brief 
+!! Enquires if the CRP6D potential can be calculated at @b X
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+LOGICAL FUNCTION is_allowed_CRP6D(this,x) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),INTENT(IN) :: this
+   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
+   ! Local variables
+   ! Run section
+   SELECT CASE(size(x)/=6)
+      CASE(.TRUE.)
+         WRITE(0,*) "is_allowed_CRP6D ERR: wrong number of dimensions"
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   is_allowed_CRP6D=.TRUE.
+   RETURN
+END FUNCTION is_allowed_CRP6D
 
 END MODULE CRP6D_MOD

@@ -1,4 +1,5 @@
 MODULE PES_MOD
+   USE SURFACE_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Atomdata
@@ -30,27 +31,65 @@ END TYPE Atomdata
 !> param initialized - Controls status of the PES
 !> param atomdat - Contains array of atoms (with some info) related to this PES
 !----------------------------------------------------------------------------------------
-TYPE PES
+TYPE,ABSTRACT :: PES
 PRIVATE
    CHARACTER(LEN=30) :: alias
    INTEGER :: dimensions
-	REAL(KIND=8), DIMENSION(:),ALLOCATABLE :: r
+	REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: r
 	REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dvdu 
 	REAL(KIND=8) :: v
 	LOGICAL :: initialized = .FALSE.
    TYPE(Atomdata),DIMENSION(:),ALLOCATABLE,PUBLIC:: atomdat
+   TYPE(Surface),PUBLIC:: surf
    CONTAINS
+      ! Initialization block
+      PROCEDURE(INITIALIZE_PES),DEFERRED,PUBLIC :: INITIALIZE
       ! Set block
-      PROCEDURE,PUBLIC :: SET_ALIAS => SET_ALIAS_PES
-      PROCEDURE,PUBLIC :: SET_DIMENSIONS => SET_DIMENSIONS_PES
-      PROCEDURE,PUBLIC :: SET_ATOMS => SET_ATOMS_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: SET_ALIAS => SET_ALIAS_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: SET_DIMENSIONS => SET_DIMENSIONS_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: SET_ATOMS => SET_ATOMS_PES
       ! Get block
-      PROCEDURE,PUBLIC :: getalias => getalias_PES
-      PROCEDURE,PUBLIC :: getdimensions => getdimensions_PES
-      PROCEDURE,PUBLIC :: getlastvalue => getlastvalue_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: getalias => getalias_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: getdimensions => getdimensions_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: getlastvalue => getlastvalue_PES
+      PROCEDURE(GET_V_AND_DERIVS_PES),DEFERRED :: GET_V_AND_DERIVS
       ! Enquire block
-      PROCEDURE,PUBLIC :: is_initialized => is_initialized_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: is_initialized => is_initialized_PES
+      PROCEDURE(is_allowed_PES),DEFERRED,PUBLIC :: is_allowed
 END TYPE PES
+ABSTRACT INTERFACE
+   !###########################################################
+   !# SUBROUTINE: INITIALIZE_PES 
+   !###########################################################
+   !-----------------------------------------------------------
+   SUBROUTINE INITIALIZE_PES(this,filename)
+      IMPORT PES
+      CLASS(PES),INTENT(OUT) :: this
+      CHARACTER(LEN=*),INTENT(IN) :: filename
+   END SUBROUTINE INITIALIZE_PES
+   !###########################################################
+   !# SUBROUTINE: GET_V_AND_DERIVS_PES 
+   !###########################################################
+   !-----------------------------------------------------------
+   SUBROUTINE GET_V_AND_DERIVS_PES(this,x,v,dvdu)
+      IMPORT PES
+      CLASS(PES),TARGET,INTENT(IN):: this
+      REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
+      REAL(KIND=8),INTENT(OUT):: v
+      REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
+   END SUBROUTINE GET_V_AND_DERIVS_PES
+   !###########################################################
+   !# FUNCTION: is_allowed_PES 
+   !###########################################################
+   !> @brief 
+   !! Enquires if the potential can be calculated at @b X
+   !-----------------------------------------------------------
+   LOGICAL FUNCTION is_allowed_PES(this,x) 
+      IMPORT PES
+      CLASS(PES),INTENT(IN):: this
+      REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
+   END FUNCTION is_allowed_PES
+END INTERFACE
 !////////////////////////////////////////////////////////////////////////////////////////
 CONTAINS
 !###########################################################

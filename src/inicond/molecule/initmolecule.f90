@@ -1,14 +1,17 @@
-!###############################################
-! MODULE: INITATOM_MOD
+!################################################################################
+! MODULE: INITMOLECULE_MOD
 !> @brief
 !! This module provides routines and onjects to create
-!! initial conditions for an atom or list of atoms
-!###############################################
-MODULE INITATOM_MOD
+!! initial conditions for a molecule or list of molecules
+!#################################################################################
+MODULE INITMOLECULE_MOD
 USE INICOND_MOD
 USE UNITS_MOD
 IMPLICIT NONE
-TYPE,EXTENDS(Inicond) :: Initatom
+!////////////////////////////////////////////////////////////////////////////////////////
+! TYPE: Initmolecule
+!----------------------------------------------------------------------------------------
+TYPE,EXTENDS(Inicond) :: INITMOLECULE
    LOGICAL :: control_vel, control_posX, control_posY, control_out, control_seed
    REAL*8 :: impact_x, impact_y
    TYPE(Energy) :: E_norm
@@ -18,24 +21,24 @@ TYPE,EXTENDS(Inicond) :: Initatom
    CONTAINS
       PROCEDURE,PUBLIC :: READ => READ_INICOND_ATOM
       PROCEDURE,PUBLIC :: GENERATE_TRAJS => GENERATE_TRAJS_ATOMS
-END TYPE Initatom
+END TYPE INITMOLECULE
 !/////////////////////////////////////////////////////
 ! TYPE: Atoms
 !> @brief
 !! Atom subtype dynamics object
 !----------------------------------------------------
-TYPE,EXTENDS(Dynobject) ::  Atom
-   INTEGER :: ireb=0 ! times this atom has changed Pz's direction
-   INTEGER :: ixyboun=0 ! times this atoms has changed parallel momentum's direction
-END TYPE Atom
+TYPE,EXTENDS(Dynobject) ::  Molecule
+   INTEGER :: ireb=0 ! times this molecule has changed Pz's direction
+   INTEGER :: ixyboun=0 ! times this molecule has changed parallel momentum's direction
+END TYPE Molecule
 !/////////////////////////////////////////////////////
 ! TYPE: Atom_trajs
 !> @brief
 !! A list of atom subtype dynamics objects
 !----------------------------------------------------
-TYPE :: Atom_trajs
-   TYPE(Atom),DIMENSION(:),ALLOCATABLE :: atomo
-END TYPE Atom_trajs
+TYPE :: Molecule_trajs
+   TYPE(Molecule),DIMENSION(:),ALLOCATABLE :: molecules
+END TYPE Molecule_trajs
 !////////////////////////////////////////////////////
 CONTAINS
 !##################################################################################
@@ -50,10 +53,11 @@ CONTAINS
 !
 !> @warning
 !! - Input file syntax:
-!!    -# line 1: character(len=30); human friendly alias 
-!!    -# line 2: character(len=10); kind of input. "Atoms" is the only available label
-!!    -# line 3: integer(kind=4); initial trajectory
-!!    -# line 4: integer(kind=4); final trajectory
+!!    -# line 1: dummy line
+!!    -# line 2: character(len=30); human friendly alias 
+!!    -# line 3: character(len=10); kind of input. "Molecule" is the only available label
+!!    -# line 4: integer(kind=4); initial trajectory
+!!    -# line 5: integer(kind=4); final trajectory
 !!    -# line 5: real(kind=8),character(len=10); mass, units
 !!    -# line 6: real(kind=8),character(len=10); initial perpendicular energy, units
 !!    -# line 7: real(kind=8),character(len=10); angle of velocity respect to surface plane, units
@@ -78,7 +82,7 @@ SUBROUTINE READ_INICOND_ATOM(inicondat,filename)
 #endif
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(Initatom), INTENT(OUT) :: inicondat
+	CLASS(INITMOLECULE), INTENT(OUT) :: inicondat
 	CHARACTER(LEN=*), INTENT(IN) :: filename
 	! Local variables
    REAL(KIND=8) :: aux
@@ -235,7 +239,7 @@ SUBROUTINE GENERATE_TRAJS_ATOMS(inicondat,thispes,final_trajs)
 #endif
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(Initatom),TARGET,INTENT(IN) :: inicondat
+	CLASS(INITMOLECULE),TARGET,INTENT(IN) :: inicondat
 	TYPE(Atom_trajs),INTENT(OUT) :: final_trajs
 	TYPE(CRP3D),INTENT(IN) :: thispes
 	! Local variables
@@ -361,4 +365,4 @@ SUBROUTINE GENERATE_TRAJS_ATOMS(inicondat,thispes,final_trajs)
 	END IF
 	RETURN
 END SUBROUTINE GENERATE_TRAJS_ATOMS
-END MODULE INITATOM_MOD
+END MODULE INITMOLECULE_MOD
