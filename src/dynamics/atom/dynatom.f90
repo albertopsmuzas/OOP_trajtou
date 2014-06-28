@@ -214,14 +214,17 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
    ! I/O variables
    CLASS(Dynatom),TARGET,INTENT(INOUT) :: this
    INTEGER(KIND=4),INTENT(IN) :: idtraj
+   ! IMPORTANT: units used to write
+   INTEGER(KIND=4),PARAMETER :: wunit1=799,wunit2=789,wunit3=724
    ! Local variables
    INTEGER :: i, cycles ! counters
    REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
    REAL(KIND=8),DIMENSION(3) :: r0, p0, dummy
    REAL(KIND=8),DIMENSION(6) :: atom_dofs, s, dfdt
+   LOGICAL :: maxtime_reached
    LOGICAL :: switch, file_exists, in_list
-   CHARACTER(LEN=18),PARAMETER :: routinename = "DO_DYNAMICS_ATOM: "
    CHARACTER(LEN=21) :: filename_follow
+   CHARACTER(LEN=21),PARAMETER :: routinename = "DO_DYNAMICS_DYNATOM: "
    CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
    CHARACTER(LEN=10) :: x1
    INTEGER :: control
@@ -233,25 +236,43 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
    INQUIRE(FILE="OUTdynamics3d.out",EXIST=file_exists)
    SELECT CASE(file_exists)
       CASE(.TRUE.)
-         OPEN(11, FILE="OUTdynamics3d.out",STATUS="old",ACCESS="append")
+         OPEN(wunit1, FILE="OUTdynamics3d.out",STATUS="old",ACCESS="append")
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Previous output file found: OUTdynamics3d.out")
+         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
+#endif
       CASE(.FALSE.)
-         OPEN(11,FILE="OUTdynamics3d.out",STATUS="new")
-         WRITE(11,*) "# DYNAMICS RESULTS -----------------------------------------------------------"
-         WRITE(11,*) "# Format: id, status, ireb, ixyboun, Etot, t, X,Y,Z (a.u.), Px,Py,Pz (a.u.)   "
-         WRITE(11,*) "# ----------------------------------------------------------------------------"
+         OPEN(wunit1,FILE="OUTdynamics3d.out",STATUS="new")
+         WRITE(wunit1,*) "# DYNAMICS RESULTS -----------------------------------------------------------"
+         WRITE(wunit1,*) "# Format: id, status, ireb, ixyboun, Etot, t, X,Y,Z (a.u.), Px,Py,Pz (a.u.)   "
+         WRITE(wunit1,*) "# ----------------------------------------------------------------------------"
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"New output file created: OUTdynamics3d.out")
+         CALL VERBOSE_WRITE(routinename,"Header printed to that file")
+         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
+#endif
    END SELECT
    INQUIRE(FILE="OUTturning3d.out",EXIST=file_exists)
    SELECT CASE(file_exists)
       CASE(.TRUE.)
-         OPEN(12, FILE="OUTturning3d.out",STATUS="old",ACCESS="append")
+         OPEN(wunit2, FILE="OUTturning3d.out",STATUS="old",ACCESS="append")
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Previous output file found: OUTturning3d.out")
+         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
+#endif
       CASE(.FALSE.)
-         OPEN(12,FILE="OUTturning3d.out",STATUS="new")
-         WRITE(12,*) "# TURNING POINTS --------------------------------------------"
-         WRITE(12,*) "# Description: positions of scattered atoms at their lowest  "
-         WRITE(12,*) "#              Z value reached during the dynamics.          "
-         WRITE(12,*) "#               XY values, projected into IWS cell           "
-         WRITE(12,*) "# Format: id, X,Y,Z (a.u.)                                   "
-         WRITE(12,*) "# -----------------------------------------------------------"
+         OPEN(wunit2,FILE="OUTturning3d.out",STATUS="new")
+         WRITE(wunit2,*) "# TURNING POINTS --------------------------------------------"
+         WRITE(wunit2,*) "# Description: positions of scattered atoms at their lowest  "
+         WRITE(wunit2,*) "#              Z value reached during the dynamics.          "
+         WRITE(wunit2,*) "#               XY values, projected into IWS cell           "
+         WRITE(wunit2,*) "# Format: id, X,Y,Z (a.u.)                                   "
+         WRITE(wunit2,*) "# -----------------------------------------------------------"
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"New output file created: OUTturning3d.out")
+         CALL VERBOSE_WRITE(routinename,"Header printed to that file")
+         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
+#endif
    END SELECT
    in_list = .FALSE.
    SELECT CASE(this%nfollow)
@@ -262,6 +283,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             SELECT CASE(this%followtraj(i)==idtraj)
                CASE(.TRUE.)
                   in_list=.TRUE.
+                  EXIT
                CASE(.FALSE.)
                   ! do nothing
             END SELECT
@@ -270,12 +292,16 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             CASE(.TRUE.)
                WRITE(x1,format_string) idtraj
                filename_follow = 'OUTtraj'//TRIM(x1)//'.out'
-               OPEN(13,FILE=filename_follow,STATUS="replace")
-               WRITE(13,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
-               WRITE(13,*) "# Format: t, dt, Etot,Enorm,Pot(a.u) X,Y,Z(a.u.) Px,Py,Pz (a.u.)  "
-               WRITE(13,*) "# First and last position are not printed here                    "
-               WRITE(13,*) "# You can find them in INdynamics3d.out and INinicond3d.out       "
-               WRITE(13,*) "# ----------------------------------------------------------------"
+               OPEN(wunit3,FILE=filename_follow,STATUS="replace")
+               WRITE(wunit3,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
+               WRITE(wunit3,*) "# Format: t, dt, Etot,Enorm,Pot(a.u) X,Y,Z(a.u.) Px,Py,Pz (a.u.)  "
+               WRITE(wunit3,*) "# First and last position are not printed here                    "
+               WRITE(wunit3,*) "# You can find them in INdynamics3d.out and INinicond3d.out       "
+               WRITE(wunit3,*) "# ----------------------------------------------------------------"
+#ifdef DEBUG
+               CALL VERBOSE_WRITE(routinename,"Trajectory followed: ",idtraj)
+               CALL VERBOSE_WRITE(routinename,"File created: ",filename_follow)
+#endif
             CASE(.FALSE.)
                ! do nothing
          END SELECT
@@ -290,6 +316,9 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
    DO
       switch = .FALSE.
       cycles = cycles+1
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Cycle: ",cycles)
+#endif
       ! We cannot go beyond maximum time defined
       SELECT CASE(t+dt > this%max_t%getvalue())
          CASE(.TRUE.)
@@ -302,17 +331,23 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
       atom_dofs(1:3)=atomo%r(1:3)
       atom_dofs(4:6)=atomo%p(1:3)
       ! Initial values for the derivatives
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Atomic DOFS : ",atom_dofs)
+#endif
       CALL this%TIME_DERIVS(atom_dofs,dfdt,switch)
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Time derivatives: ",dfdt)
+#endif
       SELECT CASE(switch)
          CASE(.TRUE.)
             SELECT CASE(cycles)
                CASE(1)
-                  WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: Initial position is not adequate"
+                  WRITE(0,*) "DO_DYNAMICS_DYNATOM ERR: Initial position is not adequate"
                   WRITE(0,*) "Atomo id: ", idtraj
                   WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
                   CALL EXIT(1)
                CASE DEFAULT
-                  WRITE(0,*) "DO_DYNAMICS_ATOMS ERR: This error is quite uncommon, guess what is happening by your own."
+                  WRITE(0,*) "DO_DYNAMICS_DYNATOM ERR: This error is quite uncommon, guess what is happening by your own."
                   WRITE(0,*) "Atom id: ", idtraj
                   WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
                   CALL EXIT(1)
@@ -333,33 +368,50 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
       ! Energy before time-integration (a.u.)
       init_E = atomo%E
       ! Integrate and choose the correct time-step
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Energy before integration:",atomo%E)
+#endif
+      ! Call integrator
       CALL this%BSSTEP(atom_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Atomic DOFs after integration: ",atom_dofs)
+#endif
       SELECT CASE(switch)
          CASE(.TRUE.)
             ! Problem detected in integration, reducing time-step
             ! reboot to previous step values 
             dt = dt/2.D0 
             t = init_t
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,"Error encountered while integration of eq. of motion")
+            CALL VERBOSE_WRITE(routinename,"Halving time-step to: ", dt)
+#endif
             CYCLE
          CASE(.FALSE.)
             ! do nothing
       END SELECT
       ! At this point, atom_dofs contains the new values for position and momenta
       ! Let's obtain the potential value for this configuration
-      CALL this%thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy) ! just to  obtain the potential, should work
+      CALL this%thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy)
       E = (atom_dofs(4)**2.D0+atom_dofs(5)**2.D0+atom_dofs(6)**2.D0)/(2.D0*masa)+v
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
+#endif
       SELECT CASE (DABS(E-atomo%E) > 100.D0*this%eps*atomo%E)
          CASE(.TRUE.)
             ! Problems with energy conservation
             ! reboot to previous step values
             dt = dt/2.D0
             t = init_t
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,"Poor energy conservation. Cycling.")
+#endif
             CYCLE
       CASE(.FALSE.)
          ! do nothing
       END SELECT
       ! Check  bouncing points in Z direction (Z- Turning point)
-      SELECT CASE((atomo%p(3) < 0.D0).AND.(atom_dofs(6) > 0.D0)) THEN
+      SELECT CASE((atomo%p(3) < 0.D0).AND.(atom_dofs(6) > 0.D0))
          CASE(.TRUE.)
             atomo%ireb = atomo%ireb +1
          CASE(.FALSE.)
@@ -381,7 +433,13 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
          CASE(.FALSE.)
             ! do nothing
       END SELECT
-      ! EXIT CHANNELS -------------------------------------------
+      ! EXIT CHANNELS, AKA SWITCH SECTION -------------------------------------------
+      SELECT CASE(t > this%max_t%getvalue())
+         CASE(.TRUE.)
+            maxtime_reached=.TRUE.
+         CASE(.FALSE.)
+            maxtime_reached=.FALSE.
+      END SELECT
       SELECT CASE ((atom_dofs(3) <= this%zstop%getvalue()+this%dzstop%getvalue()).AND. &
                   (atom_dofs(3) > this%zstop%getvalue()-this%dzstop%getvalue()))
          CASE(.TRUE.)
@@ -400,7 +458,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%p(1:3)=atom_dofs(4:6)
             atomo%E=E
             atomo%turning_point(1:2) = this%thispes%surf%project_iwscell(atomo%turning_point(1:2))
-            WRITE(12,'(I7,1X,3(F10.5,1X))') idtraj, atomo%turning_point(:)
+            WRITE(wunit2,'(I7,1X,3(F10.5,1X))') idtraj, atomo%turning_point(:)
             EXIT
          CASE(.FALSE.)
             ! do nothing next switch
@@ -415,60 +473,77 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-		ELSE IF (t.GE.this%max_t%getvalue()) THEN ! exit channels evaluated when time is out
-			IF ((v.LT.0.D0).AND.(atom_dofs(3).LE.this%zads%getvalue())) THEN ! Adsorption: interaction potential v lower than zero and Z lower than a certain value 
-				atomo%stat = "Adsorbed"
-				FORALL (i=1:3) 
-					atomo%r(i) = atom_dofs(i)
-					atomo%p(i) = atom_dofs(i+3)
-				END FORALL
-				atomo%E = E
-				EXIT
-			ELSE IF (atom_dofs(3).LE.this%zads%getvalue()) THEN
-				atomo%stat = "Trapped"
-				FORALL (i=1:3) 
-					atomo%r(i) = atom_dofs(i)
-					atomo%p(i) = atom_dofs(i+3)
-				END FORALL
-				atomo%E = E
-				EXIT
-			ELSE
-				atomo%stat = "Time-out"
-				FORALL (i=1:3) 
-					atomo%r(i) = atom_dofs(i)
-					atomo%p(i) = atom_dofs(i+3)
-				END FORALL
-				atomo%E = E
-				EXIT
-			END IF
-		ELSE IF ((cycles.GT.1000).AND.(dt.LT.1.D-9)) THEN ! Too many cycles and low delta-t
-			atomo%stat = "Patologic"
-			FORALL (i=1:3)
-				atomo%r(i) = atom_dofs(i)
-				atomo%p(i) = atom_dofs(i+3)
-			END FORALL
-			atomo%E = E
-			EXIT
-		ELSE ! max_time not reached, unclassificable traj => dyniamics is not finished, cycle
-			FORALL (i=1:3) 
-				atomo%r(i) = atom_dofs(i)
-				atomo%p(i) = atom_dofs(i+3)
-			END FORALL
-			atomo%E = E
-			dt = dt_next
-			IF((this%nfollow.NE.0).AND.(in_list)) WRITE(13,*) t, dt_did, atomo%E, &
-				(atomo%p(3)**2.D0)/(2.D0*masa), v, atomo%r(:), atomo%p(:) 
-			CYCLE
-		END IF
-	END DO
+      SELECT CASE ((v < 0.D0).AND.(atom_dofs(3) <= this%zads%getvalue()).AND.maxtime_reached)
+         CASE(.TRUE.)
+            atomo%stat = "Adsorbed"
+            atomo%r(1:3) = atom_dofs(1:3)
+            atomo%p(1:3) = atom_dofs(4:6)
+            atomo%E = E
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing, next switch
+      END SELECT
+      SELECT CASE (atom_dofs(3) <= this%zads%getvalue() .AND. maxtime_reached)
+         CASE(.TRUE.)
+            atomo%stat = "Trapped"
+            atomo%r(1:3) = atom_dofs(1:3)
+            atomo%p(1:3) = atom_dofs(4:6)
+            atomo%E = E
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing, next switch
+      END SELECT
+      SELECT CASE (maxtime_reached)
+         CASE(.TRUE.)
+            atomo%stat = "Time-out"
+            atomo%r(1:3) = atom_dofs(1:3)
+            atomo%p(1:3) = atom_dofs(4:6)
+            atomo%E = E
+            EXIT
+         CASE(.FALSE.)
+            !do nothing next switch
+      END SELECT
+      SELECT CASE((cycles > 1000).AND.(dt < 1.D-9))
+         CASE(.TRUE.)
+            atomo%stat = "Patologic"
+            atomo%r(1:3) = atom_dofs(1:3)
+            atomo%p(1:3) = atom_dofs(4:6)
+            atomo%E = E
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing, next switch
+      END SELECT
+      SELECT CASE(.NOT.maxtime_reached)
+         CASE(.TRUE.)
+            atomo%r(1:3) = atom_dofs(1:3)
+            atomo%p(1:3) = atom_dofs(4:6)
+            atomo%E = E
+            dt = dt_next
+            SELECT CASE((this%nfollow.NE.0).AND.(in_list))
+               CASE(.TRUE.)
+                  WRITE(wunit3,*) t, dt_did, atomo%E,(atomo%p(3)**2.D0)/(2.D0*masa), v, atomo%r(:), atomo%p(:) 
+               CASE(.FALSE.)
+                  ! do nothing
+            END SELECT
+            CYCLE
+         CASE(.FALSE.)
+            WRITE(0,*) "D=_DYNAMICS_DYNATOM ERR: Strange trajectory conditions. Switchs cannot classify this traj"
+            CALL EXIT(1)
+      END SELECT
+   END DO
 #ifdef DEBUG
-	CALL VERBOSE_WRITE(routinename,"Writing in dynamics.out")
+   CALL VERBOSE_WRITE(routinename,"Writing in dynamics.out")
 #endif
-	WRITE(11,'(I7,1X,A10,1X,I4,1X,I5,1X,8(F15.5,1X))') idtraj, atomo%stat, atomo%ireb, atomo%ixyboun, atomo%E, t, atomo%r, atomo%p
-	CLOSE(11)
-	CLOSE(12)
-	IF(this%nfollow.NE.0) CLOSE(13)
-	RETURN
+   WRITE(wunit1,'(I7,1X,A10,1X,I4,1X,I5,1X,8(F15.5,1X))') idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+   CLOSE(wunit1)
+   CLOSE(wunit2)
+   SELECT CASE(this%nfollow/=0)
+      CASE(.TRUE.)
+         CLOSE(wunit3)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   RETURN
 END SUBROUTINE DO_DYNAMICS_DYNATOM
 !###############################################################
 !# SUBROUTINE : TIME_DERIVS_DYNATOM ########################
@@ -548,10 +623,10 @@ SUBROUTINE MMID_DYNATOM(this,y,dydx,xs,htot,nstep,yout,switch)
    REAL(KIND=8) :: h,h2,swap,x
    ! ROCK THE CASBAH !!! ---------------------
    h=htot/DFLOAT(nstep) ! Stepsize this trip.
-   FORALL(i=1:nvar)
+   DO i=1,nvar
       ym(i)=y(i)
       yn(i)=y(i)+h*dydx(i) ! First step.
-   END FORALL
+   END DO
    x=xs+h
    CALL this%TIME_DERIVS(yn,yout,switch) ! Will use yout for temporary storage of derivatives.
    SELECT CASE(switch)
@@ -562,11 +637,11 @@ SUBROUTINE MMID_DYNATOM(this,y,dydx,xs,htot,nstep,yout,switch)
    END SELECT
    h2=2.D0*h
    DO n=2,nstep ! General step.
-      FORALL(i=1:nvar)
+      DO i=1,nvar
          swap=ym(i)+h2*yout(i)
          ym(i)=yn(i)
          yn(i)=swap
-      END FORALL
+      END DO
       x=x+h
       CALL this%TIME_DERIVS(yn,yout,switch)
       SELECT CASE(switch)
@@ -576,7 +651,9 @@ SUBROUTINE MMID_DYNATOM(this,y,dydx,xs,htot,nstep,yout,switch)
             ! do nothing
       END SELECT
    END DO
-   FORALL(i=1:nvar) yout(i)=0.5D0*(ym(i)+yn(i)+h*yout(i))
+   DO i=1,nvar
+      yout(i)=0.5D0*(ym(i)+yn(i)+h*yout(i))
+   END DO
    RETURN
 END SUBROUTINE MMID_DYNATOM
 !##################################################################################################
@@ -762,7 +839,7 @@ SUBROUTINE BSSTEP_DYNATOM(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	INTEGER,PARAMETER :: NMAX = 50
 	INTEGER,PARAMETER :: KMAXX = 8
 	INTEGER,PARAMETER :: IMAX = KMAXX+1
-	CHARACTER(LEN=13), PARAMETER :: routinename = "BSSTEP_ATOM: "
+	CHARACTER(LEN=16), PARAMETER :: routinename = "BSSTEP_DYNATOM: "
 	! Local variables
 	INTEGER, DIMENSION(IMAX) :: nseq
 	REAL(KIND=8), DIMENSION(KMAXX) :: err

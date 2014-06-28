@@ -80,6 +80,8 @@ CONTAINS
    PROCEDURE,PUBLIC :: cart2recip => cart2recip_SURFACE
    PROCEDURE,PUBLIC :: project_unitcell => project_unitcell_SURFACE
    PROCEDURE,PUBLIC :: project_iwscell => project_iwscell_SURFACE
+   ! Tools block
+   PROCEDURE,PUBLIC :: PRINTPATTERN => PRINT_PATTERN_SURFACE
    ! Enquire block
    PROCEDURE,PUBLIC :: is_initialized => is_initialized_SURFACE
    PROCEDURE,PUBLIC :: tellsymmlabel => tellsymmlabel_SURFACE
@@ -87,6 +89,85 @@ CONTAINS
 END TYPE
 ! MODULE CONTAINS 
 CONTAINS
+!###########################################################
+!# SUBROUTINE: PRINT_PATTERN_SURFACE 
+!###########################################################
+!> @brief
+!! Prints the pattern defined in surface to a specific unit.
+!! It can be defined, as well, the order of the pattern.
+!
+!> @param[in] this - Surface class object
+!> @param[in] wunit - Unit to print output
+!> @param[in] order - Order of the pattern.
+!> @param[in] format_out - string: XYZ available
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE PRINT_PATTERN_SURFACE(this,wunit,order,format_out)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Surface),INTENT(IN):: this
+   INTEGER(KIND=4),INTENT(IN) :: wunit
+   INTEGER(KIND=4),INTENT(IN) :: order
+   CHARACTER(LEN=3),INTENT(IN) :: format_out
+   ! Local variables
+   INTEGER(KIND=4) :: i,j,n,k ! counters
+   REAL(KIND=8),DIMENSION(2) :: aux
+   REAL(KIND=8),DIMENSION(2) :: xypos
+   REAL(KIND=8),DIMENSION(3) :: P
+   ! Run section
+   SELECT CASE(format_out)
+      CASE("XYZ")
+         DO i = 1, this%diff_atoms
+            SELECT CASE(order)
+               CASE(0)
+                  DO j = 1, this%atomtype(i)%n
+                     WRITE(wunit,*) this%atomtype(i)%alias,this%atomtype(i)%atom(j,:)
+                  END DO
+               CASE(1 :)
+                  DO j = 1, this%atomtype(i)%n
+                     WRITE(wunit,*) this%atomtype(i)%alias,this%atomtype(i)%atom(j,:)
+                     xypos(1:2)=this%atomtype(i)%atom(j,1:2)
+                     P(3)=this%atomtype(i)%atom(j,3)
+                     DO n = 1, order
+                        DO k = -n, n
+                           aux(1)=dfloat(n)
+                           aux(2)=dfloat(k)
+                           aux=this%surf2cart(aux)
+                           P(1:2)=xypos(1:2)+aux(1:2)
+                           WRITE(wunit,*) this%atomtype(i)%alias,P
+                           aux(1)=dfloat(-n)
+                           aux(2)=dfloat(k)
+                           aux=this%surf2cart(aux)
+                           P(1:2)=xypos(1:2)+aux(1:2)
+                           WRITE(wunit,*) this%atomtype(i)%alias,P
+                        END DO
+                        DO k = -n+1, n-1
+                           aux(1)=dfloat(k)
+                           aux(2)=dfloat(n)
+                           aux=this%surf2cart(aux)
+                           P(1:2) =xypos(1:2)+aux(1:2)
+                           WRITE(wunit,*) this%atomtype(i)%alias,P
+                           aux(1)=dfloat(k)
+                           aux(2)=dfloat(-n)
+                           aux=this%surf2cart(aux)
+                           P(1:2)=xypos(1:2)+aux(1:2)
+                           WRITE(wunit,*) this%atomtype(i)%alias,P
+                        END DO
+                     END DO
+                  END DO
+            END SELECT
+         END DO
+      CASE DEFAULT
+         WRITE(0,*) "PRINT_PATTERN_SURFACE ERR: Wrong format specifier"
+         WRITE(0,*) "Implemented ones: XYZ"
+         CALL EXIT(1)
+   END SELECT
+   RETURN
+END SUBROUTINE PRINT_PATTERN_SURFACE
 !###########################################################
 !# FUNCTION: tellfilename 
 !###########################################################
