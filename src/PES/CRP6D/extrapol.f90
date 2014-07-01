@@ -16,27 +16,179 @@ IMPLICIT NONE
 !----------------------------------------------------------------
 TYPE :: Vacuumpot
    PRIVATE
-   INTEGER(KIND=4) :: n
-   TYPE(Csplines) :: rpot
+   INTEGER(KIND=4),PUBLIC :: n
+   TYPE(Csplines),PUBLIC :: rpot
    REAL(KIND=8) :: surfen
    REAL(KIND=8) :: potmin
+   REAL(KIND=8) :: req
+   REAL(KIND=8),DIMENSION(2),PUBLIC :: root
+
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_VACUUMPOT
+      PROCEDURE,PUBLIC :: INITIALIZE_DIRECT => INITIALIZE_DIRECT_VACUUMPLOT
       PROCEDURE,PUBLIC :: READ => READ_VACUUMPOT
+      ! Set block
+      PROCEDURE,PUBLIC :: SET_ROOTS => SET_ROOTS_VACUUMPOT
       ! Get block
       PROCEDURE,PUBLIC :: getpot => getpot_vacuumpot
       PROCEDURE,PUBLIC :: getderiv => getderiv_vacuumpot
       PROCEDURE,PUBLIC :: getscalefactor => getscalefactor_vacuumpot
+      PROCEDURE,PUBLIC :: getreq => getreq_vacuumpot 
       ! Tools block
       PROCEDURE,PUBLIC :: SHIFTPOT => SHIFTPOT_VACUUMPOT
       PROCEDURE,PUBLIC :: SHIFTPOT_UNDO => SHIFTPOT_UNDO_VACUUMPOT
+      ! Enquire block
+      PROCEDURE,PUBLIC :: is_allowed => is_allowed_VACUUMPOT
       ! Plot tools block
       PROCEDURE,PUBLIC :: PLOT => PLOT_VACUUMPOT
       PROCEDURE,PUBLIC :: PLOTDATA => PLOTDATA_VACUUMPOT
 END TYPE Vacuumpot
 !/////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: SET_ROOTS_VACUUMPOT
+!###########################################################
+!> @brief
+!! Calculates roots of the function if any
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SET_ROOTS_VACUUMPOT(this)
+   ! Initial declarations   
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Vacuumpot),INTENT(INOUT):: this
+   ! Local variables
+   CHARACTER(LEN=21) :: routinename="SET_ROOTS_VACUUMPOT: "
+   ! Run section
+   CALL this%rpot%SET_XROOT()
+   SELECT CASE(allocated(this%rpot%xroot))
+      CASE(.TRUE.)
+         SELECT CASE(size(this%rpot%xroot))
+            CASE(1)
+               WRITE(0,*) "SET_ROOTS_VACUUMPOT ERR: we are in req. Bad. Pure classic not implemented"
+               CALL EXIT(1)
+            CASE(2)
+               this%root=this%rpot%xroot
+#ifdef DEBUG
+               CALL VERBOSE_WRITE(routinename,"Found roots at x: ",this%root)
+#endif
+            CASE DEFAULT
+               WRITE(0,*) "SET_ROOTS_VACUUMPOT ERR: too many roots. Check the vacuumpot"
+               CALl EXIT(1)
+         END SELECT
+         ! body
+      CASE(.FALSE.)
+         WRITE(0,*) "SET_ROOTS_VACUUMPOT ERR: there aren't roots"
+         CALL EXIT(1)
+         ! do nothing
+   END SELECT
+   RETURN
+END SUBROUTINE SET_ROOTS_VACUUMPOT
+!###########################################################
+!# FUNCTION: is_allowed_VACUUMPOT 
+!###########################################################
+!> @brief 
+!! Checks if the potential can be calculated in @b X
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+LOGICAL FUNCTION is_allowed_VACUUMPOT(this,x) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Vacuumpot),INTENT(IN):: this
+   REAL(KIND=8),INTENT(IN) :: x
+   ! Local variables
+   ! Run section
+   SELECT CASE(x< this%rpot%x(1) .OR. x > this%rpot%x(this%n))
+      CASE(.TRUE.)
+         is_allowed_VACUUMPOT=.FALSE.
+      CASE(.FALSE.)
+         is_allowed_VACUUMPOT=.TRUE.
+   END SELECT
+   RETURN
+END FUNCTION is_allowed_VACUUMPOT
+!###########################################################
+!# SUBROUTINE: READ_DIRECT_VACUUMPLOT 
+!###########################################################
+!> @brief
+!! Reads information directly from array
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,shift)
+   ! Initial declarations   
+   USE MATHS_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Vacuumpot),INTENT(OUT):: this
+   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
+   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: f
+   REAL(KIND=8),INTENT(IN):: shift
+   ! Local variables
+   INTEGER(KIND=4) :: i ! counters
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1,aux2
+   CHARACTER(LEN=29),PARAMETER :: routinename="INITIALIZE_DIRECT_VACUUMPOT: "
+   ! Run section
+   this%n=size(x)
+   ALLOCATE(aux1(size(x)))
+   ALLOCATE(aux2(size(f)))
+   aux1=x
+   aux2=f
+   CALL ORDER(aux1,aux2)
+   aux2=aux2-shift
+   CALL this%rpot%READ(aux1,aux2)
+   CALL this%rpot%INTERPOL(0.D0,0,0.D0,0)
+   CALL this%rpot%SET_MINIMUM()
+   SELECT CASE(ALLOCATED(this%rpot%xmin))
+      CASE(.TRUE.)
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Minimums found: ",size(this%rpot%xmin))
+         CALL VERBOSE_WRITE(routinename,this%rpot%xmin)
+#endif
+         SELECT CASE(size(this%rpot%xmin))
+            CASE(1)
+               this%req=this%rpot%xmin(1)
+               this%potmin = this%rpot%getvalue(this%rpot%xmin(1))
+            CASE DEFAULT
+               WRITE(0,*) "INITIALIZE_DIRECT_VACUUMPOT ERR: More than one minimum. Something is wrong"
+               CALL EXIT(1)
+         END SELECT
+      CASE(.FALSE.)
+        WRITE(0,*) "INITIALIZE_DIRECT_VACUUMPOT ERR: There's not any minimum. Something is wrong"
+        CALL EXIT(1) 
+   END SELECT
+   RETURN
+END SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT
+!###########################################################
+!# FUNCTION: getreq_vacuumpot 
+!###########################################################
+!> @brief 
+!! Common get function. Gets "req" atribute
+!-----------------------------------------------------------
+REAL(KIND=8) FUNCTION getreq_vacuumpot(this) 
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Vacuumpot),INTENT(IN):: this
+   ! Run section
+   getreq_vacuumpot=this%req
+   RETURN
+END FUNCTION getreq_vacuumpot  
 !###########################################################
 !# SUBROUTINE: SHIFTPOT_VACUUMPOT 
 !###########################################################
@@ -208,6 +360,7 @@ SUBROUTINE INITIALIZE_VACUUMPOT(this,filename)
 #endif
          SELECT CASE(size(this%rpot%xmin))
             CASE(1)
+               this%req=this%rpot%xmin(1)
                this%potmin = this%rpot%getvalue(this%rpot%xmin(1))
             CASE DEFAULT
                WRITE(0,*) "INITIALIZE_VACUUMPOT ERR: More than one minimum. Something is wrong"

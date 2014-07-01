@@ -8,6 +8,7 @@
 MODULE CUBICSPLINES_MOD
 ! Initial declarations
 USE INTERPOL1D_MOD
+USE CONSTANTS_MOD
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////////////////
 ! TYPE: Cubic Splines
@@ -26,6 +27,7 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: d2fdx 
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: coeff
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE,PUBLIC :: xmin
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE,PUBLIC :: xroot
    CONTAINS
       ! Public procedures
       PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CUBIC_SPLINES
@@ -34,6 +36,7 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
       PROCEDURE,PUBLIC :: getderiv => get_csplines_dfdx_value
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CSPLINES
       PROCEDURE,PUBLIC :: SET_MINIMUM => SET_MINIMUM_CSPLINES
+      PROCEDURE,PUBLIC :: SET_XROOT => SET_XROOT_CSPLINES
       ! Private procedures
       PROCEDURE,PRIVATE :: SET_SECOND_DERIVS => DSPLIN
       PROCEDURE,PRIVATE :: SET_COEFF => SET_CUBIC_SPLINES_COEFF
@@ -149,6 +152,116 @@ SUBROUTINE SET_MINIMUM_CSPLINES(this)
 #endif
    RETURN
 END SUBROUTINE SET_MINIMUM_CSPLINES
+!###########################################################
+!# SUBROUTINE: SET_XROOT_CSPLINES 
+!###########################################################
+!> @brief
+!! Locates roots in the interpolation. Analytical solution
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 26/Mar/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SET_XROOT_CSPLINES(this)
+   ! Initial declarations  
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Csplines),TARGET,INTENT(INOUT)::this
+   ! Local variables
+   INTEGER(KIND=4) :: i,j ! counters
+   REAL(KIND=8),DIMENSION(:),POINTER :: coeff
+   REAL(KIND=8),POINTER :: x1,x2
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: s
+   REAL(KIND=8) :: discriminant
+   REAL(KIND=8) :: a1,a2,a3,theta
+   REAL(KIND=8):: param_q, param_r
+   REAL(KIND=8) :: param_s, param_t
+   COMPLEX(KIND=8):: param_sc, param_tc
+   INTEGER(KIND=4) :: nold
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux
+   CHARACTER(LEN=22),PARAMETER :: routinename="SET_MINIMUM_CSPLINES: "
+   ! Run section
+   DO i = 1, this%n-1 ! number of splines
+      coeff => this%coeff(i,:)
+      x1 => this%x(i)
+      x2 => this%x(i+1)
+      a1=coeff(2)/coeff(1)
+      a2=coeff(3)/coeff(1)
+      a3=coeff(4)/coeff(1)
+      param_q=(3.D0*a2-a1**2.D0)/9.D0
+      param_r=(9.D0*a1*a2-27.D0*a3-2.D0*a1**3.D0)/54.D0
+      discriminant=param_q**3.D0+param_r**2.D0
+      SELECT CASE(discriminant > 0.D0) ! one real solution
+         CASE(.TRUE.)
+            param_s=param_r+dsqrt(discriminant)
+            SELECT CASE(param_s >= 0.D0)
+               CASE(.TRUE.)
+                  param_s=(param_s)**(1.D0/3.D0)
+               CASE(.FALSE.)
+                  param_s=-(dabs(param_s))**(1.D0/3.D0)
+            END SELECT
+            param_t=param_r-dsqrt(discriminant)
+            SELECT CASE(param_t >= 0.D0)
+               CASE(.TRUE.)
+                  param_t=(param_t)**(1.D0/3.D0)
+               CASE(.FALSE.)
+                  param_t=-(dabs(param_t))**(1.D0/3.D0)
+            END SELECT
+            ALLOCATE(s(1))
+            s(1)=param_s+param_t-a1/3.D0
+         CASE(.FALSE.) ! i.e. discriminant <= 0.D0
+            param_sc=complex(param_r,0.D0)+sqrt(complex(discriminant,0.D0))
+            param_sc=param_sc**(1.D0/3.D0)
+            param_tc=complex(param_r,0.D0)-sqrt(complex(discriminant,0.D0))
+            param_tc=param_tc**(1.D0/3.D0)
+            ALLOCATE(s(3))
+            s(1)=realpart(param_sc+param_tc-complex(a1/3.D0,0.D0))
+            s(2)=realpart(-0.5D0*(param_sc+param_tc)+complex(0.D0,0.5D0*dsqrt(3.D0))*(param_sc-param_tc)-complex(a1/3.D0,0.D0))
+            s(3)=realpart(-0.5D0*(param_sc+param_tc)-complex(0.D0,0.5D0*dsqrt(3.D0))*(param_sc-param_tc)-complex(a1/3.D0,0.D0))
+      END SELECT
+      DO j = 1, size(s) ! loop over roots
+         SELECT CASE(s(j) >= 0.D0 .AND. s(j) <= x2-x1)
+            CASE(.TRUE.)
+               SELECT CASE(allocated(this%xroot))
+                  CASE(.TRUE.)
+                     nold=size(this%xroot)
+                     ALLOCATE(aux(nold))
+                     aux=this%xroot
+                     DEALLOCATE(this%xroot)
+                     ALLOCATE(this%xroot(nold+1))
+                     this%xroot(1:nold)=aux
+                     this%xroot(nold+1)=s(j)+x1
+                     DEALLOCATE(aux)
+                  CASE(.FALSE.)
+                     ALLOCATE(this%xroot(1))
+                     this%xroot(1)=s(j)+x1
+             END SELECT
+          CASE(.FALSE.)
+            CYCLE
+         END SELECT
+      END DO
+      SELECT CASE(allocated(s))
+         CASE(.TRUE.)
+            DEALLOCATE(s)
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+   END DO
+#ifdef DEBUG
+   SELECT CASE(allocated(this%xroot))
+      CASE(.TRUE.)
+         CALL DEBUG_WRITE(routinename,"Roots found: ",size(this%xmin))
+         CALL DEBUG_WRITE(routinename,this%xroot)
+      CASE(.FALSE.)
+         CALL DEBUG_WRITE(routinename,"There are not any roots")
+   END SELECT
+#endif
+   RETURN
+END SUBROUTINE SET_XROOT_CSPLINES
+
 !######################################################################
 ! SUBROUTINE: DSPLIN ##################################################
 !######################################################################

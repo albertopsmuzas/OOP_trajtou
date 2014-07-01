@@ -29,6 +29,10 @@ IMPLICIT NONE
 !--------------------------------------------------------
 TYPE,ABSTRACT ::  Dynobject
    REAL(KIND=8) :: E
+   REAL(KIND=8) :: Eint
+   REAL(KIND=8) :: Ecm
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: init_qn
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: final_qn
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: init_r
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: init_p
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: turning_point

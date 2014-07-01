@@ -964,7 +964,7 @@ SUBROUTINE READ_CRP6D(this,filename)
    INTEGER(KIND=4) :: auxint 
    REAL(KIND=8) :: auxr
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: param_dump
-   CHARACTER(LEN=30) :: cut2dfilename, string
+   CHARACTER(LEN=30) :: cut2dfilename, string, surfacefile
    CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP6D: "
    CHARACTER,DIMENSION(:),ALLOCATABLE :: letter
    REAL(KIND=8),DIMENSION(2) :: masslist
@@ -987,6 +987,8 @@ SUBROUTINE READ_CRP6D(this,filename)
    CALL masss%TO_STD()
    masslist(2)=masss%getvalue()
    CALL this%SET_ATOMS(2,symbollist,masslist)
+   READ(runit,*) surfacefile
+   CALL this%surf%INITIALIZE(surfacefile)
    READ(runit,*) this%natomic
    SELECT CASE(this%natomic)
       CASE(1)
@@ -1041,7 +1043,7 @@ SUBROUTINE READ_CRP6D(this,filename)
          CALL EXIT(1)
    END SELECT
    ! Read Resize options
-   READ(runit,'(A6,L1)',advance="no") resize,this%is_resized
+   READ(runit,'(A6,1X,L1)',advance="no") resize,this%is_resized
    SELECT CASE( resize=="RESIZE" .AND. this%is_resized )
       CASE(.TRUE.)
          READ(runit,*) this%grid(:)
@@ -2069,7 +2071,11 @@ LOGICAL FUNCTION is_allowed_CRP6D(this,x)
    CLASS(CRP6D),INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
    ! Local variables
+   REAL(KIND=8) :: zmin, rmin, rmax
    ! Run section
+   zmin=this%wyckoffsite(1)%zrcut(1)%getfirstZ()
+   rmin=this%wyckoffsite(1)%zrcut(1)%getfirstR()
+   rmax=this%wyckoffsite(1)%zrcut(1)%getlastR()
    SELECT CASE(size(x)/=6)
       CASE(.TRUE.)
          WRITE(0,*) "is_allowed_CRP6D ERR: wrong number of dimensions"
@@ -2077,7 +2083,12 @@ LOGICAL FUNCTION is_allowed_CRP6D(this,x)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-   is_allowed_CRP6D=.TRUE.
+   SELECT CASE(x(3)<zmin .OR. x(4)<rmin .OR. x(4)>rmax)
+      CASE(.TRUE.)
+         is_allowed_CRP6D=.FALSE.
+      CASE(.FALSE.)
+         is_allowed_CRP6D=.TRUE.
+   END SELECT
    RETURN
 END FUNCTION is_allowed_CRP6D
 

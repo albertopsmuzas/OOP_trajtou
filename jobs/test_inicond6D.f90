@@ -1,0 +1,20 @@
+PROGRAM TEST_INICOND
+! Initial declarations
+USE DEBUG_MOD
+USE INITDIATOMIC_MOD
+USE CRP6D_MOD
+IMPLICIT NONE
+! Some objects
+TYPE(Initdiatomic) :: thisinit
+TYPE(CRP6D) :: thispes
+WRITE(*,*) "##############################"
+WRITE(*,*) "#### TEST INICOND PROGRAM ####"
+WRITE(*,*) "##############################"
+! STEP 1: SET DEBUG/VERBOSE MODE
+CALL SET_VERBOSE_MODE(.TRUE.)
+! STEP 2: READ PES, INTERPOLATION NOT NEEDED
+! STEP 3: GENERATE NEW INITIAL CONDITIONS
+CALL thisinit%INITIALIZE("INinicond6d.inp")
+CALL thisinit%GENERATE_TRAJS(thispes)
+!CALL thisinit%GENERATE_TRAJS(thispes)
+END PROGRAM TEST_INICOND
