@@ -1632,6 +1632,7 @@ END SUBROUTINE PLOT1D_R_SMOOTH_CRP6D
 !> @param[in] filename - Name of the output file
 !> @param[in] npoints - Number of points in the graphic. npoints>=2
 !> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!> @param[in] L - Length to plot from minimim Z
 !
 !> @warning
 !! - The graph starts always at 0,0, Initial Z value in X array is ignored
@@ -1640,7 +1641,7 @@ END SUBROUTINE PLOT1D_R_SMOOTH_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,filename)
+SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,L,filename)
    USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
@@ -1648,6 +1649,7 @@ SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,filename)
    INTEGER, INTENT(IN) :: npoints
    CHARACTER(LEN=*),INTENT(IN) :: filename
    REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   REAL(KIND=8),INTENT(IN) :: L
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
@@ -1662,7 +1664,7 @@ SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,filename)
    END IF
    !
    xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstz()
-   xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastz()
+   xmax = xmin+L
    r(1:2)=x(1:2)
    r(4:6)=x(4:6)
    !

@@ -369,8 +369,6 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       ! CENTER OF MASS COORD ---------------------------------------
       ! Set center of mass coordinates
       this%trajs(i)%r(3) = this%init_z%getvalue()
-      WRITE(*,*) this%trajs(i)%r(1:2)
-      WRITE(*,*) this%thispes%surf%surf2cart(this%trajs(i)%r(1:2))
       this%trajs(i)%r(1:2) = this%thispes%surf%surf2cart(this%trajs(i)%r(1:2))
       ! center of mass momenta DOFS
       this%trajs(i)%p(1)=DCOS(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
