@@ -12,8 +12,7 @@ MODULE CRP3D_MOD
    USE PES_MOD
    USE CUBICSPLINES_MOD
    USE FOURIER_P4MM_MOD
-   USE LOGISTIC_FUNCTION_MOD
-   USE ONE_FUNCTION_MOD
+   USE LINK_FUNCTION1D_MOD
 ! Initial declarations
 IMPLICIT NONE
 !///////////////////////////////////////////////////////////////////////////////

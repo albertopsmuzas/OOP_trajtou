@@ -58,7 +58,18 @@ SUBROUTINE READ_FUNCTION1D(this,param)
    CLASS(Function1d),INTENT(INOUT):: this
    REAL(KIND=8),DIMENSION(:) :: param
    ! Run section
-   ALLOCATE(this%param(size(param)))
+   SELECT CASE(allocated(this%param))
+      CASE(.TRUE.)
+         SELECT CASE(size(param)/=size(this%param))
+            CASE(.TRUE.)
+               WRITE(0,*) "READ_FUNCTION1D ERR: wrong dimension of parameters"
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+      CASE(.FALSE.)
+         ALLOCATE(this%param(size(param)))
+   END SELECT
    this%param=param
    RETURN
 END SUBROUTINE READ_FUNCTION1D

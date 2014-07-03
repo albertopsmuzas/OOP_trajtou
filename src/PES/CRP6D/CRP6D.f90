@@ -14,8 +14,7 @@ USE CRP3D_MOD
 USE EXTRAPOL_TO_VACUUM_MOD
 USE FOURIER_P4MM_MOD
 USE WYCKOFF_P4MM_MOD
-USE LOGISTIC_FUNCTION_MOD
-USE ONE_FUNCTION_MOD
+USE LINK_FUNCTION1D_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////
 ! TYPE: CRP6D
@@ -29,11 +28,13 @@ TYPE,EXTENDS(PES) :: CRP6D
    LOGICAL:: is_smooth=.FALSE.
    LOGICAL:: is_shifted=.FALSE.
    LOGICAL:: is_resized=.FALSE.
-   INTEGER(KIND=4),DIMENSION(2) :: grid=(/0,0/)
+   REAL(KIND=8) :: zvacuum
+   INTEGER(KIND=4),DIMENSION(2) :: grid=[0,0]
    CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE:: wyckoffsite
    TYPE(CRP3D),DIMENSION(:),ALLOCATABLE:: atomiccrp
    TYPE(Vacuumpot):: farpot
    CLASS(Function1d),ALLOCATABLE:: dumpfunc
+   CLASS(Function1d),ALLOCATABLE:: extrapol2vac
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: xyklist
    CONTAINS
       ! Initialization block
@@ -43,6 +44,7 @@ TYPE,EXTENDS(PES) :: CRP6D
       PROCEDURE,PUBLIC :: SET_SMOOTH => SET_SMOOTH_CRP6D
       ! Get block
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
+      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_CRP6D
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
       PROCEDURE,PUBLIC :: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_CRP6D
       ! Tools block
@@ -240,10 +242,12 @@ SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D(this,nRpoints,nZpoints)
    RETURN
 END SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D
 !###########################################################
-!# SUBROUTINE: GET_V_AND_DERIVS_CRP6D 
+!# SUBROUTINE: GET_V_AND_DERIVS_PURE_CRP6D 
 !###########################################################
 !> @brief
-!! Gets the potential and the derivatives respect to all DOFs
+!! Gets the potential and derivatives respect to all DOFs if we
+!! are in the pure CRP6D region. Otherwise, there'd be errors and
+!! unexpected behaviors.
 !
 !> @warning
 !! - Assumed a Fourier interpolation in XY (symmetry adapted)
@@ -256,7 +260,7 @@ END SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
+SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! Initial declarations   
    USE DEBUG_MOD
    IMPLICIT NONE
@@ -286,19 +290,6 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
       CASE(.FALSE.)
          WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH())"
          CALl EXIT(1)
-   END SELECT
-   SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastZ()) 
-      CASE(.TRUE.)
-         v=this%farpot%getpot(x(4))
-         dvdu(1)=0.D0
-         dvdu(2)=0.D0
-         dvdu(3)=0.D0
-         dvdu(4)=this%farpot%getderiv(x(4))
-         dvdu(5)=0.D0
-         dvdu(6)=0.D0
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
    END SELECT
    ALLOCATE(f(5,this%nsites))
    ALLOCATE(xy(this%nsites,2))
@@ -398,6 +389,117 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,x,v,dvdu)
       +(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(2)*dcos(x(6))&
       +(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(1)*dsin(x(6))&
       -(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(2)*dcos(x(6))
+   RETURN
+END SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D
+!###########################################################
+!# SUBROUTINE: GET_V AND DERIVS_CRP6D 
+!###########################################################
+!> @brief
+!! Gets potential for any configuration. Discriminates between 3 regions:
+!! - Pure CRP6D region: zmin to zcrp
+!! - Extrapolation region zcrp to zvacuum
+!! - Vacuum region: further than zvacuum
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date ! type a date
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(CRP6D),TARGET,INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
+   REAL(KIND=8),INTENT(OUT) :: v
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: dvdu
+   ! Local variables
+   REAL(KIND=8) :: zcrp, zvac ! last CRP6D z value and Z infinity
+   REAL(KIND=8) :: vzcrp, vzvac ! potentials at zcrp and zvac
+   REAL(KIND=8),DIMENSION(6) :: dvducrp ! derivatives at zcrp
+   REAL(KIND=8),DIMENSION(6) :: dvduvac ! derivatives at vacuum
+   REAL(KIND=8) :: alpha,beta,gama ! parameters
+   REAL(KIND=8) :: zero=0.D-5 ! what we will condider zero
+   CLASS(Function1d),ALLOCATABLE:: extrapolfunc, extrapolfunc2
+   INTEGER(KIND=4) :: i !counter
+   ! Run section
+   zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
+   zvac=this%zvacuum
+   ! Check if we are in the pure CRP6D region
+   SELECT CASE(x(3)<= zcrp) !easy
+      CASE(.TRUE.)
+         CALL this%GET_V_AND_DERIVS_PURE(x,v,dvdu)
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing, next switch
+   END SELECT
+   ! Check if we are in the extrapolation region
+   SELECT CASE(x(3)>zcrp .AND. x(3)<zvac)
+      CASE(.TRUE.) ! uff
+         ! Set potential and derivs
+         vzvac=this%farpot%getpot(x(4))
+         CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp,x(4),x(5),x(6)],vzcrp,dvducrp)
+         dvduvac(1:3)=zero
+         dvduvac(4)=this%farpot%getderiv(x(4))
+         dvduvac(5:6)=zero
+         !ALLOCATE(extrapolfunc,source=this%extrapol2vac)
+         ALLOCATE(Logistic_func:: extrapolfunc)
+         SELECT TYPE(extrapolfunc)
+            TYPE IS(Logistic_func)
+               SELECT CASE(vzvac >= vzcrp) 
+                  CASE(.TRUE.)   ! if they're really equal you don't need an extrapol potetial 
+                     gama=dlog(vzcrp/vzvac)/(zvac-zcrp) ! gamma should be less than this value
+                     gama=gama-0.5D0 ! to do so, we can just substract some value
+                  CASE(.FALSE.)  ! 
+                     gama=dlog(vzcrp/vzvac)/(zvac-zcrp) ! gamma should be greater than this value
+                     gama=gama+0.5D0 ! to do so, we can just add some value
+               END SELECT
+               beta=(vzvac-vzcrp)/(vzcrp*dexp(gama*zcrp)-vzvac*dexp(gama*zvac))
+               beta=-dlog(beta)/gama
+               alpha=vzcrp*(1.D0+dexp(gama*(-beta+zcrp)))
+               CALL extrapolfunc%READ([gama,beta])
+               v=alpha*extrapolfunc%getvalue(x(3))
+               ! Extrapol derivatives
+               DO i = 1, 6
+                  SELECT CASE(dvduvac(i)>=dvducrp(i))
+                     CASE(.TRUE.)
+                        gama=dlog(dvducrp(i)/dvduvac(i))/(zvac-zcrp)
+                        gama=gama-0.50
+                     CASE(.FALSE.)
+                        gama=dlog(dvducrp(i)/dvduvac(i))/(zvac-zcrp)
+                        gama=gama+0.50
+                  END SELECT
+                  beta=(dvduvac(i)-dvducrp(i))/(dvducrp(i)*dexp(gama*zcrp)-dvduvac(i)*dexp(gama*zvac))
+                  WRITE(*,*) "pre.",beta
+                  beta=-dlog(beta)/gama
+                  alpha=dvducrp(i)*(1.D0+dexp(gama*(-beta+zcrp)))
+                  write(*,*) "post. ",alpha,beta,gama
+                  CALL extrapolfunc%READ([gama,beta])
+                  dvdu(i)=alpha*extrapolfunc%getvalue(x(3))
+               END DO
+
+               RETURN
+            CLASS DEFAULT
+               WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: type of extrapolation function isn't implemented yet"
+               WRITE(0,*) "Implemented ones: Logistic_func"
+               CALL EXIT(1)
+         END SELECT
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   ! Check if we are in the Vacuum region
+    SELECT CASE(x(3)>=zvac) !easy
+       CASE(.TRUE.)
+          v=this%farpot%getpot(x(4))
+          dvdu(1:3)=0.D0
+          dvdu(4)=this%farpot%getderiv(x(4))
+          dvdu(5:6)=0.D0
+       CASE(.FALSE.) ! this's the last switch!
+          WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: unclassificable point. Where are we?"
+          WRITE(0,*) "Asking potential at Z: ", x(3)
+          WRITE(0,*) "Zvacuum: ",zvac
+          WRITE(0,*) "Zcrp: ",zcrp
+          CALL EXIT(1)
+    END SELECT
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CRP6D
 !###########################################################
@@ -972,6 +1074,7 @@ SUBROUTINE READ_CRP6D(this,filename)
    CHARACTER(LEN=10) :: units
    CHARACTER(LEN=6) :: resize
    TYPE(Mass) :: masss
+   TYPE(Length):: len
    ! Run section -----------------------
    CALL this%SET_ALIAS("CRP6D PES")
    CALL this%SET_DIMENSIONS(6)
@@ -1034,14 +1137,37 @@ SUBROUTINE READ_CRP6D(this,filename)
          ALLOCATE(param_dump(2))
          READ(runit,*) param_dump
          CALL this%dumpfunc%READ(param_dump)
+         DEALLOCATE(param_dump)
       CASE("None") 
          ALLOCATE(One_func::this%dumpfunc)
          READ(runit,*) ! dummy line
       CASE DEFAULT
          WRITE(0,*) "READ_CRP6D ERR: Keyword for dumping function needed"
-         WRITE(*,*) "Currently implemented: Logistical, None"
+         WRITE(*,*) "Currently implemented: Logistic, None"
          CALL EXIT(1)
    END SELECT
+   ! Read extrapolation function
+   READ(runit,*) string
+   SELECT CASE(string)
+      CASE("Logistic")
+         ALLOCATE(Logistic_func::this%extrapol2vac)
+         ! parameters are calculated in routines that give the PES
+         READ(runit,*) auxr,units
+         CALL len%READ(auxr,units)
+         CALL len%TO_STD()
+         this%zvacuum=len%getvalue()
+      CASE("None")
+         READ(runit,*) ! dummy line 
+         this%zvacuum=0.D0
+      CASE DEFAULT
+         WRITE(0,*) "READ_CRP6D ERR: Keyword for extrapolation function needed"
+         WRITE(*,*) "Currently implemented: Logistic, None"
+         CALL EXIT(1)
+   END SELECT
+   ! Read zvacuum
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
+#endif
    ! Read Resize options
    READ(runit,'(A6,1X,L1)',advance="no") resize,this%is_resized
    SELECT CASE( resize=="RESIZE" .AND. this%is_resized )
