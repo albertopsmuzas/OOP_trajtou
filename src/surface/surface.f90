@@ -81,7 +81,8 @@ CONTAINS
    PROCEDURE,PUBLIC :: project_unitcell => project_unitcell_SURFACE
    PROCEDURE,PUBLIC :: project_iwscell => project_iwscell_SURFACE
    ! Tools block
-   PROCEDURE,PUBLIC :: PRINTPATTERN => PRINT_PATTERN_SURFACE
+   PROCEDURE,PUBLIC :: PRINT_PATTERN => PRINT_PATTERN_SURFACE
+   PROCEDURE,PUBLIC :: MOVE_PATTERN => MOVE_PATTERN_SURFACE
    ! Enquire block
    PROCEDURE,PUBLIC :: is_initialized => is_initialized_SURFACE
    PROCEDURE,PUBLIC :: tellsymmlabel => tellsymmlabel_SURFACE
@@ -89,6 +90,34 @@ CONTAINS
 END TYPE
 ! MODULE CONTAINS 
 CONTAINS
+!###########################################################
+!# SUBROUTINE: MOVE_PATTERN_SURFACE
+!###########################################################
+!> @brief
+!! Moves surface pattern and projects it uppon the unit cell
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jun/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE MOVE_PATTERN_SURFACE(this,dr)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(SUrface),INTENT(INOUT):: this
+   REAL(KIND=8),DIMENSION(2),INTENT(IN) :: dr
+   ! Local variables
+   INTEGER(KIND=4) :: i,j ! counters
+   INTEGER(KIND=4) :: natoms
+   ! Run section
+   DO i = 1, this%diff_atoms
+      DO j = 1, this%atomtype(i)%n
+         this%atomtype(i)%atom(j,1:2)=this%atomtype(i)%atom(j,1:2)+dr
+         this%atomtype(i)%atom(j,1:2)=this%project_unitcell(this%atomtype(i)%atom(j,1:2))
+      END DO
+   END DO
+   RETURN
+END SUBROUTINE MOVE_PATTERN_SURFACE
 !###########################################################
 !# SUBROUTINE: PRINT_PATTERN_SURFACE 
 !###########################################################

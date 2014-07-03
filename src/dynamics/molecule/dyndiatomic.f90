@@ -220,8 +220,10 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    INTEGER :: i, cycles ! counters
    REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
    REAL(KIND=8) :: Eint,Ecm
-   REAL(KIND=8),DIMENSION(6) :: r0, p0, dummy
+   REAL(KIND=8),DIMENSION(6) ::  dummy
+   REAL(KIND=8),DIMENSION(6) :: atomiccoord
    REAL(KIND=8),DIMENSION(12) :: molec_dofs, s, dfdt
+   REAL(KIND=8) :: ma,mb
    LOGICAL :: maxtime_reached
    LOGICAL :: switch, file_exists, in_list
    CHARACTER(LEN=27) :: filename_follow
@@ -234,9 +236,10 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    REAL(KIND=8) :: mu
    ! HEY HO!, LET'S GO!!! -------------------------
    molecule => this%thisinicond%trajs(idtraj)
-   masa = this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass()
-   mu = this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
-   mu = mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
+   ma=this%thispes%atomdat(1)%getmass()
+   mb=this%thispes%atomdat(2)%getmass()
+   masa = ma+mb
+   mu = ma*mb/masa
    INQUIRE(FILE="OUTdynamics6d.MOLEC.out",EXIST=file_exists)
    SELECT CASE(file_exists)
       CASE(.TRUE.)
@@ -299,9 +302,10 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
                filename_follow = 'OUTtraj'//TRIM(x1)//'.MOLEC.out'
                OPEN(wunit3,FILE=filename_follow,STATUS="replace")
                WRITE(wunit3,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
-               WRITE(wunit3,*) "# Format: t, dt,Etot,Enorm,Eint,Pot(a.u) X,Y,Z,R,THETA,PHI(a.u.) Px,Py,Pz,Pr,Ptheta,Pphi (a.u.)  "
+               WRITE(wunit3,*) "# Format: t,dt,Etot,Enorm,Eint,Pot,X,Y,Z,R,THETA,PHI,&
+                  &Px,Py,Pz,Pr,Ptheta,Pphi,Xa,Ya,Za,Xb,Yb,Zb"
                WRITE(wunit3,*) "# First and last position are not printed here                    "
-               WRITE(wunit3,*) "# You can find them in INdynamics3d.out and INinicond3d.out       "
+               WRITE(wunit3,*) "# You can find them at OUTdynamics6d.out and initial conditions output file"
                WRITE(wunit3,*) "# ----------------------------------------------------------------"
 #ifdef DEBUG
                CALL VERBOSE_WRITE(routinename,"Trajectory followed: ",idtraj)
@@ -344,7 +348,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       END SELECT
       ! Initial values for the derivatives
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Atomic DOFS : ",molec_dofs)
+      CALL VERBOSE_WRITE(routinename,"Molecular DOFS : ",molec_dofs)
 #endif
       CALL this%TIME_DERIVS(molec_dofs,dfdt,switch)
 #ifdef DEBUG
@@ -552,7 +556,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             dt = dt_next
             SELECT CASE((this%nfollow.NE.0).AND.(in_list))
                CASE(.TRUE.)
-                  WRITE(wunit3,*) t,dt_did,molecule%E,(molecule%p(3)**2.D0)/(2.D0*masa),molecule%Eint,v,molecule%r(:),molecule%p(:) 
+                  CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecule%r,atomiccoord)
+                  WRITE(wunit3,*) t,dt_did,molecule%E,(molecule%p(3)**2.D0)/(2.D0*masa),&
+                     molecule%Eint,v,molecule%r(:),molecule%p(:),atomiccoord
                CASE(.FALSE.)
                   ! do nothing
             END SELECT

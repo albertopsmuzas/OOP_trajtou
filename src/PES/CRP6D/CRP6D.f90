@@ -418,8 +418,9 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
    REAL(KIND=8),DIMENSION(6) :: dvducrp ! derivatives at zcrp
    REAL(KIND=8),DIMENSION(6) :: dvduvac ! derivatives at vacuum
    REAL(KIND=8) :: alpha,beta,gama ! parameters
-   REAL(KIND=8) :: zero=0.D-5 ! what we will condider zero
-   CLASS(Function1d),ALLOCATABLE:: extrapolfunc, extrapolfunc2
+   REAL(KIND=8) :: zero=0.D-6 ! what we will condider zero
+   CLASS(Function1d),ALLOCATABLE:: extrapolfunc
+   TYPE(Linear_func) :: linearextrapol
    INTEGER(KIND=4) :: i !counter
    ! Run section
    zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
@@ -445,12 +446,11 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
          ALLOCATE(Logistic_func:: extrapolfunc)
          SELECT TYPE(extrapolfunc)
             TYPE IS(Logistic_func)
+               gama=dlog(vzcrp/vzvac)/(zvac-zcrp)
                SELECT CASE(vzvac >= vzcrp) 
                   CASE(.TRUE.)   ! if they're really equal you don't need an extrapol potetial 
-                     gama=dlog(vzcrp/vzvac)/(zvac-zcrp) ! gamma should be less than this value
                      gama=gama-0.5D0 ! to do so, we can just substract some value
                   CASE(.FALSE.)  ! 
-                     gama=dlog(vzcrp/vzvac)/(zvac-zcrp) ! gamma should be greater than this value
                      gama=gama+0.5D0 ! to do so, we can just add some value
                END SELECT
                beta=(vzvac-vzcrp)/(vzcrp*dexp(gama*zcrp)-vzvac*dexp(gama*zvac))
@@ -458,6 +458,15 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
                alpha=vzcrp*(1.D0+dexp(gama*(-beta+zcrp)))
                CALL extrapolfunc%READ([gama,beta])
                v=alpha*extrapolfunc%getvalue(x(3))
+               SELECT CASE(isnan(v) .OR. v>huge(1.d0) .OR. v<tiny(0.d0)) ! if there is any problem.. linear extrapol
+                  CASE(.TRUE.)
+                     beta=(vzcrp*zvac-vzvac*zcrp)/(zvac-zcrp)
+                     alpha=(vzvac-beta)/zvac
+                     CALL linearextrapol%READ([alpha,beta])
+                     v=linearextrapol%getvalue(x(3))
+                  CASE DEFAULT
+                     ! do nothing, everything went better than expected :)
+               END SELECT
                ! Extrapol derivatives
                DO i = 1, 6
                   SELECT CASE(dvduvac(i)>=dvducrp(i))
@@ -469,12 +478,19 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
                         gama=gama+0.50
                   END SELECT
                   beta=(dvduvac(i)-dvducrp(i))/(dvducrp(i)*dexp(gama*zcrp)-dvduvac(i)*dexp(gama*zvac))
-                  WRITE(*,*) "pre.",beta
                   beta=-dlog(beta)/gama
                   alpha=dvducrp(i)*(1.D0+dexp(gama*(-beta+zcrp)))
-                  write(*,*) "post. ",alpha,beta,gama
                   CALL extrapolfunc%READ([gama,beta])
                   dvdu(i)=alpha*extrapolfunc%getvalue(x(3))
+                  SELECT CASE(isnan(dvdu(i)) .OR. dvdu(i)>huge(0.d0) .OR. dvdu(i)<tiny(0.d0))
+                     CASE(.TRUE.)
+                        beta=(dvducrp(i)*zvac-dvduvac(i)*zcrp)/(zvac-zcrp)
+                        alpha=(dvduvac(i)-beta)/zvac
+                        CALL linearextrapol%READ([alpha,beta])
+                        dvdu(i)=linearextrapol%getvalue(x(3))
+                     CASE(.FALSE.)
+                        ! do nothing, everything went better than expected
+                  END SELECT
                END DO
 
                RETURN

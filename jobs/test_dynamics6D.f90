@@ -9,7 +9,7 @@ REAL(KIND=4) :: timer
 !
 ! STEP 0: HELLO! -------------------------------------------------------------------------------------
 WRITE(*,*) "*******************************************" 
-WRITE(*,*) "**** TEST DYNAMICS 3D program executed ****"
+WRITE(*,*) "**** TEST DYNAMICS 6D program executed ****"
 WRITE(*,*) "*******************************************" 
 ! STEP 0: System specifications
 CALL SET_VERBOSE_MODE(.FALSE.)
