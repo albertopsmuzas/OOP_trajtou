@@ -213,14 +213,14 @@ SUBROUTINE SET_XROOT_CSPLINES(this)
             ALLOCATE(s(1))
             s(1)=param_s+param_t-a1/3.D0
          CASE(.FALSE.) ! i.e. discriminant <= 0.D0
-            param_sc=complex(param_r,0.D0)+sqrt(complex(discriminant,0.D0))
+            param_sc=dcmplx(param_r,0.D0)+sqrt(dcmplx(discriminant,0.D0))
             param_sc=param_sc**(1.D0/3.D0)
-            param_tc=complex(param_r,0.D0)-sqrt(complex(discriminant,0.D0))
+            param_tc=dcmplx(param_r,0.D0)-sqrt(dcmplx(discriminant,0.D0))
             param_tc=param_tc**(1.D0/3.D0)
             ALLOCATE(s(3))
-            s(1)=realpart(param_sc+param_tc-complex(a1/3.D0,0.D0))
-            s(2)=realpart(-0.5D0*(param_sc+param_tc)+complex(0.D0,0.5D0*dsqrt(3.D0))*(param_sc-param_tc)-complex(a1/3.D0,0.D0))
-            s(3)=realpart(-0.5D0*(param_sc+param_tc)-complex(0.D0,0.5D0*dsqrt(3.D0))*(param_sc-param_tc)-complex(a1/3.D0,0.D0))
+            s(1)=real(param_sc+param_tc-dcmplx(a1/3.D0,0.D0))
+            s(2)=real(-0.5D0*(param_sc+param_tc)+dcmplx(0.D0,0.5D0*dsqrt(3.D0))*(param_sc-param_tc)-dcmplx(a1/3.D0,0.D0))
+            s(3)=real(-0.5D0*(param_sc+param_tc)-dcmplx(0.D0,0.5D0*dsqrt(3.D0))*(param_sc-param_tc)-dcmplx(a1/3.D0,0.D0))
       END SELECT
       DO j = 1, size(s) ! loop over roots
          SELECT CASE(s(j) >= 0.D0 .AND. s(j) <= x2-x1)

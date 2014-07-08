@@ -56,6 +56,7 @@ PRIVATE
    CHARACTER(LEN=30) :: alias
    CHARACTER(LEN=30) :: filename
 	LOGICAL :: initialized=.FALSE.
+   REAL(KIND=8),PUBLIC,DIMENSION(2) :: s1,s2
 	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx 
 	REAL(KIND=8),DIMENSION(2,2) :: cart2surf_mtrx
 	REAL(KIND=8),DIMENSION(2,2) :: surfunit2cart_mtrx 
@@ -298,6 +299,8 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
          CALL VERBOSE_WRITE(routinename,aux_r(i,:))
 #endif
       END DO
+      surf%s1=aux_r(1,:)
+      surf%s2=aux_r(2,:)
       READ(10,*) surf%symmlabel
       aux_r=transpose(aux_r)
       surf%surf2cart_mtrx=aux_r

@@ -511,8 +511,8 @@ SUBROUTINE MMID_INITDIATOMIC(this,y,dydx,xs,htot,nstep,yout,switch)
    ! I/O variables
    CLASS(Initdiatomic),INTENT(IN) :: this
    INTEGER,INTENT(IN) :: nstep
-   REAL(KIND=8),DIMENSION(6), INTENT(IN) :: y,dydx
-   REAL(KIND=8),DIMENSION(6), INTENT(OUT) :: yout
+   REAL(KIND=8),DIMENSION(2), INTENT(IN) :: y,dydx
+   REAL(KIND=8),DIMENSION(2), INTENT(OUT) :: yout
    REAL(KIND=8),INTENT(IN) :: xs,htot
    LOGICAL,INTENT(INOUT) :: switch
    ! Local variables
@@ -720,9 +720,9 @@ SUBROUTINE BSSTEP_INITDIATOMIC(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	CLASS(Initdiatomic),INTENT(IN) :: this
 	REAL(KIND=8), INTENT(IN) :: eps     ! required accuracy
 	REAL(KIND=8), INTENT(IN) ::  htry   ! step to try
-	REAL(KIND=8), DIMENSION(6) :: yscal ! factors to scale error 
-	REAL(KIND=8), DIMENSION(6), INTENT(IN) :: dydx 
-	REAL(KIND=8), DIMENSION(6), INTENT(INOUT) :: y ! initial/final values for: X,Y,Z,Px,Py,Pz (in this order)
+	REAL(KIND=8), DIMENSION(2) :: yscal ! factors to scale error 
+	REAL(KIND=8), DIMENSION(2), INTENT(IN) :: dydx 
+	REAL(KIND=8), DIMENSION(2), INTENT(INOUT) :: y ! initial/final values for: X,Y,Z,Px,Py,Pz (in this order)
 	REAL(KIND=8), INTENT(INOUT) :: x
 	LOGICAL, INTENT(INOUT) :: switch ! .TRUE. if potential could not be calculated
 	REAL(KIND=8), INTENT(OUT) :: hdid  ! step actually used

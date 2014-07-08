@@ -26,9 +26,9 @@ END TYPE Atom
 !----------------------------------------------------
 TYPE,EXTENDS(Inicond) :: Initatom
    LOGICAL :: control_vel, control_posX, control_posY, control_out, control_seed
-   REAL(KIND=8) :: impact_x, impact_y
    TYPE(Energy) :: E_norm
    TYPE(Angle) :: vz_angle, vpar_angle
+   REAL(KIND=8) :: impact_x, impact_y
    TYPE(Length) :: init_z ! initial Z value
    CONTAINS
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_INITATOM
