@@ -47,11 +47,18 @@ SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP6D(this,surfname,inicondname)
    CLASS(Allowed_peaksCRP6D),INTENT(OUT):: this
    CHARACTER(LEN=*),INTENT(IN) :: surfname,inicondname
    ! Local variables
+   LOGICAL :: exists
    ! Run section
    CALL this%surf%INITIALIZE(surfname)
    CALL this%thispes%INITIALIZE("INcrp6d.inp")
    CALL this%inicond%INITIALIZE(inicondname)
-   CALL this%inicond%GENERATE_TRAJS(this%thispes)
+   INQUIRE(FILE="OUTinicond6d.inp",EXIST=exists)
+   SELECT CASE(exists)
+      CASE(.TRUE.)
+         CALL this%inicond%GENERATE_TRAJS_FROM_FILE("OUTinicond6d.inp")
+      CASE(.FALSE.)
+         CALL this%inicond%GENERATE_TRAJS(this%thispes)
+   END SELECT
    RETURN
 END SUBROUTINE 
 !######################################################

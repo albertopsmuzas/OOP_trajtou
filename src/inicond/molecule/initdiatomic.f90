@@ -48,6 +48,7 @@ TYPE,EXTENDS(Inicond) :: INITDIATOMIC
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_INITDIATOMIC
       ! Tools block
       PROCEDURE,PUBLIC :: GENERATE_TRAJS => GENERATE_TRAJS_INITDIATOMIC
+      PROCEDURE,PUBLIC :: GENERATE_TRAJS_FROM_FILE => GENERATE_TRAJS_FROM_FILE_INITDIATOMIC
       ! Private routines
       PROCEDURE,PRIVATE :: SET_PERIOD => SET_PERIOD_INITDIATOMIC
       PROCEDURE,PRIVATE :: TIME_DERIVS => TIME_DERIVS_INITDIATOMIC
@@ -58,6 +59,65 @@ TYPE,EXTENDS(Inicond) :: INITDIATOMIC
 END TYPE INITDIATOMIC
 !////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# SUBROUTINE: GENERATE_TRAJS_FROM_FILE 
+!###########################################################
+!> @brief
+!! Initializes trajectories Initdiatomic form an output file
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jul/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC(this,filename)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Initdiatomic),INTENT(INOUT):: this
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   ! IMPORTANT: unit used to read
+   INTEGER(KIND=4) :: runit=148
+   ! Local variables
+   INTEGER(KIND=4) :: i,id ! counter
+   REAL(KIND=8) :: alpha,mu,Enorm
+   ! Run section
+   ALLOCATE(Diatomic::this%trajs(this%ntraj))
+   Enorm = this%E_norm%getvalue()
+   alpha = this%vz_angle%getvalue()
+   mu = this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
+   mu = mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
+   OPEN (runit,FILE=filename,STATUS="old",ACTION="read") 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   READ(runit,*) 
+   DO i = 1,this%ntraj 
+      READ(runit,*) id,this%trajs(i)%init_r(:),this%trajs(i)%init_p(:)
+      this%trajs(i)%r=this%trajs(i)%init_r
+      this%trajs(i)%p=this%trajs(i)%init_p
+      this%trajs(i)%Ecm = Enorm/(DSIN(alpha)**2.D0)
+      this%trajs(i)%Eint=(this%trajs(i)%p(4)**2.D0)/(2.D0*mu)+this%rovibrpot%getpot(this%trajs(i)%r(4))
+      this%trajs(i)%E=this%trajs(i)%Ecm+this%trajs(i)%Eint
+      SELECT CASE(id/=i)
+         CASE(.TRUE.)
+            WRITE(0,*) "GENERATE_TRAJS_FROM_FILE_INITDIATOMIC ERR: traj mismatch"
+            WRITE(0,*) "At traj ",i,", but read instead ",id
+            CALL EXIT(1)
+         CASE DEFAULT
+            ! do nothing
+      END SELECT
+   END DO
+   RETURN
+END SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC
 !###########################################################
 !# SUBROUTINE: INITIALIZE_DIATOMIC #########################
 !###########################################################
