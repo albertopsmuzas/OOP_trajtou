@@ -1,6 +1,6 @@
 # Include general rules
-#debugmode=on
-debugmode=off
+debugmode=on
+#debugmode=off
 include make.inc
 # Add here all folder names in src
 folderlist= debug constants units surface PES interpol1d interpol1d/cubicsplines maths PES/CRP3D interpol2d interpol2d/fourier \
@@ -12,7 +12,7 @@ objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o mat
 				inicond.o initatom.o dynamics.o dynatom.o bicsplines.o CRP6D.o fourier1d.o wyckoff.generic.o wyckoff.p4mm.o \
 				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
-				drawtraj.o link_inicond.o diffraction.o
+				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
@@ -54,7 +54,9 @@ dynamics.o: units.o link_PES.o inicond.o
 dynatom.o: debug.o dynamics.o initatom.o
 dyndiatomic.o: debug.o dynamics.o initdiatomic.o
 # Analysis -------------------------------------------------------------------------------
-diffraction.o: debug.o surface.o initatom.o CRP3D.o
+#diffraction.o: debug.o surface.o initatom.o CRP3D.o
+diffractionCRP3D.o: debug.o surface.o initatom.o CRP3D.o
+diffractionCRP6D.o: debug.o surface.o initdiatomic.o CRP6D.o
 # Utils ----------------------------------------------------------------------------------
 drawtraj.o: surface.o
 #-----------------------------------------------------------------------------------------

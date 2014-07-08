@@ -1,4 +1,4 @@
-MODULE DIFFRACTION_MOD
+MODULE DIFFRACTIONCRP3D_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
@@ -10,7 +10,7 @@ IMPLICIT NONE
 !======================================================
 ! Peak derived data
 !---------------------
-TYPE :: Peak
+TYPE :: PeakCRP3D
    PRIVATE
    INTEGER(KIND=4) :: id ! identification number
    INTEGER(KIND=4) :: order ! order of the peak
@@ -19,32 +19,32 @@ TYPE :: Peak
 	REAL(KIND=8) :: Phi ! deflection angle respect to incidence plane
 	REAL(KIND=8) :: Theta_out ! deflection angle respect to surface plane
 	REAL(KIND=8) :: Prob ! probability
-END TYPE Peak
+END TYPE PeakCRP3D
 !======================================================
-! Allowed_peaks derived data
+! Allowed_peaksCRP3D derived data
 !----------------------------
-TYPE :: Allowed_peaks
+TYPE :: Allowed_peaksCRP3D
    PRIVATE
    TYPE(Surface):: surf
    TYPE(Initatom):: inicond
    TYPE(CRP3D):: thispes
    REAL(KIND=8):: E
    REAL(KIND=8),DIMENSION(6):: conic
-   TYPE(Peak),DIMENSION(:),ALLOCATABLE:: peaks
+   TYPE(PeakCRP3D),DIMENSION(:),ALLOCATABLE:: peaks
    CONTAINS
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKS
-      PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKS
-      PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKS
-      PROCEDURE,PUBLIC:: PRINT_XY_EXIT_ANGLES => PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKS
-      PROCEDURE,PUBLIC:: evaluate_peak => evaluate_peak_allowedpeaks
-END TYPE Allowed_peaks
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP3D
+      PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP3D
+      PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D
+      PROCEDURE,PUBLIC:: PRINT_XY_EXIT_ANGLES => PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP3D
+      PROCEDURE,PUBLIC:: evaluate_peak => evaluate_peak_ALLOWEDPEAKSCRP3D
+END TYPE Allowed_peaksCRP3D
 !=======================================================
 CONTAINS
-SUBROUTINE INITIALIZE_ALLOWEDPEAKS(this,surfname,inicondname)
+SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP3D(this,surfname,inicondname)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Allowed_peaks),INTENT(OUT):: this
+   CLASS(Allowed_peaksCRP3D),INTENT(OUT):: this
    CHARACTER(LEN=*),INTENT(IN) :: surfname,inicondname
    ! Local variables
    ! Run section
@@ -55,14 +55,14 @@ SUBROUTINE INITIALIZE_ALLOWEDPEAKS(this,surfname,inicondname)
    RETURN
 END SUBROUTINE 
 !######################################################
-!# SUBROUTINE : SETUP_ALLOWEDPEAKS #####################
+!# SUBROUTINE : SETUP_ALLOWEDPEAKSCRP3D #####################
 !######################################################
 ! Just for a square primitive cell
 !------------------------------------------------------
-SUBROUTINE SETUP_ALLOWEDPEAKS(this)
+SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Allowed_peaks),INTENT(INOUT) :: this
+   CLASS(Allowed_peaksCRP3D),INTENT(INOUT) :: this
    ! Local variables
 	REAL(KIND=8), DIMENSION(2) :: kinit_par
 	REAL(KIND=8), DIMENSION(3) :: p ! momentum
@@ -79,7 +79,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKS(this)
 	INTEGER(KIND=4) :: order
 	INTEGER(KIND=4) :: count_peaks
 	INTEGER(KIND=4), DIMENSION(2) :: g ! (n,m) vector
-	CHARACTER(LEN=19), PARAMETER :: routinename = "SET_ALLOWED_PEAKS: "
+	CHARACTER(LEN=19), PARAMETER :: routinename = "SET_Allowed_peaksCRP3D: "
 	! Pointer definitions
 	REAL(KIND=8) :: a, b ! axis longitude
 	REAL(KIND=8) :: beta ! angle of incident beam projected on unit cell surface
@@ -238,17 +238,17 @@ SUBROUTINE SETUP_ALLOWEDPEAKS(this)
 	END DO
 	CLOSE(11)
 	RETURN
-END SUBROUTINE SETUP_ALLOWEDPEAKS
+END SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D
 !####################################################################################
 ! SUBROUTINE: ASSIGN PEAKS TO TRAJS
 !####################################################################################
-! - GENERATE_TRAJS_ATOMS and SET_ALLOWED_PEAKS should have been executed before
+! - GENERATE_TRAJS_ATOMS and SET_Allowed_peaksCRP3D should have been executed before
 ! - At the moment only works with C4v cells
 !------------------------------------------------------------------------------------
-SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKS(this)
+SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(Allowed_peaks),INTENT(INOUT):: this
+	CLASS(Allowed_peaksCRP3D),INTENT(INOUT):: this
 	! Local variables
 	INTEGER(KIND=4) :: lines
 	INTEGER(KIND=4) :: id
@@ -295,7 +295,6 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKS(this)
       i=i+1
       READ(11,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy_real,&
          dummy_real,dummy_real,dummy_real,dummy_real,p
-      WRITE(*,*) "ioerr ",ioerr
       SELECT CASE(ioerr==0)
          CASE(.TRUE.)
             ! do nothing
@@ -317,7 +316,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKS(this)
          END DO
       END IF
    END DO
-   lines=i-1
+         lines=i-1
 	REWIND(12)
 	READ(12,*) ! dummy line
 	READ(12,*) ! dummy line
@@ -340,7 +339,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKS(this)
 	END DO
 	CLOSE(13)
 	RETURN
-END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKS
+END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D
 !####################################################################################
 ! FUNCTION: EVALUATE_PEAK ###########################################################
 !####################################################################################
@@ -348,10 +347,10 @@ END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKS
 ! - FALSE otherwise
 ! - in_n and in_m are integer numbers
 !------------------------------------------------------------------------------------
-LOGICAL FUNCTION evaluate_peak_allowedpeaks(this,in_n, in_m)
+LOGICAL FUNCTION evaluate_peak_ALLOWEDPEAKSCRP3D(this,in_n, in_m)
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(Allowed_peaks),TARGET,INTENT(IN) :: this
+	CLASS(Allowed_peaksCRP3D),TARGET,INTENT(IN) :: this
 	INTEGER(KIND=4), INTENT(IN) :: in_n, in_m
 	! Local variables
 	REAL(KIND=8) :: left_term
@@ -372,12 +371,12 @@ LOGICAL FUNCTION evaluate_peak_allowedpeaks(this,in_n, in_m)
 	! Check value
    SELECT CASE(left_term<-F)
       CASE(.TRUE.)
-         evaluate_peak_allowedpeaks = .TRUE.
+         evaluate_peak_ALLOWEDPEAKSCRP3D = .TRUE.
       CASE(.FALSE.)
-         evaluate_peak_allowedpeaks = .FALSE.
+         evaluate_peak_ALLOWEDPEAKSCRP3D = .FALSE.
    END SELECT
 	RETURN
-END FUNCTION evaluate_peak_allowedpeaks
+END FUNCTION evaluate_peak_ALLOWEDPEAKSCRP3D
 !###########################################################################3########
 ! SUBROUTINE: PRINT_XY_EXIT_ANGLES 
 !###########################################################################3########
@@ -385,10 +384,10 @@ END FUNCTION evaluate_peak_allowedpeaks
 !   information about exit angles in XY plane (taken from momenta information)
 ! - Only trajectories with "Scattered" status will be taken into account
 !------------------------------------------------------------------------------------
-SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKS(this,input_file)
+SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP3D(this,input_file)
 	IMPLICIT NONE
 	! I/O Variables
-   CLASS(Allowed_peaks),INTENT(IN):: this
+   CLASS(Allowed_peaksCRP3D),INTENT(IN):: this
 	CHARACTER(LEN=*), INTENT(IN) :: input_file
 	! Local variables
 	INTEGER(KIND=4) :: lines
@@ -401,7 +400,7 @@ SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKS(this,input_file)
 	REAL(KIND=8) :: angle
    INTEGER(KIND=4) :: ioerr
    ! RUN !! --------------------------
-   OPEN(12,FILE="xy_exit_angles.out",STATUS="replace")
+   OPEN(12,FILE="OUTxyexitangles.out",STATUS="replace")
    WRITE(12,*) "# XY EXIT ANGLES ----------------------------------------------"
    WRITE(12,*) "# Format: traj id, angle (radians)"
    WRITE(12,*) "#--------------------------------------------------------------"
@@ -426,6 +425,6 @@ SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKS(this,input_file)
 	CLOSE(11)
 	CLOSE(12)
 	RETURN
-END SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKS
+END SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP3D
 !
-END MODULE DIFFRACTION_MOD
+END MODULE DIFFRACTIONCRP3D_MOD
