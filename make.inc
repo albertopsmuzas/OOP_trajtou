@@ -1,5 +1,8 @@
 # Compile options
 
+#F = ifort
+#CF = $(F) -cpp -I mod -c -O2 -traceback -CB -gen-interfaces -no-wrap-margin -warn truncated-source
+#LF = $(F) -cpp -I mod -O2
 F = gfortran
 CF = $(F) -cpp -J mod -I mod -c -Wall -O2
 LF = $(F) -cpp -I mod -Wall -O2

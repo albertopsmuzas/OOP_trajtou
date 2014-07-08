@@ -1,8 +1,12 @@
 # Compile options
 
+#F = ifort
+#CF = $(F) -cpp -I ../mod -gen-interfaces -c -O2 -traceback -CB -no-wrap-margin -warn truncated_source
+#LF = $(F) -I ../mod -O2
+
 F = gfortran
-CF = $(F) -cpp -J ../mod -I ../mod -c -Wall -fbacktrace -ffixed-line-length-none -Wtabs -W -fbounds-check -O2
-LF = $(F) -I ../mod -Wall -fbounds-check -Wtabs -ffixed-line-length-none -fbacktrace -W -O2
+CF = $(F) -cpp -J mod -I mod -c -Wall -O2
+LF = $(F) -cpp -I mod -Wall -O2
 
 # Where to find compiled but not yet linked binaries
 vpath %.o ../bin
