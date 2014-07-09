@@ -195,6 +195,7 @@ SUBROUTINE INITIALIZE_INITATOM(this,filename)
          OPEN(12,FILE="INseed.inp",STATUS="old")
          READ(12,*) this%seed
          CLOSE(12)
+         CALL RANDOM_SEED(PUT=this%seed)
       ELSE
          CALL RANDOM_SEED(SIZE=size_seed)
          ALLOCATE(this%seed(1:size_seed))
