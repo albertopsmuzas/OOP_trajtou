@@ -86,6 +86,7 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC(this,filename)
    alpha = this%vz_angle%getvalue()
    mu = this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
    mu = mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
+   CALL this%SET_PERIOD()
    OPEN (runit,FILE=filename,STATUS="old",ACTION="read") 
    READ(runit,*) 
    READ(runit,*) 
@@ -101,6 +102,7 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC(this,filename)
    READ(runit,*) 
    READ(runit,*) 
    DO i = 1,this%ntraj 
+      CALL this%trajs(i)%INITIALIZE()
       READ(runit,*) id,this%trajs(i)%init_r(:),this%trajs(i)%init_p(:)
       this%trajs(i)%r=this%trajs(i)%init_r
       this%trajs(i)%p=this%trajs(i)%init_p
@@ -116,6 +118,7 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC(this,filename)
             ! do nothing
       END SELECT
    END DO
+   WRITE(*,*) "finish"
    RETURN
 END SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC
 !###########################################################
@@ -144,7 +147,6 @@ SUBROUTINE INITIALIZE_DIATOMIC(this)
    ALLOCATE(this%init_qn(2))
    ALLOCATE(this%final_qn(2))
    this%stat="Dummy"
-   RETURN
    RETURN
 END SUBROUTINE INITIALIZE_DIATOMIC
 !##################################################################################
@@ -383,6 +385,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
    REAL(KIND=8),DIMENSION(2):: proj_iws_r
    REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint,Etot
+   REAL(KIND=8),DIMENSION(6) :: random_kernel
    REAL(KIND=8) :: rnd_delta,rnd_phi,rnd_theta,rnd_eta
    REAL(KIND=8) :: eta
    REAL(KIND=8) :: ang_momentum
@@ -392,30 +395,6 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    CALL VERBOSE_WRITE(routinename,"Allocating trajs: ", this%ntraj)
 #endif
    ALLOCATE(Diatomic::this%trajs(this%ntraj))
-   IF((this%control_posX).AND.(.NOT.this%control_posY)) THEN
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         CALL RANDOM_NUMBER(this%trajs(i)%r(1))
-         this%trajs(i)%r(2)=this%impact_y
-      END DO
-   ELSE IF ((.NOT.this%control_posX).AND.(this%control_posY)) THEN
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         this%trajs(i)%r(1)=this%impact_x
-         CALL RANDOM_NUMBER(this%trajs(i)%r(2))
-      END DO
-   ELSE IF ((this%control_posX).AND.(this%control_posY)) THEN
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         CALL RANDOM_NUMBER(this%trajs(i)%r(1:2))
-      END DO
-   ELSE
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         this%trajs(i)%r(1)=this%impact_x
-         this%trajs(i)%r(2)=this%impact_y
-      END DO
-   END IF
    CALL this%SET_PERIOD()
    delta = this%vpar_angle%getvalue()
    alpha = this%vz_angle%getvalue()
@@ -427,6 +406,23 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    Etot = Enorm/(DSIN(alpha)**2.D0)+Eint
    ang_momentum=dsqrt(dfloat(this%init_qn(2)*(this%init_qn(2)+1)))
    DO i=1,this%ntraj
+      CALL RANDOM_NUMBER(random_kernel(:))
+      IF((this%control_posX).AND.(.NOT.this%control_posY)) THEN
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1)=random_kernel(1)
+         this%trajs(i)%r(2)=this%impact_y
+      ELSE IF ((.NOT.this%control_posX).AND.(this%control_posY)) THEN
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1)=this%impact_x
+         this%trajs(i)%r(2)=random_kernel(2)
+      ELSE IF ((this%control_posX).AND.(this%control_posY)) THEN
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1:2)=random_kernel(1:2)
+      ELSE
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1)=this%impact_x
+         this%trajs(i)%r(2)=this%impact_y
+      END IF
       ! CENTER OF MASS COORD ---------------------------------------
       ! Set center of mass coordinates
       this%trajs(i)%r(3) = this%init_z%getvalue()
@@ -439,10 +435,10 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       this%trajs(i)%Ecm = Enorm/(DSIN(alpha)**2.D0)
       ! INTERNAL COORD --------------------------------------------
       ! Set random kernel
-      CALL RANDOM_NUMBER(rnd_delta)
-      CALL RANDOM_NUMBER(rnd_phi)
-      CALL RANDOM_NUMBER(rnd_theta)
-      CALL RANDOM_NUMBER(rnd_eta)
+      rnd_delta=random_kernel(3)
+      rnd_phi=random_kernel(4)
+      rnd_theta=random_kernel(5)
+      rnd_eta=random_kernel(6)
       ! Get internal coordinates
       this%trajs(i)%r(4)=this%r_t%getvalue(rnd_delta*this%period)          ! r
       this%trajs(i)%r(5)=dacos(1.D0-2.D0*rnd_theta)                       ! theta

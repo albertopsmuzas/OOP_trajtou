@@ -35,7 +35,7 @@ TYPE :: Allowed_peaksCRP3D
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP3D
       PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP3D
       PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D
-      PROCEDURE,PUBLIC:: PRINT_XY_EXIT_ANGLES => PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP3D
+      PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D
       PROCEDURE,PUBLIC:: evaluate_peak => evaluate_peak_ALLOWEDPEAKSCRP3D
 END TYPE Allowed_peaksCRP3D
 !=======================================================
@@ -75,15 +75,15 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
 	REAL(KIND=8) :: Phi ! deflection angle respect to incidence plane
 	REAL(KIND=8) :: Theta_out ! deflection angle respect to surface plane
    REAL(KIND=8) :: mass
-	INTEGER(KIND=4) :: i, k ! Counters
-	INTEGER(KIND=4) :: order
-	INTEGER(KIND=4) :: count_peaks
-	INTEGER(KIND=4), DIMENSION(2) :: g ! (n,m) vector
-	CHARACTER(LEN=19), PARAMETER :: routinename = "SET_Allowed_peaksCRP3D: "
-	! Pointer definitions
-	REAL(KIND=8) :: a, b ! axis longitude
-	REAL(KIND=8) :: beta ! angle of incident beam projected on unit cell surface
-	REAL(KIND=8) :: theta_in ! incidence angle measured from surface plane
+   INTEGER(KIND=4) :: i, k ! Counters
+   INTEGER(KIND=4) :: order
+   INTEGER(KIND=4) :: count_peaks
+   INTEGER(KIND=4), DIMENSION(2) :: g ! (n,m) vector
+   CHARACTER(LEN=19), PARAMETER :: routinename = "SET_Allowed_peaksCRP3D: "
+   ! Pointer definitions
+   REAL(KIND=8) :: a, b ! axis longitude
+   REAL(KIND=8) :: beta ! angle of incident beam projected on unit cell surface
+   REAL(KIND=8) :: theta_in ! incidence angle measured from surface plane
 	! Pointer adjudication
 	a=this%surf%norm_s1
 	b=this%surf%norm_s2
@@ -384,47 +384,53 @@ END FUNCTION evaluate_peak_ALLOWEDPEAKSCRP3D
 !   information about exit angles in XY plane (taken from momenta information)
 ! - Only trajectories with "Scattered" status will be taken into account
 !------------------------------------------------------------------------------------
-SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP3D(this,input_file)
-	IMPLICIT NONE
-	! I/O Variables
+SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D(this)
+   IMPLICIT NONE
+   ! I/O Variables
    CLASS(Allowed_peaksCRP3D),INTENT(IN):: this
-	CHARACTER(LEN=*), INTENT(IN) :: input_file
-	! Local variables
-	INTEGER(KIND=4) :: lines
-	INTEGER(KIND=4) :: dummy_int
-	REAL(KIND=8) :: dummy_real
-	INTEGER(KIND=4) :: i ! counters
-	INTEGER(KIND=4) :: traj_id
-	CHARACTER(LEN=10) :: stat
-	REAL(KIND=8), DIMENSION(2) :: p
-	REAL(KIND=8) :: angle
+   ! Local variables
+   INTEGER(KIND=4) :: dummy_int
+   REAL(KIND=8) :: dummy_real
+   INTEGER(KIND=4) :: i ! counters
+   INTEGER(KIND=4) :: traj_id
+   CHARACTER(LEN=10) :: stat
+   REAL(KIND=8), DIMENSION(3) :: p,plab
    INTEGER(KIND=4) :: ioerr
+   REAL(KIND=8) :: psi,Theta,thetaout,beta
+   REAL(KIND=8),DIMENSION(2,2) :: mtrx
    ! RUN !! --------------------------
-   OPEN(12,FILE="OUTxyexitangles.out",STATUS="replace")
+   beta=this%inicond%vpar_angle%getvalue()
+   mtrx(1,:)=[dcos(beta),dsin(beta)]
+   mtrx(2,:)=[-dsin(beta),dcos(beta)]
+   OPEN(12,FILE="OUTexit_momenta_and_angles.out",STATUS="replace")
    WRITE(12,*) "# XY EXIT ANGLES ----------------------------------------------"
-   WRITE(12,*) "# Format: traj id, angle (radians)"
+   WRITE(12,*) "# Format: traj id, Px,Py,Pz(a.u.) Psi,Theta,theta_{out}(rad)"
    WRITE(12,*) "#--------------------------------------------------------------"
-	OPEN(11,FILE=input_file,STATUS="old")
-	READ(11,*) ! Dummy line
-	READ(11,*) ! Dummy line
-	READ(11,*) ! Dummy line
-	DO i=1,lines
-		READ(11,*,iostat=ioerr) traj_id, stat, dummy_int, dummy_int, dummy_real,&
-         dummy_real, dummy_real, dummy_real, dummy_real, p(1), p(2)
+   OPEN(11,FILE="OUTdynamics3d.out",STATUS="old")
+   READ(11,*) ! Dummy line
+   READ(11,*) ! Dummy line
+   READ(11,*) ! Dummy line
+   DO
+      READ(11,*,iostat=ioerr) traj_id, stat, dummy_int, dummy_int, dummy_real,&
+         dummy_real, dummy_real, dummy_real, dummy_real, p(:)
       SELECT CASE (ioerr==0)
          CASE(.TRUE.)
             ! do nothing
          CASE(.FALSE.)
             EXIT ! break cycle
          END SELECT
-		IF(stat.EQ."Scattered") THEN
-			angle = DATAN(p(2)/p(1))
-			WRITE(12,*) traj_id, angle
-		END IF
-	END DO
-	CLOSE(11)
-	CLOSE(12)
-	RETURN
-END SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP3D
+      IF(stat.EQ."Scattered") THEN
+         plab(1:2)=matmul(mtrx,p(1:2))
+         plab(3)=p(3)
+         psi = datan(plab(2)/plab(1))
+         Theta = datan(plab(2)/plab(3))
+         thetaout=datan(plab(3)/dsqrt(plab(1)**2.D0+plab(2)**2.D0))
+         WRITE(12,*) traj_id,plab(:),psi,Theta,thetaout
+      END IF
+   END DO
+   CLOSE(11)
+   CLOSE(12)
+   RETURN
+END SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D
 !
 END MODULE DIFFRACTIONCRP3D_MOD

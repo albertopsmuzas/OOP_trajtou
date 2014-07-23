@@ -62,7 +62,7 @@ END INTERFACE
 !> @param kind
 !> @param input_file - Input file
 !> @param output_file - Output file
-!> @param ntrajs - Number of trajectories
+!> @param ntraj - Number of trajectories
 !> @param nstart - Initial trajectory
 !> @param seed - Allocatable integer array to feed random functions
 !-------------------------------------------------------------

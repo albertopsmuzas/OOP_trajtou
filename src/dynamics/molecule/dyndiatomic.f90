@@ -31,7 +31,7 @@ TYPE,EXTENDS(Dynamics) :: DYNDIATOMIC
    CHARACTER(LEN=10) :: scaling
    REAL(KIND=8) :: eps
    TYPE(Length) :: zstop, dzstop
-   TYPE(Length) :: zscatt,zads,zabs
+   TYPE(Length) :: zscatt,zads,zabs,maxr
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_DYNDIATOMIC
@@ -147,6 +147,10 @@ SUBROUTINE INITIALIZE_DYNDIATOMIC(this,filename)
       READ(runit,*) aux,units
 		CALL this%zabs%READ(aux,units)
 		CALL this%zabs%TO_STD()
+
+      READ(runit,*) aux,units
+		CALL this%maxr%READ(aux,units)
+		CALL this%maxr%TO_STD()
 #ifdef DEBUG
 		CALL VERBOSE_WRITE(routinename,"Initial time step in au: ",this%delta_t%getvalue())
 		CALL VERBOSE_WRITE(routinename,"Maximum time in au: ",this%max_t%getvalue())
@@ -475,6 +479,20 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       SELECT CASE ((molecule%r(3) >= this%zscatt%getvalue()).AND.(molecule%p(3) > 0.D0))
          CASE(.TRUE.)
             molecule%stat="Scattered"                                            
+            molecule%r(1:6)=molec_dofs(1:6)
+            molecule%p(1:6)=molec_dofs(7:12)
+            molecule%E=E
+            molecule%Eint=Eint
+            molecule%Ecm=Ecm
+            molecule%turning_point(1:2) = this%thispes%surf%project_iwscell(molecule%turning_point(1:2))
+            WRITE(wunit2,'(I7,1X,6(F10.5,1X))') idtraj, molecule%turning_point(:)
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing next switch
+      END SELECT
+      SELECT CASE ((molecule%r(4) > this%maxr%getvalue()))
+         CASE(.TRUE.)
+            molecule%stat="Reacted"                                            
             molecule%r(1:6)=molec_dofs(1:6)
             molecule%p(1:6)=molec_dofs(7:12)
             molecule%E=E

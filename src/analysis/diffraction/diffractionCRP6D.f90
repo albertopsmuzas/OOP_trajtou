@@ -35,7 +35,7 @@ TYPE :: Allowed_peaksCRP6D
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
-      PROCEDURE,PUBLIC:: PRINT_XY_EXIT_ANGLES => PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP6D
+      PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: evaluate_peak => evaluate_peak_ALLOWEDPEAKSCRP6D
 END TYPE Allowed_peaksCRP6D
 !=======================================================
@@ -52,12 +52,14 @@ SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP6D(this,surfname,inicondname)
    CALL this%surf%INITIALIZE(surfname)
    CALL this%thispes%INITIALIZE("INcrp6d.inp")
    CALL this%inicond%INITIALIZE(inicondname)
-   INQUIRE(FILE="OUTinicond6d.inp",EXIST=exists)
+   INQUIRE(FILE="OUTinicond6d.out",EXIST=exists)
    SELECT CASE(exists)
       CASE(.TRUE.)
-         CALL this%inicond%GENERATE_TRAJS_FROM_FILE("OUTinicond6d.inp")
+         CALL this%inicond%GENERATE_TRAJS_FROM_FILE("OUTinicond6d.out")
+         WRITE(*,*) "INITIALIZE_ALLOWEDPEAKSCRP6D: initial conditions read from OUTinicond6d.out"
       CASE(.FALSE.)
          CALL this%inicond%GENERATE_TRAJS(this%thispes)
+         WRITE(*,*) "INITIALIZE_ALLOWEDPEAKSCRP6D: initial conditions generated from INinicond6d.inp"
    END SELECT
    RETURN
 END SUBROUTINE 
@@ -323,14 +325,20 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
          END DO
       END IF
    END DO
-         lines=i-1
 	REWIND(12)
 	READ(12,*) ! dummy line
 	READ(12,*) ! dummy line
 	READ(12,*) ! dummy line
-	DO i=1,lines
-		READ(12,*) dummy_int, stat, id
-		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/lines
+   WRITE(*,*) "ASSIGN_PEAKS_TO_TRAJS: total number trajs used for prob.: ",this%inicond%ntraj
+	DO 
+		READ(12,*,iostat=ioerr) dummy_int,stat,id
+      SELECT CASE(ioerr==0)
+         CASE(.TRUE.)
+            ! do nothing
+         CASE(.FALSE.)
+            EXIT
+      END SELECT
+		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/this%inicond%ntraj
 	END DO
 	CLOSE(12)
 	CLOSE(11)
@@ -391,47 +399,53 @@ END FUNCTION evaluate_peak_ALLOWEDPEAKSCRP6D
 !   information about exit angles in XY plane (taken from momenta information)
 ! - Only trajectories with "Scattered" status will be taken into account
 !------------------------------------------------------------------------------------
-SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP6D(this,input_file)
+SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
 	IMPLICIT NONE
 	! I/O Variables
    CLASS(Allowed_peaksCRP6D),INTENT(IN):: this
-	CHARACTER(LEN=*), INTENT(IN) :: input_file
 	! Local variables
-	INTEGER(KIND=4) :: lines
 	INTEGER(KIND=4) :: dummy_int
-	REAL(KIND=8) :: dummy_real
+	REAL(KIND=8),DIMENSION(9) :: dummy_real
 	INTEGER(KIND=4) :: i ! counters
 	INTEGER(KIND=4) :: traj_id
 	CHARACTER(LEN=10) :: stat
-	REAL(KIND=8), DIMENSION(2) :: p
-	REAL(KIND=8) :: angle
+	REAL(KIND=8),DIMENSION(3) :: p
+	REAL(KIND=8),DIMENSION(3) :: plab
    INTEGER(KIND=4) :: ioerr
-   ! RUN !! --------------------------
-   OPEN(12,FILE="xy_exit_angles.out",STATUS="replace")
-   WRITE(12,*) "# XY EXIT ANGLES ----------------------------------------------"
-   WRITE(12,*) "# Format: traj id, angle (radians)"
-   WRITE(12,*) "#--------------------------------------------------------------"
-	OPEN(11,FILE=input_file,STATUS="old")
-	READ(11,*) ! Dummy line
-	READ(11,*) ! Dummy line
-	READ(11,*) ! Dummy line
-	DO i=1,lines
-		READ(11,*,iostat=ioerr) traj_id, stat, dummy_int, dummy_int, dummy_real,&
-         dummy_real, dummy_real, dummy_real, dummy_real, p(1), p(2)
+   REAL(KIND=8) :: psi,Theta,thetaout,beta
+   REAL(KIND=8),DIMENSION(2,2) :: mtrx
+   ! RUN !! ------------------p--------
+   beta=this%inicond%vpar_angle%getvalue()
+   mtrx(1,:)=[dcos(beta),dsin(beta)]
+   mtrx(2,:)=[-dsin(beta),dcos(beta)]
+   OPEN(12,FILE="OUTexit_momenta_and_angles.out",STATUS="replace")
+   WRITE(12,*) "# FINAL LAB. MOMENTA AND ANGLES EXIT ANGLES ----------------------------"
+   WRITE(12,*) "# Format: traj id, Px,Py,Pz(a.u.) Psi,Theta,theta_{out}(rad)"
+   WRITE(12,*) "#-----------------------------------------------------------------------"
+   OPEN(11,FILE="OUTdynamics6d.MOLEC.out",STATUS="old")
+   READ(11,*) ! Dummy line
+   READ(11,*) ! Dummy line
+   READ(11,*) ! Dummy line
+   DO 
+      READ(11,*,iostat=ioerr) traj_id,stat,dummy_int,dummy_int,dummy_real(:),p(:)
       SELECT CASE (ioerr==0)
          CASE(.TRUE.)
             ! do nothing
          CASE(.FALSE.)
             EXIT ! break cycle
          END SELECT
-		IF(stat.EQ."Scattered") THEN
-			angle = DATAN(p(2)/p(1))
-			WRITE(12,*) traj_id, angle
-		END IF
-	END DO
-	CLOSE(11)
-	CLOSE(12)
-	RETURN
-END SUBROUTINE PRINT_XY_EXIT_ANGLES_ALLOWEDPEAKSCRP6D
+      IF(stat.EQ."Scattered") THEN
+         plab(1:2)=matmul(mtrx,p(1:2))
+         plab(3)=p(3)
+         psi = datan(plab(2)/plab(1))
+         Theta = datan(plab(2)/plab(3))
+         thetaout=datan(plab(3)/dsqrt(plab(1)**2.D0+plab(2)**2.D0))
+         WRITE(12,*) traj_id,plab(:),psi,Theta,thetaout
+      END IF
+   END DO
+   CLOSE(11)
+   CLOSE(12)
+   RETURN
+END SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
 !
 END MODULE DIFFRACTIONCRP6D_MOD

@@ -255,41 +255,32 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
    CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
    REAL(KIND=8),DIMENSION(2):: proj_iws_r
    REAL(KIND=8):: delta,alpha,Enorm,masa
+   REAL(KIND=8),DIMENSION(2) :: random_kernel
    ! YIPPIEE KI YAY !! -------------------
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New set of trajectories")
    CALL VERBOSE_WRITE(routinename,"Allocating trajs: ", this%ntraj)
 #endif
    ALLOCATE(Atom::this%trajs(this%ntraj))
-   IF((this%control_posX).AND.(.NOT.this%control_posY)) THEN
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         this%trajs(i)%r(3) = this%init_z%getvalue()
-         CALL RANDOM_NUMBER(this%trajs(i)%r(1))
-         this%trajs(i)%r(2) = this%impact_y
-      END DO
-   ELSE IF ((.NOT.this%control_posX).AND.(this%control_posY)) THEN
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         this%trajs(i)%r(3) = this%init_z%getvalue()
-         this%trajs(i)%r(1) = this%impact_x
-         CALL RANDOM_NUMBER(this%trajs(i)%r(2))
-      END DO
-   ELSE IF ((this%control_posX).AND.(this%control_posY)) THEN
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         this%trajs(i)%r(3) = this%init_z%getvalue()
-         CALL RANDOM_NUMBER(this%trajs(i)%r(1:2))
-      END DO
-   ELSE
-      DO i=1, this%ntraj
-         CALL this%trajs(i)%INITIALIZE()
-         this%trajs(i)%r(3) = this%init_z%getvalue()
-         this%trajs(i)%r(1) = this%impact_x
-         this%trajs(i)%r(2) = this%impact_y
-      END DO
-   END IF
    DO i=1,this%ntraj
+      CALL RANDOM_NUMBER(random_kernel(:))
+      IF((this%control_posX).AND.(.NOT.this%control_posY)) THEN
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1) = random_kernel(1)
+         this%trajs(i)%r(2) = this%impact_y
+      ELSE IF ((.NOT.this%control_posX).AND.(this%control_posY)) THEN
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1) = this%impact_x
+         this%trajs(i)%r(2) = random_kernel(2)
+      ELSE IF ((this%control_posX).AND.(this%control_posY)) THEN
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1:2)=random_kernel(1:2)
+      ELSE
+         CALL this%trajs(i)%INITIALIZE()
+         this%trajs(i)%r(1) = this%impact_x
+         this%trajs(i)%r(2) = this%impact_y
+      END IF
+      this%trajs(i)%r(3) = this%init_z%getvalue()
       ! Change to cartesian coordinates (impact parameters are in surface coordinates)
       this%trajs(i)%r(1:2) = thispes%surf%surf2cart(this%trajs(i)%r(1:2))
       ! projectin into IWS cell leads to errors in the dynamics (wrong sampling)
