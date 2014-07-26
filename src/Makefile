@@ -33,6 +33,9 @@ link_PES.o: PES.o CRP3D.o CRP6D.o
 PES.o: surface.o
 CRP3D.o: debug.o units.o maths.o cubicsplines.o fourier.p4mm.o PES.o link_function1d.o
 CRP6D.o: debug.o units.o maths.o CRP3D.o wyckoff.p4mm.o extrapol.o link_function1d.o
+# Example of new PES implementation:
+# newPES.o: PES.o +list of needed modules. Don't forget to add this routine to objectlist.
+ 
 # 1D interpolations ---------------------------------------------------------------------
 link_interpol1d.o: interpol1d.o fourier1d.o cubicsplines.o
 interpol1d.o: 
