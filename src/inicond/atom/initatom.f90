@@ -254,7 +254,8 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
    INTEGER :: i,j ! counters
    CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
    REAL(KIND=8),DIMENSION(2):: proj_iws_r
-   REAL(KIND=8):: delta,alpha,Enorm,masa
+   REAL(KIND=8):: delta,alpha,Enorm,masa,v
+   REAL(KIND=8),DIMENSION(3) :: dummy
    REAL(KIND=8),DIMENSION(2) :: random_kernel
    ! YIPPIEE KI YAY !! -------------------
 #ifdef DEBUG
@@ -295,7 +296,8 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
       this%trajs(i)%p(3) = -DSQRT(2.D0*masa*Enorm)  ! Z momentum (m*v_z), negative (pointing uppon the surface)
       this%trajs(i)%p(1) = DCOS(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
       this%trajs(i)%p(2) = DSIN(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
-      this%trajs(i)%E = Enorm/(DSIN(alpha)**2.D0)
+      CALL thispes%GET_V_AND_DERIVS(this%trajs(i)%r,v,dummy)
+      this%trajs(i)%E = Enorm/(DSIN(alpha)**2.D0)+v
       ! Setting initial values
       this%trajs(i)%init_r(1) = this%trajs(i)%r(1)
       this%trajs(i)%init_r(2) = this%trajs(i)%r(2)

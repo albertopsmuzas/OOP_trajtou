@@ -18,3 +18,9 @@ ifeq ($(debugmode),on)
 else
 	$(CF) $< -o ../bin/$@
 endif
+%.o : %.f
+ifeq ($(debugmode),on)
+	$(CF) -DDEBUG $< -o ../bin/$@
+else
+	$(CF) $< -o ../bin/$@
+endif
