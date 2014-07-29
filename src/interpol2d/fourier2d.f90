@@ -4,6 +4,9 @@
 !! Provides tools to perform 2D interpolations with fourier series
 !##################################################################################
 MODULE FOURIER2D_MOD
+USE SURFACE_MOD
+USE CONSTANTS_MOD
+USE MATHS_MOD
 IMPLICIT NONE
 !////////////////////////////////////////////////////////////////
 ! TYPE: Interpol2d
@@ -20,40 +23,49 @@ IMPLICIT NONE
 !> @param dfdz - Array that stores couples @f$\frac{\partial F(x_{i},y_{i})}{\partial z}@f$
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 06/Feb/2014
-!> @version 1.0 
+!> @date Feb/2014, Jul/2014
+!> @version 2.0 
 !---------------------------------------------------------------
-TYPE :: Fourier2d
+TYPE,ABSTRACT :: Fourier2d
    INTEGER(KIND=4) :: n
    INTEGER(KIND=4) :: nfunc
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: klist
 CONTAINS
-   PROCEDURE,PUBLIC :: READ => READ_FOURIER2D
-   PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_FOURIER2D
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE :: READ => READ_FOURIER2D
+   PROCEDURE(INTERPOL_FOURIER2D),PUBLIC,DEFERRED :: INTERPOL  ! DEFERRED !!!! take a look to interface
+   PROCEDURE(GET_F_AND_DERIVS_FOURIER2D),PUBLIC,DEFERRED :: GET_F_AND_DERIVS ! DEFERRED !!!! take a look to interface
 END TYPE Fourier2d
+
+ABSTRACT INTERFACE
+   !###########################################################
+   !# SUBROUTINE: INTERPOL_FOURIER2D 
+   !###########################################################
+   !-----------------------------------------------------------
+   SUBROUTINE INTERPOL_FOURIER2D(this,surf,filename)
+      IMPORT Fourier2d
+      IMPORT Surface
+      CLASS(Fourier2d),INTENT(INOUT) :: this
+      TYPE(Surface),INTENT(IN) :: surf
+      CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
+   END SUBROUTINE INTERPOL_FOURIER2D
+   !###########################################################
+   !# SUBROUTINE: GET_F_AND_DERIVS 
+   !###########################################################
+   !-----------------------------------------------------------
+   SUBROUTINE GET_F_AND_DERIVS_FOURIER2D(this,surf,r,v,dvdu)
+      IMPORT Fourier2d
+      IMPORT Surface
+      CLASS(Fourier2d),INTENT(IN):: this
+      TYPE(Surface),INTENT(IN):: surf
+      REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
+      REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
+      REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: dvdu
+   END SUBROUTINE GET_F_AND_DERIVS_FOURIER2D
+END INTERFACE
 !////////////////////////////////////////////////////////////////
 CONTAINS
-!###########################################################
-!# SUBROUTINE: INTERPOL_FOURIER2D 
-!###########################################################
-!> @brief
-!! Dummy subroutine to be overriden
-!-----------------------------------------------------------
-SUBROUTINE INTERPOL_FOURIER2D(this,surf,filename)
-   ! Initial declarations   
-   USE SURFACE_MOD
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier2d),INTENT(INOUT) :: this
-   TYPE(Surface),INTENT(IN) :: surf
-   CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
-   ! Run section
-   WRITE(0,*) "INTERPOL_FOURIER2D ERR: You didn't allocate this variable with the proper type"
-   CALL EXIT(1)
-   RETURN
-END SUBROUTINE INTERPOL_FOURIER2D
 !###########################################################
 !# SUBROUTINE: READ_FOURIER2D 
 !###########################################################

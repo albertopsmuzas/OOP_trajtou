@@ -447,7 +447,7 @@ Definition:
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\mathcal{E}_{i}=\begin{cases}
+\mathcal{E}_{i}^{<8>}=\begin{cases}
 \left\{ \begin{pmatrix}0\\
 0
 \end{pmatrix}\right\}  & \begin{array}{cc}
@@ -560,7 +560,7 @@ i
 \end{pmatrix},\boldsymbol{c}+\begin{pmatrix}k\\
 -i
 \end{pmatrix}\right\}  & \begin{array}{cc}
-\iff & i\in\mathbb{N}^{+}\end{array}
+\iff & i\ge1\end{array}
 \end{cases}
 \]
 
@@ -580,6 +580,82 @@ where
 
 .
  
+\end_layout
+
+\begin_layout Section
+Environment with hexagonal partition of space
+\end_layout
+
+\begin_layout Standard
+Definition:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathcal{E}_{i}^{<6>}=\begin{cases}
+\left\{ \begin{pmatrix}0\\
+0
+\end{pmatrix}\right\}  & \begin{array}{cc}
+\iff & i=0\end{array}\\
+\overset{i-1}{\underset{k=0}{\bigcup}}\left\{ \begin{pmatrix}i\\
+-k
+\end{pmatrix},\begin{pmatrix}-i\\
+k
+\end{pmatrix},\begin{pmatrix}k\\
+-i
+\end{pmatrix},\begin{pmatrix}-k\\
+i
+\end{pmatrix}\right\} \bigcup\left\{ \begin{pmatrix}i\\
+-i
+\end{pmatrix},\begin{pmatrix}-i\\
+i
+\end{pmatrix}\right\}  & \iff i=1\\
+\overset{i-1}{\overset{i-1}{\underset{k=1}{\bigcup}}\left\{ \begin{pmatrix}k\\
+i-k
+\end{pmatrix},\begin{pmatrix}-k\\
+k-i
+\end{pmatrix}\right\} \underset{k=0}{\bigcup}}\left\{ \begin{pmatrix}i\\
+-k
+\end{pmatrix},\begin{pmatrix}-i\\
+k
+\end{pmatrix},\begin{pmatrix}k\\
+-i
+\end{pmatrix},\begin{pmatrix}-k\\
+i
+\end{pmatrix}\right\} \bigcup\left\{ \begin{pmatrix}i\\
+-i
+\end{pmatrix},\begin{pmatrix}-i\\
+i
+\end{pmatrix}\right\}  & \begin{array}{cc}
+\iff & i\end{array}\ge2
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can easily calculate the cardinal of each subset 
+\begin_inset Formula $\mathcal{E}_{i}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\#\mathcal{E}_{i}=\begin{cases}
+1 & \begin{array}{cc}
+\iff & i=0\end{array}\\
+6i & \begin{array}{cc}
+\iff & i\ge1\end{array}
+\end{cases}
+\]
+
+\end_inset
+
+
 \end_layout
 
 \end_body
