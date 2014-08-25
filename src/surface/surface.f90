@@ -1,7 +1,7 @@
 !#########################################################
 ! MODULE SURFACE_MOD
 !
-!> @brief 
+!> @brief
 !! Should contain everything related with periodic 2D surfaces
 !##########################################################
 MODULE SURFACE_MOD
@@ -22,7 +22,7 @@ IMPLICIT NONE
 TYPE,PRIVATE :: Atom_list
 	INTEGER(KIND=4) :: n ! number of atoms in this list
 	CHARACTER(LEN=2) :: alias ! atom name, periodic table
-	REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: atom
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: atom
 END TYPE
 !/////////////////////////////////////////////////////////////////////////////////////
 ! TYPE: Surface
@@ -48,7 +48,7 @@ END TYPE
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 03/Feb/2014
 !> @version 1.0
-! 
+!
 !> @see atom_list
 !-------------------------------------------------------------------------------------
 TYPE Surface
@@ -57,17 +57,17 @@ PRIVATE
    CHARACTER(LEN=30) :: filename
 	LOGICAL :: initialized=.FALSE.
    REAL(KIND=8),PUBLIC,DIMENSION(2) :: s1,s2
-	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx 
+	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx
 	REAL(KIND=8),DIMENSION(2,2) :: cart2surf_mtrx
-	REAL(KIND=8),DIMENSION(2,2) :: surfunit2cart_mtrx 
-	REAL(KIND=8),DIMENSION(2,2) :: cart2surfunit_mtrx 
-	REAL(KIND=8),DIMENSION(2,2) :: recip2cart_mtrx 
-	REAL(KIND=8),DIMENSION(2,2) :: cart2recip_mtrx 
-   INTEGER(KIND=4) :: diff_atoms 
-   TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype 
-	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx 
+	REAL(KIND=8),DIMENSION(2,2) :: surfunit2cart_mtrx
+	REAL(KIND=8),DIMENSION(2,2) :: cart2surfunit_mtrx
+	REAL(KIND=8),DIMENSION(2,2) :: recip2cart_mtrx
+	REAL(KIND=8),DIMENSION(2,2) :: cart2recip_mtrx
+   INTEGER(KIND=4) :: diff_atoms
+   TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype
+	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx
    CHARACTER(LEN=10),PUBLIC :: units
-	REAL(KIND=8),PUBLIC :: norm_s1, norm_s2 
+	REAL(KIND=8),PUBLIC :: norm_s1, norm_s2
    CHARACTER(LEN=4) :: symmlabel
 CONTAINS
    ! Initiallize
@@ -89,7 +89,7 @@ CONTAINS
    PROCEDURE,PUBLIC :: tellsymmlabel => tellsymmlabel_SURFACE
    PROCEDURE,PUBLIC :: tellfilename => tellfilename_SURFACE
 END TYPE
-! MODULE CONTAINS 
+! MODULE CONTAINS
 CONTAINS
 !###########################################################
 !# SUBROUTINE: MOVE_PATTERN_SURFACE
@@ -102,7 +102,7 @@ CONTAINS
 !> @version 1.0
 !-----------------------------------------------------------
 SUBROUTINE MOVE_PATTERN_SURFACE(this,dr)
-   ! Initial declarations   
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(SUrface),INTENT(INOUT):: this
@@ -424,12 +424,12 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
    RETURN
 END SUBROUTINE INITIALIZE_SURFACE
 !###########################################################
-!# FUNCTION: cart2surf 
+!# FUNCTION: cart2surf
 !###########################################################
 ! - Goes from auxiliar cartesian coordinates to surface coordinates
 !-----------------------------------------------------------
-FUNCTION cart2surf_SURFACE(surf,r) 
-   ! Initial declarations   
+FUNCTION cart2surf_SURFACE(surf,r)
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
@@ -445,8 +445,8 @@ END FUNCTION cart2surf_SURFACE
 !###########################################################
 ! - Goes from surface to auxiliar cartesian coordinates
 !-----------------------------------------------------------
-FUNCTION surf2cart_SURFACE(surf,r) 
-   ! Initial declarations   
+FUNCTION surf2cart_SURFACE(surf,r)
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
@@ -458,12 +458,12 @@ FUNCTION surf2cart_SURFACE(surf,r)
    RETURN
 END FUNCTION surf2cart_SURFACE
 !###########################################################
-!# FUNCTION: surfunit2cart 
+!# FUNCTION: surfunit2cart
 !###########################################################
 ! - Goes from unit surface to auxiliar cartesian coordinates
 !-----------------------------------------------------------
-FUNCTION surfunit2cart_SURFACE(surf,r) 
-   ! Initial declarations   
+FUNCTION surfunit2cart_SURFACE(surf,r)
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
@@ -479,8 +479,8 @@ END FUNCTION surfunit2cart_SURFACE
 !###########################################################
 ! - Goes from auxiliar cartesian coordinates to surface coordinates
 !-----------------------------------------------------------
-FUNCTION cart2surfunit_SURFACE(surf,r) 
-   ! Initial declarations   
+FUNCTION cart2surfunit_SURFACE(surf,r)
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
@@ -496,8 +496,8 @@ END FUNCTION cart2surfunit_SURFACE
 !###########################################################
 ! - Goes from auxiliar cartesian to reciprocal space coordinates
 !-----------------------------------------------------------
-FUNCTION cart2recip_SURFACE(surf,r) 
-   ! Initial declarations   
+FUNCTION cart2recip_SURFACE(surf,r)
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN) :: surf
@@ -509,12 +509,12 @@ FUNCTION cart2recip_SURFACE(surf,r)
    RETURN
 END FUNCTION cart2recip_SURFACE
 !###########################################################
-!# FUNCTION: recip2cart 
+!# FUNCTION: recip2cart
 !###########################################################
 ! - Goes from auxiliar cartesian to surface coordinates
 !-----------------------------------------------------------
-FUNCTION recip2cart_SURFACE(surf,r) 
-   ! Initial declarations   
+FUNCTION recip2cart_SURFACE(surf,r)
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface), INTENT(IN) :: surf
@@ -545,7 +545,7 @@ FUNCTION project_unitcell_SURFACE(surf,r)
 	INTEGER :: i ! counters
 	! HEY, HO! LET'S GO !!! ----------------------
    project_unitcell_SURFACE = surf%cart2surf(r)
-	FORALL (i=1:2) 
+	FORALL (i=1:2)
 		aux(i)=dfloat(int(project_unitcell_SURFACE(i),8))
 		project_unitcell_SURFACE(i)=project_unitcell_SURFACE(i)-aux(i)
 	END FORALL

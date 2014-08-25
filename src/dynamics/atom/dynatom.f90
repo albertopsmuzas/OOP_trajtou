@@ -32,6 +32,16 @@ TYPE,EXTENDS(Dynamics) :: Dynatom
    REAL(KIND=8) :: eps
    TYPE(Length) :: zstop, dzstop
    TYPE(Length) :: zscatt,zads,zabs
+   INTEGER(KIND=4),PRIVATE :: wusc=800 ! write unit for scattered trajs
+   INTEGER(KIND=4),PRIVATE :: wupa=801 ! write unit for pathologic trajs
+   INTEGER(KIND=4),PRIVATE :: wuto=802 ! write unit for timed out trajs
+   INTEGER(KIND=4),PRIVATE :: wutr=803 ! write unit for trapped trajs
+   INTEGER(KIND=4),PRIVATE :: wuad=804 ! write unit for adsorbed trajs
+   INTEGER(KIND=4),PRIVATE :: wuab=805 ! write unit for absorbed trajs
+   INTEGER(KIND=4),PRIVATE :: wust=806 ! write unit for stopped trajs
+   INTEGER(KIND=4),PRIVATE :: wutp=807 ! write unit for turning points
+   INTEGER(KIND=4),PRIVATE :: wufo=808 ! write unit for trajectory step by step
+
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_DYNATOM
@@ -194,12 +204,32 @@ SUBROUTINE RUN_DYNATOM(this)
    INTEGER :: i ! counters
    CHARACTER(LEN=20),PARAMETER :: routinename = "RUN_DYNAMICS_ATOMS: "
    ! HEY HO! LET'S GO !!! ------
-   DO i=this%thisinicond%nstart, this%thisinicond%ntraj
+   ! Check files for all traj status
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wusc,"OUTDYN3Dscattered.out","SCATTERED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wupa,"OUTDYN3Dpatologic.out","PATOLOGIC TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wuto,"OUTDYN3Dtimeout.out","TIME-OUT TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wutr,"OUTDYN3Dtrapped.out","TRAPPED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wuad,"OUTDYN3Dadsorbed.out","ADSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wuab,"OUTDYN3Dabsorbed.out","ABSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wust,"OUTDYN3Dstopped.out","STOPPED TRAJS")
+   ! Check turning points file
+   CALL FILE_TURNING_DYNATOM(this%wutp)
+   ! Run trajectories one by one
+   DO i=this%thisinicond%nstart,this%thisinicond%ntraj
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Start trajectory: ",i)
 #endif
       CALL this%DO_DYNAMICS(i)
    END DO
+   ! Closing opened units
+   CLOSE(this%wusc)
+   CLOSE(this%wupa)
+   CLOSE(this%wuto)
+   CLOSE(this%wutr)
+   CLOSE(this%wuad)
+   CLOSE(this%wuab)
+   CLOSE(this%wust)
+   CLOSE(this%wutp)
    RETURN
 END SUBROUTINE RUN_DYNATOM
 !##############################################################
@@ -214,71 +244,29 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
    ! I/O variables
    CLASS(Dynatom),TARGET,INTENT(INOUT) :: this
    INTEGER(KIND=4),INTENT(IN) :: idtraj
-   ! IMPORTANT: units used to write
-   INTEGER(KIND=4),PARAMETER :: wunit1=799,wunit2=789,wunit3=724
    ! Local variables
    INTEGER :: i, cycles ! counters
-   REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
+   REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin,angle
    REAL(KIND=8),DIMENSION(3) :: r0, p0, dummy
    REAL(KIND=8),DIMENSION(6) :: atom_dofs, s, dfdt
    LOGICAL :: maxtime_reached
    LOGICAL :: switch, file_exists, in_list
-   CHARACTER(LEN=21) :: filename_follow
    CHARACTER(LEN=21),PARAMETER :: routinename = "DO_DYNAMICS_DYNATOM: "
-   CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
-   CHARACTER(LEN=10) :: x1
    INTEGER :: control
    CLASS(Dynobject),POINTER:: atomo
    REAL(KIND=8) :: masa
+   ! Some Formats
+10 FORMAT(I7,1X,A10,1X,I4,1X,I5,1X,8(F15.5,1X)) ! Format to print in status files
+11 FORMAT(I7,1X,3(F10.5,1X)) ! Format to print in turning points file
    ! HEY HO!, LET'S GO!!! -------------------------
    atomo => this%thisinicond%trajs(idtraj)
    masa = this%thispes%atomdat(1)%getmass()
-   INQUIRE(FILE="OUTdynamics3d.out",EXIST=file_exists)
-   SELECT CASE(file_exists)
-      CASE(.TRUE.)
-         OPEN(wunit1, FILE="OUTdynamics3d.out",STATUS="old",ACCESS="append")
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Previous output file found: OUTdynamics3d.out")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-      CASE(.FALSE.)
-         OPEN(wunit1,FILE="OUTdynamics3d.out",STATUS="new")
-         WRITE(wunit1,*) "# DYNAMICS RESULTS -----------------------------------------------------------"
-         WRITE(wunit1,*) "# Format: id, status, ireb, ixyboun, Etot, t, X,Y,Z (a.u.), Px,Py,Pz (a.u.)   "
-         WRITE(wunit1,*) "# ----------------------------------------------------------------------------"
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"New output file created: OUTdynamics3d.out")
-         CALL VERBOSE_WRITE(routinename,"Header printed to that file")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-   END SELECT
-   INQUIRE(FILE="OUTturning3d.out",EXIST=file_exists)
-   SELECT CASE(file_exists)
-      CASE(.TRUE.)
-         OPEN(wunit2, FILE="OUTturning3d.out",STATUS="old",ACCESS="append")
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Previous output file found: OUTturning3d.out")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-      CASE(.FALSE.)
-         OPEN(wunit2,FILE="OUTturning3d.out",STATUS="new")
-         WRITE(wunit2,*) "# TURNING POINTS --------------------------------------------"
-         WRITE(wunit2,*) "# Description: positions of scattered atoms at their lowest  "
-         WRITE(wunit2,*) "#              Z value reached during the dynamics.          "
-         WRITE(wunit2,*) "#               XY values, projected into IWS cell           "
-         WRITE(wunit2,*) "# Format: id, X,Y,Z (a.u.)                                   "
-         WRITE(wunit2,*) "# -----------------------------------------------------------"
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"New output file created: OUTturning3d.out")
-         CALL VERBOSE_WRITE(routinename,"Header printed to that file")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-   END SELECT
+   ! Check if there are trajectories fo follow step by step
    in_list = .FALSE.
    SELECT CASE(this%nfollow)
-      CASE(0)
+      CASE(0) ! Doh!, there ain't trajs to follow, continue with normal dynamics
          ! do nothing
-      CASE DEFAULT
+      CASE DEFAULT ! Ohh some trajs to follow
          DO i=1,this%nfollow
             SELECT CASE(this%followtraj(i)==idtraj)
                CASE(.TRUE.)
@@ -288,22 +276,18 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
                   ! do nothing
             END SELECT
          END DO
+         ! Check if this traj is in list
          SELECT CASE(in_list)
-            CASE(.TRUE.)
-               WRITE(x1,format_string) idtraj
-               filename_follow = 'OUTtraj'//TRIM(x1)//'.out'
-               OPEN(wunit3,FILE=filename_follow,STATUS="replace")
-               WRITE(wunit3,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
-               WRITE(wunit3,*) "# Format: t, dt, Etot,Enorm,Pot(a.u) X,Y,Z(a.u.) Px,Py,Pz (a.u.)  "
-               WRITE(wunit3,*) "# First and last position are not printed here                    "
-               WRITE(wunit3,*) "# You can find them in INdynamics3d.out and INinicond3d.out       "
-               WRITE(wunit3,*) "# ----------------------------------------------------------------"
+            CASE(.TRUE.) ! Follow that traj!
+               CALL FILE_FOLLOWTRAJ_DYNATOM(this%wufo,idtraj)
 #ifdef DEBUG
                CALL VERBOSE_WRITE(routinename,"Trajectory followed: ",idtraj)
-               CALL VERBOSE_WRITE(routinename,"File created: ",filename_follow)
 #endif
-            CASE(.FALSE.)
-               ! do nothing
+            CASE(.FALSE.) ! skip dynamics, there may be other trajs to follow
+#ifdef DEBUG
+               CALL VERBOSE_WRITE(routinename,"Trajectory skipped: ",idtraj) 
+#endif
+               RETURN
          END SELECT
    END SELECT
    cycles=0 
@@ -410,7 +394,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
       CASE(.FALSE.)
          ! do nothing
       END SELECT
-      ! Check  bouncing points in Z direction (Z- Turning point)
+      ! Check  bouncing points in Z direction (Z-Turning point)
       SELECT CASE((atomo%p(3) < 0.D0).AND.(atom_dofs(6) > 0.D0))
          CASE(.TRUE.)
             atomo%ireb = atomo%ireb +1
@@ -447,6 +431,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%r(1:3) = atom_dofs(1:3)
             atomo%p(1:3) = atom_dofs(4:6)
             atomo%E = E
+            WRITE(this%wust,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
             EXIT
         CASE(.FALSE.)
            ! do nothing, next switch
@@ -457,8 +442,9 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%r(1:3)=atom_dofs(1:3)
             atomo%p(1:3)=atom_dofs(4:6)
             atomo%E=E
-            atomo%turning_point(1:2) = this%thispes%surf%project_iwscell(atomo%turning_point(1:2))
-            WRITE(wunit2,'(I7,1X,3(F10.5,1X))') idtraj, atomo%turning_point(:)
+            atomo%turning_point(1:2) = this%thispes%surf%project_unitcell(atomo%turning_point(1:2))
+            WRITE(this%wusc,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+            WRITE(this%wutp,11) idtraj,atomo%turning_point(:)
             EXIT
          CASE(.FALSE.)
             ! do nothing next switch
@@ -469,6 +455,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%r(1:3) = atom_dofs(1:3)
             atomo%p(1:3) = atom_dofs(4:6)
             atomo%E = E
+            WRITE(this%wuab,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -479,6 +466,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%r(1:3) = atom_dofs(1:3)
             atomo%p(1:3) = atom_dofs(4:6)
             atomo%E = E
+            WRITE(this%wuad,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -489,6 +477,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%r(1:3) = atom_dofs(1:3)
             atomo%p(1:3) = atom_dofs(4:6)
             atomo%E = E
+            WRITE(this%wutr,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -499,6 +488,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%r(1:3) = atom_dofs(1:3)
             atomo%p(1:3) = atom_dofs(4:6)
             atomo%E = E
+            WRITE(this%wuto,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
             EXIT
          CASE(.FALSE.)
             !do nothing next switch
@@ -509,6 +499,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             atomo%r(1:3) = atom_dofs(1:3)
             atomo%p(1:3) = atom_dofs(4:6)
             atomo%E = E
+            WRITE(this%wupa,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -521,30 +512,157 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             dt = dt_next
             SELECT CASE((this%nfollow.NE.0).AND.(in_list))
                CASE(.TRUE.)
-                  WRITE(wunit3,*) t, dt_did, atomo%E,(atomo%p(3)**2.D0)/(2.D0*masa), v, atomo%r(:), atomo%p(:) 
+                  WRITE(this%wufo,*) t,dt_did,atomo%E,(atomo%p(3)**2.D0)/(2.D0*masa),v,atomo%r(:),atomo%p(:) 
                CASE(.FALSE.)
                   ! do nothing
             END SELECT
             CYCLE
          CASE(.FALSE.)
-            WRITE(0,*) "D=_DYNAMICS_DYNATOM ERR: Strange trajectory conditions. Switchs cannot classify this traj"
+            WRITE(0,*) "DO_DYNAMICS_DYNATOM ERR: Switches failed to classify this traj"
             CALL EXIT(1)
       END SELECT
    END DO
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Writing in dynamics.out")
-#endif
-   WRITE(wunit1,'(I7,1X,A10,1X,I4,1X,I5,1X,8(F15.5,1X))') idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
-   CLOSE(wunit1)
-   CLOSE(wunit2)
    SELECT CASE(this%nfollow/=0)
       CASE(.TRUE.)
-         CLOSE(wunit3)
+         CLOSE(this%wufo)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    RETURN
 END SUBROUTINE DO_DYNAMICS_DYNATOM
+!###########################################################
+!# SUBROUTINE: FILE_TRAJSTATUS_DYNATOM
+!###########################################################
+!> @brief
+!! If file exists, open unit in append mode, else, create the file
+!! and let it open
+!
+!> @param[in] wunit  - unit of the file to be opened
+!> @param[in] filename  - name of the file
+!> @param[in] title - some short title to append at the topmost line of the file
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Aug/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE FILE_TRAJSTATUS_DYNATOM(wunit,filename,title)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: wunit
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CHARACTER(LEN=*),INTENT(IN) :: title
+   ! Local variables
+   LOGICAL :: file_exists
+   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_TRAJSTATUS_DYNATOM "
+   ! Run section
+   INQUIRE(FILE=filename,EXIST=file_exists)
+   SELECT CASE(file_exists)
+      CASE(.TRUE.)
+         OPEN(wunit, FILE=filename,STATUS="old",ACCESS="append")
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Previous file found: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+      CASE(.FALSE.)
+         OPEN(wunit,FILE=filename,STATUS="new")
+         WRITE(wunit,*) "# ***** ",title," *****"
+         WRITE(wunit,*) "# Format: id/status/ireb/ixyboun/Etot(a.u.)/t(a.u.)/X,Y,Z(a.u.)/Px,Py,Pz(a.u.)"
+         WRITE(wunit,*) "# -----------------------------------------------------------"
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Header printed")
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+   END SELECT
+   RETURN
+END SUBROUTINE FILE_TRAJSTATUS_DYNATOM
+!###########################################################
+!# SUBROUTINE: FILE_TURNING_DYNATOM
+!###########################################################
+!> @brief
+!! If  OUTDYN3Dturning.out exists, open unit in append mode, else, create the file
+!! and let it open.
+!
+!> @param[in] wunit  - unit of the file to be opened
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Aug/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE FILE_TURNING_DYNATOM(wunit)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: wunit
+   ! Local variables
+   CHARACTER(LEN=19),PARAMETER :: filename="OUTDYN3Dturning.out"
+   CHARACTER(LEN=34),PARAMETER :: title="TURNING POINTS FOR SCATTERED TRAJS"
+   LOGICAL :: file_exists
+   CHARACTER(LEN=21),PARAMETER :: routinename="FILE_TURNING_DYNATOM "
+   ! Run section
+   INQUIRE(FILE=filename,EXIST=file_exists)
+   SELECT CASE(file_exists)
+      CASE(.TRUE.)
+         OPEN(wunit, FILE=filename,STATUS="old",ACCESS="append")
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Previous file found: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+      CASE(.FALSE.)
+         OPEN(wunit,FILE=filename,STATUS="new")
+         WRITE(wunit,*) "# ***** ",title," *****"
+         WRITE(wunit,*) "# Description: positions of scattered atoms at their lowest  "
+         WRITE(wunit,*) "#              Z value reached during the dynamics. X and Y  "
+         WRITE(wunit,*) "#              values are projected in the unit cell.        "
+         WRITE(wunit,*) "# Format: id/X,Y,Z(a.u.)                                   "
+         WRITE(wunit,*) "# -----------------------------------------------------------"
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Header printed")
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+   END SELECT
+   RETURN
+END SUBROUTINE FILE_TURNING_DYNATOM
+!###########################################################
+!# SUBROUTINE: FILE_FOLLOWTRAJ_DYNATOM
+!###########################################################
+!> @brief
+!! Open file OUTDYN3D'trajid'.out in replace mode. The unit is
+!! let opened
+!
+!> @param[in] wunit  - integer(kind=4): unit of the file to be opened
+!> @param[in] idtraj - integer(kind=4): id of the trajectory
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Aug/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE FILE_FOLLOWTRAJ_DYNATOM(wunit,idtraj)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: wunit,idtraj
+   ! Local variables
+   CHARACTER(LEN=10) :: idstring
+   CHARACTER(LEN=26) :: filename
+   CHARACTER(LEN=24),PARAMETER :: title="TIME EVOLUTION OF A TRAJ"
+   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_FOLLOWTRAJ_DYNATOM "
+   ! Run section
+   WRITE(idstring,'(I10.10)') idtraj
+   filename='OUTDYN3Dtraj'//trim(idstring)//'.out'
+   OPEN(wunit,FILE=filename,STATUS="replace",ACTION="write")
+   WRITE(wunit,*) "# ***** ",title," *****"
+   WRITE(wunit,*) "# Format: t(a.u.)/dt(a.u.)/Etot(a.u.)/Enorm(a.u.)/Pot(a.u.)/X,Y,Z(a.u.)/Px,Py,Pz(a.u.)"
+   WRITE(wunit,*) "# ----------------------------------------------------------------"
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
+   CALL VERBOSE_WRITE(routinename,"Header printed")
+   CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+   RETURN
+END SUBROUTINE FILE_FOLLOWTRAJ_DYNATOM
 !###############################################################
 !# SUBROUTINE : TIME_DERIVS_DYNATOM ########################
 !###############################################################
