@@ -2,8 +2,6 @@
 ! MODULE: DYNATOM_MOD
 !> @brief
 !! Provides tools to run dynamics on atoms
-!> @todo
-!! - Generalize the use of different PES, not only CRP3D
 !##########################################################
 MODULE DYNATOM_MOD
    USE DYNAMICS_MOD

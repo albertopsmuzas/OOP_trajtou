@@ -1,9 +1,7 @@
 !##########################################################
 ! MODULE: DYNDIATOMIC_MOD
 !> @brief
-!! Provides tools to run dynamics on atoms
-!> @todo
-!! - Generalize the use of different PES, not only CRP3D
+!! Provides tools to run dynamics on diatomic molecules
 !##########################################################
 MODULE DYNDIATOMIC_MOD
    USE DYNAMICS_MOD
@@ -32,6 +30,16 @@ TYPE,EXTENDS(Dynamics) :: DYNDIATOMIC
    REAL(KIND=8) :: eps
    TYPE(Length) :: zstop, dzstop
    TYPE(Length) :: zscatt,zads,zabs,maxr
+   INTEGER(KIND=4),PRIVATE :: wusc=900 ! write unit for scattered trajs
+   INTEGER(KIND=4),PRIVATE :: wupa=901 ! write unit for pathologic trajs
+   INTEGER(KIND=4),PRIVATE :: wuto=902 ! write unit for timed out trajs
+   INTEGER(KIND=4),PRIVATE :: wutr=903 ! write unit for trapped trajs
+   INTEGER(KIND=4),PRIVATE :: wuad=904 ! write unit for adsorbed trajs
+   INTEGER(KIND=4),PRIVATE :: wuab=905 ! write unit for absorbed trajs
+   INTEGER(KIND=4),PRIVATE :: wust=906 ! write unit for stopped trajs
+   INTEGER(KIND=4),PRIVATE :: wutp=907 ! write unit for turning points
+   INTEGER(KIND=4),PRIVATE :: wufo=908 ! write unit for trajectory step by step
+   INTEGER(KIND=4),PRIVATE :: wure=909 ! write unit for reacted trajs
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_DYNDIATOMIC
@@ -188,7 +196,8 @@ END SUBROUTINE INITIALIZE_DYNDIATOMIC
 !# SUBROUTINE: RUN_DYNDIATOMIC #####################################
 !###############################################################
 !> @brief
-!! Launch trajectories as said in @b inicondat variable
+!! Launch trajectories as said in @b inicondat variable.
+!! Output files are created now.
 !---------------------------------------------------------------
 SUBROUTINE RUN_DYNDIATOMIC(this)
    IMPLICIT NONE
@@ -198,12 +207,29 @@ SUBROUTINE RUN_DYNDIATOMIC(this)
    INTEGER :: i ! counters
    CHARACTER(LEN=17),PARAMETER :: routinename = "RUN_DYNDIATOMIC: "
    ! HEY HO! LET'S GO !!! ------
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wusc,"OUTDYN6Dscattered.out","SCATTERED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wupa,"OUTDYN6Dpatologic.out","PATOLOGIC TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wuto,"OUTDYN6Dtimeout.out","TIME-OUT TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wutr,"OUTDYN6Dtrapped.out","TRAPPED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wuad,"OUTDYN6Dadsorbed.out","ADSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wuab,"OUTDYN6Dabsorbed.out","ABSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wust,"OUTDYN6Dstopped.out","STOPPED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wure,"OUTDYN6Dreacted.out","REACTED TRAJS")
    DO i=this%thisinicond%nstart, this%thisinicond%ntraj
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Start trajectory: ",i)
 #endif
       CALL this%DO_DYNAMICS(i)
    END DO
+   CLOSE(this%wusc)
+   CLOSE(this%wupa)
+   CLOSE(this%wuto)
+   CLOSE(this%wutr)
+   CLOSE(this%wuad)
+   CLOSE(this%wuab)
+   CLOSE(this%wust)
+   CLOSE(this%wutp)
+   CLOSE(this%wure)
    RETURN
 END SUBROUTINE RUN_DYNDIATOMIC
 !##############################################################
@@ -218,8 +244,6 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    ! I/O variables
    CLASS(DYNDIATOMIC),TARGET,INTENT(INOUT) :: this
    INTEGER(KIND=4),INTENT(IN) :: idtraj
-   ! IMPORTANT: units used to write
-   INTEGER(KIND=4),PARAMETER :: wunit1=799,wunit2=789,wunit3=724
    ! Local variables
    INTEGER :: i, cycles ! counters
    REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
@@ -233,64 +257,24 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    CHARACTER(LEN=27) :: filename_follow
    CHARACTER(LEN=21),PARAMETER :: routinename = "DO_DYNAMICS_DYNDIATOMIC: "
    CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
-   CHARACTER(LEN=10) :: x1
    INTEGER :: control
    CLASS(Dynobject),POINTER:: molecule
    REAL(KIND=8) :: masa
    REAL(KIND=8) :: mu
+   ! Some formats
+10 FORMAT(I7,1X,A10,1X,I5,1X,I5,1X,15(F15.5,1X)) ! format to print in status files
+11 FORMAT(I7,1X,6(F10.5,1X)) ! format to print in turning points file
    ! HEY HO!, LET'S GO!!! -------------------------
    molecule => this%thisinicond%trajs(idtraj)
    ma=this%thispes%atomdat(1)%getmass()
    mb=this%thispes%atomdat(2)%getmass()
    masa = ma+mb
    mu = ma*mb/masa
-   INQUIRE(FILE="OUTdynamics6d.MOLEC.out",EXIST=file_exists)
-   SELECT CASE(file_exists)
-      CASE(.TRUE.)
-         OPEN(wunit1, FILE="OUTdynamics6d.MOLEC.out",STATUS="old",ACCESS="append")
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Previous output file found: OUTdynamics6d.MOLEC.out")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-      CASE(.FALSE.)
-         OPEN(wunit1,FILE="OUTdynamics6d.MOLEC.out",STATUS="new")
-         WRITE(wunit1,*) "# DYNAMICS RESULTS MOLECULAR COORDINATES -------------------------------------"
-         WRITE(wunit1,*) "# Format: id, status, ireb, ixyboun, Etot, Eint, &
-            &t, X,Y,Z,R,THETA,PHI (a.u.), Px,Py,Pz,Pr,Ptheta,Pphi (a.u.)"
-         WRITE(wunit1,*) "# ----------------------------------------------------------------------------"
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"New output file created: OUTdynamics6d.MOLEC.out")
-         CALL VERBOSE_WRITE(routinename,"Header printed to that file")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-   END SELECT
-   INQUIRE(FILE="OUTturning6d.MOLEC.out",EXIST=file_exists)
-   SELECT CASE(file_exists)
-      CASE(.TRUE.)
-         OPEN(wunit2, FILE="OUTturning6d.MOLEC.out",STATUS="old",ACCESS="append")
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Previous output file found: OUTturning6d.MOLEC.out")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-      CASE(.FALSE.)
-         OPEN(wunit2,FILE="OUTturning6d.MOLEC.out",STATUS="new")
-         WRITE(wunit2,*) "# TURNING POINTS MOLECULAR COORDINATES ---------------------"
-         WRITE(wunit2,*) "# Description: positions of scattered atoms at their lowest "
-         WRITE(wunit2,*) "#              Z value reached during the dynamics.         "
-         WRITE(wunit2,*) "#              XY values, projected into IWS cell           "
-         WRITE(wunit2,*) "# Format: id, X,Y,Z,R,THETA,PHI (a.u.)                      "
-         WRITE(wunit2,*) "# ----------------------------------------------------------"
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"New output file created: OUTturning6d.MOLEC.out")
-         CALL VERBOSE_WRITE(routinename,"Header printed to that file")
-         CALL VERBOSE_WRITE(routinename,"Tajectories will be added to this file")
-#endif
-   END SELECT
    in_list = .FALSE.
    SELECT CASE(this%nfollow)
-      CASE(0)
+   CASE(0) ! Doh! there ain't trajs to follow, continue with usual dynamics
          ! do nothing
-      CASE DEFAULT
+      CASE DEFAULT ! Oh! some trajs to follow
          DO i=1,this%nfollow
             SELECT CASE(this%followtraj(i)==idtraj)
                CASE(.TRUE.)
@@ -300,23 +284,18 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
                   ! do nothing
             END SELECT
          END DO
+         ! Check if traj is in follow list
          SELECT CASE(in_list)
             CASE(.TRUE.)
-               WRITE(x1,format_string) idtraj
-               filename_follow = 'OUTtraj'//TRIM(x1)//'.MOLEC.out'
-               OPEN(wunit3,FILE=filename_follow,STATUS="replace")
-               WRITE(wunit3,*) "# TIME EVOLUTION FOR A TRAJECTORY --------------------------------"
-               WRITE(wunit3,*) "# Format: t,dt,Etot,Enorm,Eint,Pot,X,Y,Z,R,THETA,PHI,&
-                  &Px,Py,Pz,Pr,Ptheta,Pphi,Xa,Ya,Za,Xb,Yb,Zb"
-               WRITE(wunit3,*) "# First and last position are not printed here                    "
-               WRITE(wunit3,*) "# You can find them at OUTdynamics6d.out and initial conditions output file"
-               WRITE(wunit3,*) "# ----------------------------------------------------------------"
+               CALL FILE_FOLLOWTRAJ_DYNDIATOMIC(this%wufo,idtraj)
 #ifdef DEBUG
                CALL VERBOSE_WRITE(routinename,"Trajectory followed: ",idtraj)
-               CALL VERBOSE_WRITE(routinename,"File created: ",filename_follow)
 #endif
-            CASE(.FALSE.)
-               ! do nothing
+            CASE(.FALSE.) ! skip dynamics, there may be other trajs to follow
+#ifdef DEBUG
+               CALL VERBOSE_WRITE(routinename,"Trajectory skipped: ",idtraj) 
+#endif
+               RETURN
          END SELECT
    END SELECT
    cycles=0 
@@ -472,6 +451,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E = E
             molecule%Eint = Eint
             molecule%Ecm = Ecm
+            WRITE(this%wust,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
             EXIT
         CASE(.FALSE.)
            ! do nothing, next switch
@@ -484,8 +465,10 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E=E
             molecule%Eint=Eint
             molecule%Ecm=Ecm
-            molecule%turning_point(1:2) = this%thispes%surf%project_iwscell(molecule%turning_point(1:2))
-            WRITE(wunit2,'(I7,1X,6(F10.5,1X))') idtraj, molecule%turning_point(:)
+            molecule%turning_point(1:2) = this%thispes%surf%project_unitcell(molecule%turning_point(1:2))
+            WRITE(this%wusc,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
+            WRITE(this%wutp,11) idtraj,molecule%turning_point(:)
             EXIT
          CASE(.FALSE.)
             ! do nothing next switch
@@ -498,8 +481,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E=E
             molecule%Eint=Eint
             molecule%Ecm=Ecm
-            molecule%turning_point(1:2) = this%thispes%surf%project_iwscell(molecule%turning_point(1:2))
-            WRITE(wunit2,'(I7,1X,6(F10.5,1X))') idtraj, molecule%turning_point(:)
+            WRITE(this%wure,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
             EXIT
          CASE(.FALSE.)
             ! do nothing next switch
@@ -512,6 +495,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E = E
             molecule%Eint =Eint
             molecule%Ecm =Ecm
+            WRITE(this%wuab,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -524,6 +509,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E = E
             molecule%Eint = Eint
             molecule%Ecm = Ecm
+            WRITE(this%wuad,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -536,6 +523,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E = E
             molecule%Eint = Eint
             molecule%Ecm = Ecm
+            WRITE(this%wutr,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -548,6 +537,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E = E
             molecule%Eint = Eint
             molecule%Ecm = Ecm
+            WRITE(this%wuto,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
             EXIT
          CASE(.FALSE.)
             !do nothing next switch
@@ -560,6 +551,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E = E
             molecule%Eint = Eint
             molecule%Ecm = Ecm
+            WRITE(this%wupa,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
+               molecule%E,molecule%Eint,t,molecule%r,molecule%p
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -575,32 +568,163 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             SELECT CASE((this%nfollow.NE.0).AND.(in_list))
                CASE(.TRUE.)
                   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecule%r,atomiccoord)
-                  WRITE(wunit3,*) t,dt_did,molecule%E,(molecule%p(3)**2.D0)/(2.D0*masa),&
+                  WRITE(this%wufo,*) t,dt_did,molecule%E,(molecule%p(3)**2.D0)/(2.D0*masa),&
                      molecule%Eint,v,molecule%r(:),molecule%p(:),atomiccoord
                CASE(.FALSE.)
                   ! do nothing
             END SELECT
             CYCLE
          CASE(.FALSE.)
-            WRITE(0,*) "D=_DYNAMICS_DYNDIATOMIC ERR: Strange trajectory conditions. Switchs cannot classify this traj"
+            WRITE(0,*) "DO_DYNAMICS_DYNDIATOMIC ERR: Strange trajectory conditions. Switchs cannot classify this traj"
             CALL EXIT(1)
       END SELECT
    END DO
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Writing in dynamics.out")
 #endif
-   WRITE(wunit1,'(I7,1X,A10,1X,I5,1X,I5,1X,15(F15.5,1X))') idtraj,molecule%stat,molecule%ireb,&
-      molecule%ixyboun,molecule%E,molecule%Eint,t,molecule%r,molecule%p
-   CLOSE(wunit1)
-   CLOSE(wunit2)
    SELECT CASE(this%nfollow/=0)
       CASE(.TRUE.)
-         CLOSE(wunit3)
+         CLOSE(this%wufo)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    RETURN
 END SUBROUTINE DO_DYNAMICS_DYNDIATOMIC
+!###########################################################
+!# SUBROUTINE: FILE_TRAJSTATUS_DYNDIATOMIC
+!###########################################################
+!> @brief
+!! If file exists, open unit in append mode, else, create the file
+!! and let it open
+!
+!> @param[in] wunit  - unit of the file to be opened
+!> @param[in] filename  - name of the file
+!> @param[in] title - some short title to append at the topmost line of the file
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Aug/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE FILE_TRAJSTATUS_DYNDIATOMIC(wunit,filename,title)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: wunit
+   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CHARACTER(LEN=*),INTENT(IN) :: title
+   ! Local variables
+   LOGICAL :: file_exists
+   CHARACTER(LEN=28),PARAMETER :: routinename="FILE_TRAJSTATUS_DYNDIATOMIC "
+   ! Run section
+   INQUIRE(FILE=filename,EXIST=file_exists)
+   SELECT CASE(file_exists)
+      CASE(.TRUE.)
+         OPEN(wunit, FILE=filename,STATUS="old",ACCESS="append")
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Previous file found: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+      CASE(.FALSE.)
+         OPEN(wunit,FILE=filename,STATUS="new")
+         WRITE(wunit,*) "# ***** ",title," *****"
+         WRITE(wunit,*) "# Format: id/status/ireb/ixyboun/Etot(a.u.)/Eint(a.u.)/&
+            &t(a.u.)/X,Y,Z,R(a.u.)/THETA,PHI(rad)/Px,Py,Pz,Pr,Ptheta,Pphi(a.u.)"
+         WRITE(wunit,*) "# -----------------------------------------------------------"
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Header printed")
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+   END SELECT
+   RETURN
+END SUBROUTINE FILE_TRAJSTATUS_DYNDIATOMIC
+!###########################################################
+!# SUBROUTINE: FILE_TURNING_DYNDIATOMIC
+!###########################################################
+!> @brief
+!! If  OUTDYN3Dturning.out exists, open unit in append mode, else, create the file
+!! and let it open.
+!
+!> @param[in] wunit  - unit of the file to be opened
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Aug/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE FILE_TURNING_DYNDIATOMIC(wunit)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: wunit
+   ! Local variables
+   CHARACTER(LEN=19),PARAMETER :: filename="OUTDYN6Dturning.out"
+   CHARACTER(LEN=34),PARAMETER :: title="TURNING POINTS FOR SCATTERED TRAJS"
+   LOGICAL :: file_exists
+   CHARACTER(LEN=25),PARAMETER :: routinename="FILE_TURNING_DYNDIATOMIC "
+   ! Run section
+   INQUIRE(FILE=filename,EXIST=file_exists)
+   SELECT CASE(file_exists)
+      CASE(.TRUE.)
+         OPEN(wunit, FILE=filename,STATUS="old",ACCESS="append")
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Previous file found: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+      CASE(.FALSE.)
+         OPEN(wunit,FILE=filename,STATUS="new")
+         WRITE(wunit,*) "# ***** ",title," *****"
+         WRITE(wunit,*) "# Description: positions of molecules at their lowest"
+         WRITE(wunit,*) "#              Z value reached during the dynamics. X and Y"
+         WRITE(wunit,*) "#              values are projected inside the unit cell."
+         WRITE(wunit,*) "# Format: id/X,Y,Z,R(a.u.)/THETA,PHI(rad)"
+         WRITE(wunit,*) "# -----------------------------------------------------------"
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
+         CALL VERBOSE_WRITE(routinename,"Header printed")
+         CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+   END SELECT
+   RETURN
+END SUBROUTINE FILE_TURNING_DYNDIATOMIC
+!###########################################################
+!# SUBROUTINE: FILE_FOLLOWTRAJ_DYNDIATOMIC
+!###########################################################
+!> @brief
+!! Open file OUTDYN6D'trajid'.out in replace mode. The unit is
+!! let opened
+!
+!> @param[in] wunit  - integer(kind=4): unit of the file to be opened
+!> @param[in] idtraj - integer(kind=4): id of the trajectory
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Aug/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE FILE_FOLLOWTRAJ_DYNDIATOMIC(wunit,idtraj)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: wunit,idtraj
+   ! Local variables
+   CHARACTER(LEN=10) :: idstring
+   CHARACTER(LEN=26) :: filename
+   CHARACTER(LEN=24),PARAMETER :: title="TIME EVOLUTION OF A TRAJ"
+   CHARACTER(LEN=28),PARAMETER :: routinename="FILE_FOLLOWTRAJ_DYNDIATOMIC "
+   ! Run section
+   WRITE(idstring,'(I10.10)') idtraj
+   filename='OUTDYN6Dtraj'//trim(idstring)//'.out'
+   OPEN(wunit,FILE=filename,STATUS="replace",ACTION="write")
+   WRITE(wunit,*) "# ***** ",title," *****"
+   WRITE(wunit,*) "# Format: t(a.u.)/dt(a.u.)/Etot,Enorm,Eint,Pot(a.u.)/X,Y,Z,R(a.u.)/THETA,PHI(rad)/&
+      &Px,Py,Pz,Pr,Ptheta,Pphi(a.u.)/Xa,Ya,Za,Xb,Yb,Zb(a.u.)"
+   WRITE(wunit,*) "# ----------------------------------------------------------------"
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
+   CALL VERBOSE_WRITE(routinename,"Header printed")
+   CALL VERBOSE_WRITE(routinename,"Appending info to this file")
+#endif
+   RETURN
+END SUBROUTINE FILE_FOLLOWTRAJ_DYNDIATOMIC
 !###############################################################
 !# SUBROUTINE : TIME_DERIVS_DYNDIATOMIC ########################
 !###############################################################
