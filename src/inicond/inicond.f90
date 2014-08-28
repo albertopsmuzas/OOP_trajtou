@@ -62,8 +62,8 @@ END INTERFACE
 !> @param kind
 !> @param input_file - Input file
 !> @param output_file - Output file
-!> @param ntraj - Number of trajectories
-!> @param nstart - Initial trajectory
+!> @param ntraj - Final trajectory id
+!> @param nstart - Initial trajectory id
 !> @param seed - Allocatable integer array to feed random functions
 !-------------------------------------------------------------
 TYPE,ABSTRACT :: Inicond

@@ -123,7 +123,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
 	CALL VERBOSE_WRITE(routinename, "Conic F: ", this%conic(6))
 #endif
 	! operations
-	OPEN(11,FILE="OUTallowedpeaks.out", STATUS="replace")
+	OPEN(11,FILE="OUTANA3Dallowedpeaks.out",STATUS="replace")
 	WRITE(11,*) "# ----- ALLOWED PEAKS---------------------------------------"
 	WRITE(11,*) "# Format: id, order, n, m, Psi(rad), Phi(rad), Theta_out(rad)   "
 	WRITE(11,*) "#-----------------------------------------------------------"
@@ -250,7 +250,8 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
 	! I/O variables
 	CLASS(Allowed_peaksCRP3D),INTENT(INOUT):: this
 	! Local variables
-	INTEGER(KIND=4) :: lines
+	INTEGER(KIND=4) :: tottrajs ! total number of trajs
+   INTEGER(KIND=4) :: totscatt ! total number of scattered trajs
 	INTEGER(KIND=4) :: id
 	INTEGER(KIND=4) :: dummy_int
 	INTEGER(KIND=4) :: i,j ! counters
@@ -282,11 +283,11 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
 	to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)
 	to_rec_space(2,2) = b*DSIN(gamma)/(2.D0*PI)
 	!---------
-   OPEN(12,FILE="OUTmappingpeaks.out",STATUS="replace")
-   WRITE(12,*) "#·-------- MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS ----------"
-   WRITE(12,*) "# Format: Trajectory id, ----> , Allowed peak id"
-   WRITE(12,*) "#----------------------------------------------------------------"
-   OPEN(11,FILE="OUTdynamics3d.out",STATUS="old")
+   OPEN(12,FILE="OUTANA3Dmappingpeaks.out",STATUS="replace")
+   WRITE(12,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
+   WRITE(12,*) "# Format: traj id/ ----> /peak id"
+   WRITE(12,*) "# ----------------------------------------------------------------"
+   OPEN(11,FILE="OUTDYN3Dscattered.out",STATUS="old")
    READ(11,*) ! dummy line
    READ(11,*) ! dummy line
    READ(11,*) ! dummy line
@@ -299,7 +300,6 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
          CASE(.TRUE.)
             ! do nothing
          CASE(.FALSE.)
-            WRITE(*,*) "ASSIGN_PEAKS_TO_TRAJS: EOF reached"
             EXIT
       END SELECT
       IF (stat.EQ."Scattered") THEN
@@ -316,24 +316,30 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
          END DO
       END IF
    END DO
-         lines=i-1
+   totscatt=i-1
+   tottrajs=this%inicond%ntraj-this%inicond%nstart+1
+   WRITE(*,*) "==========================================================="
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: total trajs: ",tottrajs
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: scattered trajs: ",totscatt
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",totscatt/tottrajs
+   WRITE(*,*) "==========================================================="
 	REWIND(12)
 	READ(12,*) ! dummy line
 	READ(12,*) ! dummy line
 	READ(12,*) ! dummy line
-	DO i=1,lines
-		READ(12,*) dummy_int, stat, id
-		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/lines
+	DO i=1,totscatt
+		READ(12,*) dummy_int,stat,id
+		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/tottrajs
 	END DO
 	CLOSE(12)
 	CLOSE(11)
-	OPEN(13,FILE="OUTseenpeaks.out",STATUS = "replace") ! re-write allowed peaks file with probabilities printed
-	WRITE(13,*) "# ----- ALLOWED PEAKS---------------------------------------"
-	WRITE(13,*) "# Format: id, order, n, m, Psi(rad), Phi(rad), Theta_out(rad), Prob"
-	WRITE(13,*) "#-----------------------------------------------------------"
+	OPEN(13,FILE="OUTANA3Dseenpeaks.out",STATUS = "replace") ! re-write allowed peaks file with probabilities printed
+	WRITE(13,*) "# ***** ALLOWED PEAKS *****"
+	WRITE(13,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
+	WRITE(13,*) "# -----------------------------------------------------------"
 	DO i=1, SIZE(this%peaks)
 		IF (this%peaks(i)%prob.NE.0.D0) THEN
-			WRITE(13,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2), &
+			WRITE(13,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2),&
 				    this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
 		END IF
 	END DO
@@ -402,11 +408,11 @@ SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D(this)
    beta=this%inicond%vpar_angle%getvalue()
    mtrx(1,:)=[dcos(beta),dsin(beta)]
    mtrx(2,:)=[-dsin(beta),dcos(beta)]
-   OPEN(12,FILE="OUTexit_momenta_and_angles.out",STATUS="replace")
-   WRITE(12,*) "# XY EXIT ANGLES ----------------------------------------------"
-   WRITE(12,*) "# Format: traj id, Px,Py,Pz(a.u.) Psi,Theta,theta_{out}(rad)"
-   WRITE(12,*) "#--------------------------------------------------------------"
-   OPEN(11,FILE="OUTdynamics3d.out",STATUS="old")
+   OPEN(12,FILE="OUTANA3Dfinalpandangles.out",STATUS="replace")
+   WRITE(12,*) "# ***** FINAL MOMENTA AND EXIT ANGLES *****"
+   WRITE(12,*) "# Format: id/Ppara,Pperp,Pnormal(a.u.)/Azimuthal,Polar,Deflection(rad)"
+   WRITE(12,*) "#---------------------------------------------------------------------"
+   OPEN(11,FILE="OUTDYN3Dscattered.out",STATUS="old")
    READ(11,*) ! Dummy line
    READ(11,*) ! Dummy line
    READ(11,*) ! Dummy line
