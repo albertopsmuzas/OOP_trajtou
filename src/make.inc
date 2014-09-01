@@ -5,8 +5,8 @@
 #LF = $(F) -I ../mod -O2
 
 F = gfortran
-CF = $(F) -cpp -J ../mod -I ../mod -c -Wall -O2
-LF = $(F) -cpp -I ../mod -Wall -O2
+CF = $(F) -cpp -J ../mod -I ../mod -c -Wall -Wtabs -O2
+LF = $(F) -cpp -I ../mod -Wall -Wtabs -O2
 
 # Where to find compiled but not yet linked binaries
 vpath %.o ../bin
