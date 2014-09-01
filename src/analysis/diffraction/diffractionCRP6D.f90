@@ -52,15 +52,7 @@ SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP6D(this,surfname,inicondname)
    CALL this%surf%INITIALIZE(surfname)
    CALL this%thispes%INITIALIZE("INcrp6d.inp")
    CALL this%inicond%INITIALIZE(inicondname)
-   INQUIRE(FILE="OUTinicond6d.out",EXIST=exists)
-   SELECT CASE(exists)
-      CASE(.TRUE.)
-         CALL this%inicond%GENERATE_TRAJS_FROM_FILE("OUTinicond6d.out")
-         WRITE(*,*) "INITIALIZE_ALLOWEDPEAKSCRP6D: initial conditions read from OUTinicond6d.out"
-      CASE(.FALSE.)
-         CALL this%inicond%GENERATE_TRAJS(this%thispes)
-         WRITE(*,*) "INITIALIZE_ALLOWEDPEAKSCRP6D: initial conditions generated from INinicond6d.inp"
-   END SELECT
+   CALL this%inicond%GENERATE_TRAJS(this%thispes)
    RETURN
 END SUBROUTINE 
 !######################################################
@@ -132,10 +124,10 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	CALL VERBOSE_WRITE(routinename, "Conic F: ", this%conic(6))
 #endif
 	! operations
-	OPEN(11,FILE="OUTallowedpeaks.out", STATUS="replace")
-	WRITE(11,*) "# ----- ALLOWED PEAKS---------------------------------------"
-	WRITE(11,*) "# Format: id, order, n, m, Psi(rad), Phi(rad), Theta_out(rad)   "
-	WRITE(11,*) "#-----------------------------------------------------------"
+	OPEN(11,FILE="OUTANA6Dallowedpeaks.out", STATUS="replace")
+	WRITE(11,*) "# ***** ALLOWED PEAKS *****"
+	WRITE(11,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)"
+	WRITE(11,*) "# -----------------------------------------------------------"
 	order = 0
 	count_peaks = 0
 	ALLOCATE(allowed(1))
@@ -147,7 +139,13 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 		p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
 		p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)+DFLOAT(g(1))*b*DCOS(beta+gamma))
 		p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-		Psi = DATAN(p(2)/p(1))
+      ! Determine Azimuthal angle. Avoid indetermination
+      SELECT CASE(g(1)==0 .AND. g(2)==0)
+         CASE(.TRUE.)
+            Psi = 0.D0
+         CASE(.FALSE.)
+            Psi = DATAN(p(2)/p(1))
+      END SELECT
 		Phi = DATAN(p(2)/p(3))
 		Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
 		WRITE(11,*) count_peaks, order, g, Psi, Phi, Theta_out
@@ -259,7 +257,8 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	! I/O variables
 	CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
 	! Local variables
-	INTEGER(KIND=4) :: lines
+	INTEGER(KIND=4) :: totscatt
+   INTEGER(KIND=4) :: tottrajs
 	INTEGER(KIND=4) :: id
 	INTEGER(KIND=4) :: dummy_int
 	INTEGER(KIND=4) :: i,j ! counters
@@ -292,11 +291,11 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)
 	to_rec_space(2,2) = b*DSIN(gamma)/(2.D0*PI)
 	!---------
-   OPEN(12,FILE="OUTmappingpeaks.out",STATUS="replace")
-   WRITE(12,*) "#·-------- MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS ----------"
-   WRITE(12,*) "# Format: Trajectory id, ----> , Allowed peak id"
-   WRITE(12,*) "#----------------------------------------------------------------"
-   OPEN(11,FILE="OUTdynamics6d.MOLEC.out",STATUS="old")
+   OPEN(12,FILE="OUTANA6Dmappingpeaks.out",STATUS="replace")
+   WRITE(12,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
+   WRITE(12,*) "# Format: traj id/ ----> /peak id"
+   WRITE(12,*) "# ----------------------------------------------------------------"
+   OPEN(11,FILE="OUTDYN6Dscattered.out",STATUS="old")
    READ(11,*) ! dummy line
    READ(11,*) ! dummy line
    READ(11,*) ! dummy line
@@ -308,7 +307,6 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
          CASE(.TRUE.)
             ! do nothing
          CASE(.FALSE.)
-            WRITE(*,*) "ASSIGN_PEAKS_TO_TRAJS: EOF reached"
             EXIT
       END SELECT
       IF (stat.EQ."Scattered") THEN
@@ -325,27 +323,27 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
          END DO
       END IF
    END DO
+   totscatt=i-1
+   tottrajs=this%inicond%ntraj-this%inicond%nstart+1
+   WRITE(*,*) "==========================================================="
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: total trajs: ",tottrajs
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: scattered trajs: ",totscatt
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",totscatt/tottrajs
+   WRITE(*,*) "==========================================================="
 	REWIND(12)
 	READ(12,*) ! dummy line
 	READ(12,*) ! dummy line
 	READ(12,*) ! dummy line
-   WRITE(*,*) "ASSIGN_PEAKS_TO_TRAJS: total number trajs used for prob.: ",this%inicond%ntraj
-	DO 
-		READ(12,*,iostat=ioerr) dummy_int,stat,id
-      SELECT CASE(ioerr==0)
-         CASE(.TRUE.)
-            ! do nothing
-         CASE(.FALSE.)
-            EXIT
-      END SELECT
-		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/this%inicond%ntraj
+	DO i=1, totscatt
+		READ(12,*) dummy_int,stat,id
+		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/tottrajs
 	END DO
 	CLOSE(12)
 	CLOSE(11)
-	OPEN(13,FILE="OUTseenpeaks.out",STATUS = "replace") ! re-write allowed peaks file with probabilities printed
-	WRITE(13,*) "# ----- ALLOWED PEAKS---------------------------------------"
-	WRITE(13,*) "# Format: id, order, n, m, Psi(rad), Phi(rad), Theta_out(rad), Prob"
-	WRITE(13,*) "#-----------------------------------------------------------"
+	OPEN(13,FILE="OUTANA6Dseenpeaks.out",STATUS = "replace") ! re-write allowed peaks file with probabilities printed
+	WRITE(13,*) "# ***** ALLOWED PEAKS *****"
+	WRITE(13,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
+	WRITE(13,*) "# -----------------------------------------------------------"
 	DO i=1, SIZE(this%peaks)
 		IF (this%peaks(i)%prob.NE.0.D0) THEN
 			WRITE(13,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2), &
@@ -418,11 +416,11 @@ SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
    beta=this%inicond%vpar_angle%getvalue()
    mtrx(1,:)=[dcos(beta),dsin(beta)]
    mtrx(2,:)=[-dsin(beta),dcos(beta)]
-   OPEN(12,FILE="OUTexit_momenta_and_angles.out",STATUS="replace")
-   WRITE(12,*) "# FINAL LAB. MOMENTA AND ANGLES EXIT ANGLES ----------------------------"
-   WRITE(12,*) "# Format: traj id, Px,Py,Pz(a.u.) Psi,Theta,theta_{out}(rad)"
-   WRITE(12,*) "#-----------------------------------------------------------------------"
-   OPEN(11,FILE="OUTdynamics6d.MOLEC.out",STATUS="old")
+   OPEN(12,FILE="OUTANA6Dfinalpandangles.out",STATUS="replace")
+   WRITE(12,*) "# ***** FINAL MOMENTA AND EXIT ANGLES *****"
+   WRITE(12,*) "# Format: id/Px,Py,Pz(a.u.)/Azimuthal,Polar,Deflection(rad)"
+   WRITE(12,*) "# -----------------------------------------------------------------------"
+   OPEN(11,FILE="OUTDYN6Dscattered.out",STATUS="old")
    READ(11,*) ! Dummy line
    READ(11,*) ! Dummy line
    READ(11,*) ! Dummy line

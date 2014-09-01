@@ -124,9 +124,9 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
 #endif
 	! operations
 	OPEN(11,FILE="OUTANA3Dallowedpeaks.out",STATUS="replace")
-	WRITE(11,*) "# ----- ALLOWED PEAKS---------------------------------------"
-	WRITE(11,*) "# Format: id, order, n, m, Psi(rad), Phi(rad), Theta_out(rad)   "
-	WRITE(11,*) "#-----------------------------------------------------------"
+	WRITE(11,*) "# ***** ALLOWED PEAKS *****"
+	WRITE(11,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)"
+	WRITE(11,*) "# -----------------------------------------------------------"
 	order = 0
 	count_peaks = 0
 	ALLOCATE(allowed(1))
@@ -138,7 +138,13 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
 		p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
 		p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)+DFLOAT(g(1))*b*DCOS(beta+gamma))
 		p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-		Psi = DATAN(p(2)/p(1))
+      ! Determine Azimuthal angle. Avoid indetermination
+      SELECT CASE(g(1)==0 .AND. g(2)==0)
+         CASE(.TRUE.)
+            Psi = 0.D0
+         CASE(.FALSE.)
+            Psi = DATAN(p(2)/p(1))
+      END SELECT
 		Phi = DATAN(p(2)/p(3))
 		Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
 		WRITE(11,*) count_peaks, order, g, Psi, Phi, Theta_out
@@ -411,7 +417,7 @@ SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D(this)
    OPEN(12,FILE="OUTANA3Dfinalpandangles.out",STATUS="replace")
    WRITE(12,*) "# ***** FINAL MOMENTA AND EXIT ANGLES *****"
    WRITE(12,*) "# Format: id/Ppara,Pperp,Pnormal(a.u.)/Azimuthal,Polar,Deflection(rad)"
-   WRITE(12,*) "#---------------------------------------------------------------------"
+   WRITE(12,*) "# ---------------------------------------------------------------------"
    OPEN(11,FILE="OUTDYN3Dscattered.out",STATUS="old")
    READ(11,*) ! Dummy line
    READ(11,*) ! Dummy line
