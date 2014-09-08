@@ -218,6 +218,7 @@ SUBROUTINE READ_CRP3D_details(this,filename)
    ! Initial declarations   
    USE MATHS_MOD, ONLY: ORDER_VECT
    USE UNITS_MOD
+   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D_details),INTENT(OUT):: this

@@ -255,7 +255,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    LOGICAL :: maxtime_reached
    LOGICAL :: switch, file_exists, in_list
    CHARACTER(LEN=27) :: filename_follow
-   CHARACTER(LEN=21),PARAMETER :: routinename = "DO_DYNAMICS_DYNDIATOMIC: "
+   CHARACTER(LEN=25),PARAMETER :: routinename = "DO_DYNAMICS_DYNDIATOMIC: "
    CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
    INTEGER :: control
    CLASS(Dynobject),POINTER:: molecule

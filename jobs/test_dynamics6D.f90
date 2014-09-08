@@ -12,7 +12,7 @@ WRITE(*,*) "*******************************************"
 WRITE(*,*) "**** TEST DYNAMICS 6D program executed ****"
 WRITE(*,*) "*******************************************" 
 ! STEP 0: System specifications
-CALL SET_VERBOSE_MODE(.FALSE.)
+CALL SET_VERBOSE_MODE(.TRUE.)
 CALL ETIME(timearr,timer)
 ! STEP 1: START UP DYNAMICS
 CALL this%INITIALIZE("INdynamics6d.inp")

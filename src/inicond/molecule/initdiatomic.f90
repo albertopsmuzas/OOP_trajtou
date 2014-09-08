@@ -32,7 +32,8 @@ TYPE,EXTENDS(Inicond) :: INITDIATOMIC
    CHARACTER(LEN=8) ::extrapol
    REAL(KIND=8) :: period
    REAL(KIND=8) :: eps
-   LOGICAL :: control_vel, control_posX, control_posY, control_out, control_seed
+   LOGICAL :: control_vel,control_posX,control_posY,control_out,control_seed
+   LOGICAL :: is_classic=.FALSE.
    REAL(KIND=8) :: impact_x, impact_y
    INTEGER(KIND=4),DIMENSION(2) :: init_qn
    TYPE(Csplines):: pr_t,r_t
@@ -198,7 +199,9 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
    INTEGER(KIND=4) :: size_seed, clock
    CHARACTER(LEN=4) :: keyword_vibrpot
    CHARACTER(LEN=20):: potfilename,pesfilename
+   ! Given parameters
    CHARACTER(LEN=23), PARAMETER :: routinename = "DEFINE_INICOND_SCHEME: "
+   REAL(KIND=8),PARAMETER :: small=0.D-8
    ! YIPEE KI YAY !! -------
    this%input_file = filename
    OPEN(runit,FILE=filename,STATUS="old")
@@ -232,6 +235,19 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
       READ(runit,*) aux,units
       CALL this%evirot%READ(aux,units)
       CALL this%evirot%TO_STD()
+      SELECT CASE(this%evirot%getvalue()>0.D0+small)
+         CASE(.TRUE.)
+            this%is_classic=.FALSE.
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,"Semi-classical calculation")
+#endif
+         CASE(.FALSE.)
+            this%is_classic=.TRUE.
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,"Classical calculation")
+#endif
+      END SELECT
+
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Internal energy: ",this%evirot%getvalue())
 #endif
@@ -395,7 +411,15 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    CALL VERBOSE_WRITE(routinename,"Allocating trajs: ", this%ntraj)
 #endif
    ALLOCATE(Diatomic::this%trajs(this%ntraj))
-   CALL this%SET_PERIOD()
+   SELECT CASE(this%is_classic)
+      CASE(.TRUE.)
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Calculating period in R is not meanful")
+#endif
+         ! body
+      CASE(.FALSE.)
+         CALL this%SET_PERIOD()
+   END SELECT
    delta = this%vpar_angle%getvalue()
    alpha = this%vz_angle%getvalue()
    masa = this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass()
@@ -439,17 +463,32 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       rnd_phi=random_kernel(4)
       rnd_theta=random_kernel(5)
       rnd_eta=random_kernel(6)
-      ! Get internal coordinates
-      this%trajs(i)%r(4)=this%r_t%getvalue(rnd_delta*this%period)          ! r
-      this%trajs(i)%r(5)=dacos(1.D0-2.D0*rnd_theta)                       ! theta
-      this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                   ! phi
-      eta=2.D0*PI*rnd_eta
-      ! Get internal momenta
-      this%trajs(i)%p(4)=this%pr_t%getvalue(rnd_delta*this%period)         ! pr
-      this%trajs(i)%p(5)=-ang_momentum*dsin(eta)                           ! ptheta
-      this%trajs(i)%p(6)=-ang_momentum*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
-      ! Internal energy
-      this%trajs(i)%Eint=(this%trajs(i)%p(4)**2.D0)/(2.D0*mu)+this%rovibrpot%getpot(this%trajs(i)%r(4))
+      SELECT CASE(this%is_classic)
+         CASE(.TRUE.)
+            ! Get internal coordinates
+            this%trajs(i)%r(4)=this%vibrpot%getreq()                          ! r
+            this%trajs(i)%r(5)=dacos(1.D0-2.D0*rnd_theta)                       ! theta
+            this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                  ! phi
+            eta=2.D0*PI*rnd_eta
+            ! Get internal momenta
+            this%trajs(i)%p(4)=0.D0                                              ! pr
+            this%trajs(i)%p(5)=-ang_momentum*dsin(eta)                           ! ptheta
+            this%trajs(i)%p(6)=-ang_momentum*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+            ! Internal energy
+            this%trajs(i)%Eint=((ang_momentum/this%vibrpot%getreq())**2.D0)/(2.D0*mu)
+         CASE(.FALSE.)
+            ! Get internal coordinates
+            this%trajs(i)%r(4)=this%r_t%getvalue(rnd_delta*this%period)          ! r
+            this%trajs(i)%r(5)=dacos(1.D0-2.D0*rnd_theta)                       ! theta
+            this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                   ! phi
+            eta=2.D0*PI*rnd_eta
+            ! Get internal momenta
+            this%trajs(i)%p(4)=this%pr_t%getvalue(rnd_delta*this%period)         ! pr
+            this%trajs(i)%p(5)=-ang_momentum*dsin(eta)                           ! ptheta
+            this%trajs(i)%p(6)=-ang_momentum*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+            ! Internal energy
+            this%trajs(i)%Eint=(this%trajs(i)%p(4)**2.D0)/(2.D0*mu)+this%rovibrpot%getpot(this%trajs(i)%r(4))
+      END SELECT
       ! Total energy
       this%trajs(i)%E=this%trajs(i)%Ecm+this%trajs(i)%Eint
       ! STORE INITIAL VALUES .....................................
@@ -917,6 +956,11 @@ END SUBROUTINE BSSTEP_INITDIATOMIC
 !> @brief
 !! Sets period of vibrational motion
 !
+!> @warning
+!! - Invoking this subroutine is only meanful while doing
+!!   @b quasiclassical dynamics, i.e., internal energy higher
+!!   than 0.D0.
+!
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Jun/2014
 !> @version 1.0
@@ -950,14 +994,14 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
    REAL(KIND=8) :: mu
    INTEGER(KIND=4) :: i
    TYPE(Vacuumpot):: fdummy
-   CHARACTER(LEN=25) :: routinename="SET_PERIOD_INITDIATOMIC: "
+   CHARACTER(LEN=25),PARAMETER :: routinename="SET_PERIOD_INITDIATOMIC: "
    ! Run section
    mu = this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
    mu = mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
    erot=dfloat(this%init_qn(2)*(this%init_qn(2)+1))/(2.D0*mu)
-   SELECT CASE(erot >= this%evirot%getvalue())
+   SELECT CASE(erot>=this%evirot%getvalue())
       CASE(.TRUE.)
-         WRITE(0,*) "SET_PERIOD_INITDIATOMIC: wrong evirot+quanum state value. Rotational energy > rovibr energy"
+         WRITE(0,*) "SET_PERIOD_INITDIATOMIC ERR: wrong evirot+quantum state value. Rotational energy > rovibr energy"
          CALL EXIT(1)
       CASE(.FALSE.)
          ! do nothing
