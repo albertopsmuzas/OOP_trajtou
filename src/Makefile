@@ -1,6 +1,4 @@
 # Include general rules
-#debugmode=on
-debugmode=off
 include make.inc
 # Add here all folder names in src
 folderlist= debug constants units surface PES interpol1d interpol1d/cubicsplines maths PES/CRP3D interpol2d interpol2d/fourier \
