@@ -5,14 +5,19 @@
 # Add commads to invoke the correct compiler. It should exist
 # make.inc.<compilerName> and src/make.inc.<compilerName> with the correct
 # compile specifications
-selections="ifort gfortran"
+selections="gfortran ifort"
 defaultPath=${PWD}
 #//////////////////////////////////////////////////////////////////////////
 # NOT SO CUSTOMIZABLE BLOCK
 #//////////////////////////////////////////////////////////////////////////
+if [[ -f version.txt ]];then 
+	echo version.txt file exists, which means that the program may be already compiled.
+	echo remove it and re-run install.sh script, but you may be breaking an already installed version of the program
+	exit 1
+fi
 # Chose debugging option ---------
 echo "Install debug version?"
-select debugmode in yes no Abort;do
+select debugmode in no yes Abort;do
 	case $debugmode in
 		yes)
 			debugmode=on
@@ -54,9 +59,33 @@ select compiler in $selections Abort;do
 			echo Incorrect option. Chose another time:;;
 		esac
 done
+# Chose a version name or not
+echo Select a name for this version \(flavour\). This may be convenient if you have different versions of the
+echo program compiled with the same options, e.g., when a new PES has been implemented, a new branch is being tested, etc.
+echo If you choose custom, you will have to type a version alias. Avoid special or blanck characters.
+echo Choose your flavour:
+select flavour in default custom Abort;do
+	case $flavour in
+		default)
+			echo Flavour is default.
+			flavour=default
+			break;;
+		custom)
+			echo Type custom flavour \(avoid special or blanck characters\)
+			read flavour
+			echo Custom flavour is: $flavour
+			break;;	
+		Abort)
+			echo Installation aborted
+			exit 2;;
+		*)
+	esac
+done
+# Store installed version ---------------
+versionFlag=debug_${debugmode}_compiler_${compiler}_flavour_${flavour}
 # Check environmental modules -----------
 echo Checking module existence:
-which module
+type module
 if [[ $? == 0 ]];then 
 	echo WARNING: environmental modules found. Proceeding to create a private module.
 	module=yes
@@ -67,7 +96,7 @@ fi
 # Install private module or source file --------
 case $module in
 	yes)
-		filename=$HOME/privatemodules/ooptrajtou/debug_${debugmode}_compiler_${compiler}
+		filename=$HOME/privatemodules/ooptrajtou/${versionFlag}
 		if [[ ! -f $HOME/privatemodules ]];then
 			echo $HOME/privatemodules was not found. A new folder will be created.
 			echo Remember to load use.own module to access modules in this folder.
@@ -90,7 +119,7 @@ EOF
 #------- end file -----------------------------
 		;;
 	no)
-	filename=${HOME}/.OOPtrajtou_debug_${debugmode}_compiler_${compiler}_rc
+	filename=${HOME}/.OOPtrajtou_${versionFlag}_rc
 	echo A new source file will be created at $filename
 #------- creating file -----------------------
 cat << EOF > $filename
@@ -108,7 +137,13 @@ EOF
 		echo To source this file in every shell, add one of the previous commands to your $HOME/.bashrc file
 		;;	
 esac
-cd src; make
+# Store installed version info -------------
+echo Version: $versionFlag > version.txt
+echo Source: $filename >> version.txt
+# Compiling section ---------------------
+echo Installing src objects:
+cd src; make;cd ..
+echo Link executable jobs with library:
 make
 echo OOPtrajtou was installed successfully!!!
 echo Enjoy your time!

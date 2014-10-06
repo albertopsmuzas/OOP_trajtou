@@ -1,0 +1,24 @@
+#!/bin/bash
+if [[ ! -f $OOPTRAJTOUPATH/version.txt ]];then
+	echo OOPTRAJTOUPATH/version.txt does not exist.
+	echo Check if OOPTRAJTOUPATH is an environmental variable.
+	exit 1
+fi
+debugmode=$(awk 'NR==1{print $2}' $OOPTRAJTOUPATH/version.txt | awk -F "_" '{print $2}')
+compiler=$(awk 'NR==1{print $2}' $OOPTRAJTOUPATH/version.txt | awk -F "_" '{print $4}')
+flavour=$(awk 'NR==1{print $2}' $OOPTRAJTOUPATH/version.txt | awk -F "_" '{print $6}')
+sourcefile=$(awk 'NR==2{print $2}' $OOPTRAJTOUPATH/version.txt)
+if [[ $1 == "" ]];then
+	echo Compiler: $compiler
+	echo Debug mode: $debugmode
+	echo Flavour: $flavour
+	echo Source file: $sourcefile
+elif [[ $1 == compiler ]];then
+	echo $compiler
+elif [[ $1 == debugmode ]];then
+	echo $debugmode
+elif [[ $1 == sourcefile ]];then
+	echo $sourcefile
+elif [[ $1 == flavour ]];then
+	echo $flavour
+fi

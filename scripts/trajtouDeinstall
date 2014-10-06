@@ -1,0 +1,36 @@
+#!/bin/bash
+if [[ -z $OOPTRAJTOUPATH ]];then echo OOPTRAJTOUPATH does not exist.;exit 1;fi
+if [[ ! -f $OOPTRAJTOUPATH/version.txt ]];then echo $OOPTRAJTOUPATH/version.txt does not exist.;echo de-install program manually;exit 1;fi
+echo De-installing OOPtrajtou program with specifications:
+trajtouVersion
+echo Are you sure?
+select answer in yes no;do
+	case $answer in
+		yes)
+			path=$OOPTRAJTOUPATH
+			versionFlag=$(awk 'NR==1{print $2}' $path/version.txt)
+			sourceFile=$(trajtouVersion sourcefile)
+			cd $path
+			touch make.inc
+			echo Cleaning binaries
+			make clean
+			echo Removing make.inc and src/make.inc files
+			rm -f make.inc
+			rm -f src/make.inc
+			echo Unloading module if it exists: $versionFlag
+			module unload ooptrajtou/$versionFlag 2>/dev/null
+			echo Removing source file $sourceFile
+			rm -f $sourceFile
+			echo Removing version.txt file
+			rm -f $path/version.txt
+			echo OOPtrajtou was successfully de-installed.
+			echo If source file was a rc file \(not a module\), you have still a polluted environment with old
+			echo variable definitions. You should clean your environment manually, e.g., check .bashrc file, open a new shell, etc.
+			break;;
+		no)
+			echo De-installation was aborted.
+			break;;
+		*)
+			echo Choose a correct option:;;
+	esac
+done
