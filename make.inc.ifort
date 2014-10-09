@@ -1,15 +1,15 @@
 F = ifort
-CF = $(F) -cpp -I mod -c -O2 -traceback -CB -gen-interfaces -no-wrap-margin -warn truncated-source
+CF = $(F) -cpp -I mod -module mod -c -O2 -traceback -CB -gen-interfaces -warn truncated-source
 LF = $(F) -cpp -I mod -Wall -Wtabs -O2
 
 # Some paths to find files
 vpath %.f90 jobs
-vpath %.a lib 
+vpath %.a lib
 
 # General rules
 
 %.x: %.o libtrajtou.a
-   $(LF) -o bin/ bin/$< lib/libtrajtou.a
+	$(LF) -o bin/$@ bin/$< lib/libtrajtou.a
 
-	%.o: %.f90
-	   $(CF) $< -o bin/
+%.o: %.f90
+	$(CF) $< -o bin/$@

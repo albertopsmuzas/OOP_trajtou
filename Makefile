@@ -9,8 +9,8 @@ joblist = test_CRP3D.x test_inicond3D.x test_dynamics3D.x get_CRP3D_value.x test
 			 cheat_CRP6D_cartwheelinput.x cart2surf.x test_surface.x test_inicond6D.x \
 			 test_dynamics6D.x drawtraj6d.x anlys_diff3d.x anlys_diff6d.x
 # Rules 
-build: $(joblist)
-libtrajtou.a: 
+link_jobs2lib: $(joblist)
+lib: 
 	cd src && $(MAKE) libtrajtou.a
 
 # Clean rule
