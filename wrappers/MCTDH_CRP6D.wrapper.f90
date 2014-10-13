@@ -48,12 +48,12 @@ SUBROUTINE MCTDH_getPotCRP6D(crp6d_pes,r,v)
    REAL(KIND=8),DIMENSION(6),INTENT(IN):: r
    REAL(KIND=8),INTENT(OUT):: v
    ! Local variables
-   REAL(KIND=8),DIMENSION(6):: geom ! auxiliar geometry
+   REAL(KIND=8),DIMENSION(6):: geom,dvdu ! auxiliar geometry, dummy derivatives
    ! Run section
    ! Change of coordinates:
    geom(3:6)=r(3:6)
    geom(1:2) = crp6d_pes%surf%surfunit2cart(r(1:2))
-   v = crp6d_pes%getpot(geom)
+   call crp6d_pes%GET_V_AND_DERIVS(geom,v,dvdu)
    RETURN
 END SUBROUTINE MCTDH_getPotCRP6D
 !###########################################################
@@ -66,7 +66,7 @@ END SUBROUTINE MCTDH_getPotCRP6D
 !> @date Oct/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE MCTDH_evalPotCRP6D(r,v)
+SUBROUTINE crp6d_generic(r,v)
    ! Initial declarations
    USE CRP6D_MOD
    IMPLICIT NONE
@@ -79,4 +79,4 @@ SUBROUTINE MCTDH_evalPotCRP6D(r,v)
    CALL MCTDH_readInputCRP6D(crp6dPes)
    CALL MCTDH_getPotCRP6D(crp6dPes,r,v)
    RETURN
-END SUBROUTINE MCTDH_evalPotCRP6D
+END SUBROUTINE crp6d_generic

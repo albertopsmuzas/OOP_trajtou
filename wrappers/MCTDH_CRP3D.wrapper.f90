@@ -47,11 +47,11 @@ SUBROUTINE MCTDH_getPotCRP3D(crp3d_pes,r,v)
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: r
    REAL(KIND=8),INTENT(OUT) :: v
    ! Run section
-   REAL(KIND=8),DIMENSION(3):: geom ! auxiliar geometry
+   REAL(KIND=8),DIMENSION(3):: geom,dvdu ! auxiliar geometry, dummy derivatives
    ! Change of coordinates:
    geom(3) = r(3)
    geom(1:2) = crp3d_pes%surf%surfunit2cart(r(1:2))
-   v = crp3d_pes%getpot(geom)
+   call crp3d_pes%GET_V_AND_DERIVS(geom,v,dvdu)
    RETURN
 END SUBROUTINE MCTDH_getPotCRP3D
 !###########################################################
@@ -64,7 +64,7 @@ END SUBROUTINE MCTDH_getPotCRP3D
 !> @date Oct/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE MCTDH_evalPotCRP3D(r,v)
+SUBROUTINE crp3d_generic(r,v)
    ! Initial declarations
    USE CRP3D_MOD
    IMPLICIT NONE
@@ -72,9 +72,9 @@ SUBROUTINE MCTDH_evalPotCRP3D(r,v)
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: r
    REAL(KIND=8),INTENT(IN) :: v
    ! Local variables
-   TYPE(CRP6D) :: crp6dPes
+   TYPE(CRP3D) :: crp3dPes
    ! Run section
-   CALL MCTDH_readInputCRP6D(crp3dPes)
-   CALL MCTDH_getPotCRP6D(crp3dPes,r,v)
+   CALL MCTDH_readInputCRP3D(crp3dPes)
+   CALL MCTDH_getPotCRP3D(crp3dPes,r,v)
    RETURN
-END SUBROUTINE MCTDH_evalPotCRP3D
+END SUBROUTINE crp3d_generic
