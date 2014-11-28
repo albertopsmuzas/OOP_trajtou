@@ -34,7 +34,7 @@ TYPE,EXTENDS(PES) :: CRP6D
    TYPE(CRP3D),DIMENSION(:),ALLOCATABLE:: atomiccrp
    TYPE(Vacuumpot):: farpot
    CLASS(Function1d),ALLOCATABLE:: dumpfunc
-   CLASS(Function1d),ALLOCATABLE:: extrapol2vac
+   CHARACTER(LEN=30):: extrapol2vac_flag
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: xyklist
    CONTAINS
       ! Initialization block
@@ -418,10 +418,11 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
    REAL(KIND=8),DIMENSION(6) :: dvducrp ! derivatives at zcrp
    REAL(KIND=8),DIMENSION(6) :: dvduvac ! derivatives at vacuum
    REAL(KIND=8) :: alpha,beta,gama ! parameters
-   REAL(KIND=8) :: zero=0.D-6 ! what we will condider zero
    CLASS(Function1d),ALLOCATABLE:: extrapolfunc
    TYPE(Linear_func) :: linearextrapol
    INTEGER(KIND=4) :: i !counter
+   ! Local Parameter
+   REAL(KIND=8),PARAMETER :: zero=0.D-5 ! what we will condider zero (a.u.)
    ! Run section
    zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
    zvac=this%zvacuum
@@ -442,10 +443,9 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
          dvduvac(1:3)=zero
          dvduvac(4)=this%farpot%getderiv(x(4))
          dvduvac(5:6)=zero
-         !ALLOCATE(extrapolfunc,source=this%extrapol2vac)
-         ALLOCATE(Logistic_func:: extrapolfunc)
-         SELECT TYPE(extrapolfunc)
-            TYPE IS(Logistic_func)
+         SELECT CASE(this%extrapol2vac_flag)
+            CASE("Logistic")
+               ALLOCATE(Logistic_func::extrapolfunc)
                gama=dlog(vzcrp/vzvac)/(zvac-zcrp)
                SELECT CASE(vzvac >= vzcrp) 
                   CASE(.TRUE.)   ! if they're really equal you don't need an extrapol potetial 
@@ -494,9 +494,9 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
                END DO
 
                RETURN
-            CLASS DEFAULT
+            CASE DEFAULT
                WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: type of extrapolation function isn't implemented yet"
-               WRITE(0,*) "Implemented ones: Logistic_func"
+               WRITE(0,*) "Implemented ones: Logistic, Exponential, None"
                CALL EXIT(1)
          END SELECT
       CASE(.FALSE.)
@@ -1166,8 +1166,13 @@ SUBROUTINE READ_CRP6D(this,filename)
    READ(runit,*) string
    SELECT CASE(string)
       CASE("Logistic")
-         ALLOCATE(Logistic_func::this%extrapol2vac)
-         ! parameters are calculated in routines that give the PES
+         this%extrapol2vac_flag=string
+         READ(runit,*) auxr,units
+         CALL len%READ(auxr,units)
+         CALL len%TO_STD()
+         this%zvacuum=len%getvalue()
+      CASE("Exponential")
+         this%extrapol2vac_flag=string
          READ(runit,*) auxr,units
          CALL len%READ(auxr,units)
          CALL len%TO_STD()
@@ -1177,7 +1182,8 @@ SUBROUTINE READ_CRP6D(this,filename)
          this%zvacuum=0.D0
       CASE DEFAULT
          WRITE(0,*) "READ_CRP6D ERR: Keyword for extrapolation function needed"
-         WRITE(*,*) "Currently implemented: Logistic, None"
+         WRITE(*,*) "Currently implemented: Logistic, None, Exponential"
+         WRITE(*,*) "Case sensitive."
          CALL EXIT(1)
    END SELECT
    ! Read zvacuum
