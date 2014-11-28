@@ -1,0 +1,6 @@
+#!/bin/bash
+cd $OOPTRAJTOUPATH/src
+make clean
+make
+cd ..
+make

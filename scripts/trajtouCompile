@@ -1,0 +1,5 @@
+#!/bin/bash
+cd $OOPTRAJTOUPATH/src
+make
+cd ..
+make
