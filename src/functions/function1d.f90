@@ -41,6 +41,15 @@ ABSTRACT INTERFACE
       CLASS(Function1d),INTENT(IN)::this
       REAL(KIND=8),INTENT(IN) :: x
    END FUNCTION getvalue_function1d
+   !###########################################################
+   !# SUBROUTINE: getderiv_function1d 
+   !###########################################################
+   !-----------------------------------------------------------
+   REAL(KIND=8) FUNCTION getderiv_function1d(this,x)
+      IMPORT Function1d
+      CLASS(Function1d),INTENT(IN)::this
+      REAL(KIND=8),INTENT(IN) :: x
+   END FUNCTION getderiv_function1d
 END INTERFACE
 
 !//////////////////////////////////////////////////////////////////
