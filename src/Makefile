@@ -55,8 +55,9 @@ fourier2d.o: constants.o surface.o constants.o
 fourier.p4mm.o: debug.o fourier2d.o
 fourier.p6mm.o: debug.o fourier2d.o
 # 1D Functions section -------------------------------------------------------------------
-link_function1d.o: function1d.o one.o logistic.o linear.o
+link_function1d.o: function1d.o one.o logistic.o linear.o exponential.o
 function1d.o:
+exponential.o: function1d.o
 logistic.o: function1d.o
 one.o: function1d.o
 linear.o: function1d.o
