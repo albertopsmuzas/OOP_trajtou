@@ -492,8 +492,9 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
                         ! do nothing, everything went better than expected
                   END SELECT
                END DO
-
+               DEALLOCATE(extrapolfunc)
                RETURN
+
             CASE DEFAULT
                WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: type of extrapolation function isn't implemented yet"
                WRITE(0,*) "Implemented ones: Logistic, Exponential, None"
