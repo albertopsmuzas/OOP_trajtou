@@ -759,41 +759,22 @@ SUBROUTINE TIME_DERIVS_DYNDIATOMIC(this,z,dzdt,fin)
          fin=.FALSE.
          mass=this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass()
          mu=this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
-         mu=mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
-         SELECT CASE(dsin(z(5))<=0.D0)
-            CASE(.TRUE.)
-               ! Set time derivatives of position
-               dzdt(1)=z(7)/mass
-               dzdt(2)=z(8)/mass
-               dzdt(3)=z(9)/mass
-               dzdt(4)=z(10)/mu
-               dzdt(5)=z(11)/(mu*(z(4)**2.D0))
-               dzdt(6)=0.D0
-               ! Set time derivatives of momenta
-               CALL this%thispes%GET_V_AND_DERIVS(z(1:6),v,dzdt(7:12))
-               dzdt(7)=-dzdt(7)
-               dzdt(8)=-dzdt(8)
-               dzdt(9)=-dzdt(9)         
-               dzdt(10)=-dzdt(10)+(z(11)**2.D0)/(mu*(z(4)**3.D0))
-               dzdt(11)=-dzdt(11)
-               dzdt(12)=0.D0 ! this property stands in the potential but, anyway
-            CASE(.FALSE.) ! usual scheme
-               ! Set time derivatives of position
-               dzdt(1)=z(7)/mass
-               dzdt(2)=z(8)/mass
-               dzdt(3)=z(9)/mass
-               dzdt(4)=z(10)/mu
-               dzdt(5)=z(11)/(mu*(z(4)**2.D0))
-               dzdt(6)=z(12)/(mu*(z(4)*dsin(z(5))**2.D0))
-               ! Set time derivatives of momenta
-               CALL this%thispes%GET_V_AND_DERIVS(z(1:6),v,dzdt(7:12))
-               dzdt(7)=-dzdt(7)
-               dzdt(8)=-dzdt(8)
-               dzdt(9)=-dzdt(9)         
-               dzdt(10)=-dzdt(10)+(z(11)**2.D0+(z(12)/dsin(z(5)))**2.D0)/(mu*(z(4)**3.D0))
-               dzdt(11)=-dzdt(11)+((z(12)/z(4))**2.D0)*dcos(z(5))/(mu*dsin(z(5))**3.D0)
-               dzdt(12)=-dzdt(12)
-         END SELECT
+         mu=mu/mass
+         ! Set time derivatives of position
+         dzdt(1)=z(7)/mass
+         dzdt(2)=z(8)/mass
+         dzdt(3)=z(9)/mass
+         dzdt(4)=z(10)/mu
+         dzdt(5)=z(11)/(mu*(z(4)**2.D0))
+         dzdt(6)=z(12)/(mu*(z(4)*dsin(z(5))**2.D0))
+         ! Set time derivatives of momenta
+         CALL this%thispes%GET_V_AND_DERIVS(z(1:6),v,dzdt(7:12))
+         dzdt(7)=-dzdt(7)
+         dzdt(8)=-dzdt(8)
+         dzdt(9)=-dzdt(9)         
+         dzdt(10)=-dzdt(10)+(z(11)**2.D0+(z(12)/dsin(z(5)))**2.D0)/(mu*(z(4)**3.D0))
+         dzdt(11)=-dzdt(11)+((z(12)/z(4))**2.D0)*dcos(z(5))/(mu*dsin(z(5))**3.D0)
+         dzdt(12)=-dzdt(12)
    END SELECT
    RETURN
 END SUBROUTINE TIME_DERIVS_DYNDIATOMIC
