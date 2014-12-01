@@ -1,0 +1,2865 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\usepackage{dsfont}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 0.25cm
+\topmargin 2cm
+\rightmargin 0.25cm
+\bottommargin 2cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Some notes about diffraction
+\end_layout
+
+\begin_layout Section
+Helpful coordinates 
+\end_layout
+
+\begin_layout Subsection
+Laboratory coordinates
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Laboratory-coordinates"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Formed by the basis set:
+\begin_inset Formula 
+\[
+\mathcal{L}=\left\{ \boldsymbol{l}_{1},\boldsymbol{l}_{2},\boldsymbol{l}_{3}\mid\boldsymbol{l}_{i}\boldsymbol{l}_{j}=\delta_{ij}\right\} =\mathcal{L}_{xy}\bigcup\left\{ \boldsymbol{l}_{3}\right\} 
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+E_{\mathcal{L}}=\mathscr{L}_{\mathbb{R}}(\mathcal{L})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{l}_{1}$
+\end_inset
+
+ is an unit vector pointing the direction of the incident beam.
+ 
+\begin_inset Formula $\boldsymbol{l}_{2}$
+\end_inset
+
+ is just a unit vector normal to 
+\begin_inset Formula $\boldsymbol{l}_{2}$
+\end_inset
+
+ and parallel to the surface plane.
+ 
+\begin_inset Formula $\boldsymbol{l}_{3}$
+\end_inset
+
+ is a unit vector perpendicular to both, 
+\begin_inset Formula $\boldsymbol{l}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{l}_{2}$
+\end_inset
+
+.
+ 
+\begin_inset Formula $E_{\mathcal{L}}$
+\end_inset
+
+ is the space spanned by 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ with real coefficients.
+ The subset 
+\begin_inset Formula $\mathcal{L}_{xy}$
+\end_inset
+
+ was defined for future convenience.
+ It spans the surface space.
+\end_layout
+
+\begin_layout Standard
+Representations of vector in this basis will be labeled as follows: 
+\begin_inset Formula 
+\[
+\boldsymbol{v}=\sum_{i=1}^{3}v_{i}\boldsymbol{l}_{i}\,\rightarrow\,\underline{v}_{\mathcal{L}}=\begin{pmatrix}v_{1}\\
+v_{2}\\
+v_{3}
+\end{pmatrix}\in\mathbb{R}^{3}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\boldsymbol{v}=\sum_{i=1}^{2}v_{i}\boldsymbol{l}_{i}\,\rightarrow\,\underline{v}_{\mathcal{L}_{xy}}=\begin{pmatrix}v_{1}\\
+v_{2}
+\end{pmatrix}\in\mathbb{R}^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Auxiliary coordinates
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Auxiliary-coordinates"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Formed by the basis set: 
+\begin_inset Formula 
+\[
+\mathcal{A}=\left\{ \boldsymbol{a}_{1},\boldsymbol{a}_{2}\mid\boldsymbol{a}_{i}\boldsymbol{a}_{j}=\delta_{ij}\right\} 
+\]
+
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+E_{\mathcal{A}}=\mathscr{L}_{\mathbb{R}}(\mathcal{A})=\mathscr{L}_{\mathbb{R}}(\mathcal{L}_{xy})\subset E_{\mathcal{L}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{a}_{1}$
+\end_inset
+
+ is a unit vector pointing to one of the main directions of the surface.
+ 
+\begin_inset Formula $\boldsymbol{a}_{2}$
+\end_inset
+
+ is a unit vector perpendicular to 
+\begin_inset Formula $\boldsymbol{a}_{1}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The only difference between these coordinates and the ones defined before
+ in Sec.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Laboratory-coordinates"
+
+\end_inset
+
+ is that 
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+-coordinates are tilted respect to 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ by an angle 
+\begin_inset Formula $\beta$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+At this point we are able to define transformations from auxiliary coordinates
+ to laboratory ones.
+ In general our transformation matrices will operate on a desired representation
+ to give the correct representation in 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ but sometimes we will prefer to obtain the 
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+-representation.
+ In the last case, matrices will have the sub-index 
+\begin_inset Quotes eld
+\end_inset
+
+aux
+\begin_inset Quotes erd
+\end_inset
+
+.
+ As a first step, we will define 
+\begin_inset Formula $\boldsymbol{l}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{l}_{2}$
+\end_inset
+
+ in 
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+ coordinates:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{l_{1}}_{\mathcal{L}_{xy}}=\begin{pmatrix}\cos\beta\\
+\sin\beta
+\end{pmatrix}\,\,;\,\,\underline{l_{2}}_{\mathcal{L}_{xy}}=\begin{pmatrix}-\sin\beta\\
+\cos\beta
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with this, we can define the transformation matrix 
+\begin_inset Formula $\underline{\underline{A}}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{v}_{\mathcal{A}}=\underline{\underline{A}}\cdot\underline{v}_{\mathcal{L}_{xy}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+, where 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{\underline{A}}=\begin{pmatrix}\cos\beta & -\sin\beta\\
+\sin\beta & \cos\beta
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\det{\underline{\underline{A}}}=\cos^{2}\beta+\sin^{2}\beta=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{v}_{\mathcal{L}_{xy}}=\underline{\underline{A}}^{-1}\cdot\underline{v}_{\mathcal{A}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{\underline{A}}^{-1}=\frac{1}{\det{\underline{\underline{A}}}}\cdot\left(\underline{\underline{A}}^{*}\right)^{T}=A^{T}=\begin{pmatrix}\cos\beta & \sin\beta\\
+-\sin\beta & \cos\beta
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Surface coordinates
+\end_layout
+
+\begin_layout Standard
+Formed by the basis set: 
+\begin_inset Formula 
+\[
+\mathcal{S}=\{\boldsymbol{s}_{1},\boldsymbol{s}_{2}\},
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+with one restriction: 
+\begin_inset Formula 
+\[
+\boldsymbol{s}_{1}\parallel\boldsymbol{a}_{1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{\mathcal{S}}=\mathscr{L}_{\mathbb{Z}}(\mathcal{S})\subset E_{\mathcal{L}_{xy}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{s}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{s}_{2}$
+\end_inset
+
+ corresponds to the unit cell vectors of the surface.
+ By definition 
+\begin_inset Formula $\boldsymbol{s}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{a}_{1}$
+\end_inset
+
+ (see Sec.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Auxiliary-coordinates"
+
+\end_inset
+
+ ) are parallel vectors.
+ 
+\begin_inset Formula $E_{\mathcal{S}}$
+\end_inset
+
+ is the Bravais lattice associated with the surface symmetry.
+ It is easy to deduce a 
+\series bold
+general form of 
+\begin_inset Formula $\boldsymbol{s}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{s}_{2}$
+\end_inset
+
+ respect to the auxiliary basis set
+\series default
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{v}_{\mathcal{A}}=\underline{\underline{S_{aux}}}\cdot\underline{v}_{S}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\underline{s_{1}}_{\mathcal{A}}=a\cdot\begin{pmatrix}1\\
+0
+\end{pmatrix}\,\,;\,\,\underline{s_{2}}_{\mathcal{A}}=b\begin{pmatrix}\cos\gamma\\
+\sin\gamma
+\end{pmatrix}\,\,;\,\,\underline{\underline{S_{aux}}}=\begin{pmatrix}a & b\cos\gamma\\
+0 & b\sin\gamma
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\det{\underline{\underline{S_{aux}}}}=ab\sin\gamma
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\underline{v}_{\mathcal{S}}=\underline{\underline{S_{aux}}}^{-1}\cdot\underline{v}_{\mathcal{A}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{\underline{S_{aux}}}^{-1}=\frac{1}{ab\sin\gamma}\cdot\begin{pmatrix}b\sin\gamma & -b\cos\gamma\\
+0 & a
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Metric matrix for this space:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{\underline{M}}_{\mathcal{S}}=\underline{\underline{S_{aux}}}^{T}\cdot\underline{\underline{S_{aux}}}=\begin{pmatrix}a & 0\\
+b\cos(\gamma) & b\sin(\gamma)
+\end{pmatrix}\cdot\begin{pmatrix}a & b\cos(\gamma)\\
+0 & b\sin(\gamma)
+\end{pmatrix}=\begin{pmatrix}a^{2} & ab\cos(\gamma)\\
+ab\cos(\gamma) & b^{2}
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Reciprocal-space lattice
+\end_layout
+
+\begin_layout Standard
+Formed by the basis set:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathcal{G}=\left\{ \boldsymbol{k}_{1},\boldsymbol{k_{2}}\mid\boldsymbol{k}_{i}\boldsymbol{s}_{j}=2\pi\delta_{ij}\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let's solve the restriction in 
+\begin_inset Formula $\mathcal{G}$
+\end_inset
+
+ using the auxiliary representation:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\boldsymbol{k}_{i}\boldsymbol{s}_{j}=2\pi\delta_{ij}\,\Rightarrow\,\left(\underline{\underline{K_{aux}}}\cdot\underline{k_{i}}_{\mathcal{G}}\right)^{T}\underline{\underline{S_{aux}}}\cdot\underline{s_{j}}_{\mathcal{S}}=2\pi\delta_{ij}\,\Rightarrow\,\underline{k_{i}}_{\mathcal{G}}^{T}\cdot\left(\underline{\underline{K_{aux}}}^{T}\cdot\underline{\underline{S_{aux}}}\right)\cdot\underline{s_{j}}_{\mathcal{S}}=2\pi\delta_{ij}\label{eq:reciprocal space}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As 
+\begin_inset Formula $\underline{k_{i}}_{\mathcal{G}}^{T}$
+\end_inset
+
+ and 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\underline{s_{j}}_{\mathcal{S}}$
+\end_inset
+
+ are basis vectors defined in their natural representations: 
+\begin_inset Formula $\underline{k_{1}}_{\mathcal{G}}=\begin{pmatrix}1\\
+0
+\end{pmatrix}=\underline{s_{1}}_{\mathcal{S}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\underline{k_{2}}_{\mathcal{G}}=\begin{pmatrix}0\\
+1
+\end{pmatrix}=\underline{s_{2}}_{\mathcal{S}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Thus, Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:reciprocal space"
+
+\end_inset
+
+ can be simplified to:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{k_{i}}_{\mathcal{G}}^{T}\cdot\left(\underline{\underline{K_{aux}}}^{T}\cdot\underline{\underline{S_{aux}}}\right)\cdot\underline{s_{j}}_{\mathcal{S}}=2\pi\delta_{ij}\,\Rightarrow\underline{\underline{K_{aux}}}^{T}\cdot\underline{\underline{S_{aux}}}=2\pi\mathds1,
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $\mathds1$
+\end_inset
+
+ is a 2x2 identity matrix.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\underline{\underline{K_{aux}}}=2\pi\cdot\left(\underline{\underline{S_{aux}}}^{-1}\right)^{T}=\frac{2\pi}{ab\sin\gamma}\cdot\begin{pmatrix}b\sin\gamma & 0\\
+-b\cos\gamma & a
+\end{pmatrix}\label{eq:definition Kaux}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\det{\underline{\underline{K_{aux}}}}=\det{\left\{ 2\pi\cdot\left(\underline{\underline{S_{aux}}}^{-1}\right)^{T}\right\} }=\left(2\pi\right)^{2}\cdot\det{\underline{\underline{S_{aux}}}^{-1}}=\frac{\left(2\pi\right)^{2}}{\det{\underline{\underline{S_{aux}}}}}=\frac{4\pi^{2}}{ab\sin\gamma}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now let's get the inverse of 
+\begin_inset Formula $\underline{\underline{K_{aux}}}$
+\end_inset
+
+ using the definition in Eq.
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:definition Kaux"
+
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{\underline{K_{aux}}}^{-1}=\frac{1}{\det{\underline{\underline{K_{aux}}}}}\cdot\left(\underline{\underline{K_{aux}}}^{*}\right)^{T}=\frac{\det{\underline{\underline{S_{aux}}}}}{\left(2\pi\right)^{2}}\cdot\left\{ \left\{ 2\pi\cdot\left(\underline{\underline{S_{aux}}}^{-1}\right)^{T}\right\} ^{*}\right\} ^{T}=\frac{\det{\underline{\underline{S_{aux}}}}}{2\pi}\cdot\left\{ \left\{ \left(\frac{1}{\det{\underline{\underline{S_{aux}}}}}\cdot\left(\underline{\underline{S_{aux}}}^{*}\right)^{T}\right)^{T}\right\} ^{*}\right\} ^{T}=
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+=\frac{1}{2\pi}\cdot\left\{ \left\{ \left(\underline{\underline{S_{aux}}}^{*}\right)\right\} ^{*}\right\} ^{T}=\frac{1}{2\pi}\cdot\left\{ \underline{\underline{S_{aux}}}\right\} ^{T}=\frac{1}{2\pi}\cdot\underline{\underline{S_{aux}}}^{T}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{\underline{K_{aux}}}^{-1}=\frac{1}{2\pi}\cdot\underline{\underline{S_{aux}}}^{T}=\frac{1}{2\pi}\cdot\begin{pmatrix}a & 0\\
+b\cos\gamma & b\sin\gamma
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+By definition, matrix 
+\begin_inset Formula $\underline{\underline{K_{aux}}}$
+\end_inset
+
+ is built with the basis vectors representations deployed in columns, therefore,
+ we can deduce 
+\begin_inset Formula $\underline{k_{i}}_{\mathcal{A}}$
+\end_inset
+
+ from it:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{k_{1}}_{\mathcal{A}}=\frac{2\pi}{a\sin(\gamma)}\cdot\begin{pmatrix}\sin(\gamma)\\
+-\cos(\gamma)
+\end{pmatrix},\,\,\,\underline{k_{2}}_{\mathcal{A}}=\frac{2\pi}{b\sin(\gamma)}\cdot\begin{pmatrix}0\\
+1
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Metric matrix for this space: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{\underline{M}}_{\mathcal{G}}=\left(\underline{\underline{K_{aux}}}\right)^{T}\cdot\underline{\underline{K_{aux}}}=\frac{2\pi}{ab\sin\gamma}\cdot\begin{pmatrix}b\sin\gamma & -b\cos\gamma\\
+0 & a
+\end{pmatrix}\cdot\frac{2\pi}{ab\sin\gamma}\cdot\begin{pmatrix}b\sin\gamma & 0\\
+-b\cos\gamma & a
+\end{pmatrix}=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\begin{pmatrix}b^{2} & -ab\cos(\gamma)\\
+-ab\cos(\gamma) & a^{2}
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{center} 
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\backslash
+line(1,0){500} 
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{center}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the case of normalized coordinates 
+\begin_inset Formula $\mathcal{G}'$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\underline{\hat{k}_{1}}_{\mathcal{A}}=\begin{pmatrix}\sin(\gamma)\\
+-\cos(\gamma)
+\end{pmatrix},\,\,\,\,\underline{\hat{k}_{2}}_{\mathcal{A}}=\begin{pmatrix}0\\
+1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{\underline{\hat{K}_{aux}}}=\begin{pmatrix}\sin\gamma & 0\\
+-\cos\gamma & 1
+\end{pmatrix},\,\,\,\,\det\left(\hat{K}_{aux}\right)=\sin\gamma$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{\underline{\hat{K}_{aux}}}^{-1}=\frac{1}{\sin\gamma}\cdot\begin{pmatrix}1 & 0\\
+\cos\gamma & \sin\gamma
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{\underline{M}}_{\mathcal{G}'}=\left(\underline{\underline{\hat{K}_{aux}}}\right)^{T}\cdot\underline{\underline{\hat{K}_{aux}}}=\begin{pmatrix}\sin\gamma & -\cos\gamma\\
+0 & 1
+\end{pmatrix}\cdot\begin{pmatrix}\sin\gamma & 0\\
+-\cos\gamma & 1
+\end{pmatrix}=\begin{pmatrix}1 & -\cos\gamma\\
+-\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Diffraction condition
+\end_layout
+
+\begin_layout Standard
+Suppose we have an incident particle with a given initial momentum 
+\begin_inset Formula $\boldsymbol{p}_{i}$
+\end_inset
+
+ and energy 
+\begin_inset Formula $E_{i}$
+\end_inset
+
+.
+ After colliding with a surface, our particle has momentum 
+\begin_inset Formula $\boldsymbol{p}_{f}$
+\end_inset
+
+ and energy 
+\begin_inset Formula $E_{f}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boldsymbol{p_{i}}=\boldsymbol{p}_{i\parallel}+\boldsymbol{p}_{i\perp}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+E_{i}=T_{i\parallel}+T_{i\perp}+\epsilon_{i}\,\,\,\,,\,\,\,\, T_{\alpha}=\frac{\boldsymbol{p}_{\alpha}^{2}}{2M}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\epsilon_{i}$
+\end_inset
+
+ is the internal energy of the particle.
+ The same equations stand for the final state 
+\begin_inset Formula $f$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The Bragg law for a 2D lattice says that:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boldsymbol{k}_{f\parallel}=\boldsymbol{k}_{i\parallel}+\boldsymbol{G}_{nm}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\boldsymbol{p}_{i\parallel}=\hbar\boldsymbol{k}_{i\parallel}\,\,\,\,,\,\,\,\,\boldsymbol{p}_{f\parallel}=\hbar\boldsymbol{k}_{f\parallel}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $\boldsymbol{G}_{nm}$
+\end_inset
+
+ is a vector that belongs to the reciprocal space related to the surface
+ lattice (in our notation,
+\begin_inset Formula $\boldsymbol{G}_{nm}\in\mathcal{G}$
+\end_inset
+
+ ) and 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\boldsymbol{k}_{f}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{k}_{i}$
+\end_inset
+
+ are the final and initial parallel (to the surface) momentum (in 
+\begin_inset Formula $\hbar$
+\end_inset
+
+ units) projected on the same reciprocal space.
+ 
+\end_layout
+
+\begin_layout Standard
+The energy conservation law states that:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $E_{i}=E_{f}\,\,\implies T_{i\parallel}+T_{i\perp}+\epsilon_{i}=T_{f\parallel}+T_{f\perp}+\epsilon_{f}\,\,\,\implies\frac{\boldsymbol{p}_{i\parallel}^{2}}{2M}+\frac{\boldsymbol{p}_{i\perp}^{2}}{2M}+\epsilon_{i}=\frac{\boldsymbol{p}_{f\parallel}^{2}}{2M}+\frac{\boldsymbol{p}_{f\perp}^{2}}{2M}+\epsilon_{f}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{p}_{i}^{2}-\boldsymbol{p}_{f\parallel}^{2}-\boldsymbol{p}_{f\perp}^{2}=2M\Delta\epsilon$
+\end_inset
+
+, with 
+\begin_inset Formula $\Delta\epsilon=\epsilon_{f}-\epsilon_{i}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{p}_{i}^{2}-\hbar^{2}\boldsymbol{k}_{f\parallel}^{2}-\boldsymbol{p}_{f\perp}^{2}=2M\Delta\epsilon$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+adding the Bragg law:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{p}_{i}^{2}-\hbar^{2}\left(\boldsymbol{k}_{i\parallel}+\boldsymbol{G}_{nm}\right)^{2}-\boldsymbol{p}_{f\perp}^{2}=2M\Delta\epsilon\,\,\implies\,\,\boldsymbol{p}_{i}^{2}-\hbar^{2}\left(\boldsymbol{k}_{i\parallel}^{2}+\boldsymbol{G}_{nm}^{2}+2\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}\right)-\boldsymbol{p}_{f\perp}^{2}=2M\Delta\epsilon$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{p}_{i\perp}^{2}-\hbar^{2}\left(\boldsymbol{G}_{nm}^{2}+2\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}\right)-\boldsymbol{p}_{f\perp}^{2}=2M\Delta\epsilon\,\,\implies\,\,\boldsymbol{p}_{f\perp}^{2}=\boldsymbol{p}_{i\perp}^{2}-\hbar^{2}\left(\boldsymbol{G}_{nm}^{2}+2\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}\right)-2M\Delta\epsilon$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+As we are describing diffraction on a surface, it holds that 
+\begin_inset Formula $\boldsymbol{p}_{f\perp}^{2}>0$
+\end_inset
+
+, which can be used to work a simple diffraction condition from the previous
+ equation: 
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Formula $\boldsymbol{p}_{i\perp}^{2}-\hbar^{2}\left(\boldsymbol{G}_{nm}^{2}+2\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}\right)-2M\Delta\epsilon>0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Formula $\boldsymbol{p}_{i\perp}^{2}-2M\Delta\epsilon>\hbar^{2}\left(\boldsymbol{G}_{nm}^{2}+2\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+fbox{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\boldsymbol{G}_{nm}^{2}+2\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}<\frac{2M}{\hbar^{2}}\left(E_{i\perp}-\Delta\epsilon\right)$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Allowed diffraction peaks
+\end_layout
+
+\begin_layout Subsection
+Deriving diffraction peaks law
+\end_layout
+
+\begin_layout Standard
+To solve this problem, we have to find those 
+\begin_inset Formula $\boldsymbol{G}_{nm}$
+\end_inset
+
+ vectors that satisfy the diffraction condition:
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Formula 
+\[
+\boldsymbol{G}_{nm}^{2}+2\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}<\frac{2M}{\hbar^{2}}\left(E_{i\perp}-\Delta\epsilon\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We will solve the previous equation using the auxiliary reciprocal lattice
+ representation of vector 
+\begin_inset Formula $\boldsymbol{k}_{i\parallel}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{G}_{nm}$
+\end_inset
+
+.
+ In our notation we will use 
+\begin_inset Formula $\underline{k_{i\parallel}}_{\mathcal{G}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\underline{G_{nm}}_{\mathcal{G}}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underline{G_{nm}}_{\mathcal{G}}=\begin{pmatrix}n\\
+m
+\end{pmatrix}\in\mathbb{Z}^{2}\,\,\,\,,\,\,\,\,\underline{k_{i\parallel}}_{\mathcal{G}}=\begin{pmatrix}k_{1}^{\parallel}\\
+k_{2}^{\parallel}
+\end{pmatrix}\in\mathbb{R}^{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The components of 
+\begin_inset Formula $\boldsymbol{G}_{nm}$
+\end_inset
+
+ are just integer numbers (labels of the different diffraction peaks).
+ To obtain 
+\begin_inset Formula $\boldsymbol{k}_{i\parallel}$
+\end_inset
+
+, we will need more effort, as its components were defined from 
+\begin_inset Formula $\boldsymbol{p}_{i\parallel},$
+\end_inset
+
+ which is measured with laboratory coordinates:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{p_{i\parallel}}_{\mathcal{L}_{xy}}=p_{i}^{\parallel}\cdot\begin{pmatrix}1\\
+0
+\end{pmatrix}\,\,\implies\underline{k_{i\parallel}}_{\mathcal{L}_{xy}}=\frac{p_{i}^{\parallel}}{\hbar}\cdot\begin{pmatrix}1\\
+0
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{k_{i\parallel}}_{\mathcal{A}}=\underline{\underline{A}}\cdot\underline{k_{i\parallel}}_{\mathcal{L}_{xy}}=\begin{pmatrix}\cos\beta & -\sin\beta\\
+\sin\beta & \cos\beta
+\end{pmatrix}\cdot\frac{p_{i}^{\parallel}}{\hbar}\cdot\begin{pmatrix}1\\
+0
+\end{pmatrix}=\frac{p_{i}^{\parallel}}{\hbar}\cdot\begin{pmatrix}\cos\beta\\
+\sin\beta
+\end{pmatrix}\implies$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{k_{i}}_{\mathcal{G}}^{\parallel}=\underline{\underline{K_{aux}}}^{-1}\cdot\underline{k_{i\parallel}}_{\mathcal{A}}=\frac{1}{2\pi}\cdot\begin{pmatrix}a & 0\\
+b\cos\gamma & b\sin\gamma
+\end{pmatrix}\cdot\frac{p_{i}^{\parallel}}{\hbar}\cdot\begin{pmatrix}\cos\beta\\
+\sin\beta
+\end{pmatrix}=\frac{p_{i}^{\parallel}}{2\pi\hbar}\cdot\begin{pmatrix}a\cos\beta\\
+b\cos\gamma\cos\beta+b\sin\gamma\sin\beta
+\end{pmatrix}=\frac{p_{i}^{\parallel}}{2\pi\hbar}\cdot\begin{pmatrix}a\cos\beta\\
+b\cos(\gamma-\beta)
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{cases}
+k_{1}^{\parallel}=\frac{a\cos\beta}{2\pi\hbar}\cdot p_{i}^{\parallel}\\
+k_{2}^{\parallel}=\frac{b\cos(\gamma-\beta)}{2\pi\hbar}\cdot p_{i}^{\parallel}
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now, let's operate scalar products 
+\begin_inset Formula $\boldsymbol{G}_{nm}^{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{G}_{nm}^{2}=\underline{G_{nm}}_{\mathcal{G}}^{T}\cdot\underline{\underline{M}}_{\mathcal{G}}\cdot\underline{G_{nm}}_{\mathcal{G}}=\begin{pmatrix}n\\
+m
+\end{pmatrix}^{T}\cdot\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\begin{pmatrix}b^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}
+\end{pmatrix}\cdot\begin{pmatrix}n\\
+m
+\end{pmatrix}=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\begin{pmatrix}n\\
+m
+\end{pmatrix}^{T}\cdot\begin{pmatrix}b^{2}n-abm\cos\gamma\\
+a^{2}m-abn\cos\gamma
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{G}_{nm}^{2}=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\left[n\left(b^{2}n-abm\cos\gamma\right)+m\left(a^{2}m-abn\cos\gamma\right)\right]=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\left(b^{2}n^{2}-abmn\cos\gamma+a^{2}m^{2}-abmn\cos\gamma\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+fbox{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\boldsymbol{G}_{nm}^{2}=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\left(b^{2}n^{2}+a^{2}m^{2}-2ab\cos\gamma mn\right)$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}=\underline{k_{i\parallel}}_{\mathcal{G}}^{T}\cdot\underline{\underline{M}}_{\mathcal{G}}\cdot\underline{G_{nm}}_{\mathcal{G}}=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\begin{pmatrix}k_{1}^{\parallel}\\
+k_{2}^{\parallel}
+\end{pmatrix}^{T}\cdot\begin{pmatrix}b^{2}n-abm\cos\gamma\\
+a^{2}m-abn\cos\gamma
+\end{pmatrix}=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\left[k_{1}^{\parallel}\left(b^{2}n-abm\cos\gamma\right)+k_{2}^{\parallel}\left(a^{2}m-abn\cos\gamma\right)\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+fbox{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $\boldsymbol{k}_{i\parallel}\cdot\boldsymbol{G}_{nm}=\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\left(b^{2}k_{1}^{\parallel}n-abk_{1}^{\parallel}\cos\gamma m+k_{2}^{\parallel}a^{2}m-abk_{2}^{\parallel}\cos\gamma n\right)$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus,
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\left(b^{2}n^{2}+a^{2}m^{2}-2ab\cos\gamma mn\right)+2\cdot\left(\frac{2\pi}{ab\sin\gamma}\right)^{2}\cdot\left(b^{2}k_{1}^{\parallel}n-abk_{1}^{\parallel}\cos\gamma m+k_{2}^{\parallel}a^{2}m-abk_{2}^{\parallel}\cos\gamma n\right)<\frac{2M}{\hbar^{2}}\left(E_{i\perp}-\Delta\epsilon\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\left(b^{2}n^{2}+a^{2}m^{2}-2ab\cos\gamma mn\right)+2\left(b^{2}k_{1}^{\parallel}n-abk_{1}^{\parallel}\cos\gamma m+k_{2}^{\parallel}a^{2}m-abk_{2}^{\parallel}\cos\gamma n\right)<\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $b^{2}n^{2}+a^{2}m^{2}-2ab\cos\gamma mn+2b^{2}k_{1}^{\parallel}n-2abk_{1}^{\parallel}\cos\gamma m+2k_{2}^{\parallel}a^{2}m-2abk_{2}^{\parallel}\cos\gamma n<\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+fbox{
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula $b^{2}n^{2}+a^{2}m^{2}-2ab\cos\gamma mn+2b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)n+2a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)m<\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)$
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+}
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Conic section analysis
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $Q$
+\end_inset
+
+ is a conic section with the form:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\equiv\left\{ b^{2}n^{2}-2ab\cos\gamma mn+a^{2}m^{2}+2b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)n+2a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)m-\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)=0\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\equiv An^{2}+Bmn+Cm^{2}+Dn+Em+F=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let's analyze the matrix representation of Q:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Q\equiv\left(\mathfrak{X}^{T}\mathcal{A}_{Q}\mathfrak{X}=0\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\mathfrak{X}=\begin{pmatrix}n\\
+m\\
+1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\mathcal{A}_{Q}=\begin{pmatrix}A & \frac{B}{2} & \frac{D}{2}\\
+\frac{B}{2} & C & \frac{E}{2}\\
+\frac{D}{2} & \frac{E}{2} & F
+\end{pmatrix}=\begin{pmatrix}b^{2} & \frac{-2ab\cos\gamma}{2} & \frac{2b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)}{2}\\
+\frac{-2ab\cos\gamma}{2} & a^{2} & \frac{2a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)}{2}\\
+\frac{2b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)}{2} & \frac{2a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)}{2} & -\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+simplifying
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\mathcal{A}_{Q}=\begin{pmatrix}b^{2} & -ab\cos\gamma & b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)\\
+-ab\cos\gamma & a^{2} & a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\\
+b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right) & a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right) & -\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Degenerate conic section
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Degenerate-conic-section"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+First of all we will determine in which conditions this is a degenerate
+ conic section:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\det(\mathcal{A}_{Q})=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $A-B=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $A=b^{2}a^{2}\left\{ -\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)\right\} +a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\cdot\left\{ -ab\cos\gamma\right\} \cdot b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)-ab\cos\gamma\cdot a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\cdot$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\cdot b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $A=-\left(\frac{a^{2}b^{2}\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)-a^{2}b^{2}\cos\gamma\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)-a^{2}b^{2}\cos\gamma\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $A=-\left(\frac{a^{2}b^{2}\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)-2a^{2}b^{2}\cos\gamma\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $B=a^{2}b^{2}\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)^{2}-\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)a^{2}b^{2}\cos^{2}\gamma+a^{2}b^{2}\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+dividing A and B by 
+\begin_inset Formula $a^{2}b^{2}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\frac{A-B}{a^{2}b^{2}}=0\,\,\implies-\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)-2\cos\gamma\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)-\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)^{2}+$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $+\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)\cos^{2}\gamma-\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)^{2}=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $-\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot2M\left(E_{i\perp}-\Delta\epsilon\right)\left(1-\cos^{2}\gamma\right)-2\cos\gamma\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)-\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)^{2}-\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)^{2}=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To simplify the last equation we will need to use the definition of 
+\begin_inset Formula $k_{1}^{\parallel}$
+\end_inset
+
+ and 
+\begin_inset Formula $k_{2}^{\parallel}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $-2\cos\gamma\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)-\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)^{2}-\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)^{2}=$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $-2\cos\gamma\left(-\frac{a^{2}b^{2}\sin^{2}\gamma\sin\beta\sin(\beta+\gamma)}{4\pi^{2}\hbar^{2}}p_{i}^{\parallel2}\right)-\frac{a^{2}b^{2}\sin^{2}\gamma\sin^{2}(\gamma+\beta)}{4\pi^{2}\hbar^{2}}p_{i}^{\parallel2}-\frac{a^{2}b^{2}\sin^{2}\beta\sin^{2}\gamma}{4\pi^{2}\hbar^{2}}p_{i}^{\parallel2}=$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\frac{a^{2}b^{2}\sin^{2}\gamma}{4\pi^{2}\hbar^{2}}\cdot\left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot p_{i}^{\parallel2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\frac{a^{2}b^{2}\sin^{2}\gamma}{4\pi^{2}\hbar^{2}}\cdot2M\left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus,
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}2M\left\{ -\left(E_{i\perp}-\Delta\epsilon\right)\sin^{2}\gamma+\left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}\right\} =0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $2M\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} =0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Our variables are 
+\begin_inset Formula $\gamma$
+\end_inset
+
+, 
+\begin_inset Formula $\beta$
+\end_inset
+
+, 
+\begin_inset Formula $E_{i}^{\parallel}$
+\end_inset
+
+, 
+\begin_inset Formula $E_{i}^{\perp}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta\epsilon$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} \sin^{2}\gamma=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\sin^{2}\gamma=0\,\implies\left(\gamma=0\right)\bigvee\left(\gamma=\pi\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}=\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\frac{E_{i}^{\parallel}}{E_{i}^{\perp}-\Delta\epsilon}=\frac{\sin^{2}\gamma}{\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+The last general result is not simple, but if laboratory coordinates and
+ auxiliary ones are aligned:
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset Formula $\beta=0$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\frac{E_{i}^{\parallel}}{E_{i}^{\perp}-\Delta\epsilon}=\frac{\sin^{2}\gamma}{-\sin^{2}(\gamma)}\,\implies\, E_{i}^{\parallel}=\Delta\epsilon-E_{i}^{\perp}\implies\Delta\epsilon=E_{i}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+which means that all the energy of the system has been used to change the
+ internal state.
+ In this case we do not have diffraction (kinetic energy is 0) 
+\end_layout
+
+\begin_layout Subsubsection
+Classification of non-degenerate conic sections
+\end_layout
+
+\begin_layout Standard
+We have to analyze the minor of 
+\begin_inset Formula $\left(\mathcal{A}_{Q}\right)_{33}$
+\end_inset
+
+, which is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\min\left(\mathcal{A}_{Q}\right)_{33}=\det\begin{pmatrix}b^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}
+\end{pmatrix}=b^{2}a^{2}-a^{2}b^{2}\cos^{2}\gamma=a^{2}b^{2}\sin^{2}\gamma$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\min\left(\mathcal{A}_{Q}\right)_{33}<0\,\implies$
+\end_inset
+
+it is an hyperbola:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $a^{2}b^{2}\sin^{2}\gamma<0\,\implies\sin^{2}\gamma<0\,\implies\gamma\notin\mathbb{R}$
+\end_inset
+
+ (cannot happen in our case)
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\min\left(\mathcal{A}_{Q}\right)_{33}=0\,\implies$
+\end_inset
+
+it is a parabola:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $a^{2}b^{2}\sin^{2}\gamma=0\,\implies\sin^{2}\gamma=0\,\implies\left(\gamma=0\right)\bigvee\left(\gamma=\pi\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+In this case this is not a parabola because 
+\begin_inset Formula $\sin^{2}\gamma=0$
+\end_inset
+
+ is a case in which the conic section is degenerate 
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\min\left(\mathcal{A}_{Q}\right)_{33}>0\,\implies$
+\end_inset
+
+it is an ellipse:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $a^{2}b^{2}\sin^{2}\gamma>0\,\implies\sin^{2}\gamma>0\,\implies\sin\gamma\in\left[-1,0\right)\bigcup\left(0,1\right]\implies\gamma\in\left(0,\pi\right)\bigcup\left(\pi,2\pi\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+In the special case in which 
+\begin_inset Formula $\left(b^{2}=a^{2}\right)\bigwedge\left(-2ab\cos\gamma=0\right)$
+\end_inset
+
+, it is a circumference:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\left(b=a=r\right)\bigwedge\left(\cos\gamma=0\right)\bigwedge\left[\gamma\in\left(0,\pi\right)\right]\,\implies\left(b=a=r\right)\bigwedge\left(\gamma=\frac{\pi}{2}\right)$
+\end_inset
+
+ 
+\begin_inset Newline newline
+\end_inset
+
+If 
+\begin_inset Formula $\left(\min\left(\mathcal{A}_{Q}\right)_{33}>0\right)\bigwedge\left(C\cdot\det\mathcal{A}_{Q}<0\right)\implies$
+\end_inset
+
+real ellipse:
+\begin_inset Newline newline
+\end_inset
+
+In our case 
+\begin_inset Formula $C=a^{2}$
+\end_inset
+
+, which is a real positive constant so our condition is: 
+\begin_inset Formula $\left(\min\left(\mathcal{A}_{Q}\right)_{33}>0\right)\bigwedge\left(\det\mathcal{A}_{Q}<0\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} \sin^{2}\gamma<0$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot\sin^{2}\gamma\cdot E_{i}^{\parallel}<\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{4}\gamma$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $E_{i}^{\parallel}<\frac{\sin^{2}\gamma}{\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta}\cdot\left(E_{i}^{\perp}-\Delta\epsilon\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+In the case of aligned coordinates: 
+\begin_inset Formula $\beta=0$
+\end_inset
+
+ 
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $-\sin^{4}\gamma\cdot E_{i}^{\parallel}<\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{4}\gamma\implies-E_{i}^{\parallel}>E_{i}^{\perp}-\Delta\epsilon\,\implies E_{i}>\Delta\epsilon$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+If 
+\begin_inset Formula $\left(\min\left(\mathcal{A}_{Q}\right)_{33}>0\right)\bigwedge\left(C\cdot\det\mathcal{A}_{Q}>0\right)\implies$
+\end_inset
+
+imaginary ellipse:
+\begin_inset Newline newline
+\end_inset
+
+Following the previous algorithm: 
+\begin_inset Formula $E_{i}<\Delta\epsilon$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can only have ellipses if we get a non-degenerate conic section.
+\begin_inset Newline newline
+\end_inset
+
+This ellipse is real if 
+\begin_inset Formula $\left[\gamma\in\left(0,\pi\right)\bigcup\left(\pi,2\pi\right)\right]\bigwedge\left(E_{i}^{\parallel}<\frac{\sin^{2}\gamma}{\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta}\cdot\left(E_{i}^{\perp}-\Delta\epsilon\right)\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+This ellipse is imaginary if 
+\begin_inset Formula $\left[\gamma\in\left(0,\pi\right)\bigcup\left(\pi,2\pi\right)\right]\bigwedge\left(E_{i}^{\parallel}>\frac{\sin^{2}\gamma}{\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta}\cdot\left(E_{i}^{\perp}-\Delta\epsilon\right)\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+Of course, we only want real ellipses
+\end_layout
+
+\begin_layout Subsubsection
+Classification of degenerate conic sections
+\end_layout
+
+\begin_layout Standard
+As seen in Subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Degenerate-conic-section"
+
+\end_inset
+
+, we have a degenerate conic section when:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\left(\gamma=0\right)\bigvee\left(\gamma=\pi\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\frac{E_{i}^{\parallel}}{E_{i}^{\perp}-\Delta\epsilon}=\frac{\sin^{2}\gamma}{\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We have to analyze the minor of 
+\begin_inset Formula $\left(\mathcal{A}_{Q}\right)_{33}$
+\end_inset
+
+, which is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\det\left(\mathcal{A}_{Q}\right)_{33}=\det\begin{pmatrix}b^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}
+\end{pmatrix}=b^{2}a^{2}-a^{2}b^{2}\cos^{2}\gamma=a^{2}b^{2}\sin^{2}\gamma$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\det\left(\mathcal{A}_{Q}\right)_{33}<0\,\implies$
+\end_inset
+
+two intersecting lines:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $a^{2}b^{2}\sin^{2}\gamma<0\,\implies\sin^{2}\gamma<0\,\implies\gamma\notin\mathbb{R}$
+\end_inset
+
+ (cannot happen in our case)
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\det\left(\mathcal{A}_{Q}\right)_{33}=0\,\implies$
+\end_inset
+
+two parallel straight lines 
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $a^{2}b^{2}\sin^{2}\gamma=0\,\implies\sin^{2}\gamma=0\,\implies\left(\gamma=0\right)\bigvee\left(\gamma=\pi\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\det\left(\mathcal{A}_{Q}\right)_{33}>0\,\implies$
+\end_inset
+
+it is a single point:
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $a^{2}b^{2}\sin^{2}\gamma>0\,\implies\sin^{2}\gamma>0\,\implies\gamma\in\left(0,\pi\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We only have two possibilities:
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\left(\gamma=0\right)\bigvee\left(\gamma=\pi\right)\,\implies$
+\end_inset
+
+ two parallel straight lines
+\end_layout
+
+\begin_layout Itemize
+If 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\left(\frac{E_{i}^{\parallel}}{E_{i}^{\perp}-\Delta\epsilon}=\frac{\sin^{2}\gamma}{\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta}\right)\bigwedge\left(\gamma\ne0\right)\bigwedge\left(\gamma\ne\pi\right)\,\implies$
+\end_inset
+
+ single point 
+\end_layout
+
+\begin_layout Standard
+However, for 
+\begin_inset Formula $\beta=0$
+\end_inset
+
+ it is clear that the second case cannot occur
+\end_layout
+
+\begin_layout Subsubsection
+Center of the conic section
+\end_layout
+
+\begin_layout Standard
+For the center of a conic section 
+\begin_inset Formula $Q$
+\end_inset
+
+, the gradient respect to our Cartesian coordinate system is 0:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\nabla Q=\begin{pmatrix}\frac{\partial Q}{\partial n}\\
+\frac{\partial Q}{\partial m}
+\end{pmatrix}=\begin{pmatrix}0\\
+0
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This yields to the equations:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{pmatrix}c_{1}\\
+c_{2}
+\end{pmatrix}=\frac{1}{4AC-B^{2}}\cdot\begin{pmatrix}BE-2CD\\
+DB-2AE
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $4AC-B^{2}=4b^{2}a^{2}-\left(-2ab\cos\gamma\right)^{2}=4a^{2}b^{2}\sin^{2}\gamma$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $BE-2CD=\left(-2ab\cos\gamma\right)2a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)-2a^{2}2b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)=-4a^{2}b^{2}k_{1}^{\parallel}\sin^{2}\gamma$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $DB-2AE=a^{2}2b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)\left(-2ab\cos\gamma\right)-2b^{2}2a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)=-4a^{2}b^{2}k_{2}^{\parallel}\sin^{2}\gamma$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Therefore:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{pmatrix}c_{1}\\
+c_{2}
+\end{pmatrix}=\begin{pmatrix}-k_{1}^{\parallel}\\
+-k_{2}^{\parallel}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Axis
+\end_layout
+
+\begin_layout Standard
+We can define a conical intersection's axis as a line which contains the
+ center of the conic intersection and a direction vector that is one of
+ the eigenvectors of 
+\begin_inset Formula $\left(\mathcal{A}_{Q}\right)_{33}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+Let's diagonalize 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\left(\mathcal{A}_{Q}\right)_{33}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\left(\mathcal{A}_{Q}\right)_{33}\cdot\nu=\lambda\nu$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\det\begin{pmatrix}b^{2}-\lambda & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}-\lambda
+\end{pmatrix}=\left(b^{2}-\lambda\right)\left(a^{2}-\lambda\right)-a^{2}b^{2}\cos^{2}\gamma=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $a^{2}b^{2}-b^{2}\lambda-a^{2}\lambda+\lambda^{2}=a^{2}b^{2}\cos^{2}\gamma\,\implies\lambda^{2}-\left(a^{2}+b^{2}\right)\lambda+a^{2}b^{2}\sin^{2}\gamma=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\lambda=\frac{a^{2}+b^{2}\pm\sqrt{\left(a^{2}+b^{2}\right)^{2}-4a^{2}b^{2}\sin^{2}\gamma}}{2}=\frac{a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}-4a^{2}b^{2}\sin^{2}\gamma}}{2}=\frac{a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\left(1-2\sin^{2}\gamma\right)}}{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+\lambda_{+}= & \frac{a^{2}+b^{2}+\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2}\\
+\lambda_{-}= & \frac{a^{2}+b^{2}-\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{pmatrix}b^{2}-\frac{a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}-\frac{a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2}
+\end{pmatrix}\begin{pmatrix}\nu_{1}^{\pm}\\
+\nu_{2}^{\pm}
+\end{pmatrix}=\begin{pmatrix}0\\
+0
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Only one equation is independent:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\left[\frac{a^{2}-b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2}\right]\nu_{1}^{\pm}+\left(ab\cos\gamma\right)\cdot\nu_{2}^{\pm}=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can chose 
+\begin_inset Formula $\nu_{2}^{\pm}=\mu\in\mathbb{R}$
+\end_inset
+
+, thus:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\nu_{1}^{\pm}=\frac{-2ab\cos\gamma}{a^{2}-b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}\mu=\frac{2ab\cos\gamma}{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}\mu$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\nu_{\pm}=\mu\begin{pmatrix}\frac{2ab\cos\gamma}{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}\\
+1
+\end{pmatrix}\,\,,\,\,\mu\in\mathbb{R}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now, let's define two axis, 
+\begin_inset Formula $r_{+}$
+\end_inset
+
+ and 
+\begin_inset Formula $r_{-}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $r_{\pm\text{ }}=\left\{ \begin{pmatrix}x\\
+y
+\end{pmatrix}\in\mathbb{R}\,:\,\left(\exists t\in\mathbb{R}\right)\left[\begin{pmatrix}x\\
+y
+\end{pmatrix}=\begin{pmatrix}c_{1}\\
+c_{2}
+\end{pmatrix}+t\cdot\nu_{\pm}\right]\right\} $
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+which are tilted respect to 
+\begin_inset Formula $x$
+\end_inset
+
+ (
+\begin_inset Formula $n$
+\end_inset
+
+) axis:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\tan\left(\alpha_{\pm}\right)=\frac{\nu_{2}^{\pm}}{\nu_{1}^{\pm}}=\frac{1}{\frac{2ab\cos\gamma}{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}}=\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\alpha_{\pm}=\arctan\left(\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $r_{\pm}:\frac{n+k_{1}^{\parallel}}{\frac{2ab\cos\gamma}{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}}=\frac{m+k_{2}^{\parallel}}{1}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $r_{\pm}\,:\,\, m=\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right]\cdot n+\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\cdot k_{1}^{\parallel}-k_{2}^{\parallel}\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+These axis are perpendicular.
+ Their direction vectors are eigenvectors of the same matrix.
+\end_layout
+
+\begin_layout Subsubsection
+Vertices
+\end_layout
+
+\begin_layout Standard
+Can be calculated from the intersection of 
+\begin_inset Formula $Q$
+\end_inset
+
+ with its axis:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $Q\bigcap r_{\pm}=\begin{cases}
+m=\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right]\cdot n+\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\cdot k_{1}^{\parallel}-k_{2}^{\parallel}\right]\\
+b^{2}n^{2}-2ab\cos\gamma mn+a^{2}m^{2}+2b\left(bk_{1}^{\parallel}-ak_{2}^{\parallel}\cos\gamma\right)n+2a\left(ak_{2}^{\parallel}-bk_{1}^{\parallel}\cos\gamma\right)m-\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\cdot\left(\boldsymbol{p}_{i\perp}^{2}-2M\Delta\epsilon\right)=0
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It is better to deduce them from the canonical equation in the next subsection
+\end_layout
+
+\begin_layout Subsubsection
+Reduced equation
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\lambda_{+}x^{2}+\lambda_{-}y^{2}+\frac{\det\mathcal{A}_{Q}}{\det\left(\mathcal{A}_{Q}\right)_{33}}=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula $\frac{\det\mathcal{A}_{Q}}{\det\left(\mathcal{A}_{Q}\right)_{33}}=\frac{2M\left(\frac{ab\sin\gamma}{2\pi\hbar}\right)^{2}\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} a^{2}b^{2}}{a^{2}b^{2}\sin^{2}\gamma}=$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $=\frac{2Ma^{2}b^{2}\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{4\pi^{2}\hbar^{2}}=\Phi$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let's obtain the canonical equation:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\left(\lambda_{+}x^{2}+\lambda_{-}y^{2}+\Phi\right)\left(-\frac{1}{\Phi}\right)=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\left(\frac{-\lambda_{+}}{\Phi}\right)x^{2}+\left(\frac{-\lambda_{-}}{\Phi}\right)y^{2}=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\left(\frac{x}{\sqrt{-\frac{\Phi}{\lambda_{+}}}}\right)^{2}+\left(\frac{y}{\sqrt{-\frac{\Phi}{\lambda_{-}}}}\right)^{2}=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\left(\frac{x}{v_{+}}\right)^{2}+\left(\frac{y}{v_{-}}\right)^{2}=1$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+If our vertices are 
+\begin_inset Formula $v_{+}$
+\end_inset
+
+ and 
+\begin_inset Formula $v_{-}$
+\end_inset
+
+, related with 
+\begin_inset Formula $x$
+\end_inset
+
+ and 
+\begin_inset Formula $y$
+\end_inset
+
+ new axis respectively:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $v_{\pm}=\sqrt{-\frac{\Phi}{\lambda_{\pm}}}=\sqrt{-\frac{\frac{2Ma^{2}b^{2}\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{4\pi^{2}\hbar^{2}}}{\frac{a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2}}}=\sqrt{-\frac{4Ma^{2}b^{2}\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{4\pi^{2}\hbar^{2}\cdot\left(a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}\right)}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $v_{\pm}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{\left(a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}\right)}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Interesting cases
+\end_layout
+
+\begin_layout Standard
+Let's analyze 
+\begin_inset Formula $\alpha_{\pm}$
+\end_inset
+
+ and 
+\begin_inset Formula $v_{\pm}$
+\end_inset
+
+ :
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{cases}
+\alpha_{\pm}=\arctan\left(\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right)\\
+v_{\pm}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{\left(a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}\right)}}
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If unit cell has the same vertices: 
+\begin_inset Formula $a=b=r$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\alpha_{\pm}=\arctan\left(\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right)=\arctan\left(\frac{\mp\sqrt{2r^{4}+2r^{4}\cos(2\gamma)}}{2r^{2}\cos\gamma}\right)=\arctan\left(\frac{\mp\sqrt{2\left(1+\cos(2\gamma)\right)}}{2\cos\gamma}\right)=\arctan\left(\frac{\mp\sqrt{2\cdot2\cos^{2}\gamma}}{2\cos\gamma}\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\alpha_{\pm}=\arctan\left(\mp1\right)\implies\begin{cases}
+\alpha_{+}=\frac{3\pi}{4}\\
+\alpha_{-}=\frac{\pi}{4}
+\end{cases}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $v_{\pm}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{\left(a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}\right)}}=\frac{r^{2}}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{\left(2r^{2}\pm\sqrt{2r^{4}+2r^{4}\cos(2\gamma)}\right)}}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $v_{\pm}=\frac{r}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{\left(2\pm\sqrt{4\cos^{2}\gamma}\right)}}=\frac{r}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{2\left(1\pm\cos\gamma\right)}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If unit cell is a rectangle: 
+\begin_inset Formula $\gamma=\frac{\pi}{2}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\alpha_{\pm}=\arctan\left(\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right)=\arctan\left(\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}-2a^{2}b^{2}}}{0}\right)=\arctan\left(\pm\infty\right)=\frac{\pi}{2}+\pi\lambda\,\,,\,\,\,\forall\lambda\in\mathbb{Z}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $v_{\pm}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(\sin\beta\sin(\beta+\gamma)\cos\gamma-\sin^{2}(\gamma+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\sin^{2}\gamma\right\} }{\left(a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}\right)}}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(-\sin^{2}(\frac{\pi}{2}+\beta)-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\right\} }{\left(a^{2}+b^{2}\pm\sqrt{a^{4}+b^{4}-2a^{2}b^{2}}\right)}}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $v_{\pm}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(-\cos^{2}\beta-\sin^{2}\beta\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\right\} }{\left(a^{2}+b^{2}\pm\sqrt{\left(a^{2}-b^{2}\right)^{2}}\right)}}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ \left(-1\right)\cdot E_{i}^{\parallel}-\left(E_{i}^{\perp}-\Delta\epsilon\right)\right\} }{a^{2}+b^{2}\pm\left(a^{2}-b^{2}\right)}}=\frac{ab}{\pi\hbar}\cdot\sqrt{-\frac{M\left\{ -E_{i}^{\parallel}-E_{i}^{\perp}+\Delta\epsilon\right\} }{a^{2}+b^{2}\pm\left(a^{2}-b^{2}\right)}}=\frac{ab}{\pi\hbar}\cdot\sqrt{\frac{M\left\{ E_{i}^{\parallel}+E_{i}^{\perp}-\Delta\epsilon\right\} }{\left(1\pm\text{1}\right)a^{2}+\left(1\mp1\right)b^{2}}}$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $v_{\pm}=\frac{ab}{\pi\hbar}\cdot\sqrt{\frac{M\left\{ E_{i}^{\parallel}+E_{i}^{\perp}-\Delta\epsilon\right\} }{\left(1\pm\text{1}\right)a^{2}+\left(1\mp1\right)b^{2}}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If unit cell is a square: 
+\begin_inset Formula $\left(\gamma=\frac{\pi}{2}\right)\bigwedge\left(a=b=r\right)$
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $\tan\alpha_{\pm}=\mp1=\tan\alpha_{\text{\pm}}=\pm\infty\,\implies$
+\end_inset
+
+Cannot be defined, we will see that we are in the case of a circumference
+\begin_inset Newline newline
+\end_inset
+
+
+\begin_inset Formula $v_{\pm}=\frac{ab}{\pi\hbar}\cdot\sqrt{\frac{M\left\{ E_{i}^{\parallel}+E_{i}^{\perp}-\Delta\epsilon\right\} }{\left(1\pm\text{1}\right)a^{2}+\left(1\mp1\right)b^{2}}}=\frac{r^{2}}{\pi\hbar}\cdot\sqrt{\frac{M\left\{ E_{i}^{\parallel}+E_{i}^{\perp}-\Delta\epsilon\right\} }{\left(1\pm\text{1}\right)r^{2}+\left(1\mp1\right)r^{2}}}=\frac{r}{\pi\hbar}\cdot\sqrt{\frac{M\left\{ E_{i}^{\parallel}+E_{i}^{\perp}-\Delta\epsilon\right\} }{1\pm1+1\mp1}}=\frac{r}{\pi\hbar}\cdot\sqrt{\frac{M\left\{ E_{i}^{\parallel}+E_{i}^{\perp}-\Delta\epsilon\right\} }{2}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Exit angles
+\end_layout
+
+\begin_layout Standard
+Each allowed peak 
+\begin_inset Formula $\underline{G_{nm}}_{\mathcal{G}}=\begin{pmatrix}n\\
+m
+\end{pmatrix}$
+\end_inset
+
+ can be mapped to laboratory coordinates 
+\begin_inset Formula $\mathcal{L}_{xy}$
+\end_inset
+
+: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{G_{nm}}_{\mathcal{L}_{xy}}=\left(\underline{\underline{A}}{}^{-1}\underline{\underline{K_{aux}}}\right)\cdot\underline{G_{nm}}_{\mathcal{G}}=\begin{pmatrix}\cos\beta & \sin\beta\\
+-\sin\beta & \cos\beta
+\end{pmatrix}\cdot\frac{2\pi}{ab\sin\gamma}\cdot\begin{pmatrix}b\sin\gamma & 0\\
+-b\cos\gamma & a
+\end{pmatrix}\cdot\underline{G_{nm}}_{\mathcal{G}}=\frac{2\pi}{ab\sin\gamma}\cdot\begin{pmatrix}b\sin(\gamma-\beta) & a\sin\beta\\
+-b\cos(\gamma-\beta) & a\cos\beta
+\end{pmatrix}\cdot\underline{G_{nm}}_{\mathcal{G}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{G_{nm}}_{\mathcal{L}_{xy}}=\frac{2\pi}{ab\sin\gamma}\cdot\begin{pmatrix}b\sin(\gamma-\beta) & a\sin\beta\\
+-b\cos(\gamma-\beta) & a\cos\beta
+\end{pmatrix}\cdot\begin{pmatrix}n\\
+m
+\end{pmatrix}=\frac{2\pi}{ab\sin\gamma}\cdot\begin{pmatrix}nb\sin(\gamma-\beta)+ma\sin\beta\\
+ma\cos\beta-nb\cos(\gamma-\beta)
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{\Delta p^{\parallel}}_{\mathcal{L}_{xy}}=\hbar\cdot\underline{G_{nm}}_{\mathcal{L}_{xy}}=\frac{2\pi\hbar}{ab\sin\gamma}\cdot\begin{pmatrix}nb\sin(\gamma-\beta)+ma\sin\beta\\
+ma\cos\beta-nb\cos(\gamma-\beta)
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\underline{\Delta p^{\parallel}}_{\mathcal{L}_{xy}}=\underline{p_{f}}_{\mathcal{L}_{xy}}^{\parallel}-\underline{p_{i}}_{\mathcal{L}_{xy}}^{\parallel}=\underline{p_{f}}_{\mathcal{L}_{xy}}^{\parallel}-\begin{pmatrix}p_{i}^{\parallel}\\
+0
+\end{pmatrix}\,\implies\underline{p_{f}}_{\mathcal{L}_{xy}}^{\parallel}=\underline{\Delta p^{\parallel}}_{\mathcal{L}_{xy}}+\begin{pmatrix}p_{i}^{\parallel}\\
+0
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+p_{f}^{x}=\frac{2\pi\hbar}{ab\sin\gamma}\cdot\left(nb\sin(\gamma-\beta)+ma\sin\beta\right)+p_{i}^{\parallel}\\
+p_{f}^{y}=\frac{2\pi\hbar}{ab\sin\gamma}\cdot\left(ma\cos\beta-nb\cos(\gamma-\beta)\right)
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $p_{f}^{\parallel}=\sqrt{\left(p_{f}^{x}\right)^{2}+\left(p_{f}^{y}\right)^{2}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Using the energy conservation law, we get:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $p_{f}^{\perp}=\sqrt{p_{i}^{2}-2M\Delta\epsilon-\left(p_{f}^{\parallel}\right)^{2}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus, the final momentum is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+p_{f}^{\parallel}=\frac{2\pi\hbar}{ab\sin\gamma}\cdot\sqrt{n^{2}b^{2}+m^{2}a^{2}-2nmab\cos\gamma}\\
+p_{f}^{\perp}=\sqrt{p_{i}^{2}-\left(p_{f}^{\parallel}\right)^{2}-2M\Delta\epsilon}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+or in laboratory coordinates:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\begin{cases}
+p_{f}^{x}=p_{i}^{\parallel}+\frac{2\pi\hbar}{ab\sin\gamma}\cdot\left[nb\sin(\gamma-\beta)+ma\sin\beta\right]\\
+p_{f}^{y}=\frac{2\pi\hbar}{ab\sin\gamma}\cdot\left[ma\cos\beta-nb\cos(\gamma-\beta)\right]\\
+p_{f}^{z}=\sqrt{p_{i}^{2}-\left(p_{f}^{y}\right)^{2}-\left(p_{f}^{x}\right)^{2}-2M\Delta\epsilon}
+\end{cases}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+being 
+\begin_inset Formula $x$
+\end_inset
+
+ the initial beam direction, 
+\begin_inset Formula $y$
+\end_inset
+
+ the perpendicular direction to the previous one an 
+\begin_inset Formula $z$
+\end_inset
+
+ perpendicular to 
+\begin_inset Formula $x$
+\end_inset
+
+ and 
+\begin_inset Formula $y$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We can also assign to each peak an azimuthal angle respect to surface plane
+ 
+\begin_inset Formula $(\Psi)$
+\end_inset
+
+ and a deflection angle within direction plane 
+\begin_inset Formula $(\Theta)$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\Psi=\arctan\left(\frac{p_{f}^{y}}{p_{f}^{x}}\right)\Rightarrow\Psi_{n,m}\left(\beta,\, surface,\, p_{i}^{\parallel}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\Theta=\arctan\left(\frac{p_{f}^{y}}{p_{f}^{z}}\right)\Rightarrow\Theta_{n,m}\left(\beta,\, surface,p_{f}^{z}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\theta_{out}=\arctan\left(\frac{p_{f}^{z}}{\sqrt{\left(p_{f}^{x}\right)^{2}+\left(p_{f}^{y}\right)^{2}}}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

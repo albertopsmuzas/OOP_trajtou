@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -12,13 +12,13 @@
 \font_roman default
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -29,15 +29,24 @@
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -71,24 +80,6 @@ Alberto Pablo Sánchez Muzas
 \end_layout
 
 \begin_layout Section
-Notation
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathbb{N}=\left\{ 0,1,2,..\right\} $
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-\begin_inset Formula $\mathbb{N}^{+}=\mathbb{N}\setminus\left\{ 0\right\} $
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
 Definitions
 \begin_inset CommandInset label
 LatexCommand label
@@ -99,8 +90,12 @@ name "sec:Definitions"
 
 \end_layout
 
+\begin_layout Subsection
+Environment of order N
+\end_layout
+
 \begin_layout Standard
-We will define an environment of order 
+We define an environment of order 
 \begin_inset Formula $N$
 \end_inset
 
@@ -113,63 +108,90 @@ We will define an environment of order
 \end_inset
 
 .
- Such a set must satisfy the following properties: 
+ It must satisfy, therefore, the following properties: 
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\left(\mathbb{Z}^{2}=\mathfrak{E}_{\infty}\right)\bigwedge\left[\left(\mathcal{E}_{i}\bigcap\mathcal{E}_{j}=\phi\right)\iff\left(i\ne j\right)\right]
+\left(\lim_{N\rightarrow\infty}\mathfrak{E}_{N}=\mathbb{Z}^{2}\right)\bigwedge\left[\left(\mathcal{E}_{i}\bigcap\mathcal{E}_{j}=\phi\right)\iff\left(i\ne j\right)\right]
 \]
 
 \end_inset
 
-For the purpose of this document, we will restric the way of constructing
- the 
-\begin_inset Formula $\mathcal{E}_{i}$
-\end_inset
 
- subsets:
-\begin_inset Formula 
-\[
-\#\mathcal{E}_{i}<\infty
-\]
+\end_layout
 
-\end_inset
-
-we will only allow those ones with a finite number of elements inside.
- 
+\begin_layout Subsection
+Periodic surface.
+ Atomistic point of view.
 \end_layout
 
 \begin_layout Standard
-Now, let's define a basis set 
-\begin_inset Formula $S=\left\{ \boldsymbol{s}_{i}\in\mathbb{R}^{2}\right\} _{i=1}^{2}$
+A periodic surface is an infinite collection of points which are equivalent
+ under certain translations in 2D space.
+ It is completely defined once we set the minimum number of asymetric points
+ that it has (pattern) and the two smallest non collinear translations under
+ which we can generate the whole set of infinite points.
+ Thus, a given surface 
+\begin_inset Formula $\mathcal{S}$
 \end_inset
 
- and a pattern 
-\begin_inset Formula $\mathfrak{P}=\left\{ \boldsymbol{r}_{i}\in\left(\underset{[0,1)}{\mathcal{L}}(S)\oplus\mathbb{R}\right)\right\} _{i=1}^{Q}$
-\end_inset
-
- .
- With these tools we can generate the collection of elements of a periodic
- periodic surface 
-\begin_inset Formula $\mathfrak{S}$
-\end_inset
-
- with pattern 
-\begin_inset Formula $\mathfrak{P}$
-\end_inset
-
-:
+ if completely characterized by the duple: 
 \begin_inset Formula 
 \[
-\mathfrak{S}\left(\mathfrak{P}\right)=\left\{ \boldsymbol{w}\in\mathbb{R}^{3}\,:\,\boldsymbol{w}=\boldsymbol{t}+\boldsymbol{r}\,,\,\boldsymbol{r}\in\mathfrak{P}\,,\,\boldsymbol{t}\in\underset{\mathbb{Z}}{\mathcal{L}(S)}\right\} \,;\,\#\mathfrak{S}\left(\mathfrak{P}\right)=\aleph_{0}
+\mathcal{S}\coloneqq\left(S,\, P\right)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $S$
+\end_inset
+
+ (Bravais basis) is the set of 2D non collinear smallest translations 
+\begin_inset Formula $\boldsymbol{s}_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{s}_{2}$
+\end_inset
+
+ prior mentioned and 
+\begin_inset Formula $P$
+\end_inset
+
+ (pattern) is a finite set of 3D non equivalent points which cannot be generated
+ by integer linear combinations of 
+\begin_inset Formula $S$
+\end_inset
+
+.
+ Sumarizing:
+\begin_inset Formula 
+\[
+\begin{array}{c}
+S=\left\{ \boldsymbol{s}_{1},\boldsymbol{s}_{2}\right\} \\
+P=\left\{ \boldsymbol{r}_{i}\in\underset{[0,1)}{\mathcal{L}}\left[\underset{}{S}\right]\bigotimes\mathbb{R}\right\} _{i=1}^{Q}
+\end{array}
+\]
+
+\end_inset
+
+A more explicit definition of 
+\begin_inset Formula $\mathcal{S}$
+\end_inset
+
+ is:
+\begin_inset Formula 
+\[
+\mathcal{S}\coloneqq\left\{ \boldsymbol{w}\in\mathbb{R}^{3}\,:\,\boldsymbol{w}=\boldsymbol{r}+\boldsymbol{t}\,,\,\boldsymbol{r}\in P\,,\,\boldsymbol{t}\in\underset{\mathbb{Z}}{\mathcal{L}}\left[\underset{}{S}\right]\right\} \,;\,\text{\#}S=\aleph_{0}
 \]
 
 \end_inset
 
 which means that each element of 
-\begin_inset Formula $\mathfrak{S}\left(\mathfrak{P}\right)$
+\begin_inset Formula $\mathcal{S}$
 \end_inset
 
  can be generated as the sum of a linear combination (with integer coefficients)
@@ -178,12 +200,16 @@ which means that each element of
 \end_inset
 
  vectors and one element of the pattern set 
-\begin_inset Formula $\mathfrak{P}$
+\begin_inset Formula $P$
 \end_inset
 
 .
- The vector 
-\begin_inset Formula $\boldsymbol{t}\in\underset{\mathbb{Z}}{\mathcal{L}(S)}$
+ 
+\end_layout
+
+\begin_layout Standard
+The vector 
+\begin_inset Formula $\boldsymbol{t}\in\underset{\mathbb{Z}}{\mathcal{L}}\left[\underset{}{S}\right]$
 \end_inset
 
  can be written as: 
@@ -448,25 +474,38 @@ Definition:
 \begin_inset Formula 
 \[
 \mathcal{E}_{i}^{<8>}=\begin{cases}
-\left\{ \begin{pmatrix}0\\
-0
-\end{pmatrix}\right\}  & \begin{array}{cc}
+\left\{ w_{00}\right\}  & \begin{array}{cc}
 \iff & i=0\end{array}\\
-\overset{i}{\underset{k=-i}{\bigcup}}\left\{ \begin{pmatrix}i\\
-k
-\end{pmatrix},\begin{pmatrix}-i\\
-k
-\end{pmatrix}\right\} \overset{i-1}{\underset{k=-i+1}{\bigcup}}\left\{ \begin{pmatrix}k\\
-i
-\end{pmatrix},\begin{pmatrix}k\\
--i
-\end{pmatrix}\right\}  & \begin{array}{cc}
-\iff & i\in\mathbb{N}^{+}\end{array}
+\overset{i}{\underset{k=-i}{\bigcup}}\left\{ w_{ik},w_{\bar{i}k}\right\} \overset{i-1}{\underset{k=-i+1}{\bigcup}}\left\{ w_{ki},w_{k\bar{i}}\right\}  & \begin{array}{cc}
+\iff & i\ge1\end{array}
 \end{cases}
 \]
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Standard
+or in a more explicit way:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathcal{E}_{i}^{<8>}=\begin{cases}
+\left\{ w_{00}\right\}  & \iff i=0\\
+\left\{ w_{i0},w_{\bar{i}0},w_{0i},w_{0\bar{i}}\right\} \bigcup\left\{ w_{i\bar{i}},w_{\bar{i}i},w_{ii},w_{\bar{i}\bar{i}}\right\}  & \iff i=1\\
+\left\{ w_{i0},w_{\bar{i}0},w_{0i},w_{0\bar{i}}\right\} \overset{i-1}{\underset{k=1}{\bigcup}}\left\{ w_{ki},w_{\bar{i}k},w_{\bar{i}\bar{k}},w_{k\bar{i}},w_{i\bar{k}},w_{\bar{k}i},w_{ik},w_{\bar{k}\bar{i}}\right\} \bigcup\left\{ w_{i\bar{i}},w_{\bar{i}i},w_{ii},w_{\bar{i}\bar{i}}\right\}  & \iff i\ge2
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 We can easily calculate the cardinal of each subset 
 \begin_inset Formula $\mathcal{E}_{i}$
 \end_inset
@@ -474,11 +513,11 @@ We can easily calculate the cardinal of each subset
 :
 \begin_inset Formula 
 \[
-\#\mathcal{E}_{i}=\begin{cases}
+\#\mathcal{E}_{i}^{<8>}=\begin{cases}
 1 & \begin{array}{cc}
 \iff & i=0\end{array}\\
 8i & \begin{array}{cc}
-\iff & i\in\mathbb{N}^{+}\end{array}
+\iff & i\ge1\end{array}
 \end{cases}
 \]
 
@@ -591,6 +630,27 @@ Definition:
 \end_layout
 
 \begin_layout Standard
+We can easily calculate the cardinal of each subset 
+\begin_inset Formula $\mathcal{E}_{i}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\#\mathcal{E}_{i}=\begin{cases}
+1 & \begin{array}{cc}
+\iff & i=0\end{array}\\
+6i & \begin{array}{cc}
+\iff & i\ge1\end{array}
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
 \mathcal{E}_{i}^{<6>}=\begin{cases}
@@ -611,11 +671,11 @@ i
 \end{pmatrix},\begin{pmatrix}-i\\
 i
 \end{pmatrix}\right\}  & \iff i=1\\
-\overset{i-1}{\overset{i-1}{\underset{k=1}{\bigcup}}\left\{ \begin{pmatrix}k\\
+\overset{i-1}{\underset{k=1}{\bigcup}}\left\{ \begin{pmatrix}k\\
 i-k
 \end{pmatrix},\begin{pmatrix}-k\\
 k-i
-\end{pmatrix}\right\} \underset{k=0}{\bigcup}}\left\{ \begin{pmatrix}i\\
+\end{pmatrix}\right\} \bigcup_{k=0}^{i-1}\left\{ \begin{pmatrix}i\\
 -k
 \end{pmatrix},\begin{pmatrix}-i\\
 k
@@ -629,27 +689,6 @@ i
 i
 \end{pmatrix}\right\}  & \begin{array}{cc}
 \iff & i\end{array}\ge2
-\end{cases}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-We can easily calculate the cardinal of each subset 
-\begin_inset Formula $\mathcal{E}_{i}$
-\end_inset
-
-:
-\begin_inset Formula 
-\[
-\#\mathcal{E}_{i}=\begin{cases}
-1 & \begin{array}{cc}
-\iff & i=0\end{array}\\
-6i & \begin{array}{cc}
-\iff & i\ge1\end{array}
 \end{cases}
 \]
 
