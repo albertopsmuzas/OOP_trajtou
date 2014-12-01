@@ -14,6 +14,7 @@ IMPLICIT NONE
 TYPE(Drawtraj):: this
 CHARACTER(LEN=40) :: dynamicsfile,outputfile
 INTEGER(KIND=4) :: order
+WRITE(*,*) "TYPE order,input file and output file"
 READ(*,*) order,dynamicsfile,outputfile
 CALL this%INITIALIZE("XYZ","INsurface.inp")
 CALL this%DRAW(order,dynamicsfile,outputfile)

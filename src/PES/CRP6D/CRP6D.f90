@@ -122,6 +122,7 @@ SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
    REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: atomicx
    ! Local variables
    REAL(KIND=8) :: ma,mb
+   REAL(KIND=8) :: vcorra,vcorrb
    ! Run section
    ma=this%atomdat(1)%getmass()
    mb=this%atomdat(2)%getmass()
@@ -137,8 +138,16 @@ SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
          WRITE(0,*) "GET_ATOMICPOT_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
          CALL EXIT(1)
    END SELECT
-   v(1)=v(1)*this%dumpfunc%getvalue(atomicx(3))
-   v(2)=v(2)*this%dumpfunc%getvalue(atomicx(6))
+   vcorra=this%dumpfunc%getvalue(atomicx(3))
+   vcorrb=this%dumpfunc%getvalue(atomicx(6))
+   dvdu(1)=dvdu(1)*vcorra
+   dvdu(2)=dvdu(2)*vcorra
+   dvdu(3)=dvdu(3)*vcorra+v(1)*this%dumpfunc%getderiv(atomicx(3))
+   dvdu(4)=dvdu(4)*vcorrb
+   dvdu(5)=dvdu(5)*vcorrb
+   dvdu(6)=dvdu(6)*vcorrb+v(2)*this%dumpfunc%getderiv(atomicx(6))
+   v(1)=v(1)*vcorra
+   v(2)=v(2)*vcorrb
    RETURN
 END SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D
 !###########################################################
@@ -363,7 +372,6 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
 #endif
    v=aux1(1)+sum(atomic_v)
-   !v=aux1(1)+va+vb+0.8*dexp(-x(4))+this%farpot%getpot(x(4))
 
    ma=this%atomdat(1)%getmass()
    mb=this%atomdat(2)%getmass()
@@ -444,6 +452,11 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
          dvduvac(4)=this%farpot%getderiv(x(4))
          dvduvac(5:6)=zero
          SELECT CASE(this%extrapol2vac_flag)
+            !CASE("Exponential")
+               !ALLOCATE(Exponential_func::extrapolfunc)
+               !beta=dvducrp(3)/vcrp
+               !alpha=vcrp*dexp(-beta*zcrp)
+               !CALL extrapolfunc%READ([alpha,beta])
             CASE("Logistic")
                ALLOCATE(Logistic_func::extrapolfunc)
                gama=dlog(vzcrp/vzvac)/(zvac-zcrp)
