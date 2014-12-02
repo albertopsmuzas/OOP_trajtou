@@ -13,7 +13,7 @@ IMPLICIT NONE
 !! parameters
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date Jun/2014
+!> @date Dec/2014
 !> @version 1.0
 !----------------------------------------------------------------
 TYPE,EXTENDS(Function1d) :: exponential_func

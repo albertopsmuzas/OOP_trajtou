@@ -10,7 +10,7 @@ objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o mat
 				inicond.o initatom.o dynamics.o dynatom.o bicsplines.o CRP6D.o fourier1d.o wyckoff.generic.o wyckoff.p4mm.o \
 				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
-				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o
+				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
