@@ -10,7 +10,7 @@ objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o mat
 				inicond.o initatom.o dynamics.o dynatom.o bicsplines.o CRP6D.o fourier1d.o wyckoff.generic.o wyckoff.p4mm.o \
 				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
-				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o
+				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o xexponential.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
@@ -55,9 +55,10 @@ fourier2d.o: constants.o surface.o constants.o
 fourier.p4mm.o: debug.o fourier2d.o
 fourier.p6mm.o: debug.o fourier2d.o
 # 1D Functions section -------------------------------------------------------------------
-link_function1d.o: function1d.o one.o logistic.o linear.o exponential.o
+link_function1d.o: function1d.o one.o logistic.o linear.o exponential.o xexponential.o
 function1d.o:
 exponential.o: function1d.o
+xexponential.o: function1d.o
 logistic.o: function1d.o
 one.o: function1d.o
 linear.o: function1d.o
