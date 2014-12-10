@@ -431,7 +431,6 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
    ! Local Parameter
    REAL(KIND=8),PARAMETER :: zero=0.D0 ! what we will consider zero (a.u.)
    REAL(KIND=8),PARAMETER :: dz=0.5D0 ! 0.25 Angstroems approx
-   REAL(KIND=8),DIMENSION(6) :: dfdzh, dfdzh2, deriv
    REAL(KIND=8) :: dummy
    ! Run section
    zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
@@ -450,33 +449,31 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
          ! Set potential and derivs
          vzvac=this%farpot%getpot(x(4))
          CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp,x(4),x(5),x(6)],vzcrp,dvducrp)
-         CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp-dz,x(4),x(5),x(6)],dummy,dfdzh)
-         !CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp-2.D0*dz,x(4),x(5),x(6)],dummy,dfdzh2)
          dvduvac(1:3)=zero
          dvduvac(4)=this%farpot%getderiv(x(4))
          dvduvac(5:6)=zero
+         ! Check kind of extrapolation
          SELECT CASE(this%extrapol2vac_flag)
             CASE("Xexponential")
                ALLOCATE(Xexponential_func::extrapolfunc)
                ! Extrapol potential
-               beta=dvducrp(3)/(vzcrp-vzvac)-1.D0/zcrp
-               alpha=((vzcrp-vzvac)/zcrp)*dexp(-beta*zcrp)
+               beta=-1.D0/zvac
+               alpha=(vzcrp-vzvac)/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+               gama=vzvac-alpha*zvac*dexp(beta*zvac)
                CALL extrapolfunc%READ([alpha,beta])
-               v=extrapolfunc%getvalue(x(3))+vzvac
+               v=extrapolfunc%getvalue(x(3))+gama
                dvdu(3)=extrapolfunc%getderiv(x(3))
                ! Extrapol derivatives
                DO i = 1, 6
                   SELECT CASE(i)
                      CASE(3)
                         ! Skip dvdz
-                        CYCLE
                      CASE DEFAULT
-                        !deriv(i)=(dvducrp(i)-2.D0*dfdzh(i)+dfdzh2(i))/(dz**2.D0) ! order 2 backwards derivative
-                        !deriv(i)=(dvducrp(i)-dfdzh(i))/dz ! order 1 backwards derivative
-                        !beta=deriv(i)/(dvducrp(i)-dvduvac(i))-1.D0/zcrp
-                        alpha=((dvducrp(i)-dvduvac(i))/zcrp)*dexp(-beta*zcrp)
+                        beta=-1.D0/zvac
+                        alpha=(dvducrp(i)-dvduvac(i))/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+                        gama=dvduvac(i)-alpha*zvac*dexp(beta*zvac)
                         CALL extrapolfunc%READ([alpha,beta])
-                        dvdu(i)=extrapolfunc%getvalue(x(3))+dvduvac(i)
+                        dvdu(i)=extrapolfunc%getvalue(x(3))+gama
                   END SELECT
                END DO
                DEALLOCATE(extrapolfunc)
@@ -489,19 +486,25 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
                alpha=(vzvac-beta)/zvac
                CALL extrapolfunc%READ([alpha,beta])
                v=extrapolfunc%getvalue(x(3))
+               dvdu(3)=extrapolfunc%getderiv(x(3))
                ! Extrapol derivatives
                DO i = 1, 6
-                  beta=(dvducrp(i)*zvac-dvduvac(i)*zcrp)/(zvac-zcrp)
-                  alpha=(dvduvac(i)-beta)/zvac
-                  CALL extrapolfunc%READ([alpha,beta])
-                  dvdu(i)=extrapolfunc%getvalue(x(3))
+                  SELECT CASE(i)
+                     CASE(3)
+                        ! do nothing
+                     CASE DEFAULT
+                        beta=(dvducrp(i)*zvac-dvduvac(i)*zcrp)/(zvac-zcrp)
+                        alpha=(dvduvac(i)-beta)/zvac
+                        CALL extrapolfunc%READ([alpha,beta])
+                        dvdu(i)=extrapolfunc%getvalue(x(3))
+                  END SELECT
                END DO
                DEALLOCATE(extrapolfunc)
                RETURN
 
             CASE DEFAULT
                WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: type of extrapolation function isn't implemented yet"
-               WRITE(0,*) "Implemented ones: Linear, Exponential, None"
+               WRITE(0,*) "Implemented ones: Linear, Xexponential, None"
                CALL EXIT(1)
          END SELECT
       CASE(.FALSE.)
@@ -1187,7 +1190,7 @@ SUBROUTINE READ_CRP6D(this,filename)
          this%zvacuum=0.D0
       CASE DEFAULT
          WRITE(0,*) "READ_CRP6D ERR: Keyword for extrapolation function needed"
-         WRITE(*,*) "Currently implemented: Logistic, None, Exponential"
+         WRITE(*,*) "Currently implemented: None, Logistic, Exponential, Xexponential"
          WRITE(*,*) "Case sensitive."
          CALL EXIT(1)
    END SELECT
