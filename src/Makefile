@@ -3,7 +3,7 @@ include make.inc
 # Add here all folder names in src
 folderlist= debug constants units surface PES interpol1d interpol1d/cubicsplines maths PES/CRP3D interpol2d interpol2d/fourier \
 				inicond inicond/atom inicond/molecule dynamics dynamics/atom interpol2d/bicsplines PES/CRP6D interpol1d/fourier functions\
-				dynamics/molecule utils analysis analysis/diffraction
+				dynamics/molecule utils analysis analysis/diffraction integrator
 
 # Object list. There should be a rule for each object in this list
 objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier2d.o fourier.p4mm.o cubicsplines.o \
@@ -11,7 +11,7 @@ objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o mat
 				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
 				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o xexponential.o\
-				xplusnexponential.o
+				xplusnexponential.o integrator.o link_integrator.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
@@ -74,9 +74,13 @@ dynamics.o: units.o link_PES.o inicond.o
 dynatom.o: debug.o dynamics.o initatom.o
 dyndiatomic.o: debug.o dynamics.o initdiatomic.o
 # Analysis -------------------------------------------------------------------------------
-#diffraction.o: debug.o surface.o initatom.o CRP3D.o
 diffractionCRP3D.o: debug.o surface.o initatom.o CRP3D.o
 diffractionCRP6D.o: debug.o surface.o initdiatomic.o CRP6D.o
+# Integrator -------------------------------------------------------------------------------
+#link_integrator.o: integrator.o bulirsch_stoer.o
+link_integrator.o: integrator.o
+integrator.o:
+#bulirsch_stoer.o: integrator.o
 # Utils ----------------------------------------------------------------------------------
 drawtraj.o: surface.o
 #-----------------------------------------------------------------------------------------
