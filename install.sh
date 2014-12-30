@@ -81,6 +81,25 @@ select flavour in default custom Abort;do
 		*)
 	esac
 done
+# Chose default path for PES files
+echo Select a default path for PES files:
+select pesPath in default custom Abort;do
+	case $pesPath in
+		default)
+			pesPath='~/lib/trajtouPES'
+			echo Default path is $pesPath
+			break;;
+		custom)
+			echo Type custom path. It should exists or an error will occur.:
+			read pesPath
+			echo Custom default PES path is: $pesPath
+			break;;
+		Abort)
+			echo Installation aborted
+			exit 2;;
+		*)
+	esac
+done
 # Store installed version ---------------
 versionFlag=debug_${debugmode}_compiler_${compiler}_flavour_${flavour}
 # Check environmental modules -----------
@@ -114,6 +133,8 @@ append-path    PATH             $defaultPath/scripts
 append-path    LD_LIBRARY_PATH  $defaultPath/lib
 append-path		MANPATH          $defaultPath/doc/man
 setenv         OOPTRAJTOUPATH   $defaultPath
+setenv			OOPTRAJTOUPES	  $pesPath
+setenv			LUA_PATH			  $defaultPath/lib/lua/?.lua
 module-whatis  "Sets OOPTRAJTOUPATH environmental variable and adds paths so that OOPTRAJTOU libraries and binaries can be used"
 EOF
 #------- end file -----------------------------
@@ -127,7 +148,9 @@ cat << EOF > $filename
 # Source file to use OOPtrajtou program
 export OOPTRAJTOUPATH=$defaultPath
 export PATH=$PATH:$OOPTRAJTOUPATH/bin:$OOPTRAJTOUPATH/scripts
+export OOPTRAJTOUPES=$pesPath
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OOPTRAJTOUPATH/lib
+export LUA_PATH=$LUA_PATH:$defaultPath/lib/lua/?.lua
 EOF
 #------- end file -----------------------------
 		echo In order to use source file, type:
@@ -140,6 +163,17 @@ esac
 # Store installed version info -------------
 echo Version: $versionFlag > version.txt
 echo Source: $filename >> version.txt
+#/////// Install complements ////////////////
+# Install harald-aotus lib
+cd src/utils/haraldkl-aotus-707f4da5293b
+./waf configure build
+cd build
+mv *.mod $defaultPath/mod/.
+mv libflu.a $defaultPath/lib/.
+mv liblualib.a $defaultPath/lib/.
+mv libaotus.a $defaultPath/lib/.
+mv lua $defaultPath/bin
+cd $defaultPath
 # Compiling section ---------------------
 echo Installing src objects:
 cd src; make;cd ..

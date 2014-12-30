@@ -1,24 +1,6 @@
 MODULE PES_MOD
    USE SURFACE_MOD
 IMPLICIT NONE
-!/////////////////////////////////////////////////////////////////
-! TYPE: Atomdata
-!> @brief
-!! Type to store atoms characteristics. Up to now, it only contains mass
-!! and name of each atom of the PES
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date Mar/2013
-!> @version 1.0
-!----------------------------------------------------------------
-TYPE :: Atomdata
-PRIVATE
-   REAL(KIND=8) :: mass
-   CHARACTER(LEN=2) :: myname
-   CONTAINS
-      PROCEDURE,PUBLIC :: getname => getname_atomdata
-      PROCEDURE,PUBLIC :: getmass => getmass_atomdata
-END TYPE Atomdata
 !////////////////////////////////////////////////////////////////////////////////////////
 ! TYPE: PES
 !> @brief
@@ -41,29 +23,29 @@ END TYPE Atomdata
 !------------------------------------------------------------------------------------------
 TYPE,ABSTRACT :: PES
 PRIVATE
-   CHARACTER(LEN=30) :: alias
-   INTEGER :: dimensions
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: r
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dvdu 
-   REAL(KIND=8) :: v
-   LOGICAL :: initialized = .FALSE.
-   TYPE(Atomdata),DIMENSION(:),ALLOCATABLE,PUBLIC:: atomdat
+   CHARACTER(LEN=:),ALLOCATABLE:: alias
+   CHARACTER(LEN=:),ALLOCATABLE:: pestype
+   INTEGER:: dimensions
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: r
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: dvdu 
+   REAL(KIND=8):: v
+   LOGICAL:: initialized = .FALSE.
    TYPE(Surface),PUBLIC:: surf
    CONTAINS
       ! Initialization block
-      PROCEDURE(INITIALIZE_PES),DEFERRED,PUBLIC :: INITIALIZE     ! DEFERRED, see INTERFACE !!!!!!!!!!!
+      PROCEDURE(INITIALIZE_PES),DEFERRED,PUBLIC:: INITIALIZE     ! DEFERRED, see INTERFACE !!!!!!!!!!!
       ! Set block
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: SET_ALIAS => SET_ALIAS_PES
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: SET_DIMENSIONS => SET_DIMENSIONS_PES
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: SET_ATOMS => SET_ATOMS_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: SET_ALIAS => SET_ALIAS_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: SET_PESTYPE => SET_PESTYPE_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: SET_DIMENSIONS => SET_DIMENSIONS_PES
       ! Get block
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: getalias => getalias_PES
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: getdimensions => getdimensions_PES
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: getlastvalue => getlastvalue_PES
-      PROCEDURE(GET_V_AND_DERIVS_PES),DEFERRED :: GET_V_AND_DERIVS ! DEFERRED, see INTERFACE !!!!!!!!!!
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getalias => getalias_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getdimensions => getdimensions_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getlastvalue => getlastvalue_PES
+      PROCEDURE(GET_V_AND_DERIVS_PES),DEFERRED:: GET_V_AND_DERIVS ! DEFERRED, see INTERFACE !!!!!!!!!!
       ! Enquire block
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC :: is_initialized => is_initialized_PES
-      PROCEDURE(is_allowed_PES),DEFERRED,PUBLIC :: is_allowed      ! DEFERRED, see INTERFACE !!!!!!!!!
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: is_initialized => is_initialized_PES
+      PROCEDURE(is_allowed_PES),DEFERRED,PUBLIC:: is_allowed      ! DEFERRED, see INTERFACE !!!!!!!!!
 END TYPE PES
 ABSTRACT INTERFACE
    !###########################################################
@@ -100,73 +82,28 @@ ABSTRACT INTERFACE
 END INTERFACE
 !////////////////////////////////////////////////////////////////////////////////////////
 CONTAINS
-!###########################################################
-!# FUNCTION: getname_atomdata 
-!###########################################################
+!###############################################################
+! SUBROUTINE: SET_ALIAS ########################################
+!###############################################################
 !> @brief
-!! Common get function. Gets name of Atomdata type variable
-!-----------------------------------------------------------
-CHARACTER(LEN=2) FUNCTION getname_atomdata(this) 
-   ! Initial declarations   
+!! Standard set subroutine. Sets alias atribute
+!> @details
+!! - If no argument is given a default string will be loaded
+!---------------------------------------------------------------
+SUBROUTINE SET_PESTYPE_PES(this,pestype)
+   ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Atomdata),INTENT(IN) :: this
+   CLASS(PES),INTENT(INOUT):: this
+   CHARACTER(LEN=*),INTENT(IN),OPTIONAL:: pestype
    ! Run section
-   getname_atomdata=this%myname
+   IF (PRESENT(pestype)) THEN
+      this%pestype=trim(pestype)
+   ELSE
+   this%pestype="NoPesType"
+   END IF
    RETURN
-END FUNCTION getname_atomdata  
-!###########################################################
-!# FUNCTION: getmass_atomdata 
-!###########################################################
-!> @brief 
-!! Common get function. Gets mass of Atomdata
-!-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getmass_atomdata(this) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Atomdata),INTENT(IN):: this
-   ! Run section
-   getmass_atomdata=this%mass
-   RETURN
-END FUNCTION getmass_atomdata
-!###########################################################
-!# SUBROUTINE: SET_ATOMS_PES 
-!###########################################################
-!> @brief
-!! Sets atoms of the PES
-!
-!> @param n - Number of atoms to add
-!> @param names - Array of characters(len=2) with size @b n
-!> @param masses - Array of masses in a.u. with size @b n
-!-----------------------------------------------------------
-SUBROUTINE SET_ATOMS_PES(this,n,names,masses)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(PES),INTENT(INOUT) :: this
-   INTEGER(KIND=4),INTENT(IN) :: n
-   CHARACTER(LEN=2),DIMENSION(:) :: names
-   REAL(KIND=8),DIMENSION(:) :: masses
-   ! Local variables
-   INTEGER(KIND=4) :: i ! counter
-   ! Run section
-   ! Check data
-   SELECT CASE(n==size(names) .AND. n==size(masses))
-      CASE(.TRUE.)
-         ! do nothing
-      CASE(.FALSE.)
-         WRITE(0,*) "SET_ATOMS_PES ERR: Size mismatch between declared atoms, names and masses"
-         CALL EXIT(1)
-   END SELECT
-   ! Set information
-   ALLOCATE(this%atomdat(n))
-   DO i = 1, n
-      this%atomdat(i)%mass=masses(i)
-      this%atomdat(i)%myname=names(i)
-   END DO
-   RETURN
-END SUBROUTINE SET_ATOMS_PES
+END SUBROUTINE SET_PESTYPE_PES
 !###############################################################
 ! SUBROUTINE: SET_ALIAS ########################################
 !###############################################################
@@ -179,13 +116,13 @@ SUBROUTINE SET_ALIAS_PES(this,alias)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES), INTENT(INOUT) :: this
-   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: alias
+   CLASS(PES),INTENT(INOUT) :: this
+   CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: alias
    ! Run section
    IF (PRESENT(alias)) THEN
-      this%alias=alias
+      this%alias=trim(alias)
    ELSE
-   this%alias="Mysterious PES"
+   this%alias="NoAlias"
    END IF
    RETURN
 END SUBROUTINE SET_ALIAS_PES

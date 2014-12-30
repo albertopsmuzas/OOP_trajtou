@@ -9,8 +9,8 @@ vpath %.a lib
 
 # General rules
 
-%.x: %.o libtrajtou.a
-	$(LF) -o bin/$@ bin/$< lib/libtrajtou.a
+%.x: %.o libtrajtou.a libaotus.a
+	$(LF) -o bin/$@ bin/$< lib/libtrajtou.a lib/libaotus.a
 
 %.o: %.f90
 	$(CF) $< -o bin/$@

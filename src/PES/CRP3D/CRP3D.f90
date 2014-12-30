@@ -10,9 +10,18 @@
 !##########################################################
 MODULE CRP3D_MOD
    USE PES_MOD
+   USE SYSTEM_MOD
    USE CUBICSPLINES_MOD
    USE LINK_FOURIER2D_MOD
    USE LINK_FUNCTION1D_MOD
+   USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
+   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
+   USE MATHS_MOD, ONLY: ORDER_VECT, ORDER
+   USE UNITS_MOD
+   USE CONSTANTS_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
 ! Initial declarations
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
@@ -216,9 +225,6 @@ CONTAINS
 !-----------------------------------------------------------
 SUBROUTINE READ_CRP3D_details(this,filename)
    ! Initial declarations   
-   USE MATHS_MOD, ONLY: ORDER_VECT
-   USE UNITS_MOD
-   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D_details),INTENT(OUT):: this
@@ -469,7 +475,6 @@ END FUNCTION getrumpling_CRP3D
 !> @date 22/Jan/2014
 !
 !> @warning
-!! - This routine uses UNITS_MOD, MATHS_MOD and maybe DEBUG_MOD
 !! - This is the @b format needed for the "raw" input file:
 !!    -# line 1: @b real(kind=8),@b real(kind=8),@b character(len=10); X location, Y location, length units
 !!    -# line 2: @b integer(kind=4); Number of points (N) contained in the file
@@ -481,11 +486,6 @@ END FUNCTION getrumpling_CRP3D
 !> @see units_mod, debug_mod, maths_mod
 !---------------------------------------------------------------------- 
 SUBROUTINE READ_SYMMPOINT_RAW(symmraw,filename)
-   USE UNITS_MOD
-   USE MATHS_MOD, ONLY: ORDER
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O Variables ----------------
    CLASS(Symmpoint),INTENT(INOUT) :: symmraw
@@ -550,7 +550,6 @@ END SUBROUTINE READ_SYMMPOINT_RAW
 !
 !> @warning
 !! - There is a routine to create standard input files from "raw" ones.
-!! - May use DEBUG_MOD
 !! - This is the @b format needed for a standard pair potential input:
 !!    -# line 1: Dummy line, just for some comments
 !!    -# line 2: Dummy line, just for some comments
@@ -568,9 +567,6 @@ END SUBROUTINE READ_SYMMPOINT_RAW
 !-----------------------------------------------------------
 SUBROUTINE READ_STANDARD_PAIRPOT (pairpot,filename)
       ! Initial declarations
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables ------------------------------
    CLASS(Pair_pot), INTENT(INOUT) :: pairpot
@@ -618,7 +614,6 @@ END SUBROUTINE READ_STANDARD_PAIRPOT
 !
 !> @warning
 !! - There is a routine to create standard input files from "raw" ones.
-!! - May use DEBUG_MOD
 !! - This is the @b format needed for a standard Sitio input:
 !!    -# line 1: Dummy line, just for some comments
 !!    -# line 2: Dummy line, just for some comments
@@ -631,9 +626,6 @@ END SUBROUTINE READ_STANDARD_PAIRPOT
 !
 !-----------------------------------------------------------
 SUBROUTINE READ_STANDARD_SITIO(site,filename)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(Sitio),INTENT(INOUT) :: site
@@ -692,11 +684,6 @@ END SUBROUTINE READ_STANDARD_SITIO
 !> @see symmetrize, maths_mod, units_mod
 !--------------------------------------------------------------------
 SUBROUTINE GET_SYMMETRIZED_RAW_INPUT(symmraw,zero,vtop,filename)
-   USE MATHS_MOD
-   USE UNITS_MOD
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
 	IMPLICIT NONE
 	! I/O variable ---------------------------
 	CLASS(Symmpoint),INTENT(INOUT) :: symmraw
@@ -755,10 +742,6 @@ END SUBROUTINE GET_SYMMETRIZED_RAW_INPUT
 !!    -# lines 5N+2~5N+2+M: character(len=30),character(len=30); sitio filename, sitio alias
 !-----------------------------------------------------------------------
 SUBROUTINE READ_CRP3D(this,filename)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
-   USE UNITS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),INTENT(OUT) :: this 
@@ -767,98 +750,142 @@ SUBROUTINE READ_CRP3D(this,filename)
    INTEGER(KIND=4),PARAMETER :: runit=450
    ! Local variables
    INTEGER(KIND=4) :: n_pairpots,n_sites,max_order
-   CHARACTER(LEN=30) :: file_surf
-   CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_sites
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: param
-   CHARACTER(LEN=30) :: string
-   CHARACTER(LEN=30),DIMENSION(:),ALLOCATABLE :: files_pairpots
-   CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP3D: "
-   CHARACTER(LEN=2),DIMENSION(1) :: symbol
-   CHARACTER(LEN=10) :: units
-   REAL(KIND=8):: aux
-   REAL(KIND=8),DIMENSION(1) :: aux1
-   TYPE(Mass) :: masss
-   INTEGER(KIND=4) :: i ! Counter
+   CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: files_pairpots,files_sites
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param
+   INTEGER(KIND=4):: ierr
+   INTEGER(KIND=4) :: i ! counter
+   ! Lua-related variables
+   TYPE(flu_State):: conf ! Lua state
+   INTEGER(KIND=4):: pes_table,pairpot_table,sitio_table,dampfunc_table,param_table,fourier_table ! tables
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: subtables
+   CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: keys 
+   ! Auxiliar (dummy) variables
+   INTEGER(KIND=4):: auxint
+   REAL(KIND=8):: auxreal
+   CHARACTER(LEN=1024):: auxstring
+   ! Parameters
+   CHARACTER(LEN=*),PARAMETER :: routinename="READ_CRP3D: "
    ! HEY HO!, LET'S GO!! ------------------
-   CALL this%SET_DIMENSIONS(3)
-   CALL this%SET_ALIAS("CRP3D PES")
-   ! Read input file
-   OPEN(runit,FILE=filename,STATUS="old")
-   READ(runit,*) !dummy line
-   READ(runit,*) symbol,aux,units
-   CALL masss%READ(aux,units)
-   CALL masss%TO_STD()
-   aux1=masss%getvalue()
-   CALL this%SET_ATOMS(1,symbol,aux1)
-   READ(runit,*) file_surf
-   READ(runit,*) max_order
-   READ(runit,*) n_pairpots
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename, file_surf)
-   CALL VERBOSE_WRITE(routinename,"Max order: ",max_order)
-   CALL VERBOSE_WRITE(routinename,"Pairpots: ",n_pairpots)
-#endif
+   ! Open Lua file
+   CALL OPEN_CONFIG_FILE(L=conf,filename=filename,ErrCode=ierr)
+   SELECT CASE(ierr)
+      CASE(0)
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "READ_CRP3D ERR: error reading Lua config file: ",filename
+         CALL EXIT(1)
+   END SELECT
+   ! Open PES table
+   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key='pes')
+   SELECT CASE(ierr)
+      CASE(0)
+         WRITE(0,*) "READ_CRP3D ERR: there is not any information in table pes in config file"
+         CALL EXIT(1)
+      CASE DEFAULT
+         ! do nothing
+   END SELECT
+   ! Set dimensions
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
+   CALL this%SET_DIMENSIONS(auxint)
+   ! Set alias (name)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
+   CALL this%SET_ALIAS(trim(auxstring))
+   ! Set pestype (kind)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
+   CALL this%SET_PESTYPE(trim(auxstring))
+   ! Set & initialize surface input file
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='surfaceInput',val=auxstring)
+   CALL this%surf%INITIALIZE(trim(auxstring))
+   ! Set max environment
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='maxEnvironment',val=auxint)
+   this%max_order=auxint
+   ! Set pair potentials
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=pairpot_table,key='pairPotentials')
+   n_pairpots=aot_table_length(L=conf,thandle=pairpot_table)
    ALLOCATE(files_pairpots(n_pairpots))
+   ALLOCATE(this%all_pairpots(n_pairpots))
    DO i = 1, n_pairpots
-      READ(runit,*) files_pairpots(i)
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,files_pairpots(i))
-#endif
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pairpot_table,pos=i,val=files_pairpots(i))
+      CALL this%all_pairpots(i)%READ(trim(files_pairpots(i)))
    END DO
-   READ(runit,*) string
-   SELECT CASE(string)
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=pairpot_table)
+   ! Set damping function
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=dampfunc_table,key='dampFunction')
+   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=dampfunc_table,key='kind',val=auxstring)
+   SELECT CASE(trim(auxstring))
       CASE("Logistic")
          ALLOCATE(Logistic_func::this%dampfunc)
          ALLOCATE(param(2))
-         READ(runit,*) param
+         ! open param table
+         CALL AOT_TABLE_OPEN(L=conf,parent=dampfunc_table,thandle=param_table,key='param')
+         auxint=aot_table_length(L=conf,thandle=param_table)
+         SELECT CASE(auxint/=2) 
+            CASE(.TRUE.)
+               WRITE(0,*) "READ_CRP3D ERR: wrong number of parameters in pes.dampFunc.param table"
+               CALL EXIT(1)
+            CASE(.FALSE.)
+               ! do nothing
+         END SELECT
+         DO i = 1, 2
+            CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=i,val=param(i))
+         END DO
          CALL this%dampfunc%READ(param)
+         CALL AOT_TABLE_CLOSE(L=conf,thandle=param_table)
       CASE("None")
          ALLOCATE(One_func::this%dampfunc)
-         READ(runit,*) ! dummy
       CASE DEFAULT
          WRITE(0,*) "READ_CRP3D ERR: dampfunction keyword is not implemented"
          WRITE(0,*) "Implemented ones: Logistic, None"
          WRITE(0,*) "Case sensitive"
          CALL EXIT(1)
    END SELECT
-   ! Read Sitios----------------------
-   READ(runit,*) n_sites
-#ifdef DEBUG
-   CALL DEBUG_WRITE(routinename,"Sitios: ",n_sites)
-#endif
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
+   ! Set sitios
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=sitio_table,key='sitios')
+   n_sites=aot_table_length(L=conf,thandle=sitio_table)
    ALLOCATE(files_sites(n_sites))
-   DO i = 1, n_sites
-      READ(runit,*) files_sites(i)
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,files_sites(i))
-#endif
-   END DO
-   ! read last part of the file
-   READ(runit,*) ! dummy
-   READ(runit,*) ! dummy
-   READ(runit,*) ! dummy
-   ALLOCATE(this%klist(n_sites,2))
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Kpoints found:")
-#endif
-   DO i = 1, n_sites
-      READ(runit,*) this%klist(i,:)
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,this%klist(i,:))
-#endif
-   END DO
-   CLOSE(runit)
-   ! Initialize CRP3D
-   ALLOCATE(this%all_pairpots(n_pairpots))
-   DO i = 1,n_pairpots
-      CALL this%all_pairpots(i)%READ(files_pairpots(i)) 
-   END DO
    ALLOCATE(this%all_sites(n_sites))
    DO i = 1, n_sites
-     CALL this%all_sites(i)%READ(files_sites(i)) 
+      CALl AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=sitio_table,pos=i,val=files_sites(i))
+      CALL this%all_sites(i)%READ(trim(files_sites(i))) 
    END DO
-   CALL this%surf%INITIALIZE(file_surf)
-   this%max_order = max_order
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=sitio_table)
+   ! Read fourier Kpoints
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=fourier_table,key='fourierKpoints')
+   auxint=aot_table_length(L=conf,thandle=fourier_table)
+   SELECT CASE(auxint/=n_sites)
+      CASE(.TRUE.)
+         WRITE(0,*) "READ_CRP3D ERR: dimension mismatch between fourierKpoints and number of sitios"
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   ALLOCATE(this%klist(n_sites,2))
+   ALLOCATE(subtables(n_sites))
+   DO i = 1, n_sites
+      CALL AOT_TABLE_OPEN(L=conf,parent=fourier_table,thandle=subtables(i),pos=i)
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=1,val=auxreal)
+      this%klist(i,1)=auxreal
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=2,val=auxreal)
+      this%klist(i,2)=auxreal
+      CALL AOT_TABLE_CLOSE(L=conf,thandle=subtables(i))
+   END DO
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=fourier_table)
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=pes_table)
+   CALL CLOSE_CONFIG(conf)
+   ! VERBOSE PRINT 
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Surface file used as input: ")
+   CALL VERBOSE_WRITE(routinename,"Maximum environmental order: ",this%max_order)
+   CALL VERBOSE_WRITE(routinename,"Number of pair potentials: ",n_pairpots)
+   CALL VERBOSE_WRITE(routinename,"Number of sitios: ",n_sites)
+   CALL VERBOSE_WRITE(routinename,"Pair potentials input files: ",files_pairpots(:))
+   CALL VERBOSE_WRITE(routinename,"Sitios input files: ",files_sites(:))
+   CALL VERBOSE_WRITE(routinename,"List of Kpoints for Fourier interpolation: ")
+   DO i = 1, n_sites
+      CALL VERBOSE_WRITE(routinename,this%klist(i,:))
+   END DO
+#endif
    RETURN
 END SUBROUTINE READ_CRP3D
 !#######################################################################
@@ -884,9 +911,6 @@ END SUBROUTINE READ_CRP3D
 !------------------------------------------------------------------------
 SUBROUTINE EXTRACT_VASINT_CRP3D(this)
    ! Initial declarations
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),INTENT(INOUT) :: this
@@ -945,9 +969,6 @@ END SUBROUTINE EXTRACT_VASINT_CRP3D
 !-----------------------------------------------------------
 SUBROUTINE SMOOTH_CRP3D(this)
    ! Initial declaraitons
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    CLASS(CRP3D),INTENT(INOUT) :: this
    ! Local variables
@@ -1499,9 +1520,6 @@ END SUBROUTINE INTERACTION_AENV_HEXA
 !> @version 1.0
 !------------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),TARGET,INTENT(IN) :: this
@@ -1594,9 +1612,6 @@ END SUBROUTINE GET_V_AND_DERIVS_CRP3D
 !> @version 1.0
 !------------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(this,X,v,dvdu)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),TARGET,INTENT(IN) :: this
@@ -1667,9 +1682,6 @@ END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D
 !> @version 1.0
 !------------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),TARGET,INTENT(IN) :: this
@@ -1749,9 +1761,6 @@ END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D
 !> @version 1.0
 !------------------------------------------------------------
 REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),TARGET,INTENT(IN) :: this
@@ -2156,7 +2165,6 @@ END SUBROUTINE PLOT_XYMAP_SMOOTH_CRP3D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT_DIRECTION1D_CRP3D(this,filename,npoints,angle,z,L)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP3D),INTENT(IN) :: this
@@ -2235,7 +2243,6 @@ END SUBROUTINE PLOT_DIRECTION1D_CRP3D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(this,filename,npoints,angle,z,L)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP3D),INTENT(IN) :: this
@@ -2312,7 +2319,6 @@ END SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT_Z_CRP3D(this,npoints,xyz,L,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP3D),INTENT(IN) :: this
@@ -2384,7 +2390,6 @@ END SUBROUTINE PLOT_Z_CRP3D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D(this,filename,npoints,angle,z,L)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP3D),INTENT(IN) :: this

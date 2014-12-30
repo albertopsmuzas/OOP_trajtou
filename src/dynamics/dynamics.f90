@@ -7,6 +7,7 @@
 !#############################################################
 MODULE DYNAMICS_MOD
 USE UNITS_MOD
+USE LINK_INTEGRATOR_MOD
 USE LINK_PES_MOD
 USE INICOND_MOD
 IMPLICIT NONE
@@ -36,6 +37,7 @@ TYPE,ABSTRACT :: Dynamics
    TYPE(Time) :: max_t 
    INTEGER :: nfollow
    INTEGER,DIMENSION(:),ALLOCATABLE :: followtraj
+   CLASS(Integrator_o1),ALLOCATABLE :: thisintegrator
    CLASS(Inicond),ALLOCATABLE :: thisinicond
    CLASS(PES),ALLOCATABLE :: thispes
    CONTAINS

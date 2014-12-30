@@ -10,11 +10,18 @@
 !! - Inherits modules CRP3D_MOD, BICSPLINES_MOD
 !#######################################################
 MODULE CRP6D_MOD
-USE CRP3D_MOD
-USE EXTRAPOL_TO_VACUUM_MOD
-USE FOURIER_P4MM_MOD
-USE WYCKOFF_P4MM_MOD
-USE LINK_FUNCTION1D_MOD
+   USE UNITS_MOD
+   USE CRP3D_MOD
+   USE SYSTEM_MOD
+   USE EXTRAPOL_TO_VACUUM_MOD
+   USE FOURIER_P4MM_MOD
+   USE WYCKOFF_P4MM_MOD
+   USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
+   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
+   USE LINK_FUNCTION1D_MOD
+#if DEBUG
+   USE DEBUG_MOD
+#endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////
 ! TYPE: CRP6D
@@ -124,8 +131,8 @@ SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
    REAL(KIND=8) :: ma,mb
    REAL(KIND=8) :: vcorra,vcorrb
    ! Run section
-   ma=this%atomdat(1)%getmass()
-   mb=this%atomdat(2)%getmass()
+   ma=system_mass(1)
+   mb=system_mass(2)
    CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecx,atomicx)
    SELECT CASE(this%natomic)
       CASE(1)
@@ -198,8 +205,8 @@ SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D(this,wyckoff,cut2d,toptype,dmax)
    nz=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridsizeZ()
    x=this%wyckoffsite(wyckoff)%x
    y=this%wyckoffsite(wyckoff)%y
-   m1=this%atomdat(1)%getmass()
-   m2=this%atomdat(2)%getmass()
+   m1=system_mass(1)
+   m2=system_mass(2)
    rump=this%atomiccrp(1)%getrumpling(toptype)
    DO i = 1, nr
       DO j = 1, nz
@@ -373,8 +380,8 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
 #endif
    v=aux1(1)+sum(atomic_v)
 
-   ma=this%atomdat(1)%getmass()
-   mb=this%atomdat(2)%getmass()
+   ma=system_mass(1)
+   mb=system_mass(2)
    dvdu(1)=aux2(1,1)+dvdu_atomicA(1)+dvdu_atomicB(1)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
    dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
@@ -860,8 +867,8 @@ SUBROUTINE ROUGH_CRP6D(this)
    CHARACTER(LEN=13),PARAMETER :: routinename="ROUGH_CRP6D: "
    REAL(KIND=8) :: newpot
    ! Run section
-   ma=this%atomdat(1)%getmass()
-   mb=this%atomdat(2)%getmass()
+   ma=system_mass(1)
+   mb=system_mass(2)
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
          molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
@@ -929,8 +936,8 @@ SUBROUTINE SMOOTH_EXTRA_CRP6D(this)
    CHARACTER(LEN=20),PARAMETER :: routinename="SMOOTH_EXTRA_CRP6D: "
    REAL(KIND=8) :: newpot
    ! Run section
-   ma=this%atomdat(1)%getmass()
-   mb=this%atomdat(2)%getmass()
+   ma=system_mass(1)
+   mb=system_mass(2)
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
          molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
@@ -1074,10 +1081,6 @@ END SUBROUTINE ADD_VACUUMSURF_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE READ_CRP6D(this,filename)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
-   USE UNITS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP6D),INTENT(OUT) :: this
@@ -1097,18 +1100,31 @@ SUBROUTINE READ_CRP6D(this,filename)
    CHARACTER(LEN=2),DIMENSION(2) :: symbollist
    CHARACTER(LEN=10) :: units
    CHARACTER(LEN=6) :: resize
-   TYPE(Mass) :: masss
    TYPE(Length):: len
+   ! Lua specifications
+   TYPE(flu_State):: conf
+   INTEGER(KIND=4):: ierr
+   INTEGER(KIND=4):: pes_table
+   ! Auxiliar, dummy variables
+   INTEGER(KIND=4):: auxint
+   CHARACTER(LEN=1024):: auxstring
    ! Run section -----------------------
-   CALL this%SET_ALIAS("CRP6D PES")
-   CALL this%SET_DIMENSIONS(6)
+   ! Open Lua config file
+   CALL OPEN_CONFIG_FILE(L=conf,ErrCode=ierr,filename=filename)
+   ! Open PES table
+   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key='pes')
+   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='name',val=auxstring)
+   CALL this%SET_ALIAS(trim(auxstring))
+   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='kind',val=auxstring)
+   CALL this%SET_PESTYPE(trim(auxstring))
+   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='dimensions',val=auxint)
+   CALL this%SET_DIMENSIONS(auxint)
    ! set up molecular crp
    OPEN (UNIT=runit,FILE=filename,STATUS="old",ACTION="read")
    READ(runit,*) ! dummy line
    READ(runit,*) symbollist(1),auxr,units
    CALL masss%READ(auxr,units)
    CALL masss%TO_STD()
-   masslist(1)=masss%getvalue()
    READ(runit,*) symbollist(2),auxr,units
    CALL masss%READ(auxr,units)
    CALL masss%TO_STD()

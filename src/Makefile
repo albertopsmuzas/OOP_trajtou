@@ -3,7 +3,7 @@ include make.inc
 # Add here all folder names in src
 folderlist= debug constants units surface PES interpol1d interpol1d/cubicsplines maths PES/CRP3D interpol2d interpol2d/fourier \
 				inicond inicond/atom inicond/molecule dynamics dynamics/atom interpol2d/bicsplines PES/CRP6D interpol1d/fourier functions\
-				dynamics/molecule utils analysis analysis/diffraction integrator
+				dynamics/molecule utils analysis analysis/diffraction integrator system
 
 # Object list. There should be a rule for each object in this list
 objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier2d.o fourier.p4mm.o cubicsplines.o \
@@ -11,26 +11,30 @@ objectlist= debug.o constants.o units.o surface.o PES.o CRP3D.o interpol1d.o mat
 				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
 				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o xexponential.o\
-				xplusnexponential.o integrator.o link_integrator.o
+				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
 
-# DEPENDENCIES SECTION ###################################################
+default: libtrajtou.a
 
-# Static library section ----------------------------------------------------------------
+# Static library: trajtou ----------------------------------------------------------------
 libtrajtou.a: $(objectlist)
 	cd ../bin; ar rvs libtrajtou.a $(objectlist); mv libtrajtou.a ../lib/.
+	# Static library: aotus --------------------------------------------------------------
+libaotus.a:
+	cd utils/haraldkl-aotus-707f4da5293b; ./waf configure build; mv build/*.a ../../../lib/.; mv build/*.mod ../../../mod/.
 # System / Fundamental section ----------------------------------------------------------
 debug.o:
 maths.o:
 constants.o:
 units.o: debug.o constants.o
 surface.o: debug.o units.o constants.o maths.o 
+system.o: debug.o units.o
 # Potential energy surfaces section -----------------------------------------------------
 link_PES.o: PES.o CRP3D.o CRP6D.o
 PES.o: surface.o
-CRP3D.o: debug.o units.o maths.o cubicsplines.o link_fourier2d.o PES.o link_function1d.o
+CRP3D.o: debug.o units.o maths.o cubicsplines.o link_fourier2d.o PES.o link_function1d.o system.o
 CRP6D.o: debug.o units.o maths.o CRP3D.o wyckoff.p4mm.o extrapol.o link_function1d.o
 # Example of new PES implementation:
 # newPES.o: PES.o +list of needed modules. Don't forget to add this routine to objectlist.
@@ -70,17 +74,16 @@ inicond.o: units.o constants.o link_PES.o
 initatom.o: debug.o inicond.o 
 initdiatomic.o: debug.o inicond.o
 # Dynamics section -----------------------------------------------------------------------
-dynamics.o: units.o link_PES.o inicond.o
+dynamics.o: units.o link_PES.o inicond.o link_integrator.o
 dynatom.o: debug.o dynamics.o initatom.o
 dyndiatomic.o: debug.o dynamics.o initdiatomic.o
 # Analysis -------------------------------------------------------------------------------
 diffractionCRP3D.o: debug.o surface.o initatom.o CRP3D.o
 diffractionCRP6D.o: debug.o surface.o initdiatomic.o CRP6D.o
 # Integrator -------------------------------------------------------------------------------
-#link_integrator.o: integrator.o bulirsch_stoer.o
-link_integrator.o: integrator.o
-integrator.o:
-#bulirsch_stoer.o: integrator.o
+link_integrator.o: integrator_o1.o bulirsch_stoer.o
+integrator_o1.o:
+bulirsch_stoer.o: integrator_o1.o
 # Utils ----------------------------------------------------------------------------------
 drawtraj.o: surface.o
 #-----------------------------------------------------------------------------------------
