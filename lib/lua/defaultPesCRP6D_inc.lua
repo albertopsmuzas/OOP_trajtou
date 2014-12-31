@@ -5,7 +5,7 @@ pes={
 		kind='CRP6D',                            -- CRP3D kind of PES
 		name='default',                          -- PES files will be at $OOPTRAJTOUPES/'name'
 		dimensions=6,                            -- Number of dimensions
-		crp3dPes={},                             -- CRP3D potentials used. Should be consistent with system specifications (masses, symbols etc.)
+		crp3dPes={},                             -- CRP3D tables needed.
 		surfaceInput='surfacefile',              -- Surface input filename
 		resize={r=0,z=0},                               -- If we want a new denser grid for ZR-cuts
 		dampFunction={kind='None',param={}},              -- Damp funtion used to soften CRP3D additions & substractions at far distances

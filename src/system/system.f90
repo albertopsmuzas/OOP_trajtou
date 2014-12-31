@@ -8,7 +8,7 @@
 MODULE SYSTEM_MOD
    USE UNITS_MOD
    USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
-   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH
+   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
@@ -19,7 +19,7 @@ REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: system_mass
 CHARACTER(LEN=2),DIMENSION(:),ALLOCATABLE:: system_atomsymbols
 CHARACTER(LEN=:),ALLOCATABLE:: system_inputfile
 CHARACTER(LEN=:),ALLOCATABLE:: system_pespath
-INTEGER(KIND=4):: system_dimensions
+CHARACTER(LEN=:),ALLOCATABLE:: system_surface
 INTEGER(KIND=4):: system_natoms
 CONTAINS
 !###########################################################
@@ -60,8 +60,9 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    END SELECT
    ! Open table system
    CALL AOT_TABLE_OPEN(L=conf,thandle=sys_table,key='system')
-   ! Get system dimensiopns
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=sys_table,key='dimensions',val=system_dimensions)
+   ! Get surface
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=sys_table,key='surface',val=string)
+   system_surface=trim(string)
    ! Get number of atoms, masses and atomic symbols
    CALL AOT_TABLE_OPEN(L=conf,parent=sys_table,thandle=sym_table,key='symbols')
    CALL AOT_TABLE_OPEN(L=conf,parent=sys_table,thandle=mass_table,key='masses')
@@ -89,14 +90,13 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    CALL AOT_TABLE_CLOSE(L=conf,thandle=mass_table)
    CALL AOT_TABLE_CLOSE(L=conf,thandle=sym_table)
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=sys_table,key='pesPath',val=string)
-   ALLOCATE(CHARACTER(LEN=len(trim(string))):: system_pespath)
    system_pespath=trim(string)
    CALL CLOSE_CONFIG(conf)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'config file: ',system_inputfile)
+   CALL VERBOSE_WRITE(routinename,'default surface input file: ',system_surface)
    CALL VERBOSE_WRITE(routinename,'default PES path: ',system_pespath)
    CALL VERBOSE_WRITE(routinename,'Natoms: ',system_natoms)
-   CALl VERBOSE_WRITE(routinename,'dimensions: ',system_dimensions)
    CALL VERBOSE_WRITE(routinename,'masses(au): ',system_mass(:))
    CALL VERBOSE_WRITE(routinename,'atomic symbols: ',system_atomsymbols(:))
 #endif

@@ -91,14 +91,27 @@ CONTAINS
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INITIALIZE_CRP6D(this,filename)
+SUBROUTINE INITIALIZE_CRP6D(this,filename,tablename)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP6D),INTENT(OUT)::this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename,tablename
+   ! Local variables
+   CHARACTER(LEN=:),ALLOCATABLE:: auxstring
    ! Run section
-   CALL this%READ(filename)
+   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
+      CASE(.TRUE.)
+         auxstring=system_inputfile
+      CASE(.FALSE.)
+         auxstring=filename
+   END SELECT
+   SELECT CASE(present(tablename))
+      CASE(.TRUE.)
+         CALL this%READ(filename=auxstring,tablename=tablename)
+      CASE(.FALSE.)
+         CALL this%READ(filename=auxstring,tablename='pes')
+   END SELECT
    CALL this%INTERPOL()
    SELECT CASE(this%is_resized)
       CASE(.TRUE.)
@@ -1079,60 +1092,55 @@ END SUBROUTINE ADD_VACUUMSURF_CRP6D
 !> @brief
 !! Sets up a CRP6D Object
 !-----------------------------------------------------------
-SUBROUTINE READ_CRP6D(this,filename)
+SUBROUTINE READ_CRP6D(this,filename,tablename)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(CRP6D),INTENT(OUT) :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CLASS(CRP6D),INTENT(OUT):: this
+   CHARACTER(LEN=*),INTENT(IN):: filename,tablename
    ! IMPORTANT: unit used to read
-   INTEGER(KIND=4),PARAMETER :: runit=180
+   INTEGER(KIND=4),PARAMETER:: runit=180
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
-   INTEGER(KIND=4) :: natomic ! number of atomic potentials
-   INTEGER(KIND=4) :: auxint 
-   REAL(KIND=8) :: auxr
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: param_dump
-   CHARACTER(LEN=30) :: cut2dfilename, string, surfacefile
-   CHARACTER(LEN=12),PARAMETER :: routinename="READ_CRP6D: "
-   CHARACTER,DIMENSION(:),ALLOCATABLE :: letter
-   REAL(KIND=8),DIMENSION(2) :: masslist
-   CHARACTER(LEN=2),DIMENSION(2) :: symbollist
-   CHARACTER(LEN=10) :: units
-   CHARACTER(LEN=6) :: resize
+   INTEGER(KIND=4):: i,j ! counters
+   INTEGER(KIND=4):: natomic ! number of atomic potentials
+   REAL(KIND=8):: auxr
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param_dump
+   CHARACTER(LEN=30):: cut2dfilename, string, surfacefile
+   CHARACTER,DIMENSION(:),ALLOCATABLE:: letter
+   REAL(KIND=8),DIMENSION(2):: masslist
+   CHARACTER(LEN=2),DIMENSION(2):: symbollist
+   CHARACTER(LEN=10):: units
+   CHARACTER(LEN=6):: resize
    TYPE(Length):: len
    ! Lua specifications
    TYPE(flu_State):: conf
    INTEGER(KIND=4):: ierr
-   INTEGER(KIND=4):: pes_table
+   INTEGER(KIND=4):: pes_table,crp3d_table
    ! Auxiliar, dummy variables
    INTEGER(KIND=4):: auxint
    CHARACTER(LEN=1024):: auxstring
+   ! Parameters
+   CHARACTER(LEN=*),PARAMETER:: routinename="READ_CRP6D: "
    ! Run section -----------------------
    ! Open Lua config file
    CALL OPEN_CONFIG_FILE(L=conf,ErrCode=ierr,filename=filename)
    ! Open PES table
-   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key='pes')
+   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
+   ! get pes.name
    CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='name',val=auxstring)
    CALL this%SET_ALIAS(trim(auxstring))
+   ! get pes.kind
    CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='kind',val=auxstring)
    CALL this%SET_PESTYPE(trim(auxstring))
+   ! get pes.dimensions
    CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='dimensions',val=auxint)
    CALL this%SET_DIMENSIONS(auxint)
-   ! set up molecular crp
-   OPEN (UNIT=runit,FILE=filename,STATUS="old",ACTION="read")
-   READ(runit,*) ! dummy line
-   READ(runit,*) symbollist(1),auxr,units
-   CALL masss%READ(auxr,units)
-   CALL masss%TO_STD()
-   READ(runit,*) symbollist(2),auxr,units
-   CALL masss%READ(auxr,units)
-   CALL masss%TO_STD()
-   masslist(2)=masss%getvalue()
-   CALL this%SET_ATOMS(2,symbollist,masslist)
-   READ(runit,*) surfacefile
-   CALL this%surf%INITIALIZE(surfacefile)
-   READ(runit,*) this%natomic
+   ! deal with surface
+   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='surface',val=auxstring)
+   CALL this%surf%INITIALIZE(trim(auxstring))
+   ! get crp3d subpes
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=crp3d_table,key='crp3dPes')
+   this%natomic=aot_table_length(L=conf,thandle=crp3d_table)
    SELECT CASE(this%natomic)
       CASE(1)
          this%is_homonucl=.TRUE.
@@ -1143,20 +1151,15 @@ SUBROUTINE READ_CRP6D(this,filename)
          CALL EXIT(1)
    END SELECT
    ALLOCATE(this%atomiccrp(this%natomic))
+   DO i = 1, this%natomic
+      CALL AOT_TABLE_GET_VALUE(L=conf,ErrCode=ierr,thandle=crp3d_table,pos=i,val=auxstring)
+      CALL this%atomiccrp(i)%INITIALIZE(filename=filename,tablename=trim(auxstring))
+   END DO
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Setting up: ",this%getalias())
    CALL VERBOSE_WRITE(routinename,"Atomic potentials found: ",this%natomic)
+   CALL VERBOSE_WRITE(routinename,"Load from file: ",string)
 #endif
-   ! Prepare atomic potentials
-   DO i = 1, this%natomic
-      READ(runit,*) string
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Load from file: ",string)
-#endif
-      CALL  this%atomiccrp(i)%READ(string)
-      CALL this%atomiccrp(i)%INTERPOL()
-   END DO
-   ! Check that all atomic potentials are based on the same surface
    DO i = 1, this%natomic
       SELECT CASE(this%atomiccrp(1)%surf%tellfilename()==this%atomiccrp(i)%surf%tellfilename())
          CASE(.FALSE.)
@@ -1166,6 +1169,7 @@ SUBROUTINE READ_CRP6D(this,filename)
             ! do nothing
       END SELECT
    END DO
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=crp3d_table)
    ! Read Far potential file -----------------------
    READ(runit,*) string
    CALL this%farpot%INITIALIZE(string)

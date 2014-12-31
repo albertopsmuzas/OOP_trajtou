@@ -52,10 +52,10 @@ ABSTRACT INTERFACE
    !# SUBROUTINE: INITIALIZE_PES 
    !###########################################################
    !-----------------------------------------------------------
-   SUBROUTINE INITIALIZE_PES(this,filename)
+   SUBROUTINE INITIALIZE_PES(this,filename,tablename)
       IMPORT PES
-      CLASS(PES),INTENT(OUT) :: this
-      CHARACTER(LEN=*),INTENT(IN) :: filename
+      CLASS(PES),INTENT(OUT):: this
+      CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename,tablename
    END SUBROUTINE INITIALIZE_PES
    !###########################################################
    !# SUBROUTINE: GET_V_AND_DERIVS_PES 

@@ -183,33 +183,33 @@ TYPE,EXTENDS(PES) :: CRP3D
    CLASS(Function1d),ALLOCATABLE:: dampfunc
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC :: READ => READ_CRP3D
-      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_CRP3D
+      PROCEDURE,PUBLIC:: READ => READ_CRP3D
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_CRP3D
       ! Get block 
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_CORRECTION => GET_V_AND_DERIVS_CORRECTION_CRP3D
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP3D
-      PROCEDURE,PUBLIC :: GET_REPUL_CORRECTIONS => GET_REPUL_CORRECTIONS_CRP3D
-      PROCEDURE,PUBLIC :: getpot => getpot_crp3d
-      PROCEDURE,PUBLIC :: getrumpling => getrumpling_CRP3D
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_CORRECTION => GET_V_AND_DERIVS_CORRECTION_CRP3D
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP3D
+      PROCEDURE,PUBLIC:: GET_REPUL_CORRECTIONS => GET_REPUL_CORRECTIONS_CRP3D
+      PROCEDURE,PUBLIC:: getpot => getpot_crp3d
+      PROCEDURE,PUBLIC:: getrumpling => getrumpling_CRP3D
       ! Enquire block
-      PROCEDURE,PUBLIC :: is_allowed => is_allowed_CRP3D
+      PROCEDURE,PUBLIC:: is_allowed => is_allowed_CRP3D
       ! Tools block
-      PROCEDURE,PUBLIC :: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
-      PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP3D
-      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_Z_CRP3D
-      PROCEDURE,PUBLIC :: RAWINTERPOL => RAWINTERPOL_Z_CRP3D
-      PROCEDURE,PUBLIC :: SET_FOURIER_SYMMETRY => SET_FOURIER_SYMMETRY_CRP3D
+      PROCEDURE,PUBLIC:: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
+      PROCEDURE,PUBLIC:: SMOOTH => SMOOTH_CRP3D
+      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_Z_CRP3D
+      PROCEDURE,PUBLIC:: RAWINTERPOL => RAWINTERPOL_Z_CRP3D
+      PROCEDURE,PUBLIC:: SET_FOURIER_SYMMETRY => SET_FOURIER_SYMMETRY_CRP3D
       ! Plot tools
-      PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_XYMAP_CORRECTION => PLOT_XYMAP_CORRECTION_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_DIRECTION1D_SMOOTH => PLOT_DIRECTION1D_SMOOTH_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_DIRECTION1D_CORRECTION => PLOT_DIRECTION1D_CORRECTION_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_SITIOS => PLOT_SITIOS_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_PAIRPOTS => PLOT_PAIRPOTS_CRP3D
-      PROCEDURE,PUBLIC :: PLOT_Z => PLOT_Z_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_XYMAP => PLOT_XYMAP_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_XYMAP_CORRECTION => PLOT_XYMAP_CORRECTION_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_DIRECTION1D_SMOOTH => PLOT_DIRECTION1D_SMOOTH_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_DIRECTION1D_CORRECTION => PLOT_DIRECTION1D_CORRECTION_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_SITIOS => PLOT_SITIOS_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_PAIRPOTS => PLOT_PAIRPOTS_CRP3D
+      PROCEDURE,PUBLIC:: PLOT_Z => PLOT_Z_CRP3D
 END TYPE CRP3D
 !///////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -353,18 +353,36 @@ END SUBROUTINE SET_FOURIER_SYMMETRY_CRP3D
 !> @brief
 !! Specific implementation of initialize PES from input file
 !
+!> @param[in] filename - char(len=*),optional: input file. If system_inputfile
+!!                       is allocated, it is ignored.
+!> @param[in] tablename - char(len=*),optional: name of Lua table where the PES is
+!!                        stored. By default, it has the value 'pes'.
+!
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Jun/2014 
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INITIALIZE_CRP3D(this,filename)
+SUBROUTINE INITIALIZE_CRP3D(this,filename,tablename)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(CRP3D),INTENT(OUT) :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CLASS(CRP3D),INTENT(OUT):: this
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename,tablename
+   ! Local variables
+   CHARACTER(LEN=:),ALLOCATABLE:: auxstring
    ! Run section
-   CALL this%READ(filename)
+   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
+      CASE(.TRUE.)
+         auxstring=system_inputfile
+      CASE(.FALSE.)
+         auxstring=filename
+   END SELECT
+   SELECT CASE(present(tablename))
+      CASE(.TRUE.) ! present tablename
+         CALL this%READ(filename=auxstring,tablename=tablename)
+      CASE(.FALSE.) ! not present tablename
+         CALL this%READ(filename=auxstring,tablename='pes')
+   END SELECT
    CALL this%INTERPOL()
    RETURN
 END SUBROUTINE INITIALIZE_CRP3D
@@ -722,32 +740,22 @@ SUBROUTINE GET_SYMMETRIZED_RAW_INPUT(symmraw,zero,vtop,filename)
 #endif
 	RETURN
 END SUBROUTINE GET_SYMMETRIZED_RAW_INPUT
-!#######################################################################
-!# SUBROUTINE: INITIALIZE_CRP3D_PES ######################################
-!#######################################################################
+!###########################################################
+!# SUBROUTINE: READ_CRP3D
+!###########################################################
 !> @brief
-!! Read from file useful data to initialize a CRP3D PES files
+!! Read CRP3D input file from Lua config file.
 !
-!> @param[in,out] this - CRP3D to be initializated
-!> @param[in] filename - Name of the input file
-!
-!> @warning
-!! - Input file structure:
-!!    -# line 1: dummy line
-!!    -# line 2: character(len=30),character(len=30); surface filename, surface alias
-!!    -# line 3: integer(kind=4); max order environment to smooth sitios
-!!    -# line 4: integer(kind=4); Number of pair potentials (N)
-!!    -# line 5~5+N: character(kind=30),character(len=30); pairpot filename, pairpot alias
-!!    -# line 5+N+1: integer(kind=4); number of sitios (M)
-!!    -# lines 5N+2~5N+2+M: character(len=30),character(len=30); sitio filename, sitio alias
-!-----------------------------------------------------------------------
-SUBROUTINE READ_CRP3D(this,filename)
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Dec/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE READ_CRP3D(this,filename,tablename)
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP3D),INTENT(OUT) :: this 
    CHARACTER(LEN=*),INTENT(IN) :: filename
-   ! Important: unit opened to read
-   INTEGER(KIND=4),PARAMETER :: runit=450
+   CHARACTER(LEN=*),INTENT(IN):: tablename
    ! Local variables
    INTEGER(KIND=4) :: n_pairpots,n_sites,max_order
    CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: files_pairpots,files_sites
@@ -776,14 +784,7 @@ SUBROUTINE READ_CRP3D(this,filename)
          CALL EXIT(1)
    END SELECT
    ! Open PES table
-   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key='pes')
-   SELECT CASE(ierr)
-      CASE(0)
-         WRITE(0,*) "READ_CRP3D ERR: there is not any information in table pes in config file"
-         CALL EXIT(1)
-      CASE DEFAULT
-         ! do nothing
-   END SELECT
+   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
    ! Set dimensions
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
    CALL this%SET_DIMENSIONS(auxint)

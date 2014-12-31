@@ -5,6 +5,13 @@
 !! Should contain everything related with periodic 2D surfaces
 !##########################################################
 MODULE SURFACE_MOD
+   USE SYSTEM_MOD
+   USE UNITS_MOD
+   USE MATHS_MOD
+   USE CONSTANTS_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////////////////////////
 ! TYPE : Atom_list
@@ -20,8 +27,8 @@ IMPLICIT NONE
 !> @version 2.0
 !-------------------------------------------------------------------------------------
 TYPE,PRIVATE :: Atom_list
-	INTEGER(KIND=4) :: n ! number of atoms in this list
-	CHARACTER(LEN=2) :: alias ! atom name, periodic table
+   INTEGER(KIND=4) :: n ! number of atoms in this list
+   CHARACTER(LEN=2) :: alias ! atom name, periodic table
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: atom
 END TYPE
 !/////////////////////////////////////////////////////////////////////////////////////
@@ -53,41 +60,41 @@ END TYPE
 !-------------------------------------------------------------------------------------
 TYPE Surface
 PRIVATE
-   CHARACTER(LEN=30) :: alias
-   CHARACTER(LEN=30) :: filename
-	LOGICAL :: initialized=.FALSE.
+   CHARACTER(LEN=30):: alias
+   CHARACTER(LEN=:),ALLOCATABLE:: filename
+	LOGICAL:: initialized=.FALSE.
    REAL(KIND=8),PUBLIC,DIMENSION(2) :: s1,s2
-	REAL(KIND=8),DIMENSION(2,2) :: surf2cart_mtrx
-	REAL(KIND=8),DIMENSION(2,2) :: cart2surf_mtrx
-	REAL(KIND=8),DIMENSION(2,2) :: surfunit2cart_mtrx
-	REAL(KIND=8),DIMENSION(2,2) :: cart2surfunit_mtrx
-	REAL(KIND=8),DIMENSION(2,2) :: recip2cart_mtrx
-	REAL(KIND=8),DIMENSION(2,2) :: cart2recip_mtrx
-   INTEGER(KIND=4) :: diff_atoms
-   TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC :: atomtype
-	REAL(KIND=8),DIMENSION(2,2),PUBLIC :: metricsurf_mtrx
-   CHARACTER(LEN=10),PUBLIC :: units
-	REAL(KIND=8),PUBLIC :: norm_s1, norm_s2
-   CHARACTER(LEN=4) :: symmlabel
+	REAL(KIND=8),DIMENSION(2,2):: surf2cart_mtrx
+	REAL(KIND=8),DIMENSION(2,2):: cart2surf_mtrx
+	REAL(KIND=8),DIMENSION(2,2):: surfunit2cart_mtrx
+	REAL(KIND=8),DIMENSION(2,2):: cart2surfunit_mtrx
+	REAL(KIND=8),DIMENSION(2,2):: recip2cart_mtrx
+	REAL(KIND=8),DIMENSION(2,2):: cart2recip_mtrx
+   INTEGER(KIND=4):: diff_atoms
+   TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC:: atomtype
+	REAL(KIND=8),DIMENSION(2,2),PUBLIC:: metricsurf_mtrx
+   CHARACTER(LEN=10),PUBLIC:: units
+	REAL(KIND=8),PUBLIC:: norm_s1, norm_s2
+   CHARACTER(LEN=4):: symmlabel
 CONTAINS
    ! Initiallize
-   PROCEDURE, PUBLIC :: INITIALIZE => INITIALIZE_SURFACE
+   PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_SURFACE
    ! Operations block
-   PROCEDURE,PUBLIC :: surf2cart => surf2cart_SURFACE
-   PROCEDURE,PUBLIC :: cart2surf => cart2surf_SURFACE
-   PROCEDURE,PUBLIC :: surfunit2cart => surfunit2cart_SURFACE
-   PROCEDURE,PUBLIC :: cart2surfunit => cart2surfunit_SURFACE
-   PROCEDURE,PUBLIC :: recip2cart => recip2cart_SURFACE
-   PROCEDURE,PUBLIC :: cart2recip => cart2recip_SURFACE
-   PROCEDURE,PUBLIC :: project_unitcell => project_unitcell_SURFACE
-   PROCEDURE,PUBLIC :: project_iwscell => project_iwscell_SURFACE
+   PROCEDURE,PUBLIC:: surf2cart => surf2cart_SURFACE
+   PROCEDURE,PUBLIC:: cart2surf => cart2surf_SURFACE
+   PROCEDURE,PUBLIC:: surfunit2cart => surfunit2cart_SURFACE
+   PROCEDURE,PUBLIC:: cart2surfunit => cart2surfunit_SURFACE
+   PROCEDURE,PUBLIC:: recip2cart => recip2cart_SURFACE
+   PROCEDURE,PUBLIC:: cart2recip => cart2recip_SURFACE
+   PROCEDURE,PUBLIC:: project_unitcell => project_unitcell_SURFACE
+   PROCEDURE,PUBLIC:: project_iwscell => project_iwscell_SURFACE
    ! Tools block
-   PROCEDURE,PUBLIC :: PRINT_PATTERN => PRINT_PATTERN_SURFACE
-   PROCEDURE,PUBLIC :: MOVE_PATTERN => MOVE_PATTERN_SURFACE
+   PROCEDURE,PUBLIC:: PRINT_PATTERN => PRINT_PATTERN_SURFACE
+   PROCEDURE,PUBLIC:: MOVE_PATTERN => MOVE_PATTERN_SURFACE
    ! Enquire block
-   PROCEDURE,PUBLIC :: is_initialized => is_initialized_SURFACE
-   PROCEDURE,PUBLIC :: tellsymmlabel => tellsymmlabel_SURFACE
-   PROCEDURE,PUBLIC :: tellfilename => tellfilename_SURFACE
+   PROCEDURE,PUBLIC:: is_initialized => is_initialized_SURFACE
+   PROCEDURE,PUBLIC:: tellsymmlabel => tellsymmlabel_SURFACE
+   PROCEDURE,PUBLIC:: tellfilename => tellfilename_SURFACE
 END TYPE
 ! MODULE CONTAINS
 CONTAINS
@@ -250,16 +257,10 @@ END FUNCTION is_initialized_SURFACE
 !! Initializes surface from file @b filename
 !-------------------------------------------------------------------------------
 SUBROUTINE INITIALIZE_SURFACE(surf,filename)
-   USE UNITS_MOD
-   USE MATHS_MOD 
-   USE CONSTANTS_MOD
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O Variables -----------------------------------------------
-   CLASS(Surface), INTENT(INOUT) :: surf
-   CHARACTER(LEN=*), INTENT(IN) :: filename
+   CLASS(Surface),INTENT(INOUT) :: surf
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
    ! Local variables ---------------------------------------------
    INTEGER :: i,j ! Counters
    INTEGER :: control
@@ -267,7 +268,12 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
    TYPE(length) :: len
    REAL(KIND=8), DIMENSION(2,2) :: aux_r
    ! Run section --------------------------------------------
-      surf%filename=filename
+   SELECT CASE(allocated(system_surface) .or. .not.present(filename))
+      CASE(.TRUE.)
+         surf%filename=system_surface
+      CASE(.FALSE.)
+         surf%filename=filename
+   END SELECT
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Initializing a new surface")
    CALL VERBOSE_WRITE(routinename,"File: ",surf%filename)
@@ -567,7 +573,6 @@ END FUNCTION project_unitcell_SURFACE
 !! - Only C4v symmetry
 !----------------------------------------------------------------
 FUNCTION project_iwscell_SURFACE(surf,x)
-   USE CONSTANTS_MOD
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(Surface) , INTENT(IN) :: surf
