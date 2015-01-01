@@ -1115,7 +1115,7 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    ! Lua specifications
    TYPE(flu_State):: conf
    INTEGER(KIND=4):: ierr
-   INTEGER(KIND=4):: pes_table,crp3d_table
+   INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table
    ! Auxiliar, dummy variables
    INTEGER(KIND=4):: auxint
    CHARACTER(LEN=1024):: auxstring
@@ -1170,7 +1170,8 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       END SELECT
    END DO
    CALL AOT_TABLE_CLOSE(L=conf,thandle=crp3d_table)
-   ! Read Far potential file -----------------------
+   ! Read vacuum potential file -----------------------
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=vacfunc_table,key='vacuumFunction')
    READ(runit,*) string
    CALL this%farpot%INITIALIZE(string)
    ! Read dumping function ------------------------
