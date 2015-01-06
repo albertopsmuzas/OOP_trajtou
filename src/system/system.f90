@@ -48,6 +48,7 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    CHARACTER(LEN=10):: units
    INTEGER(KIND=4):: i ! counters
    CHARACTER(LEN=1024):: string
+   LOGICAL:: auxbool
    ! Run section
    ALLOCATE(system_inputfile,source=filename)
    CALL OPEN_CONFIG_FILE(L=conf,filename=system_inputfile,ErrCode=ierr)
@@ -60,6 +61,22 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    END SELECT
    ! Open table system
    CALL AOT_TABLE_OPEN(L=conf,thandle=sys_table,key='system')
+#ifdef DEBUG
+   SELECT CASE(get_debugmode())
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=sys_table,key='debugMode',val=auxbool)
+         CALL SET_DEBUG_MODE(auxbool)
+   END SELECT
+   SELECT CASE(get_verbosemode())
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=sys_table,key='verboseMode',val=auxbool)
+         CALL SET_VERBOSE_MODE(auxbool)
+   END SELECT
+#endif
    ! Get surface
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=sys_table,key='surface',val=string)
    system_surface=trim(string)

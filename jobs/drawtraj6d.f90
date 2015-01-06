@@ -12,10 +12,10 @@ PROGRAM DRAWTRAJ6D
 ! Initial declarations
 IMPLICIT NONE
 TYPE(Drawtraj):: this
-CHARACTER(LEN=40) :: dynamicsfile,outputfile
-INTEGER(KIND=4) :: order
+CHARACTER(LEN=40):: dynamicsfile,outputfile
+INTEGER(KIND=4):: norder
 WRITE(*,*) "TYPE order,input file and output file"
-READ(*,*) order,dynamicsfile,outputfile
+READ(*,*) norder,dynamicsfile,outputfile
 CALL this%INITIALIZE("XYZ","INsurface.inp")
-CALL this%DRAW(order,dynamicsfile,outputfile)
+CALL this%DRAW(norder,dynamicsfile,outputfile)
 END PROGRAM DRAWTRAJ6D

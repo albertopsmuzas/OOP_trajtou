@@ -63,7 +63,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(4),INTENT(OUT) :: dvdu
    ! Local variables
    INTEGER(KIND=4) :: i,j,h ! counters
-   REAL(KIND=8) :: dummy
    REAL(KIND=8) :: z,r,theta,phi
    CLASS(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
    CLASS(Fourier1d),ALLOCATABLE :: thetacut

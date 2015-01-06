@@ -6,6 +6,11 @@
 MODULE WYCKOFF_GENERIC_MOD
    USE BICSPLINES_MOD
    USE FOURIER1D_MOD
+   USE MATHS_MOD
+   USE UNITS_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
 ! Initial declarations
 IMPLICIT NONE
 !//////////////////////////////////////////////////
@@ -14,7 +19,7 @@ IMPLICIT NONE
 !! Auxiliar type to get rid of some technical problems
 !--------------------------------------------------
 TYPE Fouklist
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: k
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: k
 END TYPE
 !//////////////////////////////////////////////////
 ! TYPE: Cut2d
@@ -24,30 +29,30 @@ END TYPE
 !-------------------------------------------------
 TYPE Cut2d
    PRIVATE
-   CHARACTER(LEN=30) :: alias
-   CHARACTER(LEN=30) :: filename
-   REAL(KIND=8),PUBLIC :: x,y,phi,theta
-   TYPE(Bicsplines),PUBLIC :: interrz
+   CHARACTER(LEN=:),ALLOCATABLE:: alias
+   CHARACTER(LEN=:),ALLOCATABLE:: filename
+   REAL(KIND=8),PUBLIC:: x,y,phi,theta
+   TYPE(Bicsplines),PUBLIC:: interrz
    CONTAINS
       ! Initialize block
-      PROCEDURE,PUBLIC :: READ => READ_CUT2D
+      PROCEDURE,PUBLIC:: READ => READ_CUT2D
       ! Get block
-      PROCEDURE,PUBLIC :: gettheta => gettheta_cut2d
-      PROCEDURE,PUBLIC :: getphi => getphi_cut2d
-      PROCEDURE,PUBLIC :: getgridsizer => getgridsizer_cut2d
-      PROCEDURE,PUBLIC :: getgridsizez => getgridsizez_cut2d
-      PROCEDURE,PUBLIC :: getfirstr => getfirstr_cut2d
-      PROCEDURE,PUBLIC :: getfirstz => getfirstz_cut2d
-      PROCEDURE,PUBLIC :: getlastz => getlastz_cut2d
-      PROCEDURE,PUBLIC :: getlastr => getlastr_cut2d
-      PROCEDURE,PUBLIC :: getgridvaluer => getgridvaluer_cut2d
-      PROCEDURE,PUBLIC :: getgridvaluez => getgridvaluez_cut2d
-      PROCEDURE,PUBLIC :: getalias => getalias_cut2d
-      PROCEDURE,PUBLIC :: getpotatgridpoint => getpotatgridpoint_cut2d
+      PROCEDURE,PUBLIC:: gettheta => gettheta_cut2d
+      PROCEDURE,PUBLIC:: getphi => getphi_cut2d
+      PROCEDURE,PUBLIC:: getgridsizer => getgridsizer_cut2d
+      PROCEDURE,PUBLIC:: getgridsizez => getgridsizez_cut2d
+      PROCEDURE,PUBLIC:: getfirstr => getfirstr_cut2d
+      PROCEDURE,PUBLIC:: getfirstz => getfirstz_cut2d
+      PROCEDURE,PUBLIC:: getlastz => getlastz_cut2d
+      PROCEDURE,PUBLIC:: getlastr => getlastr_cut2d
+      PROCEDURE,PUBLIC:: getgridvaluer => getgridvaluer_cut2d
+      PROCEDURE,PUBLIC:: getgridvaluez => getgridvaluez_cut2d
+      PROCEDURE,PUBLIC:: getalias => getalias_cut2d
+      PROCEDURE,PUBLIC:: getpotatgridpoint => getpotatgridpoint_cut2d
       ! Tools block
-      PROCEDURE,PUBLIC :: PRINT_INPUT => PRINT_INPUT_CUT2D
-      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CUT2D
-      PROCEDURE,PUBLIC :: CHANGEPOT_AT_GRIDPOINT => CHANGEPOT_AT_GRIDPOINT_CUT2D
+      PROCEDURE,PUBLIC:: PRINT_INPUT => PRINT_INPUT_CUT2D
+      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_CUT2D
+      PROCEDURE,PUBLIC:: CHANGEPOT_AT_GRIDPOINT => CHANGEPOT_AT_GRIDPOINT_CUT2D
 END TYPE Cut2d
 !////////////////////////////////////////////////////////////////////////////////////////////////////
 ! TYPE: WYCKOFFSITIO
@@ -70,25 +75,24 @@ END TYPE Cut2d
 !!                     in which each phi interpolation is based
 !> 
 !---------------------------------------------------------------------------------------------------
-TYPE,ABSTRACT :: Wyckoffsitio
+TYPE,ABSTRACT:: Wyckoffsitio
    !PRIVATE
-   CHARACTER :: id
-   INTEGER(KIND=4) :: mynumber
-   LOGICAL :: is_homonucl=.FALSE.
-   REAL(KIND=8) :: x,y
-   INTEGER(KIND=4) :: n2dcuts
-   INTEGER(KIND=4) :: nphicuts
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: nphipoints
-   TYPE(Cut2d),DIMENSION(:),ALLOCATABLE :: zrcut
+   CHARACTER:: id
+   INTEGER(KIND=4):: mynumber
+   LOGICAL:: is_homonucl=.FALSE.
+   REAL(KIND=8):: x,y
+   INTEGER(KIND=4):: n2dcuts
+   INTEGER(KIND=4):: nphicuts
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: nphipoints
+   TYPE(Cut2d),DIMENSION(:),ALLOCATABLE:: zrcut
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: READ => READ_WYCKOFFSITIO
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_ID => SET_ID_WYCKOFFSITIO
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_MYNUMBER => SET_MYNUMBER_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: INITIALIZE => INITIALIZE_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ID => SET_ID_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_MYNUMBER => SET_MYNUMBER_WYCKOFFSITIO
       ! Interface procedures
-      !PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_WYCKOFFSITIO
-      PROCEDURE(GET_V_AND_DERIVS_WYCKOFFSITIO),PUBLIC,DEFERRED :: GET_V_AND_DERIVS
+      PROCEDURE(GET_V_AND_DERIVS_WYCKOFFSITIO),PUBLIC,DEFERRED:: GET_V_AND_DERIVS
 END TYPE Wyckoffsitio
 
 ABSTRACT INTERFACE
@@ -396,8 +400,8 @@ SUBROUTINE SET_ID_WYCKOFFSITIO(this,id)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Wyckoffsitio),INTENT(INOUT) :: this
-   CHARACTER,INTENT(IN) :: id
+   CLASS(Wyckoffsitio),INTENT(INOUT):: this
+   CHARACTER,INTENT(IN):: id
    ! Run section
    this%id=id
    RETURN
@@ -409,22 +413,20 @@ END SUBROUTINE SET_ID_WYCKOFFSITIO
 !-----------------------------------------------------
 SUBROUTINE READ_CUT2D(this,filename)
    ! Initial declarations
-   USE MATHS_MOD
-   USE UNITS_MOD
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Cut2d),INTENT(OUT) :: this
-   CHARACTER(LEN=30),INTENT(IN) :: filename
+   CLASS(Cut2d),INTENT(OUT):: this
+   CHARACTER(LEN=*),INTENT(IN):: filename
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
-   INTEGER(KIND=4) :: nx,ny
-   REAL(KIND=8) :: auxr1,auxr2
-   CHARACTER(LEN=10) :: units1,units2,units3
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: z,r
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f
-   TYPE(Length) :: len1,len2
-   TYPE(Energy) :: en
-   TYPE(Angle) :: angl 
+   INTEGER(KIND=4):: i,j ! counters
+   INTEGER(KIND=4):: nx,ny
+   REAL(KIND=8):: auxr1,auxr2
+   CHARACTER(LEN=10):: units1,units2,units3
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: z,r
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f
+   TYPE(Length):: len1,len2
+   TYPE(Energy):: en
+   TYPE(Angle):: angl 
    ! Run section ----------------------
    this%filename = filename
    OPEN (UNIT=10,FILE=filename,STATUS="old",ACTION="read")
@@ -496,55 +498,61 @@ SUBROUTINE INTERPOl_CUT2D(this)
    RETURN
 END SUBROUTINE INTERPOl_CUT2D
 !###########################################################
-!# SUBROUTINE: READ_WYCKOFFSITE 
+!# SUBROUTINE: INITIALIZE_WYCKOFFSITIO 
 !###########################################################
 !> @brief
-!! Initialize a Wyckoffsitio from file. Instead of a filename
-!! it should be given a unit number because this routine will read
-!! a portion of an already opened input file for CRP6D
-!
-!> @warning
-!! - Unit should be opened
-!! - Can only read integer numbers with format '(I2)'. In principle,
-!!   this should be enough, but can be modified if necessary.
+!! Initialize a Wyckoffsitio from file.
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 20/03/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE READ_WYCKOFFSITIO(this,u)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
+SUBROUTINE INITIALIZE_WYCKOFFSITIO(this,nphipoints,filenames,letter,is_homonucl,mynumber)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Wyckoffsitio),INTENT(INOUT) :: this
-   INTEGER(KIND=4),INTENT(IN) :: u
+   CLASS(Wyckoffsitio),INTENT(INOUT):: this
+   INTEGER(KIND=4),DIMENSION(:),INTENT(IN):: nphipoints
+   CHARACTER(LEN=*),DIMENSION(:),INTENT(IN):: filenames
+   CHARACTER,INTENT(IN):: letter
+   LOGICAL,INTENT(IN):: is_homonucl
+   INTEGER(KIND=4),INTENT(IN):: mynumber
    ! Local variables
-   CHARACTER(LEN=30) :: filename
-   INTEGER(KIND=4) :: i ! counters
-   CHARACTER(LEN=19) :: routinename="READ_WYCKOFFSITIO: "
+   INTEGER(KIND=4):: i ! counters
+   ! Parameters 
+   CHARACTER(LEN=*),PARAMETER:: routinename="INITIALIZE_WYCKOFFSITIO: "
    ! Run section
-   ! Read first line in several steps
-   READ(u,'(I2)',advance="no") this%n2dcuts
+   this%mynumber=mynumber
+   this%is_homonucl=is_homonucl
+   this%id=letter
+   this%n2dcuts=sum(nphipoints(:))
+   this%nphicuts=size(nphipoints(:))
    ALLOCATE(this%zrcut(this%n2dcuts))
-   READ(u,'(I2)',advance="no") this%nphicuts
    ALLOCATE(this%nphipoints(this%nphicuts))
-   READ(u,*) this%nphipoints(:)
+   this%nphipoints(:)=nphipoints(:)
+   SELECT CASE(this%n2dcuts==size(filenames(:)))
+      CASE(.true.)
+         ! do nothing
+      CASE(.false.)
+         WRITE(0,*) "INITIALIZE_WYCKOFFSITIO ERR: mismatch between number of n2dcuts and number of files to open"
+         CALL EXIT(1)
+   END SELECT
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"n2dcuts: ",this%n2dcuts)
    CALL VERBOSE_WRITE(routinename,"nphicuts: ",this%nphicuts)
-   CALL VERBOSE_WRITE(routinename,this%nphipoints(:))
+   CALL VERBOSE_WRITE(routinename,'theta structure: ',this%nphipoints(:))
+   DO i = 1, this%n2dcuts
+      CALL VERBOSE_WRITE(routinename,trim(filenames(i)))
+   END DO
 #endif
    DO i = 1, this%n2dcuts
-      READ(u,*) filename
-      CALL this%zrcut(i)%READ(filename)
+      CALL this%zrcut(i)%READ(trim(filenames(i)))
    END DO
    ! All zrcuts should belong to the same XY position (center of mass)
    this%x=this%zrcut(1)%x
    this%y=this%zrcut(1)%y
+   ! DEBUGGING PART
    RETURN
-END SUBROUTINE READ_WYCKOFFSITIO
+END SUBROUTINE INITIALIZE_WYCKOFFSITIO
 
 END MODULE WYCKOFF_GENERIC_MOD

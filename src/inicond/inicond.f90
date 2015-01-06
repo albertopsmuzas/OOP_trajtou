@@ -27,22 +27,22 @@ IMPLICIT NONE
 !> @param ixyboun - Number of bouncings in XY direction
 !> @param id - Integer ID number
 !--------------------------------------------------------
-TYPE,ABSTRACT ::  Dynobject
-   REAL(KIND=8) :: E
-   REAL(KIND=8) :: Eint
-   REAL(KIND=8) :: Ecm
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: init_qn
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: final_qn
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: init_r
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: init_p
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: turning_point
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: r 
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: p 
-   INTEGER(KIND=4) :: ireb
-   INTEGER(KIND=4) :: ixyboun
-   CHARACTER(LEN=10) :: stat 
+TYPE,ABSTRACT::  Dynobject
+   REAL(KIND=8):: E
+   REAL(KIND=8):: Eint
+   REAL(KIND=8):: Ecm
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: init_qn
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: final_qn
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: init_r
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: init_p
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: turning_point
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: r 
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: p 
+   INTEGER(KIND=4):: ireb
+   INTEGER(KIND=4):: ixyboun
+   CHARACTER(LEN=10):: stat 
    CONTAINS
-      PROCEDURE(INITIALIZE_DYNOBJECT),DEFERRED,PUBLIC :: INITIALIZE
+      PROCEDURE(INITIALIZE_DYNOBJECT),DEFERRED,PUBLIC:: INITIALIZE
 END TYPE Dynobject
 ABSTRACT INTERFACE
    !###########################################################
@@ -50,7 +50,7 @@ ABSTRACT INTERFACE
    !###########################################################
    SUBROUTINE INITIALIZE_DYNOBJECT(this)
       IMPORT Dynobject
-      CLASS(Dynobject),INTENT(OUT) :: this
+      CLASS(Dynobject),INTENT(OUT):: this
    END SUBROUTINE INITIALIZE_DYNOBJECT
 END INTERFACE
 !/////////////////////////////////////////////////////////////
@@ -66,18 +66,18 @@ END INTERFACE
 !> @param nstart - Initial trajectory id
 !> @param seed - Allocatable integer array to feed random functions
 !-------------------------------------------------------------
-TYPE,ABSTRACT :: Inicond
-   CHARACTER(LEN=30) :: alias
-   CHARACTER(LEN=5) :: kind
-   CHARACTER(LEN=30) :: input_file
-   CHARACTER(LEN=30) :: output_file
-   INTEGER :: ntraj ! number of trajectories
-   INTEGER :: nstart ! initial trajectory
-   INTEGER,DIMENSION(:),ALLOCATABLE :: seed ! Seed for random number generation
-   CLASS(Dynobject),DIMENSION(:),ALLOCATABLE :: trajs
+TYPE,ABSTRACT:: Inicond
+   CHARACTER(LEN=:),ALLOCATABLE:: alias
+   CHARACTER(LEN=:),ALLOCATABLE:: kind
+   CHARACTER(LEN=:),ALLOCATABLE:: input_file
+   CHARACTER(LEN=:),ALLOCATABLE:: output_file
+   INTEGER:: ntraj ! number of trajectories
+   INTEGER:: nstart ! initial trajectory
+   INTEGER,DIMENSION(:),ALLOCATABLE:: seed ! Seed for random number generation
+   CLASS(Dynobject),DIMENSION(:),ALLOCATABLE:: trajs
    CONTAINS
-      PROCEDURE(INITIALIZE_INICOND),DEFERRED,PUBLIC :: INITIALIZE
-      PROCEDURE(GENERATE_TRAJS_INICOND),DEFERRED,PUBLIC :: GENERATE_TRAJS
+      PROCEDURE(INITIALIZE_INICOND),DEFERRED,PUBLIC:: INITIALIZE
+      PROCEDURE(GENERATE_TRAJS_INICOND),DEFERRED,PUBLIC:: GENERATE_TRAJS
 END TYPE Inicond
 ABSTRACT INTERFACE
    !###########################################################
@@ -87,7 +87,7 @@ ABSTRACT INTERFACE
    SUBROUTINE INITIALIZE_INICOND(this,filename)
       IMPORT Inicond
       CLASS(Inicond),INTENT(OUT) :: this
-      CHARACTER(LEN=*),INTENT(IN) :: filename
+      CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
    END SUBROUTINE INITIALIZE_INICOND
    !###########################################################
    !# SUBROUTINE: GENERATE_TRAJS_INICOND 

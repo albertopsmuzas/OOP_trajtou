@@ -2,6 +2,7 @@ MODULE DIFFRACTIONCRP6D_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
+USE SYSTEM_MOD
 USE INITDIATOMIC_MOD
 USE CONSTANTS_MOD
 USE SURFACE_MOD
@@ -97,7 +98,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	E = (this%inicond%E_norm%getvalue())/(dsin(theta_in))**2.D0
 	this%E = E
 	gamma = DACOS(DOT_PRODUCT(this%surf%s1,this%surf%s2)/(a*b))
-   mass=this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass()
+   mass=sum(system_mass(1:2))
 	pinit_par = DSQRT(2.D0*mass*(E - this%inicond%E_norm%getvalue()))
 	kinit_par(1) = pinit_par*a*DCOS(beta)/(2.D0*PI)
 	Kinit_par(2) = pinit_par*b*DCOS(gamma-beta)/(2.D0*PI)

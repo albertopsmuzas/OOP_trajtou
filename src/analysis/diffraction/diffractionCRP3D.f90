@@ -3,6 +3,7 @@ MODULE DIFFRACTIONCRP3D_MOD
    USE DEBUG_MOD
 #endif
 USE INITATOM_MOD
+USE SYSTEM_MOD
 USE CONSTANTS_MOD
 USE SURFACE_MOD
 USE CRP3D_MOD
@@ -79,7 +80,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
    INTEGER(KIND=4) :: order, realorder
    INTEGER(KIND=4) :: count_peaks
    INTEGER(KIND=4), DIMENSION(2) :: g ! (n,m) vector
-   CHARACTER(LEN=19), PARAMETER :: routinename = "SET_Allowed_peaksCRP3D: "
+   CHARACTER(LEN=*), PARAMETER :: routinename = "SET_Allowed_peaksCRP3D: "
    ! Pointer definitions
    REAL(KIND=8) :: a, b ! axis longitude
    REAL(KIND=8) :: beta ! angle of incident beam projected on unit cell surface
@@ -96,7 +97,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
 	E = this%inicond%E_norm%getvalue()/(DSIN(theta_in)**2.D0)
 	this%E = E
 	gamma = DACOS(DOT_PRODUCT(this%surf%s1,this%surf%s2)/(a*b))
-   mass=this%thispes%atomdat(1)%getmass()
+   mass=system_mass(1)
 	pinit_par = DSQRT(2.D0*mass*(E - this%inicond%E_norm%getvalue()))
 	kinit_par(1) = pinit_par*a*DCOS(beta)/(2.D0*PI)
 	Kinit_par(2) = pinit_par*b*DCOS(gamma-beta)/(2.D0*PI)
@@ -267,7 +268,6 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
 	INTEGER(KIND=4) :: dummy_int
 	INTEGER(KIND=4) :: i,j ! counters
 	INTEGER(KIND=4), DIMENSION(2) :: g
-	REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: peaks_prob
 	REAL(KIND=8), DIMENSION(2,2) :: to_rec_space
 	REAL(KIND=8) :: dummy_real
 	REAL(KIND=8) :: gamma ! angle between unit cell surface vectors
@@ -408,7 +408,6 @@ SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D(this)
    ! Local variables
    INTEGER(KIND=4) :: dummy_int
    REAL(KIND=8) :: dummy_real
-   INTEGER(KIND=4) :: i ! counters
    INTEGER(KIND=4) :: traj_id
    CHARACTER(LEN=10) :: stat
    REAL(KIND=8), DIMENSION(3) :: p,plab

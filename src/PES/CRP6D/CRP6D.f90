@@ -1098,27 +1098,27 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    ! I/O variables
    CLASS(CRP6D),INTENT(OUT):: this
    CHARACTER(LEN=*),INTENT(IN):: filename,tablename
-   ! IMPORTANT: unit used to read
-   INTEGER(KIND=4),PARAMETER:: runit=180
    ! Local variables
-   INTEGER(KIND=4):: i,j ! counters
+   INTEGER(KIND=4):: i,j,k,n ! counters
    INTEGER(KIND=4):: natomic ! number of atomic potentials
-   REAL(KIND=8):: auxr
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param_dump
-   CHARACTER(LEN=30):: cut2dfilename, string, surfacefile
-   CHARACTER,DIMENSION(:),ALLOCATABLE:: letter
-   REAL(KIND=8),DIMENSION(2):: masslist
-   CHARACTER(LEN=2),DIMENSION(2):: symbollist
-   CHARACTER(LEN=10):: units
-   CHARACTER(LEN=6):: resize
-   TYPE(Length):: len
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param_damp
+   ! Wyckoff variables
+   CHARACTER(LEN=1),DIMENSION(:),ALLOCATABLE:: wyckoff_letters
+   CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: cuts2d_files
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: thetablocks_data
+   INTEGER(KIND=4):: n2dcuts
+   INTEGER(KIND=4):: nthetablocks
    ! Lua specifications
    TYPE(flu_State):: conf
    INTEGER(KIND=4):: ierr
-   INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table
+   INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table,dampfunc_table,param_table,extrapol_table
+   INTEGER(KIND=4):: resize_table,wyckoff_table,inwyckoff_table,cut2d_table,files_table,kpoints_table
+   INTEGER(KIND=4):: inkpoints_table
    ! Auxiliar, dummy variables
-   INTEGER(KIND=4):: auxint
+   INTEGER(KIND=4):: auxint,auxint2
+   REAL(KIND=8):: auxreal
    CHARACTER(LEN=1024):: auxstring
+   TYPE(Length):: len
    ! Parameters
    CHARACTER(LEN=*),PARAMETER:: routinename="READ_CRP6D: "
    ! Run section -----------------------
@@ -1126,39 +1126,59 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    CALL OPEN_CONFIG_FILE(L=conf,ErrCode=ierr,filename=filename)
    ! Open PES table
    CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
-   ! get pes.name
-   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='name',val=auxstring)
-   CALL this%SET_ALIAS(trim(auxstring))
    ! get pes.kind
-   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='kind',val=auxstring)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
    CALL this%SET_PESTYPE(trim(auxstring))
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'PES type: '//trim(auxstring))
+#endif
+   ! get pes.name
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
+   CALL this%SET_ALIAS(trim(auxstring))
+#ifdef DEBUG
+   CALl VERBOSE_WRITE(routinename,'PES name: '//trim(auxstring))
+#endif
    ! get pes.dimensions
-   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='dimensions',val=auxint)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
    CALL this%SET_DIMENSIONS(auxint)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
+#endif
    ! deal with surface
-   CALL AOT_GET_VAL(L=conf,thandle=pes_table,key='surface',val=auxstring)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='surface',val=auxstring)
    CALL this%surf%INITIALIZE(trim(auxstring))
    ! get crp3d subpes
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=crp3d_table,key='crp3dPes')
    this%natomic=aot_table_length(L=conf,thandle=crp3d_table)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Atomic potentials found: ",this%natomic)
+#endif
    SELECT CASE(this%natomic)
       CASE(1)
          this%is_homonucl=.TRUE.
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,'This PES is for homonuclear projectiles')
+#endif         
       CASE(2)
          this%is_homonucl=.FALSE.
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,'This PES is for heteronuclear projectiles')
+#endif         
       CASE DEFAULT 
          WRITE(0,*) "READ_CRP6D ERR: Wrong number of atomic potentials. Allowed number: 1 or 2."
          CALL EXIT(1)
    END SELECT
    ALLOCATE(this%atomiccrp(this%natomic))
    DO i = 1, this%natomic
-      CALL AOT_TABLE_GET_VALUE(L=conf,ErrCode=ierr,thandle=crp3d_table,pos=i,val=auxstring)
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=crp3d_table,pos=i,val=auxstring)
+#ifdef DEBUG
+      CALl VERBOSE_WRITE(routinename,'Atomic potential keyword: '//trim(auxstring))
+#endif
       CALL this%atomiccrp(i)%INITIALIZE(filename=filename,tablename=trim(auxstring))
    END DO
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=crp3d_table)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Setting up: ",this%getalias())
-   CALL VERBOSE_WRITE(routinename,"Atomic potentials found: ",this%natomic)
-   CALL VERBOSE_WRITE(routinename,"Load from file: ",string)
+   CALL VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
 #endif
    DO i = 1, this%natomic
       SELECT CASE(this%atomiccrp(1)%surf%tellfilename()==this%atomiccrp(i)%surf%tellfilename())
@@ -1169,75 +1189,97 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
             ! do nothing
       END SELECT
    END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=crp3d_table)
-   ! Read vacuum potential file -----------------------
+   ! get pes.vacuumFunction
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=vacfunc_table,key='vacuumFunction')
-   READ(runit,*) string
-   CALL this%farpot%INITIALIZE(string)
-   ! Read dumping function ------------------------
-   READ(runit,*) string
-   SELECT CASE(string)
+   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='kind',val=auxstring)
+   SELECT CASE(trim(auxstring))
+      CASE('Numerical')
+         CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='source',val=auxstring)
+         CALL this%farpot%INITIALIZE(trim(auxstring))
+      CASE DEFAULT
+         WRITE(0,*) 'READ_CRP6D ERR: wrong kind of vacuuum function: '//trim(auxstring)
+         WRITE(0,*) 'Implemented ones: Numerical'
+         WRITE(0,*) 'Case sensitive'
+         CALL EXIT(1)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=vacfunc_table)
+   ! get pes.dampFunction
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=dampfunc_table,key='dampFunction')
+   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=dampfunc_table,key='kind',val=auxstring)
+   SELECT CASE(trim(auxstring))
       CASE("Logistic")
          ALLOCATE(Logistic_func::this%dumpfunc)
-         ALLOCATE(param_dump(2))
-         READ(runit,*) param_dump
-         CALL this%dumpfunc%READ(param_dump)
-         DEALLOCATE(param_dump)
+         ALLOCATE(param_damp(2))
+         CALL AOT_TABLE_OPEN(L=conf,parent=dampfunc_table,thandle=param_table,key='param')
+         auxint=aot_table_length(L=conf,thandle=param_table)
+         SELECT CASE(auxint)
+            CASE(2)
+               ! do nothing
+            CASE DEFAULT
+               WRITE(0,*) 'READ_CRP6D ERR: incorrect number of parameters in damp function: ',auxint
+               CALL EXIT(1)
+         END SELECT
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=1,val=param_damp(1))
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=2,val=param_damp(2))
+         CALL AOT_TABLE_CLOSE(L=conf,thandle=param_table)
+         CALL this%dumpfunc%READ(param_damp)
       CASE("None") 
          ALLOCATE(One_func::this%dumpfunc)
-         READ(runit,*) ! dummy line
       CASE DEFAULT
          WRITE(0,*) "READ_CRP6D ERR: Keyword for dumping function needed"
          WRITE(*,*) "Currently implemented: Logistic, None"
          CALL EXIT(1)
    END SELECT
-   ! Read extrapolation function
-   READ(runit,*) string
-   SELECT CASE(string)
-      CASE("Xexponential")
-         this%extrapol2vac_flag=string
-         READ(runit,*) auxr,units
-         CALL len%READ(auxr,units)
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
+   ! get pes.extrapolFunction
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=extrapol_table,key='extrapolFunction')
+   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=extrapol_table,key='kind',val=auxstring)
+   SELECT CASE(trim(auxstring))
+      CASE("Xexponential","Linear")
+         this%extrapol2vac_flag=trim(auxstring)
+         CALL AOT_TABLE_OPEN(L=conf,parent=extrapol_table,thandle=param_table,key='upToZ')
+         auxint=aot_table_length(L=conf,thandle=param_table)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=1,val=auxreal)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=2,val=auxstring)
+         CALL len%READ(auxreal,trim(auxstring))
          CALL len%TO_STD()
          this%zvacuum=len%getvalue()
-      CASE("Linear")
-         this%extrapol2vac_flag=string
-         READ(runit,*) auxr,units
-         CALL len%READ(auxr,units)
-         CALL len%TO_STD()
-         this%zvacuum=len%getvalue()
+         CALl AOT_TABLE_CLOSE(L=conf,thandle=param_table)
       CASE("None")
-         READ(runit,*) ! dummy line 
          this%zvacuum=0.D0
       CASE DEFAULT
          WRITE(0,*) "READ_CRP6D ERR: Keyword for extrapolation function needed"
-         WRITE(*,*) "Currently implemented: None, Logistic, Exponential, Xexponential"
-         WRITE(*,*) "Case sensitive."
+         WRITE(0,*) "Currently implemented: None, Xexponential, Linear"
+         WRITE(0,*) "Case sensitive."
          CALL EXIT(1)
    END SELECT
-   ! Read zvacuum
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
-#endif
-   ! Read Resize options
-   READ(runit,'(A6,1X,L1)',advance="no") resize,this%is_resized
-   SELECT CASE( resize=="RESIZE" .AND. this%is_resized )
-      CASE(.TRUE.)
-         READ(runit,*) this%grid(:)
-      CASE(.FALSE.)
-         READ(runit,*) ! just ignore the rest of the line
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=extrapol_table)
+   ! get pes.resize
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=resize_table,key='resize')
+   auxint=aot_table_length(L=conf,thandle=resize_table)
+   SELECT CASE(auxint)
+      CASE(0)
+         ! do nothing, resize is not required
+      CASE DEFAULT
+         CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=resize_table,key='r',val=auxint)
+         this%grid(1)=auxint
+         CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=resize_table,key='z',val=auxint)
+         this%grid(2)=auxint
    END SELECT
-   ! Read number of wyckoff sites and its letters ----------------
-   READ(runit,'(I2)',advance="no") this%nsites
-   ALLOCATE(letter(this%nsites))
-   READ(runit,*) letter(:)
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Wyckoff sites found: ",this%nsites)
-   CALL VERBOSE_WRITE(routinename,"Wyckoff letters map:")
-   CALL VERBOSE_WRITE(routinename,letter(:))
-#endif
-! Allocate with the correct type (symmetry) all wyckoff sites
-   SELECT CASE(this%atomiccrp(1)%surf%tellsymmlabel())
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=resize_table)
+   ! get wyckoff sites
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=wyckoff_table,key='wyckoffSite')
+   this%nsites=aot_table_length(L=conf,thandle=wyckoff_table)
+   ALLOCATE(wyckoff_letters(this%nsites))
+   SELECT CASE(this%nsites)
+      CASE(0)
+         WRITE(0,*) "CRP3D_READ ERR: there aren't Wyckoff sites"
+         CALL EXIT(1)
+      CASE DEFAULT
+         ! do nothing
+   END SELECT
+   ! Allocate with the correct type (symmetry) all wyckoff sites
+   SELECT CASE(this%atomiccrp(1)%surf%tellsymmlabel()) ! at this point all crp3d potentials have the same surface 
       CASE("p4mm")
          ALLOCATE(Wyckoffp4mm::this%wyckoffsite(this%nsites))
 #ifdef DEBUG
@@ -1248,26 +1290,82 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          WRITE(0,*) "Good luck!"
          CALL EXIT(1)
    END SELECT
-   ! Now that we have the correct type:
    DO i = 1, this%nsites
-      CALL this%wyckoffsite(i)%READ(runit)
-      CALL this%wyckoffsite(i)%SET_ID(letter(i))
-      CALL this%wyckoffsite(i)%SET_HOMONUCL(this%is_homonucl)
-      CALL this%wyckoffsite(i)%SET_MYNUMBER(i)
+      CALL AOT_TABLE_OPEN(L=conf,parent=wyckoff_table,thandle=inwyckoff_table,pos=i)
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='kind',val=wyckoff_letters(i))
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='n2dcuts',val=n2dcuts)
+      ALLOCATE(cuts2d_files(n2dcuts))
+      nthetablocks=aot_table_length(L=conf,thandle=inwyckoff_table)-3
+      ALLOCATE(thetablocks_data(nthetablocks))
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,'Wyckoff Site number: ',i)
+      CALL VERBOSE_WRITE(routinename,'Wyckoff Letter: '//trim(wyckoff_letters(i)))
+      CALL VERBOSE_WRITE(routinename,'Wyckoff number of cut2ds: ',n2dcuts)
+      CALl VERBOSE_WRITE(routinename,'Wyckoff number of theta blocks: ',nthetablocks)
+#endif
+      DO j = 1, nthetablocks
+         CALL AOT_TABLE_OPEN(L=conf,parent=inwyckoff_table,thandle=cut2d_table,pos=j)
+         CALL AOT_TABLE_OPEN(L=conf,parent=cut2d_table,thandle=files_table,key='files')
+         thetablocks_data(j)=aot_table_length(L=conf,thandle=files_table)
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,'Wyckoff thetablock: ',j)
+         CALL VERBOSE_WRITE(routinename,'Wyckoff cut2d inside: ',thetablocks_data(j))
+#endif
+         SELECT CASE(j)
+            CASE(1)
+               auxint=1
+               auxint2=thetablocks_data(1)
+            CASE DEFAULT
+               auxint=sum(thetablocks_data(1:j-1))+1
+               auxint2=sum(thetablocks_data(1:j-1))+thetablocks_data(j)
+         END SELECT
+         n=0
+         DO k = auxint, auxint2
+            n=n+1
+            CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=files_table,pos=n,val=cuts2d_files(k))
+#ifdef DEBUG
+            CALL VERBOSE_WRITE(routinename,'Wyckoff pos array: ',k)
+            CALL VERBOSE_WRITE(routinename,'Wyckoff cut2d filename: '//trim(cuts2d_files(k)))
+#endif
+         END DO
+         CALL AOT_TABLE_CLOSE(L=conf,thandle=files_table)
+         CALL AOT_TABLE_CLOSE(L=conf,thandle=cut2d_table)
+      END DO
+      CALL this%wyckoffsite(i)%INITIALIZE(mynumber=i,letter=wyckoff_letters(i),is_homonucl=this%is_homonucl,&
+                                          nphipoints=thetablocks_data(:),filenames=cuts2d_files(:))
+      CALL AOT_TABLE_CLOSE(L=conf,thandle=inwyckoff_table)
+      DEALLOCATE(cuts2d_files)
+      DEALLOCATE(thetablocks_data)
    END DO
-   ! Read the final part of the input: kpoints for XY interpolation
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
+   ! Get kpoints for Fourier interpolation
+   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=kpoints_table,key='fourierKpoints')
+   auxint=aot_table_length(L=conf,thandle=kpoints_table)
+   SELECT CASE(auxint/=this%nsites)
+      CASE(.TRUE.)
+         WRITE(0,*) "READ_CRP3D ERR: mismatch between number of kpoints and wyckoff sites"
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
    ALLOCATE(this%xyklist(this%nsites,2))
-   READ(runit,*) ! dummy line
    DO i = 1, this%nsites
-      READ(runit,*) this%xyklist(i,:)
+      CALL AOT_TABLE_OPEN(L=conf,parent=kpoints_table,thandle=inkpoints_table,pos=i)
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inkpoints_table,pos=1,val=auxint)
+      this%xyklist(i,1)=auxint
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inkpoints_table,pos=2,val=auxint)
+      this%xyklist(i,2)=auxint
+      CALL AOT_TABLE_CLOSE(L=conf,thandle=inkpoints_table)
    END DO
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=kpoints_table)
+   ! ENDDDDDD!!!!!!
+   CALL CLOSE_CONFIG(conf)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"xyklist found:")
    DO i = 1, this%nsites
       CALL VERBOSE_WRITE(routinename,this%xyklist(i,:))
    END DO
 #endif
-   CLOSE(runit)
    RETURN
 END SUBROUTINE READ_CRP6D
 !#######################################################################

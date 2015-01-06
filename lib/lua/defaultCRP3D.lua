@@ -1,7 +1,7 @@
 --///////////////////////////////////////////////
 --           DEFAULT CRP3D PES INPUT
 --///////////////////////////////////////////////
-pes={
+local CRP3D={
 		kind='CRP3D',                          -- CRP3D kind of PES
 		name='default',                        -- PES files will be at $OOPTRAJTOUPES/'name'
 		dimensions=3,                          -- Number of dimensions
@@ -12,3 +12,4 @@ pes={
 		sitios={},										--	List of file names
 		fourierKpoints={},                     -- List of integer points, e.g.: {0,0}, {0,1} ...
 }
+return CRP3D

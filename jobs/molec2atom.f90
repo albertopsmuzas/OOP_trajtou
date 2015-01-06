@@ -10,21 +10,21 @@
 !##################################################
 PROGRAM molec2atom
 ! Initial declarations
-USE CRP6D_MOD
 USE DEBUG_MOD
+USE SYSTEM_MOD
+USE CRP6D_MOD
 IMPLICIT NONE
 ! variables
-TYPE(CRP6D) :: thispes
 REAL(KIND=8) :: ma,mb
 REAL(KIND=8),DIMENSION(6) :: molec_coord, atomic_coord
 ! Run yeah, tun
-CALL thispes%READ("INcrp6d.inp")
+CALL INITIALIZE_SYSTEM('blabla.inp')
 READ(*,*) molec_coord(:)
 WRITE(*,*) "***********************************************"
 WRITE(*,*) "** FROM MOLECULAR COORDINATES TO ATOMIC ONES **"
 WRITE(*,*) "***********************************************"
-ma=thispes%atomdat(1)%getmass()
-mb=thispes%atomdat(2)%getmass()
+ma=system_mass(1)
+mb=system_mass(2)
 CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molec_coord,atomic_coord)
 WRITE(*,*) "Atom A: ",atomic_coord(1:3)
 WRITE(*,*) "Atom B: ",atomic_coord(4:6)

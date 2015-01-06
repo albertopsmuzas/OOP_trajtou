@@ -21,7 +21,7 @@ default: libtrajtou.a
 # Static library: trajtou ----------------------------------------------------------------
 libtrajtou.a: $(objectlist)
 	cd ../bin; ar rvs libtrajtou.a $(objectlist); mv libtrajtou.a ../lib/.
-	# Static library: aotus --------------------------------------------------------------
+# Static library: aotus --------------------------------------------------------------
 libaotus.a:
 	cd utils/haraldkl-aotus-707f4da5293b; ./waf configure build; mv build/*.a ../../../lib/.; mv build/*.mod ../../../mod/.
 # System / Fundamental section ----------------------------------------------------------
@@ -71,15 +71,15 @@ linear.o: function1d.o
 # Initial conditions section -------------------------------------------------------------
 link_inicond.o: inicond.o initatom.o initdiatomic.o
 inicond.o: units.o constants.o link_PES.o 
-initatom.o: debug.o inicond.o 
-initdiatomic.o: debug.o inicond.o
+initatom.o: debug.o inicond.o system.o
+initdiatomic.o: debug.o inicond.o system.o
 # Dynamics section -----------------------------------------------------------------------
 dynamics.o: units.o link_PES.o inicond.o link_integrator.o
-dynatom.o: debug.o dynamics.o initatom.o
-dyndiatomic.o: debug.o dynamics.o initdiatomic.o
+dynatom.o: debug.o dynamics.o initatom.o system.o
+dyndiatomic.o: debug.o dynamics.o initdiatomic.o system.o
 # Analysis -------------------------------------------------------------------------------
-diffractionCRP3D.o: debug.o surface.o initatom.o CRP3D.o
-diffractionCRP6D.o: debug.o surface.o initdiatomic.o CRP6D.o
+diffractionCRP3D.o: debug.o surface.o initatom.o CRP3D.o system.o
+diffractionCRP6D.o: debug.o surface.o initdiatomic.o CRP6D.o system.o
 # Integrator -------------------------------------------------------------------------------
 link_integrator.o: integrator_o1.o bulirsch_stoer.o
 integrator_o1.o:

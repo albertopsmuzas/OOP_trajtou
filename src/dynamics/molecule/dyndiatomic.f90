@@ -6,6 +6,7 @@
 MODULE DYNDIATOMIC_MOD
    USE DYNAMICS_MOD
    USE INITDIATOMIC_MOD
+   USE SYSTEM_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
@@ -62,26 +63,26 @@ CONTAINS
 !! Specific implementation of READ subroutine for atomic dynamics
 !---------------------------------------------------------------------
 SUBROUTINE INITIALIZE_DYNDIATOMIC(this,filename)
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(Dyndiatomic),INTENT(OUT) :: this
-	CHARACTER(LEN=*),INTENT(IN) :: filename
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Dyndiatomic),INTENT(OUT) :: this
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
    ! IMPORTANT: unit used to read info
    INTEGER(KIND=4),PARAMETER :: runit=108
-	! Local variables
+   ! Local variables
    CHARACTER(LEN=20) :: filenameinicond,filenamepes
-	CHARACTER(LEN=18), PARAMETER :: routinename = "READ_DYNDIATOMIC: "
-	CHARACTER(LEN=6) :: follow
+   CHARACTER(LEN=18), PARAMETER :: routinename = "READ_DYNDIATOMIC: "
+   CHARACTER(LEN=6) :: follow
    CHARACTER(LEN=10) :: units
    REAL(KIND=8) :: aux
-	INTEGER :: i ! counters
-	! YIPEE KI YAY -----------------------------
-	this%filename = filename
-	OPEN (runit,FILE=this%filename, STATUS="old")
+   INTEGER :: i ! counters
+   ! YIPEE KI YAY -----------------------------
+   this%filename = filename
+   OPEN (runit,FILE=this%filename, STATUS="old")
    READ(runit,*) ! dummy line
-	READ(runit,*) this%alias
-	READ(runit,*) this%kind
-	IF(this%kind.EQ."Diato") THEN
+   READ(runit,*) this%alias
+   READ(runit,*) this%kind
+   IF(this%kind.EQ."Diato") THEN
       READ(runit,*) filenamepes
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"File for PES: ",filenamepes)
@@ -266,8 +267,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
 11 FORMAT(I7,1X,6(F10.5,1X)) ! format to print in turning points file
    ! HEY HO!, LET'S GO!!! -------------------------
    molecule => this%thisinicond%trajs(idtraj)
-   ma=this%thispes%atomdat(1)%getmass()
-   mb=this%thispes%atomdat(2)%getmass()
+   ma=system_mass(1)
+   mb=system_mass(2)
    masa = ma+mb
    mu = ma*mb/masa
    in_list = .FALSE.
@@ -750,16 +751,15 @@ SUBROUTINE TIME_DERIVS_DYNDIATOMIC(this,z,dzdt,fin)
    REAL(KIND=8) :: mass
    REAL(KIND=8) :: mu
    REAL(KIND=8) :: v ! dummy variable
-   CHARACTER(LEN=21),PARAMETER :: routinename = "TIME_DERIVS_DYNDIATOMIC: "
+   CHARACTER(LEN=*),PARAMETER :: routinename = "TIME_DERIVS_DYNDIATOMIC: "
    ! ROCK THE CASBAH ! ---------------------
    SELECT CASE(this%thispes%is_allowed(z(1:6)))
       CASE(.FALSE.)
          fin = .TRUE.
       CASE(.TRUE.)
          fin=.FALSE.
-         mass=this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass()
-         mu=this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
-         mu=mu/mass
+         mass=sum(system_mass(1:2))
+         mu=product(system_mass(1:2))/mass
          ! Set time derivatives of position
          dzdt(1)=z(7)/mass
          dzdt(2)=z(8)/mass

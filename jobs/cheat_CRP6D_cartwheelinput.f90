@@ -12,7 +12,7 @@ WRITE(*,*) "CHEAT CUT2D"
 WRITE(*,*) "Type a distance (au, real*8)"
 READ(*,*) dist
 ! STEP 1: READ CRP6D INPUT FILES
-CALL thispes%READ("INcrp6d.inp")
+CALL thispes%READ("INcrp6d.inp",'pes')
 ! STEP 2: EXTRACT VACUUM POTENTIAL & CHEAT
 CALL thispes%EXTRACT_VACUUMSURF()
 CALL thispes%CHEAT_CARTWHEEL_ONTOP(1,1,2,dist)

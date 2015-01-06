@@ -7,7 +7,7 @@ IMPLICIT NONE
 TYPE(CRP6D) :: crp_pes
 ! Run section===================================================================================0
 CALL SET_VERBOSE_MODE(.FALSE.)
-CALL crp_pes%READ("INcrp6d.inp")
+CALL crp_pes%READ("INcrp6d.inp",'pes')
 CALL crp_pes%INTERPOL()
 WRITE(*,*)  crp_pes%farpot%getscalefactor()
 CALL EXIT(0)

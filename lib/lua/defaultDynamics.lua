@@ -3,13 +3,13 @@
 --/////////////////////////////////////////////////////
 --
 -- Must include all parameters and info needed for a 
--- dynamics job.
+-- dynamics job (3D and 6D)
 --
 --*****************************************************
 
 -- dynamics block
-dynamics={
-	kind="default",            -- Avail: Atoms, Molec
+local dynamics={
+	kind="Atoms or Molecules",
 	precision=0.e0,
 	scaling="Equal",           -- Avail: Equal, Smart
 	extrapolation="Rational",  -- Avail: Rational, Polinomi
@@ -17,13 +17,14 @@ dynamics={
 	maxTime={0.e0,'au'},
 	stopAtZ={-100.e0,'au'},
 	stopAtZ_dZ={0.e0,'au'},
-	integrator={},
+	integrator={
+		dt={0.0,'au'},
+	},
 	follow={},
+	outTrajConditions={
+		reflec={},
+		adsorp={},
+		absorp={},
+	},
 }
-
--- outTrajConditions block
-outTrajConditions={
-	reflec={},
-	adsorp={},
-	absorp={},
-}
+return dynamics

@@ -14,7 +14,7 @@ WRITE(*,*) "*****************************************"
 WRITE(*,*) "********* GET CRP6D POTENTIAL************"
 WRITE(*,*) "*****************************************"
 ! STEP 1: READ CRP6D INPUT FILES
-CALL thispes%READ("INcrp6d.inp")
+CALL thispes%READ("INcrp6d.inp",'pes')
 CALL thispes%RAWINTERPOL()
 !CALL thispes%INTERPOL_NEW_RZGRID(200,400)
 CALL thispes%GET_V_AND_DERIVS_SMOOTH(x,v,dvdu)

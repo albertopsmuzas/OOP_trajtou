@@ -97,11 +97,12 @@ SUBROUTINE SET_PESTYPE_PES(this,pestype)
    CLASS(PES),INTENT(INOUT):: this
    CHARACTER(LEN=*),INTENT(IN),OPTIONAL:: pestype
    ! Run section
-   IF (PRESENT(pestype)) THEN
-      this%pestype=trim(pestype)
-   ELSE
-   this%pestype="NoPesType"
-   END IF
+   SELECT CASE(present(pestype))
+      CASE(.true.)
+         ALLOCATE(this%pestype,source=trim(pestype))
+      CASE(.false.)
+         this%pestype="NoPesType"
+   END SELECT
    RETURN
 END SUBROUTINE SET_PESTYPE_PES
 !###############################################################

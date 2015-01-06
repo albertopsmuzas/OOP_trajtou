@@ -1,14 +1,17 @@
 !###############################################
 ! MODULE: INITATOM_MOD
 !> @brief
-!! This module provides routines and onjects to create
+!! This module provides routines and objects to create
 !! initial conditions for an atom or list of atoms
 !###############################################
 MODULE INITATOM_MOD
+   USE SYSTEM_MOD
+   USE INICOND_MOD
+   USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
+   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
-   USE INICOND_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////
 ! TYPE: Atoms
@@ -61,7 +64,6 @@ SUBROUTINE INITIALIZE_ATOM(this)
    ALLOCATE(this%turning_point(dimens))
    this%stat="Dummy"
    RETURN
-   RETURN
 END SUBROUTINE INITIALIZE_ATOM
 !##################################################################################
 !# SUBROUTINE: INITIALIZE_INITATOM ################################################
@@ -98,95 +100,167 @@ END SUBROUTINE INITIALIZE_ATOM
 SUBROUTINE INITIALIZE_INITATOM(this,filename)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Initatom),INTENT(OUT) :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   ! IMPORTANT: unit used to read info
-   INTEGER(KIND=4),PARAMETER :: runit=134
+   CLASS(Initatom),INTENT(OUT):: this
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename
    ! Local variables
-   REAL(KIND=8) :: aux
-   CHARACTER(LEN=10) :: units
-   INTEGER :: i ! counters
-   INTEGER :: size_seed, clock
-   CHARACTER(LEN=23), PARAMETER :: routinename = "DEFINE_INICOND_SCHEME: "
+   INTEGER:: i ! counters
+   INTEGER:: size_seed, clock
+   CHARACTER(LEN=*), PARAMETER :: routinename = "INITIALIZE_INITATOM: "
+   ! Lua variables
+   TYPE(flu_State):: conf
+   INTEGER(KIND=4):: inicond_table,pes_table,trajlist_table,magnitude_table,control_table,out_table
+   INTEGER(KIND=4):: auxtable
+   INTEGER(KIND=4):: ierr
+   ! Auxiliary (dummy) variables
+   CHARACTER(LEN=1024):: auxstring
+   INTEGER(KIND=4):: auxint
+   LOGICAL:: auxbool
+   REAL(KIND=8):: auxreal
    ! YIPEE KI YAY !! -------
-   this%input_file = filename
-   OPEN(runit,FILE=filename,STATUS="old")
-   READ(runit,*) ! dumy line
-   READ(runit,*) this%alias
-   READ(runit,*) this%kind
-   READ(runit,*) this%nstart
-   READ(runit,*) this%ntraj
+   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
+      CASE(.TRUE.)
+         auxstring=system_inputfile
+      CASE(.FALSE.)
+         auxstring=filename
+   END SELECT
+   ! Open lua conf file
+   ALLOCATE(this%input_file,source=trim(auxstring))
+   CALL OPEN_CONFIG_FILE(L=conf,ErrCode=ierr,filename=this%input_file)
+   ! Open initial conditions table
+   CALL AOT_TABLE_OPEN(L=conf,thandle=inicond_table,key='initialConditions')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='kind',val=auxstring)
+   this%kind=trim(auxstring)
+   SELECT CASE(this%kind)
+      CASE('Atoms')
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_IINITATOM ERR: wrong kind of initial conditions"
+         CALL EXIT(1)
+   END SELECT
+   ! get traj list to initialize
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=trajlist_table,key='trajList')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=trajlist_table,key='from',val=auxint)
+   this%nstart=auxint
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=trajlist_table,key='to',val=auxint)
+   this%ntraj=auxint
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=trajlist_table)
+   ! Some debugging messages
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Alias: ",this%alias)
    CALL VERBOSE_WRITE(routinename,"Kind: ",this%kind)
    CALL VERBOSE_WRITE(routinename,"Initial traj: ",this%nstart)
    CALL VERBOSE_WRITE(routinename,"Final traj: ",this%ntraj)
 #endif
-   IF (this%kind.EQ."Atoms") THEN
-      READ(runit,*) aux,units
-      CALL this%E_norm%READ(aux,units)
-      CALL this%E_norm%TO_STD()
-
-      READ(runit,*) aux,units
-      CALL this%vz_angle%READ(aux,units)
-      CALL this%vz_angle%TO_STD()
-      IF (this%vz_angle%getvalue() > 90.D0*PI/180.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: incidence angle greater than 90.0 deg (1.57079632679D0 rad)"
-         WRITE(0,*) "Incidence angle (rad) : ",this%vz_angle%getvalue()
+   ! get enorm
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='Enormal')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%E_norm%READ(auxreal,trim(auxstring))
+   CALL this%E_norm%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get incidence angle
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='incidenceAngle')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%vz_angle%READ(auxreal,trim(auxstring))
+   CALL this%vz_angle%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   SELECT CASE(this%vz_angle%getvalue() > 90.D0*PI/180.D0 .or. this%vz_angle%getvalue() < 0.D0)
+      CASE(.true.)
+         WRITE(0,*) "INITIALIZE_INITATOM ERR: wrong incidence angle: ",this%vz_angle%getvalue()
          CALL EXIT(1)
-      ELSE IF (this%vz_angle%getvalue() < 0.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: incidence angle lower than 0.0 deg."
-         WRITE(0,*) "Incidence angle (rad) : ",this%vz_angle%getvalue()
-         CALL EXIT(1)
-      END IF
-
-      READ(runit,*) aux,units
-      CALL this%vpar_angle%READ(aux,units)
-      CALL this%vpar_angle%TO_STD()
-      IF (this%vpar_angle%getvalue() > 90.D0*PI/180.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: parallele angle greater than 90.0 deg (1.57079632679D0 rad)"
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+   ! get direction angle
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='directionAngle')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%vpar_angle%READ(auxreal,trim(auxstring))
+   CALL this%vpar_angle%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   SELECT CASE(this%vz_angle%getvalue() < 0.D0)
+      CASE(.true.)
+         WRITE(0,*) "INITIALIZE_INITATOM ERR: parallele angle lower than 0.0 deg."
          WRITE(0,*) "Incidence angle (rad) : ",this%vpar_angle%getvalue()
          CALL EXIT(1)
-      ELSE IF (this%vz_angle%getvalue() < 0.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: parallele angle lower than 0.0 deg."
-         WRITE(0,*) "Incidence angle (rad) : ",this%vpar_angle%getvalue()
-         CALL EXIT(1)
-      END IF
-      
-      READ(runit,*) aux,units
-      CALL this%init_z%READ(aux,units)
-      CALL this%init_z%TO_STD()
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+   ! get initial Z
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='initialZ')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%init_z%READ(auxreal,trim(auxstring))
+   CALL this%init_z%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! Some debugging info
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Initial normal energy in au:",this%E_norm%getvalue())
-      CALL VERBOSE_WRITE(routinename,"Incidence angle respect to surface plane in radians: ",this%vz_angle%getvalue())
-      CALL VERBOSE_WRITE(routinename,"Angle between trajectory and S1 vector in radians",this%vpar_angle%getvalue())
-      CALL VERBOSE_WRITE(routinename,"Initial Z in au: ",this%init_z%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Initial normal energy in au:",this%E_norm%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Incidence angle respect to surface plane in radians: ",this%vz_angle%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Angle between trajectory and S1 vector in radians",this%vpar_angle%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Initial Z in au: ",this%init_z%getvalue())
 #endif
-      READ(runit,*) this%control_posX, this%control_posY 
-      READ(runit,*) this%impact_x
-      READ(runit,*) this%impact_y
+   ! get control random initial XY position
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=control_table,key='randomXY')
+   CALL AOT_TABLE_OPEN(L=conf,parent=control_table,thandle=auxtable,key='X')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=1,val=this%control_posX)
+   SELECT CASE(this%control_posX)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=2,val=this%impact_x)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=auxtable)
+   CALL AOT_TABLE_OPEN(L=conf,parent=control_table,thandle=auxtable,key='Y')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=1,val=this%control_posY)
+   SELECT CASE(this%control_posY)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=2,val=this%impact_y)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=auxtable)
+   IF(((this%impact_x > 1.D0).OR.(this%impact_x < 0.D0)).AND.(.NOT.this%control_posX)) THEN
+      WRITE(0,*) "INITIALIZE_INITATOM ERR: X impact parameter outside range 0-1"
+      CALL EXIT(1)
+   ELSE IF(((this%impact_y > 1.D0).OR.(this%impact_y < 0.D0)).AND.(.NOT.this%control_posy))THEN
+      WRITE(0,*) "INITIALIZE_INITATOM ERR: Y impact parameter outside range 0-1"
+      CALL EXIT(1)
+   END IF
+   ! Some debugging messages
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Random X impact parameter?: ",this%control_posX)
-      CALL VERBOSE_WRITE(routinename,"Random Y impact parameter?: ",this%control_posY)
+   CALL VERBOSE_WRITE(routinename,"Random X impact parameter?: ",this%control_posX)
+   CALL VERBOSE_WRITE(routinename,"Random Y impact parameter?: ",this%control_posY)
+   IF (this%control_posX.eqv..false. .and. this%control_posY.eqv..false.) THEN
       CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_x)
       CALL VERBOSE_WRITE(routinename,"Impact param Y: ",this%impact_x)
+   ELSE IF (.not.this%control_posX) THEN
+      CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_x)
+   ELSE IF (.not.this%control_posY) THEN
+      CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_y)
+   END IF
 #endif
-      IF(((this%impact_x > 1.D0).OR.(this%impact_x < 0.D0)).AND.(.NOT.this%control_posX)) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: X impact parameter outside range 0-1"
-         CALL EXIT(1)
-      ELSE IF(((this%impact_y > 1.D0).OR.(this%impact_y < 0.D0)).AND.(.NOT.this%control_posy))THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: Y impact parameter outside range 0-1"
-         CALL EXIT(1)
-      END IF
-      READ(runit,*) this%control_out
-      READ(runit,*) this%output_file
-      READ(runit,*) this%control_seed
+   ! get output control
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=out_table,key='outputFile')
+   auxint=aot_table_length(L=conf,thandle=out_table)
+   SELECT CASE(auxint)
+      CASE(0)
+         this%control_out=.false.
+      CASE DEFAULT
+         this%control_out=.true.
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=out_table,pos=1,val=auxstring)
+         this%output_file=trim(auxstring)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=out_table)
+   ! get seed control
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='seedRead',val=this%control_seed)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Output files?: ",this%control_out)
-      CALL VERBOSE_WRITE(routinename,"Output file name: ",this%output_file)
-      CALL VERBOSE_WRITE(routinename,"Seed read from file?: ",this%control_seed)
+   CALL VERBOSE_WRITE(routinename,"Output files?: ",this%control_out)
+   CALL VERBOSE_WRITE(routinename,"Output file name: ",this%output_file)
+   CALL VERBOSE_WRITE(routinename,"Seed read from file?: ",this%control_seed)
 #endif
-      IF (this%control_seed.EQV..TRUE.) THEN
+   SELECT CASE(this%control_seed)
+      CASE(.TRUE.)
          CALL RANDOM_SEED(SIZE=size_seed)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Default size for seed array: ",size_seed)
@@ -196,34 +270,24 @@ SUBROUTINE INITIALIZE_INITATOM(this,filename)
          READ(12,*) this%seed
          CLOSE(12)
          CALL RANDOM_SEED(PUT=this%seed)
-      ELSE
+      CASE(.FALSE.)
          CALL RANDOM_SEED(SIZE=size_seed)
          ALLOCATE(this%seed(1:size_seed))
          CALL SYSTEM_CLOCK(COUNT=clock)
          this%seed = clock+ 37*(/ (i - 1, i = 1, size_seed) /)
          CALL RANDOM_SEED(PUT=this%seed)
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Seed generated from CPU time: ")
-         CALL VERBOSE_WRITE(routinename,"CPU time: ", clock)
+         CALL VERBOSE_WRITE(routinename,"Seed generated from CPU time: ",clock)
 #endif
-         IF (this%control_out.EQV..TRUE.) THEN
-            OPEN(12,FILE="INseed.inp",STATUS="replace")
-            WRITE(12,*) this%seed
-            CLOSE(12)
-         END IF
-      END IF
+         OPEN(12,FILE="INseed.inp",STATUS="replace")
+         WRITE(12,*) this%seed
+         CLOSE(12)
+   END SELECT
 #ifdef DEBUG
-      DO i=1,size_seed
-         CALL VERBOSE_WRITE(routinename,this%seed(i))
-      END DO
+   DO i=1,size_seed
+      CALL VERBOSE_WRITE(routinename,this%seed(i))
+   END DO
 #endif
-   ELSE
-      WRITE(0,*) "DEFINE_INICOND_ATOM ERR: Wrong kind of initial conditions"
-      WRITE(0,*) "Available kinds: Atoms"
-      WRITE(0,*) "You wrote: ", this%kind
-      CALL EXIT(1)
-   END IF
-   CLOSE(runit)
    RETURN
 END SUBROUTINE INITIALIZE_INITATOM
 !####################################################################
@@ -291,7 +355,7 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
       END IF   
       delta = this%vpar_angle%getvalue()
       alpha = this%vz_angle%getvalue()
-      masa = thispes%atomdat(1)%getmass()
+      masa = system_mass(1)
       Enorm = this%E_norm%getvalue()
       this%trajs(i)%p(3) = -DSQRT(2.D0*masa*Enorm)  ! Z momentum (m*v_z), negative (pointing uppon the surface)
       this%trajs(i)%p(1) = DCOS(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))

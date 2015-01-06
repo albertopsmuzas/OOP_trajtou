@@ -5,10 +5,11 @@
 !! initial conditions for a diatomic molecule or a list of them
 !###################################################################
 MODULE INITDIATOMIC_MOD
+   USE INICOND_MOD
+   USE SYSTEM_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
-   USE INICOND_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////
 ! TYPE: Diatomic
@@ -85,8 +86,7 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC(this,filename)
    ALLOCATE(Diatomic::this%trajs(this%ntraj))
    Enorm = this%E_norm%getvalue()
    alpha = this%vz_angle%getvalue()
-   mu = this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
-   mu = mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
+   mu = product(system_mass(1:2))/sum(system_mass(1:2))
    CALL this%SET_PERIOD()
    OPEN (runit,FILE=filename,STATUS="old",ACTION="read") 
    READ(runit,*) 
@@ -188,7 +188,7 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Initdiatomic),INTENT(OUT) :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
    ! IMPORTANT: unit used to read info
    INTEGER(KIND=4),PARAMETER :: runit=134
    ! Local variables
@@ -422,9 +422,8 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    END SELECT
    delta = this%vpar_angle%getvalue()
    alpha = this%vz_angle%getvalue()
-   masa = this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass()
-   mu = this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
-   mu = mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
+   masa = sum(system_mass(1:2))
+   mu = product(system_mass(1:2))/masa
    Enorm = this%E_norm%getvalue()
    Eint = this%evirot%getvalue()
    Etot = Enorm/(DSIN(alpha)**2.D0)+Eint
@@ -571,8 +570,7 @@ SUBROUTINE TIME_DERIVS_INITDIATOMIC(this,z,dzdt,fin)
          fin = .TRUE.
       CASE(.TRUE.)
          fin=.FALSE.
-         mass=this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
-         mass=mass/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
+         mass=product(system_mass(1:2))/sum(system_mass(1:2))
          dzdt(1)=z(2)/mass
          dzdt(2)=-this%rovibrpot%getderiv(z(1))
    END SELECT
@@ -996,8 +994,7 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
    TYPE(Vacuumpot):: fdummy
    CHARACTER(LEN=25),PARAMETER :: routinename="SET_PERIOD_INITDIATOMIC: "
    ! Run section
-   mu = this%thispes%atomdat(1)%getmass()*this%thispes%atomdat(2)%getmass()
-   mu = mu/(this%thispes%atomdat(1)%getmass()+this%thispes%atomdat(2)%getmass())
+   mu = product(system_mass(1:2))/sum(system_mass(1:2))
    erot=dfloat(this%init_qn(2)*(this%init_qn(2)+1))/(2.D0*mu)
    SELECT CASE(erot>=this%evirot%getvalue())
       CASE(.TRUE.)

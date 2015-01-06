@@ -18,8 +18,7 @@ REAL(KIND=8) :: avf,avdfdr,avdfdz,avd2fdrdz
 READ(*,*) nwyckoff,nzrcut,nxgrid,nygrid,nxpoints,nypoints
 CALL SET_VERBOSE_MODE(.FALSE.)
 CALL SET_DEBUG_MODE(.FALSE.)
-CALL thispes%READ("INcrp6d.inp")
-CALL thispes%INTERPOL()
+CALL thispes%INITIALIZE("INcrp6d.inp")
 WRITE(*,*) "******************************************"
 WRITE(*,*) "******* TESTING CRP6D 2DCUT GRID *********"
 WRITE(*,*) "******************************************"

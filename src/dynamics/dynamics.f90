@@ -29,17 +29,17 @@ IMPLICIT NONE
 !> @date Feb/2014, Jun/2014
 !> @version 1.0, 2.0
 !---------------------------------------------------------------
-TYPE,ABSTRACT :: Dynamics
-   CHARACTER(LEN=30) :: alias
-   CHARACTER(LEN=30) :: filename
-   CHARACTER(LEN=10) :: kind
-   TYPE(Time) :: delta_t
-   TYPE(Time) :: max_t 
-   INTEGER :: nfollow
-   INTEGER,DIMENSION(:),ALLOCATABLE :: followtraj
-   CLASS(Integrator_o1),ALLOCATABLE :: thisintegrator
-   CLASS(Inicond),ALLOCATABLE :: thisinicond
-   CLASS(PES),ALLOCATABLE :: thispes
+TYPE,ABSTRACT:: Dynamics
+   CHARACTER(LEN=:),ALLOCATABLE:: alias
+   CHARACTER(LEN=:),ALLOCATABLE:: filename
+   CHARACTER(LEN=:),ALLOCATABLE:: kind
+   TYPE(Time):: delta_t
+   TYPE(Time):: max_t 
+   INTEGER:: nfollow
+   INTEGER,DIMENSION(:),ALLOCATABLE:: followtraj
+   CLASS(Integrator_o1),ALLOCATABLE:: thisintegrator
+   CLASS(Inicond),ALLOCATABLE:: thisinicond
+   CLASS(PES),ALLOCATABLE:: thispes
    CONTAINS
       PROCEDURE(INITIALIZE_DYNAMICS),DEFERRED,PUBLIC:: INITIALIZE
       PROCEDURE(RUN_DYNAMICS),DEFERRED,PUBLIC:: RUN
@@ -54,7 +54,7 @@ ABSTRACT INTERFACE
    SUBROUTINE INITIALIZE_DYNAMICS(this,filename)
       IMPORT Dynamics
       CLASS(Dynamics),INTENT(OUT):: this
-      CHARACTER(LEN=*),INTENT(IN):: filename
+      CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename
    END SUBROUTINE INITIALIZE_DYNAMICS
    !###########################################################
    !# SUBROUTINE: RUN_DYNAMICS 

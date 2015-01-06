@@ -80,23 +80,23 @@ END TYPE CRP3D_details
 !------------------------------------------------------------------------------
 TYPE :: Symmpoint
    PRIVATE
-   CHARACTER(LEN=30) :: filename
-   CHARACTER(LEN=30) :: alias
-   INTEGER(KIND=4) :: n
-   REAL(KIND=8) :: x
-   REAL(KIND=8) :: y
-   CHARACTER(LEN=10) :: units_z
-   CHARACTER(LEN=10) :: units_v
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: z
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: v
-   REAL(KIND=8) :: dz1
-   REAL(KIND=8) :: dz2
-   TYPE(Csplines),PUBLIC :: interz 
+   CHARACTER(LEN=:),ALLOCATABLE:: filename
+   CHARACTER(LEN=:),ALLOCATABLE:: alias
+   INTEGER(KIND=4):: n
+   REAL(KIND=8):: x
+   REAL(KIND=8):: y
+   CHARACTER(LEN=10):: units_z
+   CHARACTER(LEN=10):: units_v
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: z
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: v
+   REAL(KIND=8):: dz1
+   REAL(KIND=8):: dz2
+   TYPE(Csplines),PUBLIC:: interz 
    CONTAINS
-      PROCEDURE,PUBLIC :: READ_RAW => READ_SYMMPOINT_RAW
-      PROCEDURE,PUBLIC :: GET_SYMM_RAW => GET_SYMMETRIZED_RAW_INPUT
-      PROCEDURE,PUBLIC :: PLOT_DATA => PLOT_DATA_SYMMPOINT
-      PROCEDURE,PUBLIC :: PLOT => PLOT_INTERPOL_SYMMPOINT
+      PROCEDURE,PUBLIC:: READ_RAW => READ_SYMMPOINT_RAW
+      PROCEDURE,PUBLIC:: GET_SYMM_RAW => GET_SYMMETRIZED_RAW_INPUT
+      PROCEDURE,PUBLIC:: PLOT_DATA => PLOT_DATA_SYMMPOINT
+      PROCEDURE,PUBLIC:: PLOT => PLOT_INTERPOL_SYMMPOINT
 END TYPE Symmpoint
 !///////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Pair potential  
@@ -122,14 +122,14 @@ END TYPE Symmpoint
 !------------------------------------------------------------------------------
 TYPE,EXTENDS(Symmpoint) :: Pair_pot
    PRIVATE
-   INTEGER(KIND=4) :: id 
-   REAL(KIND=8) :: vasint
-	REAL(KIND=8) :: rumpling
+   INTEGER(KIND=4):: id 
+   REAL(KIND=8):: vasint
+	REAL(KIND=8):: rumpling
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC :: READ => READ_STANDARD_PAIRPOT
+      PROCEDURE,PUBLIC:: READ => READ_STANDARD_PAIRPOT
       ! Tools block
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_PAIRPOT
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_PAIRPOT
 END TYPE Pair_pot
 !/////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Sitio
@@ -146,9 +146,9 @@ END TYPE Pair_pot
 !------------------------------------------------------------------------------
 TYPE,EXTENDS(Symmpoint) :: Sitio
    PRIVATE
-	REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dvdx, dvdy, dvdz 
+	REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: dvdx,dvdy,dvdz 
    CONTAINS
-      PROCEDURE,PUBLIC :: READ => READ_STANDARD_SITIO
+      PROCEDURE,PUBLIC:: READ => READ_STANDARD_SITIO
 END TYPE Sitio
 !////////////////////////////////////////////////////////////////////////////////
 ! SUBTYPE: CRP3D
@@ -176,10 +176,10 @@ END TYPE Sitio
 !> @see newinput
 !------------------------------------------------------------------------------
 TYPE,EXTENDS(PES) :: CRP3D
-   INTEGER(KIND=4) :: max_order
-   TYPE(Pair_pot),DIMENSION(:),ALLOCATABLE :: all_pairpots
-   TYPE(Sitio),DIMENSION(:),ALLOCATABLE :: all_sites
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: klist
+   INTEGER(KIND=4):: max_order
+   TYPE(Pair_pot),DIMENSION(:),ALLOCATABLE:: all_pairpots
+   TYPE(Sitio),DIMENSION(:),ALLOCATABLE:: all_sites
+   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: klist
    CLASS(Function1d),ALLOCATABLE:: dampfunc
    CONTAINS
       ! Initialization block
@@ -373,15 +373,15 @@ SUBROUTINE INITIALIZE_CRP3D(this,filename,tablename)
    ! Run section
    SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
       CASE(.TRUE.)
-         auxstring=system_inputfile
+         auxstring=trim(system_inputfile)
       CASE(.FALSE.)
-         auxstring=filename
+         auxstring=trim(filename)
    END SELECT
    SELECT CASE(present(tablename))
       CASE(.TRUE.) ! present tablename
-         CALL this%READ(filename=auxstring,tablename=tablename)
+         CALL this%READ(filename=trim(auxstring),tablename=trim(tablename))
       CASE(.FALSE.) ! not present tablename
-         CALL this%READ(filename=auxstring,tablename='pes')
+         CALL this%READ(filename=trim(auxstring),tablename='pes')
    END SELECT
    CALL this%INTERPOL()
    RETURN
@@ -583,11 +583,11 @@ END SUBROUTINE READ_SYMMPOINT_RAW
 !> @see 
 !! debug_mod
 !-----------------------------------------------------------
-SUBROUTINE READ_STANDARD_PAIRPOT (pairpot,filename)
+SUBROUTINE READ_STANDARD_PAIRPOT(pairpot,filename)
       ! Initial declarations
    IMPLICIT NONE
    ! I/O variables ------------------------------
-   CLASS(Pair_pot), INTENT(INOUT) :: pairpot
+   CLASS(Pair_pot),INTENT(INOUT) :: pairpot
    CHARACTER(LEN=*),INTENT(IN) :: filename
    ! Local variables ----------------------------
    INTEGER :: i
@@ -646,11 +646,11 @@ END SUBROUTINE READ_STANDARD_PAIRPOT
 SUBROUTINE READ_STANDARD_SITIO(site,filename)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Sitio),INTENT(INOUT) :: site
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CLASS(Sitio),INTENT(INOUT):: site
+   CHARACTER(LEN=*),INTENT(IN):: filename
    ! Local variables
-   INTEGER :: i ! counter
-   CHARACTER(LEN=12) , PARAMETER :: routinename = "READ_SITIO: "
+   INTEGER:: i ! counter
+   CHARACTER(LEN=*),PARAMETER:: routinename = "READ_SITIO: "
    !
    site%filename=filename
    OPEN (10,file=site%filename,status="old")
@@ -785,17 +785,29 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    END SELECT
    ! Open PES table
    CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
-   ! Set dimensions
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
-   CALL this%SET_DIMENSIONS(auxint)
-   ! Set alias (name)
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
-   CALL this%SET_ALIAS(trim(auxstring))
    ! Set pestype (kind)
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
    CALL this%SET_PESTYPE(trim(auxstring))
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'Type of PES: '//trim(auxstring))
+#endif
+   ! Set alias (name)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
+   CALL this%SET_ALIAS(trim(auxstring))
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'PES Name: '//trim(auxstring))
+#endif
+   ! Set dimensions
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
+   CALL this%SET_DIMENSIONS(auxint)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
+#endif
    ! Set & initialize surface input file
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='surfaceInput',val=auxstring)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Surface file used as input: "//trim(auxstring))
+#endif
    CALL this%surf%INITIALIZE(trim(auxstring))
    ! Set max environment
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='maxEnvironment',val=auxint)
@@ -841,6 +853,15 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
          CALL EXIT(1)
    END SELECT
    CALL AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'Damping function used: '//trim(auxstring))
+   SELECT CASE(allocated(param))
+      CASE(.TRUE.)
+         CALL VERBOSE_WRITE(routinename,'Damping function parameters: ',param(:))
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+#endif
    ! Set sitios
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=sitio_table,key='sitios')
    n_sites=aot_table_length(L=conf,thandle=sitio_table)
@@ -876,12 +897,17 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    CALL CLOSE_CONFIG(conf)
    ! VERBOSE PRINT 
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Surface file used as input: ")
    CALL VERBOSE_WRITE(routinename,"Maximum environmental order: ",this%max_order)
    CALL VERBOSE_WRITE(routinename,"Number of pair potentials: ",n_pairpots)
+   CALL VERBOSE_WRITE(routinename,"Pair potentials input files:")
+   DO i = 1, n_pairpots
+      CALL VERBOSE_WRITE(routinename,trim(files_pairpots(i)))
+   END DO
    CALL VERBOSE_WRITE(routinename,"Number of sitios: ",n_sites)
-   CALL VERBOSE_WRITE(routinename,"Pair potentials input files: ",files_pairpots(:))
-   CALL VERBOSE_WRITE(routinename,"Sitios input files: ",files_sites(:))
+   CALL VERBOSE_WRITE(routinename,"Sitios input files:")
+   DO i = 1, n_sites
+      CALL VERBOSE_WRITE(routinename,trim(files_sites(i)))
+   END DO
    CALL VERBOSE_WRITE(routinename,"List of Kpoints for Fourier interpolation: ")
    DO i = 1, n_sites
       CALL VERBOSE_WRITE(routinename,this%klist(i,:))

@@ -1,7 +1,7 @@
 --///////////////////////////////////////////////
 --           DEFAULT CRP6D PES INPUT
 --///////////////////////////////////////////////
-pes={
+local CRP6D={
 		kind='CRP6D',                            -- CRP3D kind of PES
 		name='default',                          -- PES files will be at $OOPTRAJTOUPES/'name'
 		dimensions=6,                            -- Number of dimensions
@@ -12,8 +12,9 @@ pes={
 		extrapolFunction={kind='None',upToZ={0.e0,'au'}}, -- Function used to extrapolate to the vacuum. For Z>upToZ, we have vacuum potential
 		vacuumFunction={kind='Numerical',source='None'},  -- Source for vacuum potential
 		fourierKpoints={},                                -- List of integer points, e.g.: {0,0}, {0,1} ...
+		wyckoffSite={},
 }
-pes.wyckoffSite={}
+return CRP6D
 --************************************************************************
 -- EXAMPLE OF HOW TO DEFINE A pes.wyckoffSite
 --
