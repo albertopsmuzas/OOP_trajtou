@@ -11,6 +11,7 @@
 !#######################################################
 MODULE CRP6D_MOD
    USE UNITS_MOD
+   USE CONSTANTS_MOD
    USE CRP3D_MOD
    USE SYSTEM_MOD
    USE EXTRAPOL_TO_VACUUM_MOD
@@ -291,27 +292,25 @@ END SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! Initial declarations   
-   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP6D),TARGET,INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: dvdu
+   REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
+   REAL(KIND=8),INTENT(OUT):: v
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
-   REAL(KIND=8) :: ma,mb
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f ! smooth function and derivs
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: dfdu ! smooth derivatives
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux2
-   REAL(KIND=8),DIMENSION(6) :: atomicx
-   REAL(KIND=8),DIMENSION(2) :: atomic_v
-   REAL(KIND=8),DIMENSION(6) :: atomic_dvdu
-   REAL(KIND=8),DIMENSION(3) :: dvdu_atomicA,dvdu_atomicB
-   TYPE(Fourierp4mm) :: xyinterpol
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP6D: "
+   INTEGER(KIND=4):: i ! counters
+   REAL(KIND=8):: ma,mb
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xy
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
+   REAL(KIND=8),DIMENSION(6):: atomicx
+   REAL(KIND=8),DIMENSION(2):: atomic_v
+   REAL(KIND=8),DIMENSION(6):: atomic_dvdu
+   REAL(KIND=8),DIMENSION(3):: dvdu_atomicA,dvdu_atomicB
+   TYPE(Fourierp4mm):: xyinterpol
+   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
    SELECT CASE(this%is_smooth)
       CASE(.TRUE.)
@@ -338,10 +337,10 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
    CALL xyinterpol%READ(xy,f,this%xyklist)
-   CALL xyinterpol%INTERPOL(this%atomiccrp(1)%surf)
+   CALL xyinterpol%INTERPOL(system_surface)
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(this%atomiccrp(1)%surf,x(1:2),aux1,aux2)
+   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,x(1:2),aux1,aux2)
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
@@ -451,7 +450,6 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
    ! Local Parameter
    REAL(KIND=8),PARAMETER :: zero=0.D0 ! what we will consider zero (a.u.)
    REAL(KIND=8),PARAMETER :: dz=0.5D0 ! 0.25 Angstroems approx
-   REAL(KIND=8) :: dummy
    ! Run section
    zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
    zvac=this%zvacuum
@@ -572,23 +570,20 @@ END SUBROUTINE GET_V_AND_DERIVS_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! Initial declarations   
-   USE DEBUG_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP6D),INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: x
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dvdu
+   REAL(KIND=8),DIMENSION(6),INTENT(IN):: x
+   REAL(KIND=8),INTENT(OUT):: v
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT):: dvdu
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
-   REAL(KIND=8) :: ma,mb ! masses
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f ! smooth function and derivs
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: dfdu ! smooth derivatives
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux2
-   TYPE(Fourierp4mm) :: xyinterpol
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP6D: "
+   INTEGER(KIND=4):: i ! counters
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xy
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
+   TYPE(Fourierp4mm):: xyinterpol
+   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
    SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastz()) 
       CASE(.TRUE.)
@@ -621,10 +616,10 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
    CALL xyinterpol%READ(xy,f,this%xyklist)
-   CALL xyinterpol%INTERPOL(this%atomiccrp(1)%surf)
+   CALL xyinterpol%INTERPOL(system_surface)
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(this%atomiccrp(1)%surf,x(1:2),aux1,aux2)
+   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,x(1:2),aux1,aux2)
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
@@ -750,7 +745,6 @@ END SUBROUTINE FROM_MOLECULAR_TO_ATOMIC
 !-----------------------------------------------------------
 SUBROUTINE FROM_ATOMIC_TO_MOLECULAR(ma,mb,atomcoord,molcoord)
    ! Initial declarations
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    REAL(KIND=8),INTENT(IN) :: ma,mb
@@ -818,9 +812,6 @@ END SUBROUTINE FROM_ATOMIC_TO_MOLECULAR
 !-----------------------------------------------------------
 SUBROUTINE SMOOTH_CRP6D(this)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
@@ -866,9 +857,6 @@ END SUBROUTINE SMOOTH_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE ROUGH_CRP6D(this)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
@@ -935,9 +923,6 @@ END SUBROUTINE ROUGH_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE SMOOTH_EXTRA_CRP6D(this)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
@@ -1005,17 +990,12 @@ END SUBROUTINE SMOOTH_EXTRA_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
-   REAL(KIND=8) :: ma,mb
    REAL(KIND=8) :: newpot
    CHARACTER(LEN=26),PARAMETER :: routinename="EXTRACT_VACUUMSURF_CRP6D: "
    ! Run section
@@ -1052,17 +1032,12 @@ END SUBROUTINE EXTRACT_VACUUMSURF_CRP6D
 !-----------------------------------------------------------
 SUBROUTINE ADD_VACUUMSURF_CRP6D(this)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
-   REAL(KIND=8) :: ma,mb
    REAL(KIND=8) :: newpot
    CHARACTER(LEN=22),PARAMETER :: routinename="ADD_VACUUMSURF_CRP6D: "
    ! Run section
@@ -1100,7 +1075,6 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    CHARACTER(LEN=*),INTENT(IN):: filename,tablename
    ! Local variables
    INTEGER(KIND=4):: i,j,k,n ! counters
-   INTEGER(KIND=4):: natomic ! number of atomic potentials
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param_damp
    ! Wyckoff variables
    CHARACTER(LEN=1),DIMENSION(:),ALLOCATABLE:: wyckoff_letters
@@ -1129,6 +1103,12 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    ! get pes.kind
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
    CALL this%SET_PESTYPE(trim(auxstring))
+   SELECT CASE(trim(auxstring))
+      CASE('CRP6D')
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) 'READ CRP6D ERR: wrong kind of PES. Expected: CRP6D. Encountered: '//trim(auxstring)
+   END SELECT
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'PES type: '//trim(auxstring))
 #endif
@@ -1144,9 +1124,6 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
 #endif
-   ! deal with surface
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='surface',val=auxstring)
-   CALL this%surf%INITIALIZE(trim(auxstring))
    ! get crp3d subpes
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=crp3d_table,key='crp3dPes')
    this%natomic=aot_table_length(L=conf,thandle=crp3d_table)
@@ -1180,15 +1157,6 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
 #endif
-   DO i = 1, this%natomic
-      SELECT CASE(this%atomiccrp(1)%surf%tellfilename()==this%atomiccrp(i)%surf%tellfilename())
-         CASE(.FALSE.)
-            WRITE(0,*) "READ_CRP6D ERR: not all atomic potentials have the same surface file"
-            CALL EXIT(1)
-         CASE(.TRUE.)
-            ! do nothing
-      END SELECT
-   END DO
    ! get pes.vacuumFunction
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=vacfunc_table,key='vacuumFunction')
    CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='kind',val=auxstring)
@@ -1279,7 +1247,7 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          ! do nothing
    END SELECT
    ! Allocate with the correct type (symmetry) all wyckoff sites
-   SELECT CASE(this%atomiccrp(1)%surf%tellsymmlabel()) ! at this point all crp3d potentials have the same surface 
+   SELECT CASE(system_surface%getsymmlabel())
       CASE("p4mm")
          ALLOCATE(Wyckoffp4mm::this%wyckoffsite(this%nsites))
 #ifdef DEBUG
@@ -1387,7 +1355,6 @@ END SUBROUTINE READ_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1397,7 +1364,7 @@ SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin 
    REAL(KIND=8),DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_CRP6D: "
@@ -1453,7 +1420,6 @@ END SUBROUTINE PLOT1D_PHI_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1464,7 +1430,7 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D(thispes,npoints,X,filename)
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta
    REAL(KIND=8),DIMENSION(2) :: v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8),DIMENSION(6) :: r, dvdu, ratom
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_CRP6D: "
@@ -1519,7 +1485,6 @@ END SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1529,7 +1494,7 @@ SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin 
    REAL(KIND=8),DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=25),PARAMETER :: routinename = "PLOT1D_PHI_SMOOTH_CRP6D: "
@@ -1584,7 +1549,6 @@ END SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1594,7 +1558,7 @@ SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin 
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=20),PARAMETER :: routinename = "PLOT1D_THETA_CRP6D: "
@@ -1650,7 +1614,6 @@ END SUBROUTINE PLOT1D_THETA_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1660,7 +1623,7 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r,dvdu,ratom
    REAL(KIND=8),DIMENSION(2) :: v
    INTEGER(KIND=4) :: i ! Counter
@@ -1718,7 +1681,6 @@ END SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1728,7 +1690,7 @@ SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=27),PARAMETER :: routinename = "PLOT1D_THETA_SMOOTH_CRP6D: "
@@ -1784,7 +1746,6 @@ END SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_R_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1794,7 +1755,7 @@ SUBROUTINE PLOT1D_R_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_R_CRP6D: "
@@ -1850,7 +1811,6 @@ END SUBROUTINE PLOT1D_R_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_R_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1860,7 +1820,7 @@ SUBROUTINE PLOT1D_R_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_R_SMOOTH_CRP6D: "
@@ -1917,7 +1877,6 @@ END SUBROUTINE PLOT1D_R_SMOOTH_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,L,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1928,7 +1887,7 @@ SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,L,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_Z_CRP6D: "
@@ -1984,7 +1943,6 @@ END SUBROUTINE PLOT1D_Z_CRP6D
 !> @version 1.0
 !----------------------------------------------------------------------
 SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(CRP6D),INTENT(IN) :: thispes
@@ -1994,7 +1952,7 @@ SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
    REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin, ymax, ymin 
+   REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
    CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_Z_SMOOTH_CRP6D: "

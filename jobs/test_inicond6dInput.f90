@@ -1,20 +1,20 @@
-PROGRAM TEST_INICOND3D_INPUT
+PROGRAM TEST_INICOND6D_INPUT
 ! Initial declarations
-use DEBUG_MOD, only: VERBOSE_WRITE, SET_VERBOSE_MODE
-use INITATOM_MOD, only: Initatom
-use CRP3D_MOD, only: CRP3D
+use DEBUG_MOD, only: VERBOSE_WRITE,SET_VERBOSE_MODE
+use INITDIATOMIC_MOD, only: Initdiatomic
+use CRP6D_MOD, only: CRP6D
 use SYSTEM_MOD
 IMPLICIT NONE
 ! Some objects
-TYPE(Initatom) :: inicondat
+TYPE(Initdiatomic) :: inicondat
 REAL(KIND=4),DIMENSION(2):: timearr
-TYPE(CRP3D):: thispes
+TYPE(CRP6D):: thispes
 REAL(KIND=4):: timer
 CHARACTER(LEN=1024):: luafile
 ! STEP 0: HELLO! & system specifications
 CALL SET_VERBOSE_MODE(.TRUE.)
 WRITE(*,*) "**************************************************************"
-WRITE(*,*) "******************* TEST INICOND3D INPUT *********************"
+WRITE(*,*) "******************* TEST INICOND6D INPUT *********************"
 WRITE(*,*) "**************************************************************"
 ! STEP 1: READ PES, INTERPOLATION NOT NEEDED
 SELECT CASE(command_argument_count())
@@ -38,4 +38,4 @@ CALL VERBOSE_WRITE('',"User time: ",real(timearr(1),kind=8))
 CALL VERBOSE_WRITE('',"System time: ",real(timearr(2),kind=8))
 CALL VERBOSE_WRITE('',"Total time: ",real(timer,kind=8))
 CALL VERBOSE_WRITE("*******************************************************")
-END PROGRAM TEST_INICOND3D_INPUT
+END PROGRAM TEST_INICOND6D_INPUT

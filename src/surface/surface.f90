@@ -5,7 +5,6 @@
 !! Should contain everything related with periodic 2D surfaces
 !##########################################################
 MODULE SURFACE_MOD
-   USE SYSTEM_MOD
    USE UNITS_MOD
    USE MATHS_MOD
    USE CONSTANTS_MOD
@@ -88,13 +87,14 @@ CONTAINS
    PROCEDURE,PUBLIC:: cart2recip => cart2recip_SURFACE
    PROCEDURE,PUBLIC:: project_unitcell => project_unitcell_SURFACE
    PROCEDURE,PUBLIC:: project_iwscell => project_iwscell_SURFACE
+   ! Get block
+   PROCEDURE,PUBLIC:: getsymmlabel => getsymmlabel_SURFACE
+   PROCEDURE,PUBLIC:: getfilename => getfilename_SURFACE
    ! Tools block
    PROCEDURE,PUBLIC:: PRINT_PATTERN => PRINT_PATTERN_SURFACE
    PROCEDURE,PUBLIC:: MOVE_PATTERN => MOVE_PATTERN_SURFACE
    ! Enquire block
    PROCEDURE,PUBLIC:: is_initialized => is_initialized_SURFACE
-   PROCEDURE,PUBLIC:: tellsymmlabel => tellsymmlabel_SURFACE
-   PROCEDURE,PUBLIC:: tellfilename => tellfilename_SURFACE
 END TYPE
 ! MODULE CONTAINS
 CONTAINS
@@ -206,47 +206,50 @@ SUBROUTINE PRINT_PATTERN_SURFACE(this,wunit,order,format_out)
    RETURN
 END SUBROUTINE PRINT_PATTERN_SURFACE
 !###########################################################
-!# FUNCTION: tellfilename 
+!# FUNCTION: getfilename 
 !###########################################################
 !> @brief
 !! Typical enquire function
 !-----------------------------------------------------------
-CHARACTER(LEN=30) FUNCTION tellfilename_SURFACE(this) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Surface),INTENT(IN) :: this
-   ! Run section
-   tellfilename_SURFACE=this%filename
-   RETURN
-END FUNCTION tellfilename_SURFACE
-!###########################################################
-!# FUNCTION: tellsymmlabel 
-!###########################################################
-!> @brief
-!! typical enquire function
-!-----------------------------------------------------------
-CHARACTER(LEN=4) FUNCTION tellsymmlabel_SURFACE(this) 
+PURE FUNCTION getfilename_SURFACE(this) result(filename)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Surface),INTENT(IN):: this
+   CHARACTER(LEN=:),ALLOCATABLE:: filename
    ! Run section
-   tellsymmlabel_SURFACE=this%symmlabel
+   filename=this%filename
    RETURN
-END FUNCTION tellsymmlabel_SURFACE
+END FUNCTION getfilename_SURFACE
+!###########################################################
+!# FUNCTION: getsymmlabel 
+!###########################################################
+!> @brief
+!! typical enquire function
+!-----------------------------------------------------------
+PURE FUNCTION getsymmlabel_SURFACE(this) result(symmlabel)
+   ! Initial declarations   
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Surface),INTENT(IN):: this
+   CHARACTER(LEN=:),ALLOCATABLE:: symmlabel
+   ! Run section
+   symmlabel=this%symmlabel
+   RETURN
+END FUNCTION getsymmlabel_SURFACE
 !###########################################################
 !# FUNCTION: is_initialized 
 !###########################################################
 ! - Check if surface type is already initialized
 !-----------------------------------------------------------
-LOGICAL FUNCTION is_initialized_SURFACE(surf) 
+PURE FUNCTION is_initialized_SURFACE(surf) result(bool)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Surface), INTENT(IN) :: surf
+   CLASS(Surface),INTENT(IN):: surf
+   LOGICAL:: bool
    ! Run section
-   is_initialized_SURFACE=surf%initialized
+   bool=surf%initialized
    RETURN
 END FUNCTION is_initialized_SURFACE
   
@@ -259,21 +262,16 @@ END FUNCTION is_initialized_SURFACE
 SUBROUTINE INITIALIZE_SURFACE(surf,filename)
    IMPLICIT NONE
    ! I/O Variables -----------------------------------------------
-   CLASS(Surface),INTENT(INOUT) :: surf
-   CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
+   CLASS(Surface),INTENT(INOUT):: surf
+   CHARACTER(LEN=*),INTENT(IN):: filename
    ! Local variables ---------------------------------------------
-   INTEGER :: i,j ! Counters
-   INTEGER :: control
-   CHARACTER(LEN=17), PARAMETER :: routinename = "INITIALIZE_SURF: "
-   TYPE(length) :: len
-   REAL(KIND=8), DIMENSION(2,2) :: aux_r
+   INTEGER:: i,j ! Counters
+   INTEGER:: control
+   CHARACTER(LEN=*),PARAMETER:: routinename = "INITIALIZE_SURFACE: "
+   TYPE(length):: len
+   REAL(KIND=8),DIMENSION(2,2):: aux_r
    ! Run section --------------------------------------------
-   SELECT CASE(allocated(system_surface) .or. .not.present(filename))
-      CASE(.TRUE.)
-         surf%filename=system_surface
-      CASE(.FALSE.)
-         surf%filename=filename
-   END SELECT
+   surf%filename=filename
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Initializing a new surface")
    CALL VERBOSE_WRITE(routinename,"File: ",surf%filename)

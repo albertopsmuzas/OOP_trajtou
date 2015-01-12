@@ -48,6 +48,7 @@ CONTAINS
    ! Set block
    PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_TIMESTEP_NEXT => SET_TIMESTEP_NEXT_INTEGRATOR_O1 ! Mandatory
    PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_TIMESTEP_USED => SET_TIMESTEP_USED_INTEGRATOR_O1 ! Mandatory
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_TIMESTEP => SET_TIMESTEP_INTEGRATOR_O1
    PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ERROR => SET_ERR_INTEGRATOR_O1 ! Mandatory
    PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ERRSCALING => SET_ERRSCAL_INTEGRATOR_O1 ! Mandatory
    PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_REALPARAM => SET_REALPARAM_INTEGRATOR_O1
@@ -188,6 +189,27 @@ SUBROUTINE SET_ERR_INTEGRATOR_O1(this,err)
    this%err=err
    RETURN
 END SUBROUTINE SET_ERR_INTEGRATOR_O1
+!###########################################################
+!# SUBROUTINE: SET_TIMESTEP_INTEGRATOR_O1
+!###########################################################
+!> @brief
+!! Standard set subroutine. Sets dt and dt_old atribute
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Dec/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SET_TIMESTEP_INTEGRATOR_O1(this,timestep)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(integrator_o1),INTENT(INOUT):: this
+   REAL(KIND=8),INTENT(IN):: timestep
+   ! Run section
+   this%dt=timestep
+   this%dt_old=timestep
+   RETURN
+END SUBROUTINE SET_TIMESTEP_INTEGRATOR_O1
 !###########################################################
 !# SUBROUTINE: SET_TIMESTEP_NEXT_INTEGRATOR_O1
 !###########################################################

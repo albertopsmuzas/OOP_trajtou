@@ -29,35 +29,34 @@ END TYPE Diatomic
 !> @brief
 !! Sets initial conditions for atoms
 !----------------------------------------------------
-TYPE,EXTENDS(Inicond) :: INITDIATOMIC
-   CHARACTER(LEN=8) ::extrapol
-   REAL(KIND=8) :: period
-   REAL(KIND=8) :: eps
-   LOGICAL :: control_vel,control_posX,control_posY,control_out,control_seed
-   LOGICAL :: is_classic=.FALSE.
-   REAL(KIND=8) :: impact_x, impact_y
-   INTEGER(KIND=4),DIMENSION(2) :: init_qn
+TYPE,EXTENDS(Inicond):: INITDIATOMIC
+   CHARACTER(LEN=:),ALLOCATABLE::extrapol
+   REAL(KIND=8):: period
+   REAL(KIND=8):: eps
+   LOGICAL:: control_vel,control_posX,control_posY,control_out,control_seed
+   LOGICAL:: is_classic=.FALSE.
+   REAL(KIND=8):: impact_x, impact_y
+   INTEGER(KIND=4),DIMENSION(2):: init_qn
    TYPE(Csplines):: pr_t,r_t
-   TYPE(Time) :: delta_t
-   TYPE(Energy) :: E_norm, evirot
-   TYPE(Angle) :: vz_angle, vpar_angle
-   TYPE(Length) :: init_z ! initial Z value
-   TYPE(Vacuumpot) :: vibrpot
-   TYPE(Vacuumpot) :: rovibrpot
-   CLASS(PES),ALLOCATABLE :: thispes
+   TYPE(Time):: delta_t
+   TYPE(Energy):: E_norm, evirot
+   TYPE(Angle):: vz_angle, vpar_angle
+   TYPE(Length):: init_z ! initial Z value
+   TYPE(Vacuumpot):: vibrpot
+   TYPE(Vacuumpot):: rovibrpot
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_INITDIATOMIC
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_INITDIATOMIC
       ! Tools block
-      PROCEDURE,PUBLIC :: GENERATE_TRAJS => GENERATE_TRAJS_INITDIATOMIC
-      PROCEDURE,PUBLIC :: GENERATE_TRAJS_FROM_FILE => GENERATE_TRAJS_FROM_FILE_INITDIATOMIC
+      PROCEDURE,PUBLIC:: GENERATE_TRAJS => GENERATE_TRAJS_INITDIATOMIC
+      PROCEDURE,PUBLIC:: GENERATE_TRAJS_FROM_FILE => GENERATE_TRAJS_FROM_FILE_INITDIATOMIC
       ! Private routines
-      PROCEDURE,PRIVATE :: SET_PERIOD => SET_PERIOD_INITDIATOMIC
-      PROCEDURE,PRIVATE :: TIME_DERIVS => TIME_DERIVS_INITDIATOMIC
-      PROCEDURE,PRIVATE :: MMID => MMID_INITDIATOMIC
-      PROCEDURE,PRIVATE :: BSSTEP => BSSTEP_INITDIATOMIC
-      PROCEDURE,PRIVATE :: POLINOM_EXTRAPOL => PZEXTR_INITDIATOMIC
-      PROCEDURE,PRIVATE :: RATIONAL_EXTRAPOL => RZEXTR_INITDIATOMIC
+      PROCEDURE,PRIVATE:: SET_PERIOD => SET_PERIOD_INITDIATOMIC
+      PROCEDURE,PRIVATE:: TIME_DERIVS => TIME_DERIVS_INITDIATOMIC
+      PROCEDURE,PRIVATE:: MMID => MMID_INITDIATOMIC
+      PROCEDURE,PRIVATE:: BSSTEP => BSSTEP_INITDIATOMIC
+      PROCEDURE,PRIVATE:: POLINOM_EXTRAPOL => PZEXTR_INITDIATOMIC
+      PROCEDURE,PRIVATE:: RATIONAL_EXTRAPOL => RZEXTR_INITDIATOMIC
 END TYPE INITDIATOMIC
 !////////////////////////////////////////////////////
 CONTAINS
@@ -187,152 +186,222 @@ END SUBROUTINE INITIALIZE_DIATOMIC
 SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Initdiatomic),INTENT(OUT) :: this
-   CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
-   ! IMPORTANT: unit used to read info
-   INTEGER(KIND=4),PARAMETER :: runit=134
+   CLASS(Initdiatomic),INTENT(OUT):: this
+   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename
    ! Local variables
-   REAL(KIND=8) :: aux
-   CHARACTER(LEN=10) :: units,units2
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: x,f
-   INTEGER(KIND=4) :: i ! counters
-   INTEGER(KIND=4) :: size_seed, clock
-   CHARACTER(LEN=4) :: keyword_vibrpot
-   CHARACTER(LEN=20):: potfilename,pesfilename
-   ! Given parameters
-   CHARACTER(LEN=23), PARAMETER :: routinename = "DEFINE_INICOND_SCHEME: "
-   REAL(KIND=8),PARAMETER :: small=0.D-8
+   INTEGER:: i ! counters
+   INTEGER:: size_seed,clock
+   CHARACTER(LEN=*), PARAMETER :: routinename = "INITIALIZE_INITDIATOMIC: "
+   ! Lua variables
+   TYPE(flu_State):: conf
+   INTEGER(KIND=4):: inicond_table,trajlist_table,magnitude_table,control_table,out_table
+   INTEGER(KIND=4):: auxtable
+   INTEGER(KIND=4):: ierr
+   ! Auxiliary (dummy) variables
+   CHARACTER(LEN=1024):: auxstring
+   INTEGER(KIND=4):: auxint
+   REAL(KIND=8):: auxreal
    ! YIPEE KI YAY !! -------
-   this%input_file = filename
-   OPEN(runit,FILE=filename,STATUS="old")
-   READ(runit,*) ! dumy line
-   READ(runit,*) this%alias
-   READ(runit,*) this%kind
-   ALLOCATE(CRP6D::this%thispes)
-   READ(runit,*) pesfilename
-   CALL this%thispes%INITIALIZE(pesfilename)
-   READ(runit,*) this%extrapol
-   IF ((this%extrapol.NE."Polinomi").AND.(this%extrapol.NE."Rational")) THEN
-      WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: Wrong extrapolation keyword: "
-      WRITE(0,*) "Only available: Polinomi and Rational"
-      WRITE(0,*) "You have written: ", this%extrapol
-      CALL EXIT(1)
-   END IF
-   READ(runit,*) this%eps
-   READ(runit,*) aux,units
-   CALL this%delta_t%READ(aux,units)
-   CALL this%delta_t%TO_STD()
-   
-   READ(runit,*) this%nstart
-   READ(runit,*) this%ntraj
+   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
+      CASE(.TRUE.)
+         auxstring=system_inputfile
+      CASE(.FALSE.)
+         auxstring=filename
+   END SELECT
+   ! Open lua conf file
+   ALLOCATE(this%input_file,source=trim(auxstring))
+   CALL OPEN_CONFIG_FILE(L=conf,ErrCode=ierr,filename=this%input_file)
+   ! Open initial conditions table
+   CALL AOT_TABLE_OPEN(L=conf,thandle=inicond_table,key='initialConditions')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='kind',val=auxstring)
+   this%kind=trim(auxstring)
+   SELECT CASE(this%kind)
+      CASE('Molecules')
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: wrong kind of initial conditions"
+         CALL EXIT(1)
+   END SELECT
+   ! get traj list to initialize
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=trajlist_table,key='trajList')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=trajlist_table,key='from',val=auxint)
+   this%nstart=auxint
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=trajlist_table,key='to',val=auxint)
+   this%ntraj=auxint
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=trajlist_table)
+   ! Some debugging messages
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Alias: ",this%alias)
    CALL VERBOSE_WRITE(routinename,"Kind: ",this%kind)
    CALL VERBOSE_WRITE(routinename,"Initial traj: ",this%nstart)
    CALL VERBOSE_WRITE(routinename,"Final traj: ",this%ntraj)
 #endif
-   IF (this%kind.EQ."Diato") THEN
-      READ(runit,*) aux,units
-      CALL this%evirot%READ(aux,units)
-      CALL this%evirot%TO_STD()
-      SELECT CASE(this%evirot%getvalue()>0.D0+small)
-         CASE(.TRUE.)
-            this%is_classic=.FALSE.
+   ! get internal state
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='internalState')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='v',val=auxint)
+   this%init_qn(1)=auxint
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='J',val=auxint)
+   this%init_qn(2)=auxint
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Semi-classical calculation")
+   CALL VERBOSE_WRITE(routinename,'Quantum state: ',this%init_qn(:))
 #endif
-         CASE(.FALSE.)
-            this%is_classic=.TRUE.
+   ! get internal energy
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='internalEnergy')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%evirot%READ(auxreal,trim(auxstring))
+   CALL this%evirot%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   SELECT CASE(this%evirot%getvalue()>0.D0+1.d-8)
+      CASE(.TRUE.)
+         this%is_classic=.FALSE.
+      CASE(.FALSE.)
+         this%is_classic=.TRUE.
+   END SELECT
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Classical calculation")
+   CALL VERBOSE_WRITE(routinename,"Is this classical?: ",this%is_classic)
 #endif
-      END SELECT
-
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Internal energy: ",this%evirot%getvalue())
-#endif
-      
-      READ(runit,*) this%init_qn(1:2)   
-
-      READ(runit,'(A4)',advance="no") keyword_vibrpot
-      SELECT CASE(keyword_vibrpot)
-         CASE("NUMR")
-#ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Numerical vibrational potential found")
-#endif
-            READ(runit,*) potfilename
-            CALL this%vibrpot%INITIALIZE(potfilename)
-            CALL this%vibrpot%SHIFTPOT()
-         CASE DEFAULT
-            WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: wrong vibrational potential keyword"
-            WRITE(0,*) "Implemented ones: NUMR(numerical)+filename"
-            CALL EXIT(1)
-      END SELECT
-
-      READ(runit,*) aux,units
-      CALL this%E_norm%READ(aux,units)
-      CALL this%E_norm%TO_STD()
-
-      READ(runit,*) aux,units
-      CALL this%vz_angle%READ(aux,units)
-      CALL this%vz_angle%TO_STD()
-      IF (this%vz_angle%getvalue() > 90.D0*PI/180.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: incidence angle greater than 90.0 deg (1.57079632679D0 rad)"
-         WRITE(0,*) "Incidence angle (rad) : ",this%vz_angle%getvalue()
+   ! get enorm
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='Enormal')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%E_norm%READ(auxreal,trim(auxstring))
+   CALL this%E_norm%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get incidence angle
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='incidenceAngle')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%vz_angle%READ(auxreal,trim(auxstring))
+   CALL this%vz_angle%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   SELECT CASE(this%vz_angle%getvalue() > 90.D0*PI/180.D0 .or. this%vz_angle%getvalue() < 0.D0)
+      CASE(.true.)
+         WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: wrong incidence angle: ",this%vz_angle%getvalue()
          CALL EXIT(1)
-      ELSE IF (this%vz_angle%getvalue() < 0.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: incidence angle lower than 0.0 deg."
-         WRITE(0,*) "Incidence angle (rad) : ",this%vz_angle%getvalue()
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+   ! get vibrational potential
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='vibrationalFunction')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='kind',val=auxstring)
+   SELECT CASE(trim(auxstring))
+      CASE('Numerical')
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='source',val=auxstring)
+         CALL this%vibrpot%INITIALIZE(trim(auxstring))
+         CALL this%vibrpot%SHIFTPOT()
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: vibrational function kind not implemented"
+         WRITE(0,*) "Implemented ones: Numerical"
+         WRITE(0,*) 'Warning: case sensitive'
          CALL EXIT(1)
-      END IF
-
-      READ(runit,*) aux,units
-      CALL this%vpar_angle%READ(aux,units)
-      CALL this%vpar_angle%TO_STD()
-      IF (this%vpar_angle%getvalue() > 90.D0*PI/180.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: parallele angle greater than 90.0 deg (1.57079632679D0 rad)"
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get integration parameters
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='extrapolation',val=auxstring)
+   this%extrapol=trim(auxstring)
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='timeStep')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%delta_t%READ(auxreal,trim(auxstring))
+   CALL this%delta_t%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='precision',val=this%eps)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'Extrapolation used: '//this%extrapol)
+   CALL VERBOSE_WRITE(routinename,'Initial time step (a.u.): ',this%delta_t%getvalue())
+   CALL VERBOSE_WRITE(routinename,'Precision during integration (dimensionless factor): ',this%eps)
+#endif
+   ! get direction angle
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='directionAngle')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%vpar_angle%READ(auxreal,trim(auxstring))
+   CALL this%vpar_angle%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   SELECT CASE(this%vz_angle%getvalue() < 0.D0)
+      CASE(.true.)
+         WRITE(0,*) "INITIALIZE_INIDIATOMIC ERR: parallele angle lower than 0.0 deg."
          WRITE(0,*) "Incidence angle (rad) : ",this%vpar_angle%getvalue()
          CALL EXIT(1)
-      ELSE IF (this%vz_angle%getvalue() < 0.D0) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: parallele angle lower than 0.0 deg."
-         WRITE(0,*) "Incidence angle (rad) : ",this%vpar_angle%getvalue()
-         CALL EXIT(1)
-      END IF
-      
-      READ(runit,*) aux,units
-      CALL this%init_z%READ(aux,units)
-      CALL this%init_z%TO_STD()
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+   ! get initial Z
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='initialZ')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%init_z%READ(auxreal,trim(auxstring))
+   CALL this%init_z%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! Some debugging info
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Initial normal energy in au:",this%E_norm%getvalue())
-      CALL VERBOSE_WRITE(routinename,"Incidence angle respect to surface plane in radians: ",this%vz_angle%getvalue())
-      CALL VERBOSE_WRITE(routinename,"Angle between trajectory and S1 vector in radians",this%vpar_angle%getvalue())
-      CALL VERBOSE_WRITE(routinename,"Initial Z in au: ",this%init_z%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Initial normal energy in au:",this%E_norm%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Incidence angle respect to surface plane in radians: ",this%vz_angle%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Angle between trajectory and S1 vector in radians",this%vpar_angle%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Initial Z in au: ",this%init_z%getvalue())
 #endif
-      READ(runit,*) this%control_posX, this%control_posY 
-      READ(runit,*) this%impact_x
-      READ(runit,*) this%impact_y
+   ! get control random initial XY position
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=control_table,key='randomXY')
+   CALL AOT_TABLE_OPEN(L=conf,parent=control_table,thandle=auxtable,key='X')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=1,val=this%control_posX)
+   SELECT CASE(this%control_posX)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=2,val=this%impact_x)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=auxtable)
+   CALL AOT_TABLE_OPEN(L=conf,parent=control_table,thandle=auxtable,key='Y')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=1,val=this%control_posY)
+   SELECT CASE(this%control_posY)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=2,val=this%impact_y)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=auxtable)
+   IF(((this%impact_x > 1.D0).OR.(this%impact_x < 0.D0)).AND.(.NOT.this%control_posX)) THEN
+      WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: X impact parameter outside range 0-1"
+      CALL EXIT(1)
+   ELSE IF(((this%impact_y > 1.D0).OR.(this%impact_y < 0.D0)).AND.(.NOT.this%control_posy))THEN
+      WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: Y impact parameter outside range 0-1"
+      CALL EXIT(1)
+   END IF
+   ! Some debugging messages
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Random X impact parameter?: ",this%control_posX)
-      CALL VERBOSE_WRITE(routinename,"Random Y impact parameter?: ",this%control_posY)
+   CALL VERBOSE_WRITE(routinename,"Random X impact parameter?: ",this%control_posX)
+   CALL VERBOSE_WRITE(routinename,"Random Y impact parameter?: ",this%control_posY)
+   IF (this%control_posX.eqv..false. .and. this%control_posY.eqv..false.) THEN
       CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_x)
       CALL VERBOSE_WRITE(routinename,"Impact param Y: ",this%impact_x)
+   ELSE IF (.not.this%control_posX) THEN
+      CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_x)
+   ELSE IF (.not.this%control_posY) THEN
+      CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_y)
+   END IF
 #endif
-      IF(((this%impact_x > 1.D0).OR.(this%impact_x < 0.D0)).AND.(.NOT.this%control_posX)) THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: X impact parameter outside range 0-1"
-         CALL EXIT(1)
-      ELSE IF(((this%impact_y > 1.D0).OR.(this%impact_y < 0.D0)).AND.(.NOT.this%control_posy))THEN
-         WRITE(0,*) "DEFINE_INICOND_SCHEME ERR: Y impact parameter outside range 0-1"
-         CALL EXIT(1)
-      END IF
-      READ(runit,*) this%control_out
-      READ(runit,*) this%output_file
-      READ(runit,*) this%control_seed
+   ! get output control
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=out_table,key='outputFile')
+   auxint=aot_table_length(L=conf,thandle=out_table)
+   SELECT CASE(auxint)
+      CASE(0)
+         this%control_out=.false.
+      CASE DEFAULT
+         this%control_out=.true.
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=out_table,pos=1,val=auxstring)
+         this%output_file=trim(auxstring)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=out_table)
+   ! get seed control
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='seedRead',val=this%control_seed)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Output files?: ",this%control_out)
-      CALL VERBOSE_WRITE(routinename,"Output file name: ",this%output_file)
-      CALL VERBOSE_WRITE(routinename,"Seed read from file?: ",this%control_seed)
+   CALL VERBOSE_WRITE(routinename,"Output files?: ",this%control_out)
+   CALL VERBOSE_WRITE(routinename,"Output file name: ",this%output_file)
+   CALL VERBOSE_WRITE(routinename,"Seed read from file?: ",this%control_seed)
 #endif
-      IF (this%control_seed.EQV..TRUE.) THEN
+   SELECT CASE(this%control_seed)
+      CASE(.TRUE.)
          CALL RANDOM_SEED(SIZE=size_seed)
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"Default size for seed array: ",size_seed)
@@ -342,34 +411,24 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
          READ(12,*) this%seed
          CLOSE(12)
          CALL RANDOM_SEED(PUT=this%seed)
-      ELSE
+      CASE(.FALSE.)
          CALL RANDOM_SEED(SIZE=size_seed)
          ALLOCATE(this%seed(1:size_seed))
          CALL SYSTEM_CLOCK(COUNT=clock)
          this%seed = clock+ 37*(/ (i - 1, i = 1, size_seed) /)
          CALL RANDOM_SEED(PUT=this%seed)
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Seed generated from CPU time: ")
-         CALL VERBOSE_WRITE(routinename,"CPU time: ", clock)
+         CALL VERBOSE_WRITE(routinename,"Seed generated from CPU time: ",clock)
 #endif
-         IF (this%control_out.EQV..TRUE.) THEN
-            OPEN(12,FILE="INseed.inp",STATUS="replace")
-            WRITE(12,*) this%seed
-            CLOSE(12)
-         END IF
-      END IF
+         OPEN(12,FILE="INseed.inp",STATUS="replace")
+         WRITE(12,*) this%seed
+         CLOSE(12)
+   END SELECT
 #ifdef DEBUG
-      DO i=1,size_seed
-         CALL VERBOSE_WRITE(routinename,this%seed(i))
-      END DO
+   DO i=1,size_seed
+      CALL VERBOSE_WRITE(routinename,this%seed(i))
+   END DO
 #endif
-   ELSE
-      WRITE(0,*) "DEFINE_INICOND_ATOM ERR: Wrong kind of initial conditions"
-      WRITE(0,*) "Available kinds: Diato"
-      WRITE(0,*) "You wrote: ", this%kind
-      CALL EXIT(1)
-   END IF
-   CLOSE(runit)
    RETURN
 END SUBROUTINE INITIALIZE_INITDIATOMIC
 !####################################################################
@@ -397,14 +456,13 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    ! IMPORTANT: unit used to write
    INTEGER(KIND=4),PARAMETER :: wunit=923
    ! Local variables
-   INTEGER :: i,j ! counters
+   INTEGER :: i ! counters
    CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
-   REAL(KIND=8),DIMENSION(2):: proj_iws_r
-   REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint,Etot
-   REAL(KIND=8),DIMENSION(6) :: random_kernel
-   REAL(KIND=8) :: rnd_delta,rnd_phi,rnd_theta,rnd_eta
-   REAL(KIND=8) :: eta
-   REAL(KIND=8) :: ang_momentum
+   REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint
+   REAL(KIND=8),DIMENSION(6):: random_kernel
+   REAL(KIND=8):: rnd_delta,rnd_phi,rnd_theta,rnd_eta
+   REAL(KIND=8):: eta
+   REAL(KIND=8):: ang_momentum
    ! YIPPIEE KI YAY !! -------------------
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New set of trajectories")
@@ -426,7 +484,6 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    mu = product(system_mass(1:2))/masa
    Enorm = this%E_norm%getvalue()
    Eint = this%evirot%getvalue()
-   Etot = Enorm/(DSIN(alpha)**2.D0)+Eint
    ang_momentum=dsqrt(dfloat(this%init_qn(2)*(this%init_qn(2)+1)))
    DO i=1,this%ntraj
       CALL RANDOM_NUMBER(random_kernel(:))
@@ -449,7 +506,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       ! CENTER OF MASS COORD ---------------------------------------
       ! Set center of mass coordinates
       this%trajs(i)%r(3) = this%init_z%getvalue()
-      this%trajs(i)%r(1:2) = this%thispes%surf%surf2cart(this%trajs(i)%r(1:2))
+      this%trajs(i)%r(1:2) = system_surface%surf2cart(this%trajs(i)%r(1:2))
       ! center of mass momenta DOFS
       this%trajs(i)%p(1)=DCOS(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
       this%trajs(i)%p(2)=DSIN(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
@@ -490,6 +547,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       END SELECT
       ! Total energy
       this%trajs(i)%E=this%trajs(i)%Ecm+this%trajs(i)%Eint
+      this%trajs(i)%init_E=this%trajs(i)%Ecm+this%trajs(i)%Eint
       ! STORE INITIAL VALUES .....................................
       this%trajs(i)%init_r = this%trajs(i)%r
       this%trajs(i)%init_p = this%trajs(i)%p
@@ -504,10 +562,11 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
          OPEN(wunit,FILE=this%output_file,STATUS="replace")
          WRITE(wunit,*) "# FILE CREATED BY : GENERATE_TRAJS_ATOMS ================================================================="
          WRITE(wunit,*) "# Format:  traj_num  X,Y,Z,R,THETA,PHI (au and radians)  &
-            &Px,Py,Pz,pr,ptheta,pphi(a.u.)   X,Y(Projected IWS, a.u.)"
+            &Px,Py,Pz,pr,ptheta,pphi(a.u.)"
          WRITE(wunit,*) "# Perpendicular Energy (a.u.) / (eV) : ",this%E_norm%getvalue()," / ", this%E_norm%getvalue()*au2ev
-         WRITE(wunit,*) "# Initial CM energy (a.u.) / (eV) : ",Enorm/(DSIN(alpha)**2.D0)," /  ",(Enorm/(DSIN(alpha)**2.D0))*au2ev
-         WRITE(wunit,*) "# Initial int energy (a.u.) / (eV) : ",Eint," /  ",Eint*au2ev
+         WRITE(wunit,*) "# Initial center of mass energy (a.u.) / (eV) : ",&
+            Enorm/(DSIN(alpha)**2.D0)," /  ",(Enorm/(DSIN(alpha)**2.D0))*au2ev
+         WRITE(wunit,*) "# Initial internal energy (a.u.) / (eV) : ",Eint," /  ",Eint*au2ev
          WRITE(wunit,*) "# Initial Rovibrational state: ",this%init_qn(:)
          WRITE(wunit,*) "# MASS (a.u.) / proton_mass : ", masa," / ",masa/pmass2au
          WRITE(wunit,*) "# Reduced MASS (a.u.) / proton_mass : ",mu," / ",mu/pmass2au
@@ -528,9 +587,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
          END IF
          WRITE(wunit,*) "# ======================================================================================================="
          DO i=this%nstart,this%ntraj
-            FORALL(j=1:2) proj_iws_r(j) = this%trajs(i)%init_r(j)
-            proj_iws_r = this%thispes%surf%project_iwscell(proj_iws_r)
-            WRITE(wunit,'(1X,I10,3(6F16.7))') i,this%trajs(i)%init_r,this%trajs(i)%init_p,proj_iws_r
+            WRITE(wunit,'(1X,I10,3(6F16.7))') i,this%trajs(i)%init_r,this%trajs(i)%init_p
          END DO
          CLOSE(wunit)
 #ifdef DEBUG
@@ -560,9 +617,6 @@ SUBROUTINE TIME_DERIVS_INITDIATOMIC(this,z,dzdt,fin)
    REAL(KIND=8),DIMENSION(2),INTENT(OUT) :: dzdt
    LOGICAL,INTENT(OUT) :: fin
    ! Local variables
-   INTEGER :: i ! counters
-   REAL(KIND=8) :: mass
-   REAL(KIND=8) :: v ! dummy variable
    CHARACTER(LEN=26),PARAMETER :: routinename = "TIME_DERIVS_INITDIATOMIC: "
    ! ROCK THE CASBAH ! ---------------------
    SELECT CASE(this%rovibrpot%is_allowed(z(1)))
@@ -570,8 +624,7 @@ SUBROUTINE TIME_DERIVS_INITDIATOMIC(this,z,dzdt,fin)
          fin = .TRUE.
       CASE(.TRUE.)
          fin=.FALSE.
-         mass=product(system_mass(1:2))/sum(system_mass(1:2))
-         dzdt(1)=z(2)/mass
+         dzdt(1)=z(2)*sum(system_mass(1:2))/product(system_mass(1:2))
          dzdt(2)=-this%rovibrpot%getderiv(z(1))
    END SELECT
    RETURN
@@ -1062,9 +1115,6 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
       init_pr=z(2)
       init_Eint=Eint
       ! Allocating r and p results. Doesn't cycle
-      
-
-
       CALL this%TIME_DERIVS(z,dzdt,switch)
       SELECT CASE(switch)
          CASE(.TRUE.)
@@ -1114,7 +1164,7 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
       CALL VERBOSE_WRITE(routinename,"Energy after integration:",Eint)
 #endif
       ! Check conservation of energy. CAN cycle
-      SELECT CASE (DABS(Eint-init_Eint) > 100.D0*this%eps*init_Eint)
+      SELECT CASE (DABS(Eint-init_Eint) > this%eps*init_Eint)
          CASE(.TRUE.)
             ! Problems with energy conservation
             ! reboot to previous step values

@@ -108,13 +108,12 @@ SUBROUTINE INITIALIZE_INITATOM(this,filename)
    CHARACTER(LEN=*), PARAMETER :: routinename = "INITIALIZE_INITATOM: "
    ! Lua variables
    TYPE(flu_State):: conf
-   INTEGER(KIND=4):: inicond_table,pes_table,trajlist_table,magnitude_table,control_table,out_table
+   INTEGER(KIND=4):: inicond_table,trajlist_table,magnitude_table,control_table,out_table
    INTEGER(KIND=4):: auxtable
    INTEGER(KIND=4):: ierr
    ! Auxiliary (dummy) variables
    CHARACTER(LEN=1024):: auxstring
    INTEGER(KIND=4):: auxint
-   LOGICAL:: auxbool
    REAL(KIND=8):: auxreal
    ! YIPEE KI YAY !! -------
    SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
@@ -315,9 +314,8 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
    ! IMPORTANT: unit used to write
    INTEGER(KIND=4),PARAMETER :: wunit=923
    ! Local variables
-   INTEGER :: i,j ! counters
-   CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
-   REAL(KIND=8),DIMENSION(2):: proj_iws_r
+   INTEGER :: i ! counters
+   CHARACTER(LEN=*),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
    REAL(KIND=8):: delta,alpha,Enorm,masa,v
    REAL(KIND=8),DIMENSION(3) :: dummy
    REAL(KIND=8),DIMENSION(2) :: random_kernel
@@ -347,9 +345,9 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
       END IF
       this%trajs(i)%r(3) = this%init_z%getvalue()
       ! Change to cartesian coordinates (impact parameters are in surface coordinates)
-      this%trajs(i)%r(1:2) = thispes%surf%surf2cart(this%trajs(i)%r(1:2))
+      this%trajs(i)%r(1:2) = system_surface%surf2cart(this%trajs(i)%r(1:2))
       ! projectin into IWS cell leads to errors in the dynamics (wrong sampling)
-      IF (thispes%surf%units/="au") THEN
+      IF (system_surface%units/="au") THEN
          WRITE(0,*) "GENERATE_TRAJS_ATOMS ERR: Surface should be in atomic units!"
          CALL EXIT(1)
       END IF   
@@ -379,7 +377,7 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
       CASE(.TRUE.)
          OPEN(wunit,FILE=this%output_file,STATUS="replace")
          WRITE(wunit,*) "# FILE CREATED BY : GENERATE_TRAJS_ATOMS ================================================================="
-         WRITE(wunit,*) "# Format:   traj_num      X,Y,Z (a.u.)      Px,Py,Pz(a.u.)   X,Y(Projected IWS, a.u.)"
+         WRITE(wunit,*) "# Format:   traj_num      X,Y,Z (a.u.)      Px,Py,Pz(a.u.)"
          WRITE(wunit,*) "# Initial total Energy (a.u.) / (eV) : ", this%trajs(1)%E, " /  ", this%trajs(1)%E*au2ev
          WRITE(wunit,*) "# Perpendicular Energy (a.u.) / (eV) : ", this%E_norm%getvalue(), " / ", this%E_norm%getvalue()*au2ev
          WRITE(wunit,*) "# MASS (a.u.) / proton_mass : ", masa," / ", masa/pmass2au
@@ -399,9 +397,7 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
          END IF
          WRITE(wunit,*) "# ======================================================================================================="
          DO i=this%nstart,this%ntraj
-            FORALL(j=1:2) proj_iws_r(j) = this%trajs(i)%init_r(j)
-            proj_iws_r = thispes%surf%project_iwscell(proj_iws_r)
-            WRITE(wunit,'(1X,I10,3(3F20.7))') i,this%trajs(i)%init_r,this%trajs(i)%init_p,proj_iws_r
+            WRITE(wunit,'(1X,I10,3(3F20.7))') i,this%trajs(i)%init_r,this%trajs(i)%init_p
          END DO
          CLOSE(wunit)
 #ifdef DEBUG

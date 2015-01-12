@@ -334,14 +334,14 @@ SUBROUTINE SET_FOURIER_SYMMETRY_CRP3D(this,interpolxy)
    CLASS(CRP3D),INTENT(IN):: this
    CLASS(Fourier2d),ALLOCATABLE,INTENT(INOUT):: interpolxy
    ! Run section
-   SELECT CASE(this%surf%tellsymmlabel())
+   SELECT CASE(system_surface%getsymmlabel())
       CASE("p4mm")
          ALLOCATE(Fourierp4mm::interpolxy)
       CASE("p6mm")
          ALLOCATE(Fourierp6mm::interpolxy)
       CASE DEFAULT
          WRITE(0,*) "SET_FOURIER_SYMMETRY_CRP3D ERR: Incorrect surface symmlabel"
-         WRITE(0,*) "Used: ",this%surf%tellsymmlabel()
+         WRITE(0,*) "Used: ",system_surface%getsymmlabel()
          WRITE(0,*) "Implemented ones: p4mm, p6mm"
          CALL EXIT(1)
    END SELECT
@@ -418,7 +418,7 @@ SUBROUTINE GET_REPUL_CORRECTIONS_CRP3D(this,P,v,dvdz,dvdx,dvdy)
    END FORALL
    DO l = 1, npairpots
       DO k = 0, this%max_order
-         CALL INTERACTION_AENV(k,P,this%surf,this%all_pairpots(l),this%dampfunc,aux1,aux2,aux3,aux4)
+         CALL INTERACTION_AENV(k,P,this%all_pairpots(l),this%dampfunc,aux1,aux2,aux3,aux4)
          v(l)=v(l)+aux1
          dvdz(l)=dvdz(l)+aux2
          dvdx(l)=dvdx(l)+aux3
@@ -757,7 +757,7 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    CHARACTER(LEN=*),INTENT(IN) :: filename
    CHARACTER(LEN=*),INTENT(IN):: tablename
    ! Local variables
-   INTEGER(KIND=4) :: n_pairpots,n_sites,max_order
+   INTEGER(KIND=4) :: n_pairpots,n_sites
    CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: files_pairpots,files_sites
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param
    INTEGER(KIND=4):: ierr
@@ -766,10 +766,8 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    TYPE(flu_State):: conf ! Lua state
    INTEGER(KIND=4):: pes_table,pairpot_table,sitio_table,dampfunc_table,param_table,fourier_table ! tables
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: subtables
-   CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: keys 
    ! Auxiliar (dummy) variables
    INTEGER(KIND=4):: auxint
-   REAL(KIND=8):: auxreal
    CHARACTER(LEN=1024):: auxstring
    ! Parameters
    CHARACTER(LEN=*),PARAMETER :: routinename="READ_CRP3D: "
@@ -788,6 +786,13 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    ! Set pestype (kind)
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
    CALL this%SET_PESTYPE(trim(auxstring))
+   SELECT CASE(trim(auxstring))
+      CASE('CRP3D')
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "READ_CRP3D ERR: wrong type of PES. Expected: CRP3D. Encountered: "//trim(auxstring)
+         CALL EXIT(1)
+   END SELECT
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'Type of PES: '//trim(auxstring))
 #endif
@@ -803,12 +808,6 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
 #endif
-   ! Set & initialize surface input file
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='surfaceInput',val=auxstring)
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Surface file used as input: "//trim(auxstring))
-#endif
-   CALL this%surf%INITIALIZE(trim(auxstring))
    ! Set max environment
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='maxEnvironment',val=auxint)
    this%max_order=auxint
@@ -878,6 +877,8 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    SELECT CASE(auxint/=n_sites)
       CASE(.TRUE.)
          WRITE(0,*) "READ_CRP3D ERR: dimension mismatch between fourierKpoints and number of sitios"
+         WRITE(0,*) 'Number of Fourier Kpoints: ',auxint
+         WRITE(0,*) 'Number of sitios: ',n_sites
          CALL EXIT(1)
       CASE(.FALSE.)
          ! do nothing
@@ -886,10 +887,10 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    ALLOCATE(subtables(n_sites))
    DO i = 1, n_sites
       CALL AOT_TABLE_OPEN(L=conf,parent=fourier_table,thandle=subtables(i),pos=i)
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=1,val=auxreal)
-      this%klist(i,1)=auxreal
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=2,val=auxreal)
-      this%klist(i,2)=auxreal
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=1,val=auxint)
+      this%klist(i,1)=auxint
+      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=2,val=auxint)
+      this%klist(i,2)=auxint
       CALL AOT_TABLE_CLOSE(L=conf,thandle=subtables(i))
    END DO
    CALL AOT_TABLE_CLOSE(L=conf,thandle=fourier_table)
@@ -997,13 +998,13 @@ END SUBROUTINE EXTRACT_VASINT_CRP3D
 SUBROUTINE SMOOTH_CRP3D(this)
    ! Initial declaraitons
    IMPLICIT NONE
-   CLASS(CRP3D),INTENT(INOUT) :: this
+   CLASS(CRP3D),INTENT(INOUT):: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(3) :: A
-   INTEGER(KIND=4) :: i,j,k,l ! counters
-   INTEGER(KIND=4) :: npairpots,nsites
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: v,dvdzr,dummy
-   CHARACTER(LEN=14) :: routinename="SMOOTH_CRP3D: "
+   REAL(KIND=8),DIMENSION(3):: A
+   INTEGER(KIND=4):: i,j ! counters
+   INTEGER(KIND=4):: npairpots,nsites
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: v,dvdzr,dummy
+   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_CRP3D: "
    ! Run section ----------
    nsites = size(this%all_sites)
    npairpots = size(this%all_pairpots)
@@ -1114,7 +1115,6 @@ END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !! The potential is extracted from @b pairpot, which should've been interpolated before
 !
 !> @param[in] A, P - Pair of 3D points that are interacting through a @b pairpot @b potential
-!> @param[in] surf - Periodic surface
 !> @param[in] pairpot - Pair potential. Source of @f$V(r)@f$, where @b r is the distance
 !!                      between @b A and @b P. @f$V(r)@f$ is just a shifted version of
 !!                      @f$V(z)@f$.
@@ -1136,20 +1136,18 @@ END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !
 !> @see extra documentation
 !------------------------------------------------------------------
-SUBROUTINE INTERACTION_AP(A,P,surf,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_corr)
+SUBROUTINE INTERACTION_AP(A,P,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_corr)
    IMPLICIT NONE
    ! I/O VAriables --------------------------------------------
-   REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A, P
-   TYPE(Surface),INTENT(IN) :: surf
-   TYPE(Pair_pot),INTENT(IN) :: pairpot
-   CLASS(Function1d),INTENT(IN) :: dampfunc
-   REAL(KIND=8),INTENT(OUT) :: interac,dvdz_corr,dvdx_corr,dvdy_corr
+   REAL(KIND=8),DIMENSION(3),INTENT(IN):: A, P
+   TYPE(Pair_pot),INTENT(IN):: pairpot
+   CLASS(Function1d),INTENT(IN):: dampfunc
+   REAL(KIND=8),INTENT(OUT):: interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! Local variables ------------------------------------------
-   REAL(KIND=8) :: r ! distance
-   REAL(KIND=8) :: v,pre
-   REAL(KIND=8) :: aux ! dv/dr
-   CHARACTER(LEN=16), PARAMETER :: routinename = "INTERACTION_AP: "
-   INTEGER :: i ! Counter
+   REAL(KIND=8):: r ! distance
+   REAL(KIND=8):: v,pre
+   REAL(KIND=8):: aux ! dv/dr
+   CHARACTER(LEN=*),PARAMETER:: routinename = "INTERACTION_AP: "
    ! GABBA, GABBA HEY! ----------------------------------------
    ! Find the distance between A and P, in a.u.
    r=dsqrt((A(1)-P(1))**2.D0+(A(2)-P(2))**2.D0+(A(3)-P(3))**2.D0)
@@ -1172,7 +1170,6 @@ END SUBROUTINE INTERACTION_AP
 !
 !> @param[in] n - Environment order
 !> @param[in] A - Point in space, cartesian coordinates
-!> @param[in] surf - Periodic surface 
 !> @param[in] pairpot - Pair potential which defines interaction potential
 !> @param[out] interac - Total interaction with the environment defined
 !> @param[out] dvdx_term - 
@@ -1183,44 +1180,41 @@ END SUBROUTINE INTERACTION_AP
 !> @date Feb/2014;Jun/2014
 !> @version 2.0
 !------------------------------------------------------------------
-SUBROUTINE INTERACTION_AENV(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   INTEGER,INTENT(IN) :: n
-   REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
-   TYPE(Pair_pot),INTENT(IN) :: pairpot
-   CLASS(Function1d),INTENT(IN) :: dampfunc
-   TYPE(Surface),INTENT(IN) :: surf
-   REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
+   INTEGER,INTENT(IN):: n
+   REAL(KIND=8),DIMENSION(3),INTENT(IN):: A
+   TYPE(Pair_pot),INTENT(IN):: pairpot
+   CLASS(Function1d),INTENT(IN):: dampfunc
+   REAL(KIND=8),INTENT(OUT):: interac, dvdz_term, dvdx_term, dvdy_term
    ! Run section
-   SELECT CASE(surf%tellsymmlabel())
+   SELECT CASE(system_surface%getsymmlabel())
       CASE("p4mm")
-         CALL INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+         CALL INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
       CASE("p6mm")
-         CALL INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+         CALL INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
       CASE DEFAULT
          WRITE(0,*) "INTERACTION_AENV ERR: wrong surface symmlabel or it's not been implemented yet"
-         WRITE(0,*) "Surface reads: ",surf%tellsymmlabel()
+         WRITE(0,*) "Surface reads: ",system_surface%getsymmlabel()
          WRITE(0,*) "Implemented ones: p4mm, p6mm"
          CALL EXIT(1)      
    END SELECT
    RETURN
 END SUBROUTINE INTERACTION_AENV
-SUBROUTINE INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+SUBROUTINE INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
    IMPLICIT NONE
    ! I/O VAriables ------------------------------------------
    INTEGER,INTENT(IN) :: n
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN) :: pairpot
    CLASS(Function1d),INTENT(IN) :: dampfunc
-   TYPE(Surface),INTENT(IN) :: surf
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P
    REAL(KIND=8),DIMENSION(3) :: ghost_A ! A in cartesians, but inside unitcell
    REAL(KIND=8),DIMENSION(2) :: aux
-   INTEGER(KIND=4),DIMENSION(2) :: center_int
    REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
    REAL(KIND=8) :: atomx, atomy
    INTEGER :: pairid
@@ -1234,14 +1228,14 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
    dvdx_term=0.D0
    dvdy_term=0.D0
    ! ghost A definition
-   ghost_A(1:2)=surf%project_unitcell(A(1:2))
+   ghost_A(1:2)=system_surface%project_unitcell(A(1:2))
    ghost_A(3)=A(3)
 
    SELECT CASE(n)
       CASE(0)
-         DO i=1, surf%atomtype(pairid)%n
-            P(:)=surf%atomtype(pairid)%atom(i,:)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+         DO i=1, system_surface%atomtype(pairid)%n
+            P(:)=system_surface%atomtype(pairid)%atom(i,:)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac=interac+dummy1
             dvdz_term=dvdz_term+dummy2
             dvdx_term=dvdx_term+dummy3
@@ -1250,17 +1244,17 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
          RETURN
 
       CASE(1 :)
-         DO i=1, surf%atomtype(pairid)%n
-            atomx=surf%atomtype(pairid)%atom(i,1)
-            atomy=surf%atomtype(pairid)%atom(i,2)
-            P(3)=surf%atomtype(pairid)%atom(i,3)
+         DO i=1, system_surface%atomtype(pairid)%n
+            atomx=system_surface%atomtype(pairid)%atom(i,1)
+            atomy=system_surface%atomtype(pairid)%atom(i,2)
+            P(3)=system_surface%atomtype(pairid)%atom(i,3)
             DO k= -n,n
                aux(1)=dfloat(n)
                aux(2)=dfloat(k)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac=interac+dummy1
                dvdz_term=dvdz_term+dummy2
                dvdx_term=dvdx_term+dummy3
@@ -1268,10 +1262,10 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
                !
                aux(1)=dfloat(-n)
                aux(2)=dfloat(k)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1280,10 +1274,10 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             DO k= -n+1, n-1
                aux(1)=dfloat(k)
                aux(2)=dfloat(n)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1) =atomx+aux(1)
                P(2) =atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1291,10 +1285,10 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
                !
                aux(1)=dfloat(k)
                aux(2)=dfloat(-n)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1308,20 +1302,18 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
          CALL EXIT(1)
    END SELECT
 END SUBROUTINE INTERACTION_AENV_OCTA
-SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
    IMPLICIT NONE
    ! I/O VAriables ------------------------------------------
    INTEGER,INTENT(IN) :: n
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN) :: pairpot
    CLASS(Function1d),INTENT(IN) :: dampfunc
-   TYPE(Surface),INTENT(IN) :: surf
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P
    REAL(KIND=8),DIMENSION(3) :: ghost_A ! A in cartesians, but inside unitcell
    REAL(KIND=8),DIMENSION(2) :: aux
-   INTEGER(KIND=4),DIMENSION(2) :: center_int
    REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
    REAL(KIND=8) :: atomx, atomy
    INTEGER :: pairid
@@ -1335,13 +1327,13 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
    dvdx_term=0.D0
    dvdy_term=0.D0
    ! ghost A definition
-   ghost_A(1:2)=surf%project_unitcell(A(1:2))
+   ghost_A(1:2)=system_surface%project_unitcell(A(1:2))
    ghost_A(3)=A(3)
    SELECT CASE(n)
       CASE(0)
-         DO i=1, surf%atomtype(pairid)%n
-            P(:)=surf%atomtype(pairid)%atom(i,:)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+         DO i=1, system_surface%atomtype(pairid)%n
+            P(:)=system_surface%atomtype(pairid)%atom(i,:)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac=interac+dummy1
             dvdz_term=dvdz_term+dummy2
             dvdx_term=dvdx_term+dummy3
@@ -1349,18 +1341,18 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
          END DO
          RETURN
       CASE(1)
-         DO i=1, surf%atomtype(pairid)%n
-            atomx=surf%atomtype(pairid)%atom(i,1)
-            atomy=surf%atomtype(pairid)%atom(i,2)
-            P(3)=surf%atomtype(pairid)%atom(i,3)
+         DO i=1, system_surface%atomtype(pairid)%n
+            atomx=system_surface%atomtype(pairid)%atom(i,1)
+            atomy=system_surface%atomtype(pairid)%atom(i,2)
+            P(3)=system_surface%atomtype(pairid)%atom(i,3)
             k=0
             !
             aux(1)=dfloat(n)
             aux(2)=dfloat(-k)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1) =atomx+aux(1)
             P(2) =atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1368,10 +1360,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             !
             aux(1)=dfloat(-n)
             aux(2)=dfloat(k)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1379,10 +1371,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             !
             aux(1)=dfloat(-k)
             aux(2)=dfloat(n)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1390,10 +1382,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             !
             aux(1)=dfloat(k)
             aux(2)=dfloat(-n)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1401,10 +1393,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             !
             aux(1)=dfloat(-n)
             aux(2)=dfloat(n)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1412,10 +1404,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             !
             aux(1)=dfloat(n)
             aux(2)=dfloat(-n)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1423,17 +1415,17 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
          END DO
          RETURN
       CASE(2 :)
-         DO i=1, surf%atomtype(pairid)%n
-            atomx=surf%atomtype(pairid)%atom(i,1)
-            atomy=surf%atomtype(pairid)%atom(i,2)
-            P(3)=surf%atomtype(pairid)%atom(i,3)
+         DO i=1, system_surface%atomtype(pairid)%n
+            atomx=system_surface%atomtype(pairid)%atom(i,1)
+            atomy=system_surface%atomtype(pairid)%atom(i,2)
+            P(3)=system_surface%atomtype(pairid)%atom(i,3)
             DO k= 1,n-1
                aux(1)=dfloat(k)
                aux(2)=dfloat(n-k)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac=interac+dummy1
                dvdz_term=dvdz_term+dummy2
                dvdx_term=dvdx_term+dummy3
@@ -1441,10 +1433,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
                !
                aux(1)=dfloat(-k)
                aux(2)=dfloat(k-n)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1453,10 +1445,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             DO k= 0, n-1
                aux(1)=dfloat(n)
                aux(2)=dfloat(-k)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1) =atomx+aux(1)
                P(2) =atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1464,10 +1456,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
                !
                aux(1)=dfloat(-n)
                aux(2)=dfloat(k)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1475,10 +1467,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
                !
                aux(1)=dfloat(-k)
                aux(2)=dfloat(n)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1486,10 +1478,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
                !
                aux(1)=dfloat(k)
                aux(2)=dfloat(-n)
-               aux=surf%surf2cart(aux)
+               aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1498,10 +1490,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             !
             aux(1)=dfloat(-n)
             aux(2)=dfloat(n)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1509,10 +1501,10 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,surf,pairpot,dampfunc,interac,dvdz_term,dvd
             !
             aux(1)=dfloat(n)
             aux(2)=dfloat(-n)
-            aux=surf%surf2cart(aux)
+            aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,surf,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1556,15 +1548,13 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu)
    ! Local variables
    INTEGER(KIND=4) :: nsites,npairpots
    CLASS(Fourier2d),ALLOCATABLE:: interpolxy
-   REAL(KIND=8),DIMENSION(3) :: deriv
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dvdz,dvdx,dvdy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-   INTEGER :: i, j,k ! counters
+   INTEGER :: i ! counters
    ! Pointers
 	REAL(KIND=8), POINTER :: zmax
-   TYPE(Pair_pot),POINTER :: pairpot
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%z(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
@@ -1608,8 +1598,8 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu)
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ(xy,f,this%klist)
-   CALL interpolxy%INTERPOL(this%surf)
-   CALL interpolxy%GET_F_AND_DERIVS(this%surf,X,potarr,derivarr)
+   CALL interpolxy%INTERPOL(system_surface)
+   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    v = v + potarr(1)
    dvdu(1)=dvdu(1)+derivarr(1,1)
@@ -1648,8 +1638,7 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(this,X,v,dvdu)
    ! Local variables
    INTEGER(KIND=4) :: npairpots
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dvdz,dvdx,dvdy
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-   INTEGER :: i, j,k ! counters
+   INTEGER :: i ! counters
    ! Pointers
 	REAL(KIND=8), POINTER :: zmax
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
@@ -1722,10 +1711,9 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-   INTEGER :: i, j,k ! counters
+   INTEGER :: i ! counters
    ! Pointers
 	REAL(KIND=8), POINTER :: zmax
-   TYPE(Pair_pot),POINTER :: pairpot
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
@@ -1760,8 +1748,8 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ(xy,f,this%klist)
-   CALL interpolxy%INTERPOL(this%surf)
-   CALL interpolxy%GET_F_AND_DERIVS(this%surf,X,potarr,derivarr)
+   CALL interpolxy%INTERPOL(system_surface)
+   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    v = v + potarr(1)
    dvdu(1)=dvdu(1)+derivarr(1,1)
@@ -1795,17 +1783,14 @@ REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
    ! Local variables
    CLASS(Fourier2d),ALLOCATABLE:: interpolxy
    REAL(KIND=8):: v
-   REAL(KIND=8),DIMENSION(3):: dvdu
    INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),DIMENSION(3) :: A,deriv
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dummy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-   INTEGER :: i, j,k ! counters
+   INTEGER :: i ! counters
    ! Pointers
    REAL(KIND=8), POINTER :: zmax
-   TYPE(Pair_pot),POINTER :: pairpot
    CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
@@ -1837,8 +1822,8 @@ REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ(xy,f,this%klist)
-   CALL interpolxy%INTERPOL(this%surf)
-   CALL interpolxy%GET_F_AND_DERIVS(this%surf,X,potarr,derivarr)
+   CALL interpolxy%INTERPOL(system_surface)
+   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    getpot_crp3d=v+potarr(1)
    RETURN
@@ -2348,18 +2333,18 @@ END SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D
 SUBROUTINE PLOT_Z_CRP3D(this,npoints,xyz,L,filename)
    IMPLICIT NONE
    ! I/O variables -------------------------------
-   CLASS(CRP3D),INTENT(IN) :: this
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*), INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: xyz
+   CLASS(CRP3D),INTENT(IN):: this
+   INTEGER,INTENT(IN):: npoints
+   CHARACTER(LEN=*),INTENT(IN):: filename
+   REAL(KIND=8),DIMENSION(3),INTENT(IN):: xyz
    ! Local variables -----------------------------
    INTEGER :: inpoints, ndelta
-   REAL*8 :: delta,L,s,alpha
-   REAL*8 :: zmax, zmin 
-   REAL*8, DIMENSION(3) :: r, dvdu
-   REAL(KIND=8) :: v
-   INTEGER :: i ! Counter
-   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   REAL(KIND=8):: delta,L
+   REAL(KIND=8):: zmax, zmin 
+   REAL(KIND=8),DIMENSION(3):: r, dvdu
+   REAL(KIND=8):: v
+   INTEGER:: i ! Counter
+   CHARACTER(LEN=*),PARAMETER:: routinename = "PLOT_DIRECTION1D_CRP3D: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
       WRITE(0,*) "PLOT_Z_CRP3D ERR: Less than 2 points"

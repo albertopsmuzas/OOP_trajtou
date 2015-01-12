@@ -1,9 +1,9 @@
 PROGRAM  TEST_DYNAMICS
-USE DEBUG_MOD
-USE DYNATOM_MOD
+USE DEBUG_MOD, only: VERBOSE_WRITE
+USE DYNDIATOMIC_MOD, only: Dyndiatomic
 USE SYSTEM_MOD
 IMPLICIT NONE
-TYPE(Dynatom) :: thisdynamics
+TYPE(Dyndiatomic) :: thisdynamics
 REAL(KIND=4),DIMENSION(2) :: timearr
 REAL(KIND=4) :: timer
 CHARACTER(LEN=1024):: luafile
@@ -11,7 +11,7 @@ CHARACTER(LEN=1024):: luafile
 !
 ! STEP 0: HELLO! & system specifications -----------------------------------------------------------------
 WRITE(*,*) "******************************************************" 
-WRITE(*,*) "****************** 3D DYNAMICS ***********************"
+WRITE(*,*) "****************** 6D DYNAMICS ***********************"
 WRITE(*,*) "******************************************************" 
 ! STEP 1: START UP DYNAMICS
 SELECT CASE(command_argument_count())

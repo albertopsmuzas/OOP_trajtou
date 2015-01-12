@@ -26,14 +26,14 @@ IMPLICIT NONE
 !
 !> @see FORTRAN 77 numerical recipes
 !----------------------------------------------------------------
-TYPE,EXTENDS(Integrator_o1) :: BULIRSCH_STOER_INTEGRATOR
+TYPE,EXTENDS(Integrator_o1) :: Bulirsch_Stoer_integrator
 CONTAINS
    PROCEDURE,PUBLIC :: STEP => STEP_BS
    PROCEDURE,PUBLIC :: MMID => MMID_BS
    PROCEDURE,PUBLIC :: POLINOM_EXTRAPOL => PZEXTR_BS
    PROCEDURE,PUBLIC :: RATIONAL_EXTRAPOL => RZEXTR_BS
    PROCEDURE,PUBLIC :: INTEGRATE => INTEGRATE_BS
-END TYPE BULIRSCH_STOER_INTEGRATOR
+END TYPE Bulirsch_Stoer_integrator
 !/////////////////////////////////////////////////////////////////
 CONTAINS
 !########################################################################
@@ -286,7 +286,7 @@ SUBROUTINE STEP_BS(this,y,dydx,x,hdid,hnext,DERIV,switch)
 			END IF
 		END IF
 	END DO
-3 red=min(red,REDMIN)       ! Reduce stepsize by at least REDMIN and at
+3 red=min(red,REDMIN)  ! Reduce stepsize by at least REDMIN and at
 	red=max(red,REDMAX) ! most REDMAX.
 	h=h*red
 	reduct=.TRUE.

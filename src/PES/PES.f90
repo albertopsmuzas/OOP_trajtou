@@ -30,7 +30,6 @@ PRIVATE
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: dvdu 
    REAL(KIND=8):: v
    LOGICAL:: initialized = .FALSE.
-   TYPE(Surface),PUBLIC:: surf
    CONTAINS
       ! Initialization block
       PROCEDURE(INITIALIZE_PES),DEFERRED,PUBLIC:: INITIALIZE     ! DEFERRED, see INTERFACE !!!!!!!!!!!

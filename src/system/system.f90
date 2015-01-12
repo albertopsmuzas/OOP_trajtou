@@ -7,6 +7,7 @@
 !##########################################################
 MODULE SYSTEM_MOD
    USE UNITS_MOD
+   USE SURFACE_MOD
    USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
    USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #ifdef DEBUG
@@ -19,7 +20,7 @@ REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: system_mass
 CHARACTER(LEN=2),DIMENSION(:),ALLOCATABLE:: system_atomsymbols
 CHARACTER(LEN=:),ALLOCATABLE:: system_inputfile
 CHARACTER(LEN=:),ALLOCATABLE:: system_pespath
-CHARACTER(LEN=:),ALLOCATABLE:: system_surface
+TYPE(Surface):: system_surface
 INTEGER(KIND=4):: system_natoms
 CONTAINS
 !###########################################################
@@ -79,7 +80,7 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
 #endif
    ! Get surface
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=sys_table,key='surface',val=string)
-   system_surface=trim(string)
+   CALL system_surface%INITIALIZE(trim(string))
    ! Get number of atoms, masses and atomic symbols
    CALL AOT_TABLE_OPEN(L=conf,parent=sys_table,thandle=sym_table,key='symbols')
    CALL AOT_TABLE_OPEN(L=conf,parent=sys_table,thandle=mass_table,key='masses')
@@ -111,7 +112,7 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    CALL CLOSE_CONFIG(conf)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'config file: ',system_inputfile)
-   CALL VERBOSE_WRITE(routinename,'default surface input file: ',system_surface)
+   CALL VERBOSE_WRITE(routinename,'default surface input file: ',system_surface%getfilename())
    CALL VERBOSE_WRITE(routinename,'default PES path: ',system_pespath)
    CALL VERBOSE_WRITE(routinename,'Natoms: ',system_natoms)
    CALL VERBOSE_WRITE(routinename,'masses(au): ',system_mass(:))

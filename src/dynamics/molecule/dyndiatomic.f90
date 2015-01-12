@@ -4,11 +4,11 @@
 !! Provides tools to run dynamics on diatomic molecules
 !##########################################################
 MODULE DYNDIATOMIC_MOD
-   USE DYNAMICS_MOD
-   USE INITDIATOMIC_MOD
-   USE SYSTEM_MOD
+   use SYSTEM_MOD
+   use DYNAMICS_MOD
+   use INITDIATOMIC_MOD, only: InitDiatomic
 #ifdef DEBUG
-   USE DEBUG_MOD
+   use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////
@@ -25,35 +25,36 @@ IMPLICIT NONE
 !> @param zads - Z for adsorbed atoms
 !> @param zabs - Z for absorbed atoms
 !----------------------------------------------------------
-TYPE,EXTENDS(Dynamics) :: DYNDIATOMIC
-   CHARACTER(LEN=8) :: extrapol
-   CHARACTER(LEN=10) :: scaling
-   REAL(KIND=8) :: eps
-   TYPE(Length) :: zstop, dzstop
-   TYPE(Length) :: zscatt,zads,zabs,maxr
-   INTEGER(KIND=4),PRIVATE :: wusc=900 ! write unit for scattered trajs
-   INTEGER(KIND=4),PRIVATE :: wupa=901 ! write unit for pathologic trajs
-   INTEGER(KIND=4),PRIVATE :: wuto=902 ! write unit for timed out trajs
-   INTEGER(KIND=4),PRIVATE :: wutr=903 ! write unit for trapped trajs
-   INTEGER(KIND=4),PRIVATE :: wuad=904 ! write unit for adsorbed trajs
-   INTEGER(KIND=4),PRIVATE :: wuab=905 ! write unit for absorbed trajs
-   INTEGER(KIND=4),PRIVATE :: wust=906 ! write unit for stopped trajs
-   INTEGER(KIND=4),PRIVATE :: wutp=907 ! write unit for turning points
-   INTEGER(KIND=4),PRIVATE :: wufo=908 ! write unit for trajectory step by step
-   INTEGER(KIND=4),PRIVATE :: wure=909 ! write unit for reacted trajs
+TYPE,EXTENDS(Dynamics) :: DynDiatomic
+   CHARACTER(LEN=:),ALLOCATABLE:: extrapol
+   CHARACTER(LEN=:),ALLOCATABLE:: scaling
+   REAL(KIND=8):: eps
+   REAL(KIND=8):: energyTolerance
+   TYPE(Length):: zstop, dzstop
+   TYPE(Length):: zscatt,zads,zabs,maxr
+   INTEGER(KIND=4),PRIVATE:: wusc=900 ! write unit for scattered trajs
+   INTEGER(KIND=4),PRIVATE:: wupa=901 ! write unit for pathologic trajs
+   INTEGER(KIND=4),PRIVATE:: wuto=902 ! write unit for timed out trajs
+   INTEGER(KIND=4),PRIVATE:: wutr=903 ! write unit for trapped trajs
+   INTEGER(KIND=4),PRIVATE:: wuad=904 ! write unit for adsorbed trajs
+   INTEGER(KIND=4),PRIVATE:: wuab=905 ! write unit for absorbed trajs
+   INTEGER(KIND=4),PRIVATE:: wust=906 ! write unit for stopped trajs
+   INTEGER(KIND=4),PRIVATE:: wutp=907 ! write unit for turning points
+   INTEGER(KIND=4),PRIVATE:: wufo=908 ! write unit for trajectory step by step
+   INTEGER(KIND=4),PRIVATE:: wure=909 ! write unit for reacted trajs
    CONTAINS
-      ! Initialization block
-      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_DYNDIATOMIC
+     ! Initialization block
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_DYNDIATOMIC
       ! Tools block
-      PROCEDURE,PUBLIC :: RUN => RUN_DYNDIATOMIC
+      PROCEDURE,PUBLIC:: RUN => RUN_DYNDIATOMIC
       ! Private block
-      PROCEDURE,PRIVATE :: DO_DYNAMICS => DO_DYNAMICS_DYNDIATOMIC
-      PROCEDURE,PRIVATE :: TIME_DERIVS => TIME_DERIVS_DYNDIATOMIC
-      PROCEDURE,PRIVATE :: MMID => MMID_DYNDIATOMIC
-      PROCEDURE,PRIVATE :: BSSTEP => BSSTEP_DYNDIATOMIC
-      PROCEDURE,PRIVATE :: POLINOM_EXTRAPOL => PZEXTR_DYNDIATOMIC
-      PROCEDURE,PRIVATE :: RATIONAL_EXTRAPOL => RZEXTR_DYNDIATOMIC
-END TYPE DYNDIATOMIC
+      PROCEDURE,PRIVATE:: DO_DYNAMICS => DO_DYNAMICS_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: TIME_DERIVS => TIME_DERIVS_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: MMID => MMID_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: BSSTEP => BSSTEP_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: POLINOM_EXTRAPOL => PZEXTR_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: RATIONAL_EXTRAPOL => RZEXTR_DYNDIATOMIC
+END TYPE DynDiatomic
 !//////////////////////////////////////////////////////////
 CONTAINS
 !#####################################################################
@@ -65,133 +66,217 @@ CONTAINS
 SUBROUTINE INITIALIZE_DYNDIATOMIC(this,filename)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Dyndiatomic),INTENT(OUT) :: this
+   CLASS(DynDiatomic),INTENT(OUT) :: this
    CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
-   ! IMPORTANT: unit used to read info
-   INTEGER(KIND=4),PARAMETER :: runit=108
    ! Local variables
-   CHARACTER(LEN=20) :: filenameinicond,filenamepes
-   CHARACTER(LEN=18), PARAMETER :: routinename = "READ_DYNDIATOMIC: "
-   CHARACTER(LEN=6) :: follow
-   CHARACTER(LEN=10) :: units
-   REAL(KIND=8) :: aux
-   INTEGER :: i ! counters
+   INTEGER(KIND=4):: i ! counters
+   ! Lua parameters
+   TYPE(flu_State):: conf
+   INTEGER(KIND=4):: dyn_table,pes_table,inicond_table,magnitude_table,outcond_table,follow_table
+   INTEGER(KIND=4):: ierr
+   ! Auxiliar variables
+   REAL(KIND=8):: auxreal
+   CHARACTER(LEN=1024):: auxstring
+   ! Parameters 
+   CHARACTER(LEN=*),PARAMETER:: routinename = "INITIALIZE_DYNDIATOMIC: "
    ! YIPEE KI YAY -----------------------------
-   this%filename = filename
-   OPEN (runit,FILE=this%filename, STATUS="old")
-   READ(runit,*) ! dummy line
-   READ(runit,*) this%alias
-   READ(runit,*) this%kind
-   IF(this%kind.EQ."Diato") THEN
-      READ(runit,*) filenamepes
+   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
+      CASE(.TRUE.)
+         auxstring=trim(system_inputfile)
+      CASE(.FALSE.)
+         auxstring=trim(filename)
+   END SELECT
+   this%filename=trim(auxstring)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"File for PES: ",filenamepes)
+   CALL VERBOSE_WRITE(routinename,'Dynamics input file: '//this%filename)
 #endif
-      SELECT CASE(filenamepes)
-         CASE("INcrp6d.inp")
-            ALLOCATE(CRP6D::this%thispes)
-            CALL this%thispes%INITIALIZE(filenamepes)
-         CASE DEFAULT
-            WRITE(0,*) "READ_DYNDIATOMIC ERR: PES file not implemented"
-            WRITE(0,*) "Available files: INcrp6d.inp"
-            CALL EXIT(1)
-      END SELECT
-      READ(runit,*) filenameinicond
+   ! Open Lua file
+   CALL OPEN_CONFIG_FILE(L=conf,filename=trim(this%filename),ErrCode=ierr)
+   SELECT CASE (ierr)
+      CASE(0)
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) 'INITIALIZE_DYNDIATOMIC: Fatal Error when opening the Lua config file'
+         CALL EXIT(1)
+   END SELECT
+   CALL AOT_TABLE_OPEN(L=conf,thandle=dyn_table,key='dynamics')
+   SELECT CASE(dyn_table)
+      CASE(0)
+         WRITE(0,*) "INITIALIZE_DYNDIATOMIC ERR: empty dynamics table"
+         CALL EXIT(1)
+      CASE DEFAULT
+         ! do nothing
+   END SELECT
+   ! Detect kind of dynamics
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='kind',val=auxstring)
+   this%kind=trim(auxstring)
+   SELECT CASE(this%kind)
+      CASE("Molecules")
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_DYNATOM ERR: wrong kind of dynamics"
+         WRITE(0,*) 'Expected: Molecules. Encountered: '//trim(auxstring)
+         CALL EXIT(1)
+   END SELECT
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"File for Initial conditions: ",filenameinicond)
+   CALL VERBOSE_WRITE(routinename,'Kinf of dynamics: '//trim(auxstring))
 #endif
-      SELECT CASE(filenameinicond)
-         CASE("INinicond6d.inp")
-            ALLOCATE(Initdiatomic::this%thisinicond)
-            CALL this%thisinicond%INITIALIZE(filenameinicond)
-            CALL this%thisinicond%GENERATE_TRAJS(this%thispes)
-         CASE DEFAULT
-            WRITE(0,*) "READ_DYNDIATOMIC ERR: Initial conditions file not implemented"
-            WRITE(0,*) "Available files: INinicond6d.inp"
-            CALL EXIT(1)
-      END SELECT
-		READ(runit,*) this%eps
+   ! Load pes
+   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key='pes')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
+   CALl AOT_TABLE_CLOSE(L=conf,thandle=pes_table)
+   SELECT CASE(trim(auxstring))
+      CASE("CRP6D")
+         ALLOCATE(CRP6D::this%thispes)
+         CALL this%thispes%INITIALIZE()
+      CASE DEFAULT
+         WRITE(0,*) "READ_DYNDIATOMIC ERR: PES not implemented for Atoms dynamics."
+         WRITE(0,*) "Available ones: CRP6D"
+         CALL EXIT(1)
+   END SELECT
+   ! Load initial conditions
+   CALL AOT_TABLE_OPEN(L=conf,thandle=inicond_table,key='initialConditions')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='kind',val=auxstring)
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=inicond_table)
+   SELECT CASE(trim(auxstring))
+      CASE('Molecules')
+         ALLOCATE(InitDiatomic::this%thisinicond)
+         CALL this%thisinicond%INITIALIZE()
+         CALL this%thisinicond%GENERATE_TRAJS(this%thispes)
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_DYNDIATOMIC ERR: Initial conditions not implemented for atom dynamics"
+         WRITE(0,*) "Available ones: Molecules"
+         CALL EXIT(1)
+   END SELECT
+   ! Get time step
+   CALL AOT_TABLE_OPEN(L=conf,parent=dyn_table,thandle=magnitude_table,key='timeStep')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%delta_t%READ(auxreal,trim(auxstring))
+   CALL this%delta_t%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! Get maximum t
+   CALL AOT_TABLE_OPEN(L=conf,parent=dyn_table,thandle=magnitude_table,key='maxTime')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%max_t%READ(auxreal,trim(auxstring))
+   CALL this%max_t%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! Get z stop
+   CALL AOT_TABLE_OPEN(L=conf,parent=dyn_table,thandle=magnitude_table,key='stopAtZ')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%zstop%READ(auxreal,trim(auxstring))
+   CALL this%zstop%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! Get dz stop
+   CALL AOT_TABLE_OPEN(L=conf,parent=dyn_table,thandle=magnitude_table,key='stopAtZ_dZ')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%dzstop%READ(auxreal,trim(auxstring))
+   CALL this%dzstop%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   !  open out trasjectory conditions table
+   CALL AOT_TABLE_OPEN(L=conf,parent=dyn_table,thandle=outcond_table,key='outTrajConditions')
+   ! get reflection conditions
+   CALL AOT_TABLE_OPEN(L=conf,parent=outcond_table,thandle=magnitude_table,key='reflection')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%zscatt%READ(auxreal,trim(auxstring))
+   CALL this%zscatt%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get adsorption conditions
+   CALL AOT_TABLE_OPEN(L=conf,parent=outcond_table,thandle=magnitude_table,key='adsorption')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%zads%READ(auxreal,trim(auxstring))
+   CALL this%zads%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get absortion conditions
+   CALL AOT_TABLE_OPEN(L=conf,parent=outcond_table,thandle=magnitude_table,key='absorption')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%zabs%READ(auxreal,trim(auxstring))
+   CALL this%zabs%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get dissociation
+   CALL AOT_TABLE_OPEN(L=conf,parent=outcond_table,thandle=magnitude_table,key='dissociation')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%maxr%READ(auxreal,trim(auxstring))
+   CALL this%maxr%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! close out trajectory conditions table
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=outcond_table)
+   ! some debugging options
 #ifdef DEBUG
-		CALL VERBOSE_WRITE(routinename,"Read: precision of integration (dimensionless factor): ",this%eps)
+   CALL VERBOSE_WRITE(routinename,"Initial time step (au): ",this%delta_t%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Maximum time (au): ",this%max_t%getvalue())
+   CALL VERBOSE_WRITE(routinename,"ZSTOP (au): ",this%zstop%getvalue())
+   CALL VERBOSE_WRITE(routinename,"DZSTOP (au): ",this%dzstop%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Z scattering benchmark (au): ",this%zscatt%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Z adsorption benchmark (au): ",this%zads%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Z absortion benchmark (au): ",this%zabs%getvalue())
+   CALL VERBOSE_WRITE(routinename,"Z dissociation benchmark (au): ",this%maxr%getvalue())
 #endif
-		READ(runit,*) this%scaling
-		IF((this%scaling.NE."Equal").AND.(this%scaling.NE."Smart")) THEN
-			WRITE(0,*) "INITIALIZE_DYNDIATOMIC ERR: Wrong error scaling keyword: "
-			WRITE(0,*) "Only available: Equal and Smart"
-			WRITE(0,*) "You have written: ", this%scaling
-			CALL EXIT(1)
-		END IF
-		READ(runit,*) this%extrapol
-		IF ((this%extrapol.NE."Polinomi").AND.(this%extrapol.NE."Rational")) THEN
-			WRITE(0,*) "INITIALIZE_DYNDIATOMIC ERR: Wrong extrapolation keyword: "
-			WRITE(0,*) "Only available: Polinomi and Rational"
-			WRITE(0,*) "You have written: ", this%extrapol
-			CALL EXIT(1)
-		END IF
-		
-      READ(runit,*) aux,units
-		CALL this%delta_t%READ(aux,units)
-		CALL this%delta_t%TO_STD()
-		
-      READ(runit,*) aux,units
-		CALL this%max_t%READ(aux,units)
-		CALL this%max_t%TO_STD()
-		
-      READ(runit,*) aux,units
-		CALL this%zstop%READ(aux,units)
-		CALL this%zstop%TO_STD()
-		
-      READ(runit,*) aux,units
-		CALL this%dzstop%READ(aux,units)
-		CALL this%dzstop%TO_STD()
-		
-      READ(runit,*) aux,units
-		CALL this%zscatt%READ(aux,units)
-		CALL this%zscatt%TO_STD()
-		
-      READ(runit,*) aux,units
-		CALL this%zads%READ(aux,units)
-		CALL this%zads%TO_STD()
-		
-      READ(runit,*) aux,units
-		CALL this%zabs%READ(aux,units)
-		CALL this%zabs%TO_STD()
-
-      READ(runit,*) aux,units
-		CALL this%maxr%READ(aux,units)
-		CALL this%maxr%TO_STD()
+   CALL AOT_TABLE_OPEN(L=conf,parent=dyn_table,thandle=follow_table,key='follow')
+   this%nfollow=aot_table_length(L=conf,thandle=follow_table)
+   SELECT CASE(this%nfollow)
+      CASE(0)
 #ifdef DEBUG
-		CALL VERBOSE_WRITE(routinename,"Initial time step in au: ",this%delta_t%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Maximum time in au: ",this%max_t%getvalue())
-		CALL VERBOSE_WRITE(routinename,"ZSTOP in au: ",this%zstop%getvalue())
-		CALL VERBOSE_WRITE(routinename,"DZSTOP in au: ",this%dzstop%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Z scattering benchmark in au: ",this%zscatt%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Z adsorption benchmark in au: ",this%zads%getvalue())
-		CALL VERBOSE_WRITE(routinename,"Z absortion benchmark in au: ",this%zabs%getvalue())
+         CALL VERBOSE_WRITE(routinename,"There are not trajectories to follow")
 #endif
-		READ(runit,*) follow, this%nfollow
-		IF (follow.NE."FOLLOW") THEN
-			WRITE(0,*) "INITIALIZE_DYNDIATOMIC ERR: wrong FOLLOW keyword"
-			CALL EXIT(1)
-		ELSE IF (this%nfollow.NE.0) THEN
+         ! do nothing
+      CASE DEFAULT
+         ALLOCATE(this%followtraj(this%nfollow))
+         DO i=1, this%nfollow
+            CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=follow_table,pos=i,val=this%followtraj(i))
+         END DO
 #ifdef DEBUG
-			CALL VERBOSE_WRITE(routinename,"There are trajectories to follow")
+         CALL VERBOSE_WRITE(routinename,"There are trajectories to follow")
+         CALL VERBOSE_WRITE(routinename,"Follow trajectories: ",this%followtraj(:))
 #endif
-			ALLOCATE(this%followtraj(this%nfollow))
-			DO i=1, this%nfollow
-				READ(runit,*) this%followtraj(i)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=follow_table)
+   ! get scaling method
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='scaling',val=auxstring)
+   this%scaling=trim(auxstring)
+   SELECT CASE(this%scaling)
+      CASE('Equal','Smart')
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong error scaling keyword: "
+         WRITE(0,*) "Only available: Equal and Smart"
+         WRITE(0,*) "You have written: ", this%scaling
+         CALL EXIT(1)
+   END SELECT
+   ! get extrapol method
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='extrapolation',val=auxstring)
+   this%extrapol=trim(auxstring)
+   SELECT CASE(this%extrapol)
+      CASE('Polinomi','Rational')
+         ! do nothing
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong extrapolation keyword: "
+         WRITE(0,*) "Only available: Polinomi and Rational"
+         WRITE(0,*) "You have written: ", this%extrapol
+         CALL EXIT(1)
+   END SELECT
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Follow trajectories: ",this%followtraj(i))
+   CALL VERBOSE_WRITE(routinename,'Integrator extrapolation: '//this%extrapol)
+   CALL VERBOSE_WRITE(routinename,'Integrator error scaling: '//this%scaling)
 #endif
-			END DO
-		ELSE
+   ! get eps
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='precision',val=this%eps)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='energyTolerance',val=this%energyTolerance)
 #ifdef DEBUG
-			CALL VERBOSE_WRITE(routinename,"No trajectories to follow")
+   CALL VERBOSE_WRITE(routinename,"Read: precision of integration (dimensionless factor): ",this%eps)
+   CALL VERBOSE_WRITE(routinename,"Read: conservation of energy tolerance (dimensionless factor): ",this%energyTolerance)
 #endif
-		END IF
-	END IF
-	CLOSE(runit)
-	RETURN
+   ! Close Lua stuff
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=dyn_table)
+   CALL CLOSE_CONFIG(conf)
+   RETURN
 END SUBROUTINE INITIALIZE_DYNDIATOMIC
 !###############################################################
 !# SUBROUTINE: RUN_DYNDIATOMIC #####################################
@@ -243,25 +328,25 @@ END SUBROUTINE RUN_DYNDIATOMIC
 SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(DYNDIATOMIC),TARGET,INTENT(INOUT) :: this
-   INTEGER(KIND=4),INTENT(IN) :: idtraj
+   CLASS(DynDiatomic),TARGET,INTENT(INOUT):: this
+   INTEGER(KIND=4),INTENT(IN):: idtraj
    ! Local variables
-   INTEGER :: i, cycles ! counters
-   REAL(KIND=8) :: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
-   REAL(KIND=8) :: Eint,Ecm
-   REAL(KIND=8),DIMENSION(6) ::  dummy
-   REAL(KIND=8),DIMENSION(6) :: atomiccoord
-   REAL(KIND=8),DIMENSION(12) :: molec_dofs, s, dfdt
-   REAL(KIND=8) :: ma,mb
-   LOGICAL :: maxtime_reached
-   LOGICAL :: switch, file_exists, in_list
-   CHARACTER(LEN=27) :: filename_follow
-   CHARACTER(LEN=25),PARAMETER :: routinename = "DO_DYNAMICS_DYNDIATOMIC: "
-   CHARACTER(LEN=9),PARAMETER :: format_string = '(I10.10)'
-   INTEGER :: control
+   INTEGER:: i, cycles ! counters
+   REAL(KIND=8):: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin, angle
+   REAL(KIND=8):: Eint,Ecm
+   REAL(KIND=8),DIMENSION(6)::  dummy
+   REAL(KIND=8),DIMENSION(6):: atomiccoord
+   REAL(KIND=8),DIMENSION(12):: molec_dofs, s, dfdt
+   REAL(KIND=8):: ma,mb
+   LOGICAL:: maxtime_reached
+   LOGICAL:: switch, file_exists, in_list
+   CHARACTER(LEN=27):: filename_follow
+   CHARACTER(LEN=25),PARAMETER:: routinename = "DO_DYNAMICS_DYNDIATOMIC: "
+   CHARACTER(LEN=9),PARAMETER:: format_string = '(I10.10)'
+   INTEGER:: control
    CLASS(Dynobject),POINTER:: molecule
-   REAL(KIND=8) :: masa
-   REAL(KIND=8) :: mu
+   REAL(KIND=8):: masa
+   REAL(KIND=8):: mu
    ! Some formats
 10 FORMAT(I7,1X,A10,1X,I5,1X,I5,1X,15(F15.5,1X)) ! format to print in status files
 11 FORMAT(I7,1X,6(F10.5,1X)) ! format to print in turning points file
@@ -400,7 +485,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
 #endif
-      SELECT CASE (DABS(E-molecule%E) > 100.D0*this%eps*molecule%E)
+      SELECT CASE (DABS(E-molecule%init_E) > this%energyTolerance*molecule%init_E)
          CASE(.TRUE.)
             ! Problems with energy conservation
             ! reboot to previous step values
@@ -466,7 +551,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%E=E
             molecule%Eint=Eint
             molecule%Ecm=Ecm
-            molecule%turning_point(1:2) = this%thispes%surf%project_unitcell(molecule%turning_point(1:2))
+            molecule%turning_point(1:2) = system_surface%project_unitcell(molecule%turning_point(1:2))
             WRITE(this%wusc,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
             WRITE(this%wutp,11) idtraj,molecule%turning_point(:)
