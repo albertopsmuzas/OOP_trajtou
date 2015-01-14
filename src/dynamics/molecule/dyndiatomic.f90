@@ -485,6 +485,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
 #endif
+      WRITE(*,*) E, molecule%init_E
       SELECT CASE (DABS(E-molecule%init_E) > this%energyTolerance*molecule%init_E)
          CASE(.TRUE.)
             ! Problems with energy conservation
@@ -654,7 +655,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             SELECT CASE((this%nfollow.NE.0).AND.(in_list))
                CASE(.TRUE.)
                   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecule%r,atomiccoord)
-                  WRITE(this%wufo,*) t,dt_did,molecule%E,(molecule%p(3)**2.D0)/(2.D0*masa),&
+                  WRITE(this%wufo,*) t,dt_did,molecule%E,molecule%Ecm,&
                      molecule%Eint,v,molecule%r(:),molecule%p(:),atomiccoord
                CASE(.FALSE.)
                   ! do nothing
