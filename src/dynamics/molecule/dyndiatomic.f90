@@ -49,7 +49,7 @@ TYPE,EXTENDS(Dynamics) :: DynDiatomic
       PROCEDURE,PUBLIC:: RUN => RUN_DYNDIATOMIC
       ! Private block
       PROCEDURE,PRIVATE:: DO_DYNAMICS => DO_DYNAMICS_DYNDIATOMIC
-      PROCEDURE,PRIVATE:: TIME_DERIVS => TIME_DERIVS_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: TIME_DERIVS => TIME_DERIVS_SPHERICAL_DYNDIATOMIC
       PROCEDURE,PRIVATE:: MMID => MMID_DYNDIATOMIC
       PROCEDURE,PRIVATE:: BSSTEP => BSSTEP_DYNDIATOMIC
       PROCEDURE,PRIVATE:: POLINOM_EXTRAPOL => PZEXTR_DYNDIATOMIC
@@ -288,10 +288,10 @@ END SUBROUTINE INITIALIZE_DYNDIATOMIC
 SUBROUTINE RUN_DYNDIATOMIC(this)
    IMPLICIT NONE
    ! I/O variables 
-   CLASS(DYNDIATOMIC),INTENT(INOUT) :: this
+   CLASS(DynDiatomic),INTENT(INOUT):: this
    ! Local variables 
-   INTEGER :: i ! counters
-   CHARACTER(LEN=17),PARAMETER :: routinename = "RUN_DYNDIATOMIC: "
+   INTEGER:: i ! counters
+   CHARACTER(LEN=*),PARAMETER:: routinename = "RUN_DYNDIATOMIC: "
    ! HEY HO! LET'S GO !!! ------
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wusc,"OUTDYN6Dscattered.out","SCATTERED TRAJS")
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wupa,"OUTDYN6Dpatologic.out","PATOLOGIC TRAJS")
@@ -338,6 +338,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    REAL(KIND=8),DIMENSION(6):: atomiccoord
    REAL(KIND=8),DIMENSION(12):: molec_dofs, s, dfdt
    REAL(KIND=8):: ma,mb
+   REAL(KIND=8):: L2
    LOGICAL:: maxtime_reached
    LOGICAL:: switch, file_exists, in_list
    CHARACTER(LEN=27):: filename_follow
@@ -479,13 +480,13 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       ! Let's obtain the potential value for this configuration
       CALL this%thispes%GET_V_AND_DERIVS(molec_dofs(1:6),v,dummy)
       Ecm = (molec_dofs(7)**2.D0+molec_dofs(8)**2.D0+molec_dofs(9)**2.D0)/(2.D0*masa)
-      Eint= molec_dofs(10)**2.D0+(molec_dofs(11)/molec_dofs(4))**2.D0+(molec_dofs(12)/(molec_dofs(4)*dsin(molec_dofs(5))))**2.D0
+      L2=molec_dofs(11)**2.d0+(molec_dofs(12)/dsin(molec_dofs(5)))**2.d0
+      Eint= molec_dofs(10)**2.D0+L2/(molec_dofs(4)**2.d0)
       Eint= Eint/(2.D0*mu)
       E=Ecm+Eint+v
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
 #endif
-      WRITE(*,*) E, molecule%init_E
       SELECT CASE (DABS(E-molecule%init_E) > this%energyTolerance*molecule%init_E)
          CASE(.TRUE.)
             ! Problems with energy conservation
@@ -656,7 +657,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
                CASE(.TRUE.)
                   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecule%r,atomiccoord)
                   WRITE(this%wufo,*) t,dt_did,molecule%E,molecule%Ecm,&
-                     molecule%Eint,v,molecule%r(:),molecule%p(:),atomiccoord
+                     molecule%Eint,v,L2,molecule%r(:),molecule%p(:),atomiccoord
                CASE(.FALSE.)
                   ! do nothing
             END SELECT
@@ -802,7 +803,7 @@ SUBROUTINE FILE_FOLLOWTRAJ_DYNDIATOMIC(wunit,idtraj)
    filename='OUTDYN6Dtraj'//trim(idstring)//'.out'
    OPEN(wunit,FILE=filename,STATUS="replace",ACTION="write")
    WRITE(wunit,*) "# ***** ",title," *****"
-   WRITE(wunit,*) "# Format: t(a.u.)/dt(a.u.)/Etot,Enorm,Eint,Pot(a.u.)/X,Y,Z,R(a.u.)/THETA,PHI(rad)/&
+   WRITE(wunit,*) "# Format: t(a.u.)/dt(a.u.)/Etot,Enorm,Eint,Pot(a.u.)/L^2(au)/X,Y,Z,R(a.u.)/THETA,PHI(rad)/&
       &Px,Py,Pz,Pr,Ptheta,Pphi(a.u.)/Xa,Ya,Za,Xb,Yb,Zb(a.u.)"
    WRITE(wunit,*) "# ----------------------------------------------------------------"
 #ifdef DEBUG
@@ -823,23 +824,23 @@ END SUBROUTINE FILE_FOLLOWTRAJ_DYNDIATOMIC
 !> @param[out] dzdt - time derivatives of position and momenta
 !> @param[out] fin - controls errors
 !--------------------------------------------------------------
-SUBROUTINE TIME_DERIVS_DYNDIATOMIC(this,z,dzdt,fin)
+SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC(this,PhSpace_sph,tDeriv,fin)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(DYNDIATOMIC),INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(12),INTENT(IN) :: z
-   REAL(KIND=8),DIMENSION(12),INTENT(OUT) :: dzdt
-   LOGICAL, INTENT(OUT) :: fin
+   CLASS(DynDiatomic),INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(12),INTENT(IN):: PhSpace_sph
+   REAL(KIND=8),DIMENSION(12),INTENT(OUT):: tDeriv
+   LOGICAL,INTENT(OUT):: fin
    ! Local variables
-   INTEGER :: i ! counters
-   REAL(KIND=8) :: x,y,zeta,r,theta,phi
-   REAL(KIND=8) :: px,py,pzeta,pr,ptheta,pphi
-   REAL(KIND=8) :: mass
-   REAL(KIND=8) :: mu
-   REAL(KIND=8) :: v ! dummy variable
-   CHARACTER(LEN=*),PARAMETER :: routinename = "TIME_DERIVS_DYNDIATOMIC: "
+   INTEGER:: i ! counters
+   REAL(KIND=8):: x,y,zeta,r,theta,phi
+   REAL(KIND=8):: px,py,pzeta,pr,ptheta,pphi
+   REAL(KIND=8):: mass
+   REAL(KIND=8):: mu
+   REAL(KIND=8):: v ! dummy variable
+   CHARACTER(LEN=*),PARAMETER:: routinename = "TIME_DERIVS_DYNDIATOMIC: "
    ! ROCK THE CASBAH ! ---------------------
-   SELECT CASE(this%thispes%is_allowed(z(1:6)))
+   SELECT CASE(this%thispes%is_allowed(PhSpace_sph(1:6)))
       CASE(.FALSE.)
          fin = .TRUE.
       CASE(.TRUE.)
@@ -847,23 +848,23 @@ SUBROUTINE TIME_DERIVS_DYNDIATOMIC(this,z,dzdt,fin)
          mass=sum(system_mass(1:2))
          mu=product(system_mass(1:2))/mass
          ! Set time derivatives of position
-         dzdt(1)=z(7)/mass
-         dzdt(2)=z(8)/mass
-         dzdt(3)=z(9)/mass
-         dzdt(4)=z(10)/mu
-         dzdt(5)=z(11)/(mu*(z(4)**2.D0))
-         dzdt(6)=z(12)/(mu*(z(4)*dsin(z(5))**2.D0))
+         tDeriv(1)=PhSpace_sph(7)/mass
+         tDeriv(2)=PhSpace_sph(8)/mass
+         tDeriv(3)=PhSpace_sph(9)/mass
+         tDeriv(4)=PhSpace_sph(10)/mu
+         tDeriv(5)=PhSpace_sph(11)/(mu*(PhSpace_sph(4)**2.D0))
+         tDeriv(6)=PhSpace_sph(12)/(mu*(PhSpace_sph(4)*dsin(PhSpace_sph(5))**2.D0))
          ! Set time derivatives of momenta
-         CALL this%thispes%GET_V_AND_DERIVS(z(1:6),v,dzdt(7:12))
-         dzdt(7)=-dzdt(7)
-         dzdt(8)=-dzdt(8)
-         dzdt(9)=-dzdt(9)         
-         dzdt(10)=-dzdt(10)+(z(11)**2.D0+(z(12)/dsin(z(5)))**2.D0)/(mu*(z(4)**3.D0))
-         dzdt(11)=-dzdt(11)+((z(12)/z(4))**2.D0)*dcos(z(5))/(mu*dsin(z(5))**3.D0)
-         dzdt(12)=-dzdt(12)
+         CALL this%thispes%GET_V_AND_DERIVS(PhSpace_sph(1:6),v,tDeriv(7:12))
+         tDeriv(7) =-tDeriv(7)
+         tDeriv(8) =-tDeriv(8)
+         tDeriv(9) =-tDeriv(9)         
+         tDeriv(10)=-tDeriv(10)+(PhSpace_sph(11)**2.D0+(PhSpace_sph(12)/dsin(PhSpace_sph(5)))**2.D0)/(mu*(PhSpace_sph(4)**3.D0))
+         tDeriv(11)=-tDeriv(11)+((PhSpace_sph(12)/PhSpace_sph(4))**2.D0)*dcos(PhSpace_sph(5))/(mu*dsin(PhSpace_sph(5))**3.D0)
+         tDeriv(12)=-tDeriv(12)
    END SELECT
    RETURN
-END SUBROUTINE TIME_DERIVS_DYNDIATOMIC
+END SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC
 !#########################################################################################
 !# SUBROUTINE: MMID_ATOM #################################################################
 !#########################################################################################

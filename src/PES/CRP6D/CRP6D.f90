@@ -10,25 +10,25 @@
 !! - Inherits modules CRP3D_MOD, BICSPLINES_MOD
 !#######################################################
 MODULE CRP6D_MOD
-   USE UNITS_MOD
-   USE CONSTANTS_MOD
-   USE CRP3D_MOD
-   USE SYSTEM_MOD
-   USE EXTRAPOL_TO_VACUUM_MOD
-   USE FOURIER_P4MM_MOD
-   USE WYCKOFF_P4MM_MOD
-   USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
-   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
-   USE LINK_FUNCTION1D_MOD
+   use UNITS_MOD
+   use CONSTANTS_MOD, only: pi
+   use CRP3D_MOD
+   use SYSTEM_MOD
+   use EXTRAPOL_TO_VACUUM_MOD
+   use FOURIER_P4MM_MOD
+   use WYCKOFF_P4MM_MOD
+   use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
+   use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
+   use LINK_FUNCTION1D_MOD
 #if DEBUG
-   USE DEBUG_MOD
+   use DEBUG_MOD
 #endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////
 ! TYPE: CRP6D
 !
 !-------------------------------------------------
-TYPE,EXTENDS(PES) :: CRP6D
+TYPE,EXTENDS(PES):: CRP6D
    INTEGER(KIND=4):: nsites
    INTEGER(KIND=4):: natomic
    LOGICAL:: is_interpolated=.FALSE.
@@ -36,8 +36,8 @@ TYPE,EXTENDS(PES) :: CRP6D
    LOGICAL:: is_smooth=.FALSE.
    LOGICAL:: is_shifted=.FALSE.
    LOGICAL:: is_resized=.FALSE.
-   REAL(KIND=8) :: zvacuum
-   INTEGER(KIND=4),DIMENSION(2) :: grid=[0,0]
+   REAL(KIND=8):: zvacuum
+   INTEGER(KIND=4),DIMENSION(2):: grid=[0,0]
    CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE:: wyckoffsite
    TYPE(CRP3D),DIMENSION(:),ALLOCATABLE:: atomiccrp
    TYPE(Vacuumpot):: farpot
@@ -46,40 +46,40 @@ TYPE,EXTENDS(PES) :: CRP6D
    INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: xyklist
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC :: READ => READ_CRP6D
-      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_CRP6D
+      PROCEDURE,PUBLIC:: READ => READ_CRP6D
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_CRP6D
       ! Set block
-      PROCEDURE,PUBLIC :: SET_SMOOTH => SET_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC:: SET_SMOOTH => SET_SMOOTH_CRP6D
       ! Get block
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_CRP6D
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC :: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_CRP6D
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_CRP6D
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC:: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_CRP6D
       ! Tools block
-      PROCEDURE,PUBLIC :: SMOOTH => SMOOTH_CRP6D
-      PROCEDURE,PUBLIC :: SMOOTH_EXTRA => SMOOTH_EXTRA_CRP6D
-      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CRP6D
-      PROCEDURE,PUBLIC :: RAWINTERPOL => RAWINTERPOL_CRP6D
-      PROCEDURE,PUBLIC :: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
-      PROCEDURE,PUBLIC :: ADD_VACUUMSURF => ADD_VACUUMSURF_CRP6D
-      PROCEDURE,PUBLIC :: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
-      PROCEDURE,PUBLIC :: CHEAT_CARTWHEEL_ONTOP => CHEAT_CARTWHEEL_ONTOP_CRP6D
-      ! Plot tools
-      PROCEDURE,PUBLIC :: PLOT1D_THETA => PLOT1D_THETA_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_PHI => PLOT1D_PHI_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_R => PLOT1D_R_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_Z => PLOT1D_Z_CRP6D
-      PROCEDURE,PUBLIC :: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC :: PLOT_XYMAP => PLOT_XYMAP_CRP6D
-      PROCEDURE,PUBLIC :: PLOT_RZMAP => PLOT_RZMAP_CRP6D
-      PROCEDURE,PUBLIC :: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
+      PROCEDURE,PUBLIC:: SMOOTH => SMOOTH_CRP6D
+      PROCEDURE,PUBLIC:: SMOOTH_EXTRA => SMOOTH_EXTRA_CRP6D
+      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_CRP6D
+      PROCEDURE,PUBLIC:: RAWINTERPOL => RAWINTERPOL_CRP6D
+      PROCEDURE,PUBLIC:: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
+      PROCEDURE,PUBLIC:: ADD_VACUUMSURF => ADD_VACUUMSURF_CRP6D
+      PROCEDURE,PUBLIC:: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
+      PROCEDURE,PUBLIC:: CHEAT_CARTWHEEL_ONTOP => CHEAT_CARTWHEEL_ONTOP_CRP6D
+      ! Plot toolk
+      PROCEDURE,PUBLIC:: PLOT1D_THETA => PLOT1D_THETA_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_PHI => PLOT1D_PHI_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_R => PLOT1D_R_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_Z => PLOT1D_Z_CRP6D
+      PROCEDURE,PUBLIC:: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_CRP6D
+      PROCEDURE,PUBLIC:: PLOT_XYMAP => PLOT_XYMAP_CRP6D
+      PROCEDURE,PUBLIC:: PLOT_RZMAP => PLOT_RZMAP_CRP6D
+      PROCEDURE,PUBLIC:: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
       ! Enquire block
-      PROCEDURE,PUBLIC :: is_allowed => is_allowed_CRP6D
+      PROCEDURE,PUBLIC:: is_allowed => is_allowed_CRP6D
 END TYPE CRP6D
 CONTAINS
 !###########################################################
@@ -758,47 +758,42 @@ SUBROUTINE FROM_ATOMIC_TO_MOLECULAR(ma,mb,atomcoord,molcoord)
    molcoord(4)=dsqrt((atomcoord(1)-atomcoord(4))**2.D0+&
       (atomcoord(2)-atomcoord(5))**2.D0+(atomcoord(3)-atomcoord(6))**2.D0)
    molcoord(5)=dacos((atomcoord(3)-atomcoord(6))/molcoord(4))
-   SELECT CASE(atomcoord(1)<atomcoord(4)) ! II or III Quadrant
-      CASE(.TRUE.)
-         molcoord(6)=PI-datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing   
-   END SELECT
-   SELECT CASE(atomcoord(1)>atomcoord(4) .AND. atomcoord(2)>=atomcoord(5)) ! I Quadrant
+   SELECT CASE(atomcoord(1)>atomcoord(4))
       CASE(.TRUE.)
          molcoord(6)=datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-   SELECT CASE(atomcoord(1)>atomcoord(4) .AND. atomcoord(2)<atomcoord(5)) ! IV Quadrant
+   SELECT CASE(atomcoord(1)<atomcoord(4))
       CASE(.TRUE.)
-         molcoord(6)=2.D0*PI+datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
+         molcoord(6)=PI+datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
          RETURN
       CASE(.FALSE.)
-         !do nothing
+         ! do nothing
    END SELECT
-   SELECT CASE(atomcoord(1)==atomcoord(4) .AND. atomcoord(2)>atomcoord(5))
+   SELECT CASE(atomcoord(1)==atomcoord(4))
       CASE(.TRUE.)
-         molcoord(6)=PI/2.D0
+         ! do nothing
       CASE(.FALSE.)
-         !do nothing
-   END SELECT
-   SELECT CASE(atomcoord(1)==atomcoord(4) .AND. atomcoord(2)<atomcoord(5))
-      CASE(.TRUE.)
-         molcoord(6)=3.D0*PI/2.D0
-      CASE(.FALSE.)
-         !do nothing
-   END SELECT
-   SELECT CASE(atomcoord(1)==atomcoord(4) .AND. atomcoord(2)==atomcoord(5)) ! cartwheel, cannot be defined
-      CASE(.TRUE.)
-         molcoord(6)=0.D0 
-      CASE(.FALSE.)
-         WRITE(*,*) "FROM_ATOMIC_TO_MOLECULAR ERR: Geometry was not taken into account, check code"
+         WRITE(0,*) 'FROM_ATOMIC_TO_MOLECULAR ERR: this message should never be printed'
          CALL EXIT(1)
    END SELECT
-   RETURN
+   SELECT CASE(atomcoord(2)>atomcoord(5))
+      CASE(.TRUE.)
+         molcoord(6)=PI/2.D0
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(atomcoord(2)<atomcoord(5))
+      CASE(.TRUE.)
+         molcoord(6)=3.D0*PI/2.D0
+         RETURN
+      CASE(.FALSE.)
+         WRITE(0,*) 'FROM_ATOMIC_TO_MOLECULAR ERR: this message should never be printed'
+         CALL EXIT(1)
+   END SELECT
 END SUBROUTINE FROM_ATOMIC_TO_MOLECULAR
 !###########################################################
 !# SUBROUTINE: SMOOTH_CRP6D

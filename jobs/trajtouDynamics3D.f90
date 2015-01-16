@@ -1,18 +1,18 @@
 PROGRAM  TEST_DYNAMICS
-USE DEBUG_MOD
-USE DYNATOM_MOD
-USE SYSTEM_MOD
+use DEBUG_MOD, only: VERBOSE_WRITE
+use DYNATOM_MOD, only: Dynatom
+use SYSTEM_MOD, only: INITIALIZE_SYSTEM
 IMPLICIT NONE
-TYPE(Dynatom) :: thisdynamics
-REAL(KIND=4),DIMENSION(2) :: timearr
-REAL(KIND=4) :: timer
+TYPE(Dynatom):: thisdynamics
+REAL(KIND=4),DIMENSION(2):: timearr
+REAL(KIND=4):: timer
 CHARACTER(LEN=1024):: luafile
 ! RUN SECTION: GABBA, GABBA HEY! =========================================================================
 !
 ! STEP 0: HELLO! & system specifications -----------------------------------------------------------------
-WRITE(*,*) "******************************************************" 
-WRITE(*,*) "****************** 3D DYNAMICS ***********************"
-WRITE(*,*) "******************************************************" 
+CALL VERBOSE_WRITE("******************************************************")
+CALL VERBOSE_WRITE("****************** 3D DYNAMICS ***********************")
+CALL VERBOSE_WRITE("******************************************************") 
 ! STEP 1: START UP DYNAMICS
 SELECT CASE(command_argument_count())
    CASE(1)
