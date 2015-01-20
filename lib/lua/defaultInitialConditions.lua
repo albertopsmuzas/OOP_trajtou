@@ -14,7 +14,7 @@ local initialConditions={
 	seedRead=true,
 	-- For 6D initial conditions
 	vibrationalFunction={kind='Numerical',source='filename'},
-	internalState={v=0,J=0},
+	internalState={v=0,J=0,mJ='Average'},
 	internalEnergy={0.0,'au'},
 	timeStep={0.0,'au'},
 	extrapolation='Rational',

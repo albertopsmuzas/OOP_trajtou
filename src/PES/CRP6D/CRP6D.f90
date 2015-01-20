@@ -1228,6 +1228,9 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          this%grid(1)=auxint
          CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=resize_table,key='z',val=auxint)
          this%grid(2)=auxint
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,'New grid (R,Z):',this%grid(:))
+#endif
    END SELECT
    CALL AOT_TABLE_CLOSE(L=conf,thandle=resize_table)
    ! get wyckoff sites
