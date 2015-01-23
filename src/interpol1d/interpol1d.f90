@@ -1,10 +1,10 @@
-!################################################################################################### 
+!###################################################################################################
 ! MODULE: INTERPOL1D
 !
-!> @brief  
+!> @brief
 !! Module that manages different interpolation schemes for one variable
 !
-!> @details 
+!> @details
 !! All types and subprograms intended to create interpolations in 1D should be placed inside this module
 !##################################################################################################
 MODULE INTERPOL1D_MOD
@@ -44,12 +44,12 @@ END TYPE Interpol1d
 !//////////////////////////////////////////////////////////////////////
 ABSTRACT INTERFACE
    !###########################################################
-   !# FUNCTION: getvalue_interpol1d 
+   !# FUNCTION: getvalue_interpol1d
    !###########################################################
    !> @brief
    !! Dummy function. Override it!!
    !-----------------------------------------------------------
-   REAL(KIND=8) FUNCTION getvalue_interpol1d(this,x,shift) 
+   REAL(KIND=8) FUNCTION getvalue_interpol1d(this,x,shift)
       IMPORT Interpol1d
       CLASS(Interpol1d),TARGET,INTENT(IN) :: this
       REAL(KIND=8),INTENT(IN) :: x
@@ -127,7 +127,7 @@ SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename,shift)
    INTEGER :: inpoints, ndelta
    REAL*8 :: delta, interval, x
    INTEGER :: i ! Counter
-   CHARACTER(LEN=26), PARAMETER :: routinename = "PLOT_INTERPOL_INTERPOL1D: " 
+   CHARACTER(LEN=26), PARAMETER :: routinename = "PLOT_INTERPOL_INTERPOL1D: "
    ! Pointers ------------------------------------
    REAL*8, POINTER :: xmin, xmax
    INTEGER, POINTER :: n
