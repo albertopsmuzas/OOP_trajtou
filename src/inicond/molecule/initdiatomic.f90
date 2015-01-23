@@ -5,10 +5,12 @@
 !! initial conditions for a diatomic molecule or a list of them
 !###################################################################
 MODULE INITDIATOMIC_MOD
-   USE INICOND_MOD
-   USE SYSTEM_MOD
+   use SYSTEM_MOD
+   use INICOND_MOD
+   use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL,aoterr_WrongType
+   use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #ifdef DEBUG
-   USE DEBUG_MOD
+   use DEBUG_MOD, only: VERBOSE_WRITE,DEBUG_WRITE
 #endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////
@@ -35,8 +37,9 @@ TYPE,EXTENDS(Inicond):: INITDIATOMIC
    REAL(KIND=8):: eps
    LOGICAL:: control_vel,control_posX,control_posY,control_out,control_seed
    LOGICAL:: is_classic=.FALSE.
+   LOGICAL:: fixed_theta
    REAL(KIND=8):: impact_x, impact_y
-   INTEGER(KIND=4),DIMENSION(2):: init_qn
+   INTEGER(KIND=4),DIMENSION(3):: init_qn
    TYPE(Csplines):: pr_t,r_t
    TYPE(Time):: delta_t
    TYPE(Energy):: E_norm, evirot
@@ -144,8 +147,8 @@ SUBROUTINE INITIALIZE_DIATOMIC(this)
    ALLOCATE(this%p(dimens))
    ALLOCATE(this%r(dimens))
    ALLOCATE(this%turning_point(dimens))
-   ALLOCATE(this%init_qn(2))
-   ALLOCATE(this%final_qn(2))
+   ALLOCATE(this%init_qn(3))
+   ALLOCATE(this%final_qn(3))
    this%stat="Dummy"
    RETURN
 END SUBROUTINE INITIALIZE_DIATOMIC
@@ -241,10 +244,21 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
    this%init_qn(1)=auxint
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='J',val=auxint)
    this%init_qn(2)=auxint
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='mJ',val=auxint)
+   SELECT CASE(btest(ierr,aoterr_WrongType))
+      CASE(.false.)
+         this%fixed_theta=.true.
+         this%init_qn(3)=auxint
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'Quantum state: ',this%init_qn(:))
+         CALL VERBOSE_WRITE(routinename,'Quantum state: ',this%init_qn(:))
 #endif
+      CASE(.true.)
+         this%fixed_theta=.false.
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,'Quantum state: ',this%init_qn(1:2))
+#endif
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
    ! get internal energy
    CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='internalEnergy')
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
@@ -459,10 +473,10 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    INTEGER :: i ! counters
    CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
    REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint
-   REAL(KIND=8),DIMENSION(6):: random_kernel
-   REAL(KIND=8):: rnd_delta,rnd_phi,rnd_theta,rnd_eta
+   REAL(KIND=8),DIMENSION(9):: random_kernel
+   REAL(KIND=8):: rnd_delta,rnd_phi,rnd_theta,rnd_eta,rnd_sign1,rnd_sign2,rnd_mu
    REAL(KIND=8):: eta
-   REAL(KIND=8):: ang_momentum
+   REAL(KIND=8):: ang_momentum,L,L_theta
    ! YIPPIEE KI YAY !! -------------------
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New set of trajectories")
@@ -519,29 +533,63 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       rnd_phi=random_kernel(4)
       rnd_theta=random_kernel(5)
       rnd_eta=random_kernel(6)
+      rnd_mu=random_kernel(7)
+      SELECT CASE(random_kernel(8)<0.5d0)
+         CASE(.true.)
+            rnd_sign1=1.d0
+         CASE DEFAULT
+            rnd_sign1=-1.d0
+      END SELECT
+      SELECT CASE(random_kernel(9)<0.5d0)
+         CASE(.true.)
+            rnd_sign2=1.d0
+         CASE DEFAULT
+            rnd_sign2=-1.d0
+      END SELECT
+      L=rnd_sign1*ang_momentum ! actual angular momentum for this trajectory
+      L_theta=dacos(dfloat(this%init_qn(3))/L)
+      eta=2.D0*PI*rnd_eta
       SELECT CASE(this%is_classic)
          CASE(.TRUE.)
-            ! Get internal coordinates
-            this%trajs(i)%r(4)=this%vibrpot%getreq()                          ! r
-            this%trajs(i)%r(5)=dacos(1.D0-2.D0*rnd_theta)                       ! theta
-            this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                  ! phi
-            eta=2.D0*PI*rnd_eta
-            ! Get internal momenta
-            this%trajs(i)%p(4)=0.D0                                              ! pr
-            this%trajs(i)%p(5)=-ang_momentum*dsin(eta)                           ! ptheta
-            this%trajs(i)%p(6)=-ang_momentum*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+            this%trajs(i)%r(4)=this%vibrpot%getreq()                                 ! r
+            this%trajs(i)%p(4)=0.D0                                                  ! pr
+            SELECT CASE(this%fixed_theta)
+               CASE(.TRUE.)
+                  ! Get internal coordinates
+                  this%trajs(i)%r(5)=dacos(dsin(L_theta)*dcos(PI*rnd_mu))            ! theta
+                  this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                 ! phi
+                  ! Get internal momenta
+                  this%trajs(i)%p(5)=-L*dsin(eta)                                    ! ptheta
+                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+               CASE(.FALSE.)
+                  ! Get internal coordinates
+                  this%trajs(i)%r(5)=dacos(2.D0*rnd_theta-1.d0)                      ! theta
+                  this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                 ! phi
+                  ! Get internal momenta
+                  this%trajs(i)%p(5)=-L*dsin(eta)                                    ! ptheta
+                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+            END SELECT
             ! Internal energy
-            this%trajs(i)%Eint=((ang_momentum/this%vibrpot%getreq())**2.D0)/(2.D0*mu)
+            this%trajs(i)%Eint=((L/this%vibrpot%getreq())**2.D0)/(2.D0*mu)
          CASE(.FALSE.)
-            ! Get internal coordinates
-            this%trajs(i)%r(4)=this%r_t%getvalue(rnd_delta*this%period)          ! r
-            this%trajs(i)%r(5)=dacos(1.D0-2.D0*rnd_theta)                       ! theta
-            this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                   ! phi
-            eta=2.D0*PI*rnd_eta
-            ! Get internal momenta
-            this%trajs(i)%p(4)=this%pr_t%getvalue(rnd_delta*this%period)         ! pr
-            this%trajs(i)%p(5)=-ang_momentum*dsin(eta)                           ! ptheta
-            this%trajs(i)%p(6)=-ang_momentum*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+            this%trajs(i)%r(4)=this%r_t%getvalue(rnd_delta*this%period)             ! r
+            this%trajs(i)%p(4)=this%pr_t%getvalue(rnd_delta*this%period)            ! pr
+            SELECT CASE(this%fixed_theta)
+               CASE(.TRUE.)
+                  ! Get internal coordinates
+                  this%trajs(i)%r(5)=dacos(dsin(L_theta)*dcos(PI*rnd_mu))           ! theta
+                  this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                ! phi
+                  ! Get internal momenta
+                  this%trajs(i)%p(5)=-L*dsin(eta)                                   ! ptheta
+                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
+               CASE(.FALSE.)
+                  ! Get internal coordinates
+                  this%trajs(i)%r(5)=dacos(2.D0*rnd_theta-1.d0)                     ! theta
+                  this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                ! phi
+                  ! Get internal momenta
+                  this%trajs(i)%p(5)=-L*dsin(eta)                                   ! ptheta
+                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
+            END SELECT
             ! Internal energy
             this%trajs(i)%Eint=(this%trajs(i)%p(4)**2.D0)/(2.D0*mu)+this%rovibrpot%getpot(this%trajs(i)%r(4))
       END SELECT
@@ -561,7 +609,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       CASE(.TRUE.)
          OPEN(wunit,FILE=this%output_file,STATUS="replace")
          WRITE(wunit,*) "# FILE CREATED BY : GENERATE_TRAJS_ATOMS ================================================================="
-         WRITE(wunit,*) "# Format:  traj_num  X,Y,Z,R,THETA,PHI (au and radians)  &
+         WRITE(wunit,*) "# Format: id/Etot,Eint/X,Y,Z,R(a.u.)/THETA,PHI(rad)/&
             &Px,Py,Pz,pr,ptheta,pphi(a.u.)"
          WRITE(wunit,*) "# Perpendicular Energy (a.u.) / (eV) : ",this%E_norm%getvalue()," / ", this%E_norm%getvalue()*au2ev
          WRITE(wunit,*) "# Initial center of mass energy (a.u.) / (eV) : ",&
@@ -587,7 +635,8 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
          END IF
          WRITE(wunit,*) "# ======================================================================================================="
          DO i=this%nstart,this%ntraj
-            WRITE(wunit,'(1X,I10,3(6F16.7))') i,this%trajs(i)%init_r,this%trajs(i)%init_p
+            WRITE(wunit,'(1X,I10,2(F16.7),2(6F16.7))') i,this%trajs(i)%E,this%trajs(i)%Eint,&
+               this%trajs(i)%init_r,this%trajs(i)%init_p
          END DO
          CLOSE(wunit)
 #ifdef DEBUG
@@ -1108,7 +1157,7 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
       switch=.FALSE.
       cycles=cycles+1
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Cycle: ",cycles)
+      CALL DEBUG_WRITE(routinename,"Cycle: ",cycles)
 #endif
       init_t=t
       init_r=z(1)
@@ -1133,14 +1182,14 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
       END SELECT
       FORALL (i=1:2) s(i) = DABS(z(i))+DABS(dt*dzdt(i)) ! Numerical Recipes.  Smart scaling
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Energy before integration:",init_Eint)
-      CALL VERBOSE_WRITE(routinename,"Position before integration:",z)
-      CALL VERBOSE_WRITE(routinename,"Time derivatives before integration:",dzdt)
+      CALL DEBUG_WRITE(routinename,"Energy before integration:",init_Eint)
+      CALL DEBUG_WRITE(routinename,"Position before integration:",z)
+      CALL DEBUG_WRITE(routinename,"Time derivatives before integration:",dzdt)
 #endif
       CALL this%BSSTEP(z,dzdt,t,dt,this%eps,s,dt_did,dt_next,switch)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Position after integration:",z)
-      CALL VERBOSE_WRITE(routinename,"Time derivatives after integration:",dzdt)
+      CALL DEBUG_WRITE(routinename,"Position after integration:",z)
+      CALL DEBUG_WRITE(routinename,"Time derivatives after integration:",dzdt)
 #endif      
       SELECT CASE(switch)
          CASE(.TRUE.)
@@ -1152,8 +1201,8 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
             z(2)=init_pr
             Eint=init_Eint
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Error encountered while integration of eq. of motion")
-            CALL VERBOSE_WRITE(routinename,"Halving time-step to: ", dt)
+            CALL DEBUG_WRITE(routinename,"Error encountered while integration of eq. of motion")
+            CALL DEBUG_WRITE(routinename,"Halving time-step to: ", dt)
 #endif
             CYCLE
          CASE(.FALSE.)
@@ -1161,7 +1210,7 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
       END SELECT
       Eint=(z(2)**2.D0)/(2.D0*mu)+this%rovibrpot%getpot(z(1))
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Energy after integration:",Eint)
+      CALL DEBUG_WRITE(routinename,"Energy after integration:",Eint)
 #endif
       ! Check conservation of energy. CAN cycle
       SELECT CASE (DABS(Eint-init_Eint) > this%eps*init_Eint)
@@ -1174,7 +1223,7 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
             z(2)=init_pr
             Eint=init_Eint
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Poor energy conservation. Cycling.")
+            CALL DEBUG_WRITE(routinename,"Poor energy conservation. Cycling.")
 #endif
             CYCLE
       CASE(.FALSE.)
@@ -1184,8 +1233,8 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
       SELECT CASE(dt_next>this%delta_t%getvalue()) ! there's a maximum time-step defined
          CASE(.TRUE.)
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Predicted time-step too large: ",dt_next)
-            CALL VERBOSE_WRITE(routinename,"Recovering smaller time-step: ",this%delta_t%getvalue())
+            CALL DEBUG_WRITE(routinename,"Predicted time-step too large: ",dt_next)
+            CALL DEBUG_WRITE(routinename,"Recovering smaller time-step: ",this%delta_t%getvalue())
 #endif
             dt_next=this%delta_t%getvalue()
          CASE(.FALSE.)
@@ -1212,7 +1261,7 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
             n_req_passedby=3
             time_finish=t
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Integration stopped at time: ",time_finish)
+            CALL DEBUG_WRITE(routinename,"Integration stopped at time: ",time_finish)
 #endif
             EXIT
          CASE(.FALSE.)

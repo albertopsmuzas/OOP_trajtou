@@ -137,13 +137,13 @@ SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
    IMPLICIT NONE
    ! I/O variables
    CLASS(CRP6D),INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: molecx
-   REAL(KIND=8),DIMENSION(2),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dvdu
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: atomicx
+   REAL(KIND=8),DIMENSION(6),INTENT(IN):: molecx
+   REAL(KIND=8),DIMENSION(2),INTENT(OUT):: v
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT):: dvdu
+   REAL(KIND=8),DIMENSION(6),INTENT(OUT):: atomicx
    ! Local variables
-   REAL(KIND=8) :: ma,mb
-   REAL(KIND=8) :: vcorra,vcorrb
+   REAL(KIND=8):: ma,mb
+   REAL(KIND=8):: vcorra,vcorrb
    ! Run section
    ma=system_mass(1)
    mb=system_mass(2)
@@ -811,7 +811,7 @@ SUBROUTINE SMOOTH_CRP6D(this)
    ! I/O variables
     CLASS(CRP6D),INTENT(INOUT) :: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord,dvdu
+   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord,dummy
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
    CHARACTER(LEN=14),PARAMETER :: routinename="SMOOTH_CRP6D: "
@@ -830,7 +830,7 @@ SUBROUTINE SMOOTH_CRP6D(this)
             DO l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
-               CALL this%GET_ATOMICPOT_AND_DERIVS(molcoord,atomcoord,atomic_v,dvdu)
+               CALL this%GET_ATOMICPOT_AND_DERIVS(molcoord,atomcoord,atomic_v,dummy)
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)-sum(atomic_v)
                CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
             END DO
