@@ -548,7 +548,6 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       END SELECT
       L=rnd_sign1*ang_momentum ! actual angular momentum for this trajectory
       L_theta=dacos(dfloat(this%init_qn(3))/L)
-      eta=2.D0*PI*rnd_eta
       SELECT CASE(this%is_classic)
          CASE(.TRUE.)
             this%trajs(i)%r(4)=this%vibrpot%getreq()                                 ! r
@@ -559,6 +558,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   this%trajs(i)%r(5)=dacos(dsin(L_theta)*dcos(PI*rnd_mu))            ! theta
                   this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                 ! phi
                   ! Get internal momenta
+                  eta=dacos(dcos(L_theta)/dsin(this%trajs(i)%r(5)))
                   this%trajs(i)%p(5)=-L*dsin(eta)                                    ! ptheta
                   this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
                CASE(.FALSE.)
@@ -566,6 +566,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   this%trajs(i)%r(5)=dacos(2.D0*rnd_theta-1.d0)                      ! theta
                   this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                 ! phi
                   ! Get internal momenta
+                  eta=2.D0*PI*rnd_eta
                   this%trajs(i)%p(5)=-L*dsin(eta)                                    ! ptheta
                   this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
             END SELECT
@@ -580,6 +581,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   this%trajs(i)%r(5)=dacos(dsin(L_theta)*dcos(PI*rnd_mu))           ! theta
                   this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                ! phi
                   ! Get internal momenta
+                  eta=dacos(dcos(L_theta)/dsin(this%trajs(i)%r(5)))
                   this%trajs(i)%p(5)=-L*dsin(eta)                                   ! ptheta
                   this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
                CASE(.FALSE.)
@@ -587,6 +589,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   this%trajs(i)%r(5)=dacos(2.D0*rnd_theta-1.d0)                     ! theta
                   this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                ! phi
                   ! Get internal momenta
+                  eta=2.D0*PI*rnd_eta
                   this%trajs(i)%p(5)=-L*dsin(eta)                                   ! ptheta
                   this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
             END SELECT
