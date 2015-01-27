@@ -1149,9 +1149,6 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       CALL this%atomiccrp(i)%INITIALIZE(filename=filename,tablename=trim(auxstring))
    END DO
    CALL AOT_TABLE_CLOSE(L=conf,thandle=crp3d_table)
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
-#endif
    ! get pes.vacuumFunction
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=vacfunc_table,key='vacuumFunction')
    CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='kind',val=auxstring)
@@ -1217,6 +1214,9 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          CALL EXIT(1)
    END SELECT
    CALL AOT_TABLE_CLOSE(L=conf,thandle=extrapol_table)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
+#endif
    ! get pes.resize
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=resize_table,key='resize')
    auxint=aot_table_length(L=conf,thandle=resize_table)
