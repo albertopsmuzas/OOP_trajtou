@@ -6,7 +6,12 @@
 !##########################################################
 MODULE EXTRAPOL_TO_VACUUM_MOD
 ! Initial declarations
-USE CUBICSPLINES_MOD
+use CUBICSPLINES_MOD, only: Csplines
+use MATHS_MOD
+use UNITS_MOD, only: Energy,Length
+#ifdef DEBUG
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+#endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Vacuumpot
@@ -58,9 +63,6 @@ CONTAINS
 !-----------------------------------------------------------
 SUBROUTINE SET_ROOTS_VACUUMPOT(this)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(Vacuumpot),INTENT(INOUT):: this
@@ -129,10 +131,6 @@ END FUNCTION is_allowed_VACUUMPOT
 !-----------------------------------------------------------
 SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,shift)
    ! Initial declarations   
-   USE MATHS_MOD
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(Vacuumpot),INTENT(OUT):: this
@@ -164,6 +162,9 @@ SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,shift)
             CASE(1)
                this%req=this%rpot%xmin(1)
                this%potmin = this%rpot%getvalue(this%rpot%xmin(1))
+#ifdef DEBUG
+                CALL VERBOSE_WRITE(routinename,'Potmin: ',this%potmin)
+#endif
             CASE DEFAULT
                WRITE(0,*) "INITIALIZE_DIRECT_VACUUMPOT ERR: More than one minimum. Something is wrong"
                CALL EXIT(1)
@@ -340,9 +341,6 @@ END SUBROUTINE PLOT_VACUUMPOT
 !-----------------------------------------------------------
 SUBROUTINE INITIALIZE_VACUUMPOT(this,filename)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(Vacuumpot),INTENT(INOUT) :: this
@@ -384,8 +382,6 @@ END SUBROUTINE INITIALIZE_VACUUMPOT
 !-----------------------------------------------------------
 SUBROUTINE READ_VACUUMPOT(this,filename)
    ! Initial declarations   
-   USE UNITS_MOD
-   USE MATHS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Vacuumpot),INTENT(INOUT) :: this
