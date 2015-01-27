@@ -547,7 +547,12 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
             rnd_sign2=-1.d0
       END SELECT
       L=rnd_sign1*ang_momentum ! actual angular momentum for this trajectory
-      L_theta=dacos(dfloat(this%init_qn(3))/L)
+      SELECT CASE(L==0.d0)
+        CASE(.true.)
+            L_theta=0.d0
+        CASE(.false.)
+            L_theta=dacos(dfloat(this%init_qn(3))/L)
+      END SELECT
       SELECT CASE(this%is_classic)
          CASE(.TRUE.)
             this%trajs(i)%r(4)=this%vibrpot%getreq()                                 ! r

@@ -23,7 +23,8 @@ libtrajtou.a: $(objectlist)
 	cd ../bin; ar rvs libtrajtou.a $(objectlist); mv libtrajtou.a ../lib/.
 # Static library: aotus --------------------------------------------------------------
 libaotus.a:
-	cd utils/haraldkl-aotus-707f4da5293b; ./waf configure build; mv build/*.a ../../../lib/.; mv build/*.mod ../../../mod/.
+	cd utils/haraldkl-aotus-707f4da5293b; ./waf configure build; mv build/*.a ../../../lib/.; mv build/*.mod ../../../mod/.;\
+	mv build/lua ../../../bin/lua
 # System / Fundamental section ----------------------------------------------------------
 debug.o:
 maths.o:
