@@ -7,10 +7,10 @@
 MODULE EXTRAPOL_TO_VACUUM_MOD
 ! Initial declarations
 use CUBICSPLINES_MOD, only: Csplines
-use MATHS_MOD
+use MATHS_MOD, only: ORDER
 use UNITS_MOD, only: Energy,Length
 #ifdef DEBUG
-use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+use DEBUG_MOD, only: DEBUG_WRITE
 #endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
@@ -21,33 +21,36 @@ IMPLICIT NONE
 !----------------------------------------------------------------
 TYPE :: Vacuumpot
    PRIVATE
-   INTEGER(KIND=4),PUBLIC :: n
-   TYPE(Csplines),PUBLIC :: rpot
-   REAL(KIND=8) :: surfen
-   REAL(KIND=8) :: potmin
-   REAL(KIND=8) :: req
-   REAL(KIND=8),DIMENSION(2),PUBLIC :: root
+   INTEGER(KIND=4),PUBLIC:: n
+   TYPE(Csplines),PUBLIC:: rpot
+   REAL(KIND=8):: surfen
+   REAL(KIND=8):: potmin
+   REAL(KIND=8):: req
+   REAL(KIND=8):: forceConstant
+   REAL(KIND=8),DIMENSION(2),PUBLIC:: root
 
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_VACUUMPOT
-      PROCEDURE,PUBLIC :: INITIALIZE_DIRECT => INITIALIZE_DIRECT_VACUUMPLOT
-      PROCEDURE,PUBLIC :: READ => READ_VACUUMPOT
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_VACUUMPOT
+      PROCEDURE,PUBLIC:: INITIALIZE_DIRECT => INITIALIZE_DIRECT_VACUUMPLOT
+      PROCEDURE,PUBLIC:: READ => READ_VACUUMPOT
       ! Set block
-      PROCEDURE,PUBLIC :: SET_ROOTS => SET_ROOTS_VACUUMPOT
+      PROCEDURE,PUBLIC:: SET_ROOTS => SET_ROOTS_VACUUMPOT
       ! Get block
-      PROCEDURE,PUBLIC :: getpot => getpot_vacuumpot
-      PROCEDURE,PUBLIC :: getderiv => getderiv_vacuumpot
-      PROCEDURE,PUBLIC :: getscalefactor => getscalefactor_vacuumpot
-      PROCEDURE,PUBLIC :: getreq => getreq_vacuumpot 
+      PROCEDURE,PUBLIC:: getpot => getpot_vacuumpot
+      PROCEDURE,PUBLIC:: getderiv => getderiv_vacuumpot
+      PROCEDURE,PUBLIC:: getscalefactor => getscalefactor_vacuumpot
+      PROCEDURE,PUBLIC:: getreq => getreq_vacuumpot
+      PROCEDURE,PUBLIC:: getpotmin => getpotmin_vacuumpot
+      PROCEDURE,PUBLIC:: getForceConstant => getForceConstant_vacuumpot
       ! Tools block
-      PROCEDURE,PUBLIC :: SHIFTPOT => SHIFTPOT_VACUUMPOT
-      PROCEDURE,PUBLIC :: SHIFTPOT_UNDO => SHIFTPOT_UNDO_VACUUMPOT
+      PROCEDURE,PUBLIC:: SHIFTPOT => SHIFTPOT_VACUUMPOT
+      PROCEDURE,PUBLIC:: SHIFTPOT_UNDO => SHIFTPOT_UNDO_VACUUMPOT
       ! Enquire block
-      PROCEDURE,PUBLIC :: is_allowed => is_allowed_VACUUMPOT
+      PROCEDURE,PUBLIC:: is_allowed => is_allowed_VACUUMPOT
       ! Plot tools block
-      PROCEDURE,PUBLIC :: PLOT => PLOT_VACUUMPOT
-      PROCEDURE,PUBLIC :: PLOTDATA => PLOTDATA_VACUUMPOT
+      PROCEDURE,PUBLIC:: PLOT => PLOT_VACUUMPOT
+      PROCEDURE,PUBLIC:: PLOTDATA => PLOTDATA_VACUUMPOT
 END TYPE Vacuumpot
 !/////////////////////////////////////////////////////////////////
 CONTAINS
@@ -79,7 +82,7 @@ SUBROUTINE SET_ROOTS_VACUUMPOT(this)
             CASE(2)
                this%root=this%rpot%xroot
 #ifdef DEBUG
-               CALL VERBOSE_WRITE(routinename,"Found roots at x: ",this%root)
+               CALL DEBUG_WRITE(routinename,"Found roots at x: ",this%root)
 #endif
             CASE DEFAULT
                WRITE(0,*) "SET_ROOTS_VACUUMPOT ERR: too many roots. Check the vacuumpot"
@@ -93,6 +96,49 @@ SUBROUTINE SET_ROOTS_VACUUMPOT(this)
    END SELECT
    RETURN
 END SUBROUTINE SET_ROOTS_VACUUMPOT
+!###########################################################
+!# FUNCTION: getpotmin_VACUUMPOT
+!###########################################################
+!> @brief
+!! Standard get function. Gets potential at the minimum prior
+!! shift.
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jan/2015
+!> @version 1.0
+!-----------------------------------------------------------
+PURE FUNCTION getpotmin_vacuumpot(this) result(potmin)
+    ! Initial declarations
+    IMPLICIT NONE
+    ! I/O variables
+    CLASS(Vacuumpot),INTENT(IN):: this
+    ! Dummy function variable
+    REAL(KIND=8):: potmin
+    ! Run section
+    potmin=this%potmin
+    RETURN
+END FUNCTION
+!###########################################################
+!# FUNCTION: getForceConstant_VACUUMPOT
+!###########################################################
+!> @brief
+!! Standard get function. Gets forceConstant atribute.
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Jan/2015
+!> @version 1.0
+!-----------------------------------------------------------
+PURE FUNCTION getForceConstant_vacuumpot(this) result(forceConstant)
+    ! Initial declarations
+    IMPLICIT NONE
+    ! I/O variables
+    CLASS(Vacuumpot),INTENT(IN):: this
+    ! Dummy function variable
+    REAL(KIND=8):: forceConstant
+    ! Run section
+    forceConstant=this%forceConstant
+    RETURN
+END FUNCTION
 !###########################################################
 !# FUNCTION: is_allowed_VACUUMPOT 
 !###########################################################
@@ -138,7 +184,6 @@ SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,shift)
    REAL(KIND=8),DIMENSION(:),INTENT(IN) :: f
    REAL(KIND=8),INTENT(IN):: shift
    ! Local variables
-   INTEGER(KIND=4) :: i ! counters
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1,aux2
    CHARACTER(LEN=29),PARAMETER :: routinename="INITIALIZE_DIRECT_VACUUMPOT: "
    ! Run section
@@ -155,15 +200,16 @@ SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,shift)
    SELECT CASE(ALLOCATED(this%rpot%xmin))
       CASE(.TRUE.)
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Minimums found: ",size(this%rpot%xmin))
-         CALL VERBOSE_WRITE(routinename,this%rpot%xmin)
+         CALL DEBUG_WRITE(routinename,"Minimums found: ",size(this%rpot%xmin))
+         CALL DEBUG_WRITE(routinename,this%rpot%xmin)
 #endif
          SELECT CASE(size(this%rpot%xmin))
             CASE(1)
                this%req=this%rpot%xmin(1)
                this%potmin = this%rpot%getvalue(this%rpot%xmin(1))
+               this%forceConstant = this%rpot%getderiv2(this%rpot%xmin(1))
 #ifdef DEBUG
-                CALL VERBOSE_WRITE(routinename,'Potmin: ',this%potmin)
+                CALL DEBUG_WRITE(routinename,'Potmin: ',this%potmin)
 #endif
             CASE DEFAULT
                WRITE(0,*) "INITIALIZE_DIRECT_VACUUMPOT ERR: More than one minimum. Something is wrong"
@@ -353,13 +399,14 @@ SUBROUTINE INITIALIZE_VACUUMPOT(this,filename)
    SELECT CASE(ALLOCATED(this%rpot%xmin))
       CASE(.TRUE.)
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Minimums found: ",size(this%rpot%xmin))
-         CALL VERBOSE_WRITE(routinename,this%rpot%xmin)
+         CALL DEBUG_WRITE(routinename,"Minimums found: ",size(this%rpot%xmin))
+         CALL DEBUG_WRITE(routinename,this%rpot%xmin)
 #endif
          SELECT CASE(size(this%rpot%xmin))
             CASE(1)
                this%req=this%rpot%xmin(1)
                this%potmin = this%rpot%getvalue(this%rpot%xmin(1))
+               this%forceConstant = this%rpot%getderiv2(this%rpot%xmin(1))
             CASE DEFAULT
                WRITE(0,*) "INITIALIZE_VACUUMPOT ERR: More than one minimum. Something is wrong"
                CALL EXIT(1)

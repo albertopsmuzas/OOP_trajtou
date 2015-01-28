@@ -12,7 +12,6 @@ TYPE(CRP6D):: thispes
 REAL(KIND=4):: timer
 CHARACTER(LEN=1024):: luafile
 ! STEP 0: HELLO! & system specifications
-CALL SET_VERBOSE_MODE(.TRUE.)
 WRITE(*,*) "**************************************************************"
 WRITE(*,*) "******************* TEST INICOND6D INPUT *********************"
 WRITE(*,*) "**************************************************************"
@@ -29,6 +28,7 @@ END SELECT
 CALL ETIME(timearr,timer)
 CALL INITIALIZE_SYSTEM(trim(luafile))
 CALL thispes%INITIALIZE()
+CALL SET_VERBOSE_MODE(.true.) ! we want verbose output only for inicond
 CALL inicondat%INITIALIZE()
 CALL inicondat%GENERATE_TRAJS(thispes)
 CALL ETIME(timearr,timer)

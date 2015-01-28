@@ -250,12 +250,12 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
          this%fixed_theta=.true.
          this%init_qn(3)=auxint
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,'Quantum state: ',this%init_qn(:))
+         CALL VERBOSE_WRITE(routinename,'Quantum state (v,J,mJ): ',this%init_qn(:))
 #endif
       CASE(.true.)
          this%fixed_theta=.false.
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,'Quantum state: ',this%init_qn(1:2))
+         CALL VERBOSE_WRITE(routinename,'Quantum state (v,J,mJ average): ',this%init_qn(1:2))
 #endif
    END SELECT
    CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
@@ -304,6 +304,12 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
          CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='source',val=auxstring)
          CALL this%vibrpot%INITIALIZE(trim(auxstring))
          CALL this%vibrpot%SHIFTPOT()
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,'Numerical Vacuumpot loaded')
+         CALL VERBOSE_WRITE(routinename,'Equilibrium distance (au): ',this%vibrpot%getreq())
+         CALL VERBOSE_WRITE(routinename,'Potential at minimum, prior shifting (au): ',this%vibrpot%getpotmin())
+         CALL VERBOSE_WRITE(routinename,'Force Constant (d2V(r)/dr2 at Req (au): ',this%vibrpot%getForceConstant())
+#endif
       CASE DEFAULT
          WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: vibrational function kind not implemented"
          WRITE(0,*) "Implemented ones: Numerical"
@@ -439,9 +445,7 @@ SUBROUTINE INITIALIZE_INITDIATOMIC(this,filename)
          CLOSE(12)
    END SELECT
 #ifdef DEBUG
-   DO i=1,size_seed
-      CALL VERBOSE_WRITE(routinename,this%seed(i))
-   END DO
+   CALL VERBOSE_WRITE(routinename,this%seed(:))
 #endif
    RETURN
 END SUBROUTINE INITIALIZE_INITDIATOMIC
@@ -1122,7 +1126,9 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
    CALL this%rovibrpot%INITIALIZE_DIRECT(x,f,0.D0)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Initialize effective potential, rovibrpot")
+   CALL VERBOSE_WRITE(routinename,'Effective potential is: Veff(r) = V(r)+(L**2)/(2*mu*r**2)')
    CALL this%rovibrpot%PLOT(1000,"effectivepot.dat")
+   CALL VERBOSE_WRITE(routinename,'Effective potential stored at effectivepot.dat')
 #endif
    ! Find turning points
    DO i = 1, this%vibrpot%n
@@ -1132,7 +1138,9 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
    CALL fdummy%INITIALIZE_DIRECT(x,f,0.D0)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Initialize dummy potential to find turning points")
+   CALL VERBOSE_WRITE(routinename,'Dummy potential is Vdummy(r)= Veff(r)-Erovibr')
    CALL fdummy%PLOT(1000,"dummypot.dat")
+   CALL VERBOSE_WRITE(routinename,'Dummy potential stored at dummypot.dat')
 #endif
    CALL fdummy%SET_ROOTS()
    turn1=fdummy%root(1)
@@ -1141,7 +1149,7 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
    vturn2=this%rovibrpot%getpot(turn2)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Turning points are: ",[turn1,turn2])
-   CALL VERBOSE_WRITE(routinename,"Potential at turning points: ",[vturn1,vturn2])
+   CALL VERBOSE_WRITE(routinename,"Effective potential at turning points: ",[vturn1,vturn2])
 #endif
    ! Start to integrate equations of motion
    t=0.D0
@@ -1306,12 +1314,15 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
    CALL this%pr_t%SET_XROOT()
    this%period=maxval(this%pr_t%xroot)
 #ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'Radial motion performed inside Veff(r) potential')
    CALL VERBOSE_WRITE(routinename,"Minimums found in pr(t)",this%pr_t%xmin)
    CALL VERBOSE_WRITE(routinename,"Roots found in pr(t)",this%pr_t%xroot)
    CALL VERBOSE_WRITE(routinename,"Time specifications:",[time_turn2,time_cycle,time_finish])
    CALL VERBOSE_WRITE(routinename,"Period of vibrational motion :",this%period)
    CALL this%pr_t%PLOT(1000,"pr.dat")
    CALL this%r_t%PLOT(1000,"r.dat")
+   CALL VERBOSE_WRITE(routinename,'Radial momentum as a function of time printed inside pr.dat')
+   CALL VERBOSE_WRITE(routinename,'Radial generalized position as a function of time printed inside r.dat')
 #endif
    RETURN
 END SUBROUTINE SET_PERIOD_INITDIATOMIC
