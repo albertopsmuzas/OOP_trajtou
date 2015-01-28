@@ -6,8 +6,12 @@
 !! 2D functions
 !##########################################################
 MODULE BICSPLINES_MOD
-USE INTERPOLGRID2D_MOD
-USE CUBICSPLINES_MOD
+use INTERPOLGRID2D_MOD
+use CUBICSPLINES_MOD
+use UNITS_MOD, only: pi
+#ifdef DEBUG
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+#endif
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////
 ! TYPE: BICSPLINES
@@ -673,7 +677,6 @@ END SUBROUTINE PLOT_XYMAP_BICSPLINES
 !> @version 1.0
 !---------------------------------------------------------------
 SUBROUTINE PLOT_1D_BICSPLINES(this,filename,init_xy,npoints,angle,L)
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    CLASS(Bicsplines),INTENT(IN) :: this
    REAL*8,DIMENSION(2),INTENT(IN) :: init_xy 

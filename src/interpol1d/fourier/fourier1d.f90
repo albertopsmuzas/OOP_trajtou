@@ -9,7 +9,12 @@
 !! - Includes Interpol1d_mod in its scope
 !########################################################
 MODULE FOURIER1D_MOD
-USE INTERPOL1D_MOD
+use INTERPOL1D_MOD
+use UNITS_MOD, only: pi
+use MATHS_MOD, only: INV_MTRX
+#ifdef DEBUG
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+#endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Termcalculator
@@ -307,7 +312,6 @@ END SUBROUTINE ADD_MORE_FUNCS_FOURIER1D
 !-----------------------------------------------------------
 SUBROUTINE INTERPOL_FOURIER1D(this)
    ! Initial declarations   
-   USE MATHS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(FOURIER1D),INTENT(INOUT) :: this
@@ -351,7 +355,6 @@ END SUBROUTINE INTERPOL_FOURIER1D
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION getvalue_FOURIER1D(this,x,shift)
    ! Initial declarations   
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(FOURIER1D),TARGET,INTENT(IN) :: this
@@ -388,7 +391,6 @@ END FUNCTION getvalue_FOURIER1D
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION getderiv_FOURIER1D(this,x,shift)
    ! Initial declarations   
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(FOURIER1D),TARGET,INTENT(IN) :: this
@@ -423,10 +425,6 @@ END FUNCTION getderiv_FOURIER1D
 !! The graphic goes from 0 to @f$2\pi@f$
 !----------------------------------------------------------------------
 SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D(this,npoints,filename)
-   USE CONSTANTS_MOD
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints
@@ -477,10 +475,6 @@ END SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D
 !! The graphic goes from 0 to @f$2\pi@f$
 !----------------------------------------------------------------------
 SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D(this,npoints,filename)
-   USE CONSTANTS_MOD
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints

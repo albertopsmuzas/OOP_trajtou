@@ -1,12 +1,11 @@
 MODULE DIFFRACTIONCRP3D_MOD
+use SYSTEM_MOD
+use INITATOM_MOD, only: Initatom
+use SURFACE_MOD, only: Surface
+use CRP3D_MOD, only: CRP3D
 #ifdef DEBUG
-   USE DEBUG_MOD
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
-USE INITATOM_MOD
-USE SYSTEM_MOD
-USE CONSTANTS_MOD
-USE SURFACE_MOD
-USE CRP3D_MOD
 IMPLICIT NONE
 !======================================================
 ! Peak derived data

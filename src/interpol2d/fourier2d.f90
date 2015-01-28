@@ -4,9 +4,7 @@
 !! Provides tools to perform 2D interpolations with fourier series
 !##################################################################################
 MODULE FOURIER2D_MOD
-USE SURFACE_MOD
-USE CONSTANTS_MOD
-USE MATHS_MOD
+use SURFACE_MOD, only: Surface
 IMPLICIT NONE
 !////////////////////////////////////////////////////////////////
 ! TYPE: Interpol2d

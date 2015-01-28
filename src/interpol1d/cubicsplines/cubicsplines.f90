@@ -7,8 +7,7 @@
 !##################################################################################################
 MODULE CUBICSPLINES_MOD
 ! Initial declarations
-USE INTERPOL1D_MOD
-USE CONSTANTS_MOD
+use INTERPOL1D_MOD
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////////////////
 ! TYPE: Cubic Splines

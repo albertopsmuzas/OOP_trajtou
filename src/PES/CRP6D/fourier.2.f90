@@ -126,7 +126,6 @@ END FUNCTION termfou1d_2_A
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION termfou1d_dx_2_A(this,kpoint,x)
    ! Initial declarations 
-   USE CONSTANTS_MOD  
    IMPLICIT NONE
    ! I/O variables
    CLASS(Term_A),INTENT(IN) :: this

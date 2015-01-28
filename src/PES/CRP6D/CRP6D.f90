@@ -5,23 +5,22 @@
 !! Provides all structures and procedures to perform a complete
 !! CRP-6D interpolation job. This method only works systematically with diatomic
 !! molecules
-!
-!> @warning
-!! - Inherits modules CRP3D_MOD, BICSPLINES_MOD
 !#######################################################
 MODULE CRP6D_MOD
-   use UNITS_MOD
-   use CONSTANTS_MOD, only: pi
-   use CRP3D_MOD
-   use SYSTEM_MOD
-   use EXTRAPOL_TO_VACUUM_MOD
-   use FOURIER_P4MM_MOD
-   use WYCKOFF_P4MM_MOD
-   use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
-   use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
-   use LINK_FUNCTION1D_MOD
+! Massive name spaces
+use SYSTEM_MOD
+use LINK_FUNCTION1D_MOD
+! Selective name spaces
+use UNITS_MOD, only: Length, pi
+use PES_MOD, only: PES
+use CRP3D_MOD, only: CRP3D
+use EXTRAPOL_TO_VACUUM_MOD, only: Vacuumpot
+use FOURIER_P4MM_MOD, only: Fourierp4mm
+use WYCKOFF_P4MM_MOD, only: WyckoffSitio, Wyckoffp4mm
+use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
+use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #if DEBUG
-   use DEBUG_MOD
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////

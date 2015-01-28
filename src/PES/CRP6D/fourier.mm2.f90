@@ -77,7 +77,6 @@ END SUBROUTINE SET_IRREP_FOURIER1D_MM2
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION termfou1d_MM2_A1(this,kpoint,x)
    ! Initial declarations 
-   USE CONSTANTS_MOD  
    IMPLICIT NONE
    ! I/O variables
    CLASS(Term_A1),INTENT(IN) :: this
@@ -93,7 +92,6 @@ END FUNCTION termfou1d_MM2_A1
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION termfou1d_dx_MM2_A1(this,kpoint,x)
    ! Initial declarations 
-   USE CONSTANTS_MOD  
    IMPLICIT NONE
    ! I/O variables
    CLASS(Term_A1),INTENT(IN) :: this

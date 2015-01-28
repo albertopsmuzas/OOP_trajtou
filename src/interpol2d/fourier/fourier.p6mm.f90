@@ -6,7 +6,12 @@
 !##########################################################
 MODULE FOURIER_P6MM_MOD
 !use other modules?
-USE FOURIER2D_MOD
+use FOURIER2D_MOD
+use UNITS_MOD, only: pi
+use MATHS_MOD, only: INV_MTRX
+#ifdef DEBUG
+use DEBUG_MOD, only: VERBOSE_WRITE,DEBUG_WRITE
+#endif
 IMPLICIT NONE
 TYPE,EXTENDS(Fourier2d) :: FourierP6MM
    PRIVATE
@@ -34,7 +39,6 @@ REAL(KIND=8) FUNCTION termfouP6MM(id,surf,k,r)
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8) :: g
-    INTEGER(KIND=4) ::i ! counters
    ! Run section
    g=2.D0*PI/surf%norm_s1
    SELECT CASE(id)
@@ -76,7 +80,6 @@ REAL(KIND=8) FUNCTION termfouP6MM_dx(id,surf,k,r)
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8):: g
-   INTEGER(KIND=4) :: i ! counter
    ! Run section
    g=2.D0*PI/surf%norm_s1
    SELECT CASE(id)
@@ -117,7 +120,6 @@ REAL(KIND=8) FUNCTION termfouP6MM_dy(id,surf,k,r)
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
    REAL(KIND=8):: g,a
-   INTEGER(KIND=4) :: i ! counters
    ! Run section
    g=2.D0*PI/surf%norm_s1
    SELECT CASE(id)

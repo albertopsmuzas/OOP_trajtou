@@ -5,9 +5,14 @@
 !! interpolation
 !##########################################################
 MODULE FOURIER_P4MM_MOD
-!use other modules?
-USE FOURIER2D_MOD
+use FOURIER2D_MOD
+use UNITS_MOD, only: pi
+use MATHS_MOD, only: INV_MTRX
+#ifdef DEBUG
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+#endif
 IMPLICIT NONE
+
 TYPE,EXTENDS(Fourier2d) :: Fourierp4mm
    PRIVATE
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: coeff

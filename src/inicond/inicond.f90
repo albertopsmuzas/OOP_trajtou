@@ -9,7 +9,6 @@
 MODULE INICOND_MOD
    USE LINK_PES_MOD
    USE UNITS_MOD
-   USE CONSTANTS_MOD
 IMPLICIT NONE
 !////////////////////////////////////////////////////////
 ! TYPE: Dynobject

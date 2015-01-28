@@ -5,11 +5,10 @@
 !! Should contain everything related with periodic 2D surfaces
 !##########################################################
 MODULE SURFACE_MOD
-   USE UNITS_MOD
-   USE MATHS_MOD
-   USE CONSTANTS_MOD
+use UNITS_MOD, only: Length, pi
+use MATHS_MOD, only: INV_MTRX
 #ifdef DEBUG
-   USE DEBUG_MOD
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE, VERBOSE_SEPARATOR1
 #endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////////////////////////
@@ -268,7 +267,7 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
    INTEGER:: i,j ! Counters
    INTEGER:: control
    CHARACTER(LEN=*),PARAMETER:: routinename = "INITIALIZE_SURFACE: "
-   TYPE(length):: len
+   TYPE(Length):: len
    REAL(KIND=8),DIMENSION(2,2):: aux_r
    ! Run section --------------------------------------------
    surf%filename=filename

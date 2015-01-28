@@ -1,12 +1,11 @@
 MODULE DIFFRACTIONCRP6D_MOD
+use SYSTEM_MOD
+use INITDIATOMIC_MOD, only: InitDiatomic
+use SURFACE_MOD, only: Surface
+use CRP6D_MOD, only: CRP6D
 #ifdef DEBUG
-   USE DEBUG_MOD
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
-USE SYSTEM_MOD
-USE INITDIATOMIC_MOD
-USE CONSTANTS_MOD
-USE SURFACE_MOD
-USE CRP6D_MOD
 IMPLICIT NONE
 !======================================================
 ! Peak derived data

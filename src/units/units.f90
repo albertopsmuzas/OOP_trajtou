@@ -128,17 +128,16 @@ CONTAINS
 END TYPE
 !//////////////////////////////////////////////////////////////////////
 ! Conversion factors:
-
-REAL(KIND=8),PARAMETER :: au2ev = 27.21138386D0
-REAL(KIND=8),PARAMETER :: au2kcalmol = 627.503D0
-REAL(KIND=8),PARAMETER :: au2kjmol = 2.6255D3
-REAL(KIND=8),PARAMETER :: au2angst = 0.52917720859D0
-REAL(KIND=8),PARAMETER :: au2fs = 0.02418884326505D0
-REAL(KIND=8),PARAMETER :: au2ps = 2.418884326505D-5
-REAL(KIND=8),PARAMETER :: hmass2au = 1837.15264409D0
-REAL(KIND=8),PARAMETER :: dmass2au = 3671.482934845D0
-REAL(KIND=8),PARAMETER :: pmass2au = 1836.15267247D0
-
+REAL(KIND=8),PARAMETER:: au2ev = 27.21138386D0
+REAL(KIND=8),PARAMETER:: au2kcalmol = 627.503D0
+REAL(KIND=8),PARAMETER:: au2kjmol = 2.6255D3
+REAL(KIND=8),PARAMETER:: au2angst = 0.52917720859D0
+REAL(KIND=8),PARAMETER:: au2fs = 0.02418884326505D0
+REAL(KIND=8),PARAMETER:: au2ps = 2.418884326505D-5
+REAL(KIND=8),PARAMETER:: hmass2au = 1837.15264409D0
+REAL(KIND=8),PARAMETER:: dmass2au = 3671.482934845D0
+REAL(KIND=8),PARAMETER:: pmass2au = 1836.15267247D0
+REAL(KIND=8),PARAMETER:: pi=dacos(-1.D0)
 !//////////////////////////////////////////////////////////////////////
 
 ! MODULE CONTAINS:
@@ -219,7 +218,6 @@ END FUNCTION get_units_quantity
 !------------------------------------------------------------
 SUBROUTINE TO_RAD(this)
    ! Initial declarations
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(angle), INTENT(INOUT) :: this
@@ -250,7 +248,6 @@ END SUBROUTINE TO_RAD
 !------------------------------------------------------------
 SUBROUTINE TO_DEG(this)
    ! Initial declarations
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(angle), INTENT(INOUT) :: this
