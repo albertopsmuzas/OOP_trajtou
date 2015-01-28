@@ -301,6 +301,7 @@ SUBROUTINE RUN_DYNDIATOMIC(this)
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wuab,"OUTDYN6Dabsorbed.out","ABSORBED TRAJS")
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wust,"OUTDYN6Dstopped.out","STOPPED TRAJS")
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wure,"OUTDYN6Dreacted.out","REACTED TRAJS")
+   CALL FILE_TURNING_DYNDIATOMIC(this%wutp)
    DO i=this%thisinicond%nstart, this%thisinicond%ntraj
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Start trajectory: ",i)
@@ -743,12 +744,12 @@ SUBROUTINE FILE_TURNING_DYNDIATOMIC(wunit)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: wunit
+   INTEGER(KIND=4),INTENT(IN):: wunit
    ! Local variables
-   CHARACTER(LEN=19),PARAMETER :: filename="OUTDYN6Dturning.out"
-   CHARACTER(LEN=34),PARAMETER :: title="TURNING POINTS FOR SCATTERED TRAJS"
-   LOGICAL :: file_exists
-   CHARACTER(LEN=25),PARAMETER :: routinename="FILE_TURNING_DYNDIATOMIC "
+   CHARACTER(LEN=*),PARAMETER:: filename="OUTDYN6Dturning.out"
+   CHARACTER(LEN=*),PARAMETER:: title="TURNING POINTS FOR SCATTERED TRAJS"
+   LOGICAL:: file_exists
+   CHARACTER(LEN=*),PARAMETER:: routinename="FILE_TURNING_DYNDIATOMIC: "
    ! Run section
    INQUIRE(FILE=filename,EXIST=file_exists)
    SELECT CASE(file_exists)
