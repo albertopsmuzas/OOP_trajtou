@@ -34,6 +34,7 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
       PROCEDURE,PUBLIC :: REINTERPOL => REINTERPOL_CSPLINES
       PROCEDURE,PUBLIC :: getvalue => get_csplines_value
       PROCEDURE,PUBLIC :: getderiv => get_csplines_dfdx_value
+      PROCEDURE,PUBLIC :: getderiv2 => get_csplines_df2dx2_value
       PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CSPLINES
       PROCEDURE,PUBLIC :: SET_MINIMUM => SET_MINIMUM_CSPLINES
       PROCEDURE,PUBLIC :: SET_XROOT => SET_XROOT_CSPLINES
@@ -650,7 +651,6 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
       a = this%coeff(i,1)
       b = this%coeff(i,2)
       c = this%coeff(i,3)
-      d = this%coeff(i,4)
       SELECT CASE((r<=z2).AND.(r>=z1))
          CASE(.TRUE.)
             EXIT
@@ -662,6 +662,57 @@ REAL(KIND=8) FUNCTION get_csplines_dfdx_value(this,x,shift)
    get_csplines_dfdx_value=3.D0*(a*((r-z1)**2.D0))+2.D0*b*(r-z1)+c
    RETURN
 END FUNCTION get_csplines_dfdx_value
+
+REAL(KIND=8) FUNCTION get_csplines_df2dx2_value(this,x,shift)
+   ! Initial declaration
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Csplines),INTENT(IN),TARGET :: this
+   REAL(KIND=8),INTENT(IN) :: x
+   REAL(KIND=8),OPTIONAL,INTENT(IN) :: shift
+   ! Local variables
+   INTEGER :: i ! Counter
+   REAL(KIND=8) :: r
+   ! Pointers
+   INTEGER,POINTER :: n
+   REAL(KIND=8):: z1,z2,a,b,c,d
+   REAL(KIND=8),DIMENSION(:),POINTER :: z,v
+   ! Run section -----------------------------------
+   n => this%n
+   z => this%x(1:n)
+   v => this%f(1:n)
+   SELECT CASE(present(shift))
+      CASE(.TRUE.)
+         r=x+shift
+      CASE(.FALSE.)
+         r=x
+   END SELECT
+   SELECT CASE(r<this%x(1) .OR. r>this%x(n))
+      CASE(.TRUE.)
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r outside interpolation interval"
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: r = ", r
+         WRITE(0,*) "GET_V_AND_DERIVS_CSPLINES ERR: range from ", z(1), "to", z(n)
+         CALL EXIT(1)
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   !
+   DO i=1,n-1
+      z1 = this%x(i)
+      z2 = this%x(i+1)
+      a = this%coeff(i,1)
+      b = this%coeff(i,2)
+      SELECT CASE((r<=z2).AND.(r>=z1))
+         CASE(.TRUE.)
+            EXIT
+         CASE(.FALSE.)
+            ! do nothing
+      END SELECT
+   END DO
+   ! Now, counter i has the correct label
+   get_csplines_df2dx2_value=6.D0*(a*(r-z1))+2.D0*b
+   RETURN
+END FUNCTION get_csplines_df2dx2_value
 !###############################################################
 ! SUBROUTINE: GET_V_AND_DERIVS_CSPLINE
 !> @brief
