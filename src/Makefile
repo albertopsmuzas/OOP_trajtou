@@ -85,7 +85,7 @@ link_integrator.o: integrator_o1.o bulirsch_stoer.o
 integrator_o1.o:
 bulirsch_stoer.o: integrator_o1.o
 # Utils ----------------------------------------------------------------------------------
-drawtraj.o: surface.o
+drawtraj.o: debug.o system.o
 #-----------------------------------------------------------------------------------------
 wyckoff.generic.o: debug.o fourier1d.o bicsplines.o
 wyckoff.p4mm.o: wyckoff.generic.o fourier.4mm.o fourier.mm2.o fourier.2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o

@@ -8,7 +8,11 @@
 !! - Generalize for CRP6D and other formats
 !##########################################################
 MODULE DRAWTRAJ_MOD
-   USE SURFACE_MOD
+use SYSTEM_MOD
+use SURFACE_MOD, only: Surface
+#ifdef DEBUG
+use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+#endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Drawtraj
@@ -23,7 +27,6 @@ IMPLICIT NONE
 TYPE :: Drawtraj
 PRIVATE
    CHARACTER(LEN=3) :: format_out
-   TYPE(Surface):: surf
    INTEGER(KIND=4) :: npattern
    INTEGER(KIND=4) :: nprojectile
 CONTAINS
@@ -43,18 +46,15 @@ CONTAINS
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INITIALIZE_DRAWTRAJ(this,format_out,filename)
+SUBROUTINE INITIALIZE_DRAWTRAJ(this,format_out)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Drawtraj),INTENT(OUT):: this
    CHARACTER(LEN=3),INTENT(IN) :: format_out
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   ! Local variables
    ! Run section
    this%format_out=format_out
-   CALL this%surf%INITIALIZE(filename)
-   this%npattern=sum(this%surf%atomtype(:)%n)
+   this%npattern=sum(system_surface%atomtype(:)%n)
    RETURN
 END SUBROUTINE INITIALIZE_DRAWTRAJ
 !###########################################################
@@ -113,22 +113,18 @@ SUBROUTINE DRAW_DRAWTRAJ (this,order,dynamicsfilename,outputfilename)
    READ(runit,*) dummy(1:6),init_xcm,dummy(7:15),xa,xb 
    WRITE(wunit,*) npattern+2
    WRITE(wunit,*) 
-   CALL this%surf%PRINT_PATTERN(wunit,order,this%format_out)
-   WRITE(wunit,*) "H ",xa
-   WRITE(wunit,*) "H ",xb
+   CALL system_surface%PRINT_PATTERN(wunit,order,this%format_out)
+   WRITE(wunit,*) system_atomsymbols(1)//" ",xa
+   WRITE(wunit,*) system_atomsymbols(2)//" ",xb
    DO 
       i=i+1
-      surf_aux=this%surf
+      surf_aux=system_surface
       ! read section
       READ(runit,*,iostat=ioerr) dummy(1:6),xcm,dummy(7:15),xa,xb 
       dx(1:2)=xcm(1:2)-init_xcm(1:2)
       ! Check if EOF reached
       SELECT CASE(ioerr/=0)
          CASE(.TRUE.)
-            WRITE(*,*) "DRAW_DRAWTRAJ: EOF reached. Job Finished."
-            WRITE(*,*) "Input file: ",dynamicsfilename
-            WRITE(*,*) "Output file: ",outputfilename
-            WRITE(*,*) "IOSTAT code: ",ioerr
             EXIT
          CASE(.FALSE.)
             ! do nothing
@@ -140,8 +136,8 @@ SUBROUTINE DRAW_DRAWTRAJ (this,order,dynamicsfilename,outputfilename)
       CALL surf_aux%PRINT_PATTERN(wunit,order,this%format_out)
       xa(1:2)=xa(1:2)-dx
       xb(1:2)=xb(1:2)-dx
-      WRITE(wunit,*) "H ",xa
-      WRITE(wunit,*) "H ",xb
+      WRITE(wunit,*)  system_atomsymbols(1)//' ',xa
+      WRITE(wunit,*)  system_atomsymbols(2)//' ',xb
    END DO
    CLOSE(runit)
    CLOSE(wunit)
