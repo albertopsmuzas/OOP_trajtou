@@ -341,11 +341,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    REAL(KIND=8):: ma,mb
    REAL(KIND=8):: L2
    LOGICAL:: maxtime_reached
-   LOGICAL:: switch, file_exists, in_list
-   CHARACTER(LEN=27):: filename_follow
+   LOGICAL:: switch, in_list
    CHARACTER(LEN=25),PARAMETER:: routinename = "DO_DYNAMICS_DYNDIATOMIC: "
    CHARACTER(LEN=9),PARAMETER:: format_string = '(I10.10)'
-   INTEGER:: control
    CLASS(Dynobject),POINTER:: molecule
    REAL(KIND=8):: masa
    REAL(KIND=8):: mu
@@ -837,9 +835,6 @@ SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC(this,sphCoord,tDeriv,fin)
    REAL(KIND=8),DIMENSION(12),INTENT(OUT):: tDeriv
    LOGICAL,INTENT(OUT):: fin
    ! Local variables
-   INTEGER:: i ! counters
-   REAL(KIND=8):: x,y,zeta,r,theta,phi
-   REAL(KIND=8):: px,py,pzeta,pr,ptheta,pphi
    REAL(KIND=8):: mass
    REAL(KIND=8):: mu
    REAL(KIND=8):: v ! dummy variable
@@ -889,37 +884,48 @@ SUBROUTINE TIME_DERIVS_CARTESIAN_DYNDIATOMIC(this,cartCoord,tDeriv,fin)
    REAL(KIND=8),DIMENSION(12),INTENT(OUT):: tDeriv
    LOGICAL,INTENT(OUT):: fin
    ! Local variables
-   INTEGER:: i ! counters
-   REAL(KIND=8),DIMENSION(6):: potSph
-   REAL(KIND=8):: x,y,zeta,r,theta,phi
-   REAL(KIND=8):: px,py,pzeta,pr,ptheta,pphi
-   REAL(KIND=8):: mass
-   REAL(KIND=8):: mu
+   REAL(KIND=8),DIMENSION(6):: sphCoord,cartDeriv,sphDeriv
+   REAL(KIND=8),DIMENSION(6,6):: mtrx_dmolecdatom
+   REAL(KIND=8):: rxy, dx, dy, dz
+   REAL(KIND=8):: mass,nua,nub
    REAL(KIND=8):: v ! dummy variable
    CHARACTER(LEN=*),PARAMETER:: routinename = "TIME_DERIVS_DYNDIATOMIC: "
    ! ROCK THE CASBAH ! ---------------------
-   SELECT CASE(this%thispes%is_allowed(cartCoord(1:6)))
+   sphCoord(:)=from_atomic_to_molecular(cartCoord(1:6))
+   SELECT CASE(this%thispes%is_allowed(sphCoord(:)))
       CASE(.FALSE.)
          fin = .TRUE.
       CASE(.TRUE.)
          fin=.FALSE.
          mass=sum(system_mass(1:2))
-         mu=product(system_mass(1:2))/mass
-         ! Set time derivatives of position
-         tDeriv(1)=cartCoord(7)/mass
-         tDeriv(2)=cartCoord(8)/mass
-         tDeriv(3)=cartCoord(9)/mass
-         tDeriv(4)=cartCoord(10)/mu
-         tDeriv(5)=cartCoord(11)/(mu*(cartCoord(4)**2.D0))
-         tDeriv(6)=(cartCoord(12)/(dsin(cartCoord(5)))**2.d0)/(mu*(cartCoord(4)**2.D0))
-         ! Set time derivatives of momenta
-         CALL this%thispes%GET_V_AND_DERIVS(cartCoord(1:6),v,tDeriv(7:12))
-         tDeriv(7) =-tDeriv(7)
-         tDeriv(8) =-tDeriv(8)
-         tDeriv(9) =-tDeriv(9)
-         tDeriv(10)=-tDeriv(10)+(cartCoord(11)**2.D0+(cartCoord(12)/dsin(cartCoord(5)))**2.D0)/(mu*(cartCoord(4)**3.D0))
-         tDeriv(11)=-tDeriv(11)+((cartCoord(12)/cartCoord(4))**2.D0)*dcos(cartCoord(5))/(mu*(dsin(cartCoord(5)))**3.D0)
-         tDeriv(12)=-tDeriv(12)
+         nua=system_mass(1)/mass
+         nub=system_mass(2)/mass
+         dx=cartCoord(1)-cartCoord(4)
+         dy=cartCoord(2)-cartCoord(5)
+         dz=cartCoord(3)-cartCoord(6)
+         ! Initialize auxiliar expressions
+         rxy=dsqrt(dx**2.d0+dy**2.d0)
+         mtrx_dmolecdatom(:,1)=[nua,0.d0,0.d0,nub,0.d0,0.d0]
+         mtrx_dmolecdatom(:,2)=[0.d0,nua,0.d0,0.d0,nub,0.d0]
+         mtrx_dmolecdatom(:,3)=[0.d0,0.d0,nua,0.d0,0.d0,nub]
+         mtrx_dmolecdatom(1,4)=dx/(sphCoord(4)**2.d0)
+         mtrx_dmolecdatom(2,4)=dy/(sphCoord(4)**2.d0)
+         mtrx_dmolecdatom(3,4)=dz/(sphCoord(4)**2.d0)
+         mtrx_dmolecdatom(1,5)=dx*dz*(rxy**(-1.d0))*(sphCoord(4)**(-1.5d0))
+         mtrx_dmolecdatom(2,5)=dy*dz*(rxy**(-1.d0))*(sphCoord(4)**(-1.5d0))
+         mtrx_dmolecdatom(3,5)=(dz*dz*(sphCoord(4)**(-1.5d0))+1)*(rxy**(-1.d0))
+         mtrx_dmolecdatom(1,6)=-dy/rxy**2.0
+         mtrx_dmolecdatom(2,6)=dx/rxy**2.d0
+         mtrx_dmolecdatom(3,6)=0.d0
+         mtrx_dmolecdatom(4:6,4)=-mtrx_dmolecdatom(1:3,4)
+         mtrx_dmolecdatom(4:6,5)=-mtrx_dmolecdatom(1:3,5)
+         mtrx_dmolecdatom(4:6,6)=-mtrx_dmolecdatom(1:3,6)
+         ! Get Derivatives in cartesian coordinates
+         CALL this%thispes%GET_V_AND_DERIVS(sphCoord(:),v,sphDeriv(:))
+         cartDeriv(:)=matmul(mtrx_dmolecdatom,sphDeriv)
+         ! Set time derivatives
+         tDeriv(1:6)=cartCoord(7:12)/mass
+         tDeriv(7:12)=-cartDeriv(:)
    END SELECT
    RETURN
 END SUBROUTINE TIME_DERIVS_CARTESIAN_DYNDIATOMIC
@@ -1179,7 +1185,7 @@ SUBROUTINE BSSTEP_DYNDIATOMIC(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	INTEGER,PARAMETER :: NMAX = 50
 	INTEGER,PARAMETER :: KMAXX = 8
 	INTEGER,PARAMETER :: IMAX = KMAXX+1
-	CHARACTER(LEN=16), PARAMETER :: routinename = "BSSTEP_DYNDIATOMIC: "
+	CHARACTER(LEN=*),PARAMETER :: routinename = "BSSTEP_DYNDIATOMIC: "
 	! Local variables
 	INTEGER, DIMENSION(IMAX) :: nseq
 	REAL(KIND=8), DIMENSION(KMAXX) :: err

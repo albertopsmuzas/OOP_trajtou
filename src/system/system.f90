@@ -6,6 +6,7 @@
 !! DEBUG_MOD
 !##########################################################
 MODULE SYSTEM_MOD
+! Initial declarations
    USE UNITS_MOD
    USE SURFACE_MOD
    USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
@@ -13,7 +14,6 @@ MODULE SYSTEM_MOD
 #ifdef DEBUG
    USE DEBUG_MOD
 #endif
-! Initial declarations
 IMPLICIT NONE
 ! Global variables
 REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: system_mass
@@ -146,6 +146,52 @@ PURE FUNCTION from_molecular_to_atomic(molcoord) result(atomcoord)
    atomcoord(6)=molcoord(3)-(system_mass(1)/(masa))*molcoord(4)*dcos(molcoord(5))
    RETURN
 END FUNCTION from_molecular_to_atomic
+
+FUNCTION from_molecular_to_atomic_phaseSpace(molcoord) result(atomcoord)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   REAL(KIND=8),DIMENSION(12),INTENT(IN):: molcoord
+   ! Dymmy function variable
+   REAL(KIND=8),DIMENSION(12):: atomcoord
+   ! Local
+   REAL(KIND=8):: masa
+   REAL(KIND=8):: nua,nub
+   REAL(KIND=8),DIMENSION(6,6):: mtrx
+   DATA mtrx(:,1)/1.d0,0.d0,0.d0,1.d0,0.d0,0.d0/
+   DATA mtrx(:,2)/0.d0,1.d0,0.d0,0.d0,1.d0,0.d0/
+   DATA mtrx(:,3)/0.d0,0.d0,1.d0,0.d0,0.d0,1.d0/
+   DATA mtrx(:,6)/0.d0,0.d0,0.d0,0.d0,0.d0,0.d0/
+   ! Run section
+   masa=sum(system_mass(:))
+   nua=system_mass(1)/masa
+   nub=system_mass(2)/masa
+   ! Transformation of position coordinates
+   atomcoord(1)=molcoord(1)+(system_mass(2)/(masa))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(2)=molcoord(2)+(system_mass(2)/(masa))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(3)=molcoord(3)+(system_mass(2)/(masa))*molcoord(4)*dcos(molcoord(5))
+   atomcoord(4)=molcoord(1)-(system_mass(1)/(masa))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(5)=molcoord(2)-(system_mass(1)/(masa))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(6)=molcoord(3)-(system_mass(1)/(masa))*molcoord(4)*dcos(molcoord(5))
+   ! Transformation matrix for momenta
+   mtrx(1,4)=dsin(molcoord(5))*dcos(molcoord(6))/nua
+   mtrx(2,4)=dsin(molcoord(5))*dsin(molcoord(6))/nua
+   mtrx(3,4)=dcos(molcoord(5))/nua
+   mtrx(1,5)=dcos(molcoord(5))*dcos(molcoord(6))/(nua*molcoord(4))
+   mtrx(2,5)=dcos(molcoord(5))*dsin(molcoord(6))/(nua*molcoord(4))
+   mtrx(3,5)=dsin(molcoord(5))/(nua*molcoord(4))
+   SELECT CASE(dsin(molcoord(5)) /= 0.d0)
+       CASE(.true.)
+          mtrx(1,6)=-dsin(molcoord(6))/(nua*dsin(molcoord(5)))
+          mtrx(2,6)=dcos(molcoord(6))/(nua*dsin(molcoord(5)))
+          mtrx(3,6)=0.d0
+          mtrx(4:6,4:6)=-mtrx(1:3,1:3)
+       CASE(.false.)
+          ! do nothing
+   END SELECT
+   atomcoord(7:12)=matmul(mtrx,molcoord(7:12))
+   RETURN
+END FUNCTION from_molecular_to_atomic_phaseSpace
 !###########################################################
 ! FUNCTION: from_atomic_to_molecular
 !###########################################################
