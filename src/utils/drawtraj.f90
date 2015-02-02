@@ -110,7 +110,7 @@ SUBROUTINE DRAW_DRAWTRAJ (this,order,dynamicsfilename,outputfilename)
    READ(runit,*) ! dummy line
    READ(runit,*) ! dummy line
    i=0
-   READ(runit,*) dummy(1:6),init_xcm,dummy(7:15),xa,xb 
+   READ(runit,*) dummy(1:7),init_xcm,dummy(7:15),xa,xb
    WRITE(wunit,*) npattern+2
    WRITE(wunit,*) 
    CALL system_surface%PRINT_PATTERN(wunit,order,this%format_out)
