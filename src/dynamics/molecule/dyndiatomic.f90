@@ -481,9 +481,13 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       ! Let's obtain the potential value for this configuration
       CALL this%thispes%GET_V_AND_DERIVS(molec_dofs(1:6),v,dummy)
       Ecm = (molec_dofs(7)**2.D0+molec_dofs(8)**2.D0+molec_dofs(9)**2.D0)/(2.D0*masa)
-      L2=molec_dofs(11)**2.d0+(molec_dofs(12)/dsin(molec_dofs(5)))**2.d0
-      Eint= molec_dofs(10)**2.D0+L2/(molec_dofs(4)**2.d0)
-      Eint= Eint/(2.D0*mu)
+      SELECT CASE(dsin(molec_dofs(5))==0.d0)
+         CASE(.true.)
+            L2=molec_dofs(11)**2.d0
+         CASE(.false.)
+            L2=molec_dofs(11)**2.d0+(molec_dofs(12)/dsin(molec_dofs(5)))**2.d0
+      END SELECT
+      Eint=(molec_dofs(10)**2.D0+L2/(molec_dofs(4)**2.d0))/(2.d0*mu)
       E=Ecm+Eint+v
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
@@ -656,7 +660,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             dt = dt_next
             SELECT CASE((this%nfollow.NE.0).AND.(in_list))
                CASE(.TRUE.)
-                  CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecule%r,atomiccoord)
+                  atomiccoord(:)=from_molecular_to_atomic(molecule%r(:))
                   WRITE(this%wufo,*) t,dt_did,molecule%E,molecule%Ecm,&
                      molecule%Eint,v,L2,molecule%r(:),molecule%p(:),atomiccoord
                CASE(.FALSE.)
@@ -818,18 +822,18 @@ END SUBROUTINE FILE_FOLLOWTRAJ_DYNDIATOMIC
 !# SUBROUTINE : TIME_DERIVS_DYNDIATOMIC ########################
 !###############################################################
 !> @brief
-!! Gives dzdt at z and t values from Hamilton equations of motion
+!! Gives time derivatives from Hamilton equations of motion
 !
 !> @param[in] this - Provides some data
-!> @param[in] z - array of positions and momenta. z(1:3) -> positions, z(4:6) -> momenta 
-!> @param[out] dzdt - time derivatives of position and momenta
+!> @param[in] shpCoord - array of positions and momenta in spherical coordinates
+!> @param[out] tDeriv - time derivatives of position and momenta
 !> @param[out] fin - controls errors
 !--------------------------------------------------------------
-SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC(this,PhSpace_sph,tDeriv,fin)
+SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC(this,sphCoord,tDeriv,fin)
    IMPLICIT NONE
    ! I/O variables
    CLASS(DynDiatomic),INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(12),INTENT(IN):: PhSpace_sph
+   REAL(KIND=8),DIMENSION(12),INTENT(IN):: sphCoord
    REAL(KIND=8),DIMENSION(12),INTENT(OUT):: tDeriv
    LOGICAL,INTENT(OUT):: fin
    ! Local variables
@@ -841,7 +845,7 @@ SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC(this,PhSpace_sph,tDeriv,fin)
    REAL(KIND=8):: v ! dummy variable
    CHARACTER(LEN=*),PARAMETER:: routinename = "TIME_DERIVS_DYNDIATOMIC: "
    ! ROCK THE CASBAH ! ---------------------
-   SELECT CASE(this%thispes%is_allowed(PhSpace_sph(1:6)))
+   SELECT CASE(this%thispes%is_allowed(sphCoord(1:6)))
       CASE(.FALSE.)
          fin = .TRUE.
       CASE(.TRUE.)
@@ -849,23 +853,76 @@ SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC(this,PhSpace_sph,tDeriv,fin)
          mass=sum(system_mass(1:2))
          mu=product(system_mass(1:2))/mass
          ! Set time derivatives of position
-         tDeriv(1)=PhSpace_sph(7)/mass
-         tDeriv(2)=PhSpace_sph(8)/mass
-         tDeriv(3)=PhSpace_sph(9)/mass
-         tDeriv(4)=PhSpace_sph(10)/mu
-         tDeriv(5)=PhSpace_sph(11)/(mu*(PhSpace_sph(4)**2.D0))
-         tDeriv(6)=PhSpace_sph(12)/(mu*(PhSpace_sph(4)*dsin(PhSpace_sph(5))**2.D0))
+         tDeriv(1)=sphCoord(7)/mass
+         tDeriv(2)=sphCoord(8)/mass
+         tDeriv(3)=sphCoord(9)/mass
+         tDeriv(4)=sphCoord(10)/mu
+         tDeriv(5)=sphCoord(11)/(mu*(sphCoord(4)**2.D0))
+         tDeriv(6)=(sphCoord(12)/(dsin(sphCoord(5)))**2.d0)/(mu*(sphCoord(4)**2.D0))
          ! Set time derivatives of momenta
-         CALL this%thispes%GET_V_AND_DERIVS(PhSpace_sph(1:6),v,tDeriv(7:12))
+         CALL this%thispes%GET_V_AND_DERIVS(sphCoord(1:6),v,tDeriv(7:12))
          tDeriv(7) =-tDeriv(7)
          tDeriv(8) =-tDeriv(8)
          tDeriv(9) =-tDeriv(9)         
-         tDeriv(10)=-tDeriv(10)+(PhSpace_sph(11)**2.D0+(PhSpace_sph(12)/dsin(PhSpace_sph(5)))**2.D0)/(mu*(PhSpace_sph(4)**3.D0))
-         tDeriv(11)=-tDeriv(11)+((PhSpace_sph(12)/PhSpace_sph(4))**2.D0)*dcos(PhSpace_sph(5))/(mu*dsin(PhSpace_sph(5))**3.D0)
+         tDeriv(10)=-tDeriv(10)+(sphCoord(11)**2.D0+(sphCoord(12)/dsin(sphCoord(5)))**2.D0)/(mu*(sphCoord(4)**3.D0))
+         tDeriv(11)=-tDeriv(11)+((sphCoord(12)/sphCoord(4))**2.D0)*dcos(sphCoord(5))/(mu*(dsin(sphCoord(5)))**3.D0)
          tDeriv(12)=-tDeriv(12)
    END SELECT
    RETURN
 END SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC
+!###############################################################
+!# SUBROUTINE : TIME_DERIVS_CARTESIAN_DYNDIATOMIC ##############
+!###############################################################
+!> @brief
+!! Gives time derivatives from Hamilton equations of motion
+!
+!> @param[in] this - Provides some data
+!> @param[in] cartCoord - array of positions and momenta in cartesian coordinates
+!> @param[out] tDeriv - time derivatives of position and momenta
+!> @param[out] fin - controls errors
+!--------------------------------------------------------------
+SUBROUTINE TIME_DERIVS_CARTESIAN_DYNDIATOMIC(this,cartCoord,tDeriv,fin)
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(DynDiatomic),INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(12),INTENT(IN):: cartCoord
+   REAL(KIND=8),DIMENSION(12),INTENT(OUT):: tDeriv
+   LOGICAL,INTENT(OUT):: fin
+   ! Local variables
+   INTEGER:: i ! counters
+   REAL(KIND=8),DIMENSION(6):: potSph
+   REAL(KIND=8):: x,y,zeta,r,theta,phi
+   REAL(KIND=8):: px,py,pzeta,pr,ptheta,pphi
+   REAL(KIND=8):: mass
+   REAL(KIND=8):: mu
+   REAL(KIND=8):: v ! dummy variable
+   CHARACTER(LEN=*),PARAMETER:: routinename = "TIME_DERIVS_DYNDIATOMIC: "
+   ! ROCK THE CASBAH ! ---------------------
+   SELECT CASE(this%thispes%is_allowed(cartCoord(1:6)))
+      CASE(.FALSE.)
+         fin = .TRUE.
+      CASE(.TRUE.)
+         fin=.FALSE.
+         mass=sum(system_mass(1:2))
+         mu=product(system_mass(1:2))/mass
+         ! Set time derivatives of position
+         tDeriv(1)=cartCoord(7)/mass
+         tDeriv(2)=cartCoord(8)/mass
+         tDeriv(3)=cartCoord(9)/mass
+         tDeriv(4)=cartCoord(10)/mu
+         tDeriv(5)=cartCoord(11)/(mu*(cartCoord(4)**2.D0))
+         tDeriv(6)=(cartCoord(12)/(dsin(cartCoord(5)))**2.d0)/(mu*(cartCoord(4)**2.D0))
+         ! Set time derivatives of momenta
+         CALL this%thispes%GET_V_AND_DERIVS(cartCoord(1:6),v,tDeriv(7:12))
+         tDeriv(7) =-tDeriv(7)
+         tDeriv(8) =-tDeriv(8)
+         tDeriv(9) =-tDeriv(9)
+         tDeriv(10)=-tDeriv(10)+(cartCoord(11)**2.D0+(cartCoord(12)/dsin(cartCoord(5)))**2.D0)/(mu*(cartCoord(4)**3.D0))
+         tDeriv(11)=-tDeriv(11)+((cartCoord(12)/cartCoord(4))**2.D0)*dcos(cartCoord(5))/(mu*(dsin(cartCoord(5)))**3.D0)
+         tDeriv(12)=-tDeriv(12)
+   END SELECT
+   RETURN
+END SUBROUTINE TIME_DERIVS_CARTESIAN_DYNDIATOMIC
 !#########################################################################################
 !# SUBROUTINE: MMID_ATOM #################################################################
 !#########################################################################################

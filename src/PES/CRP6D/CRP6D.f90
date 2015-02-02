@@ -141,12 +141,9 @@ SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
    REAL(KIND=8),DIMENSION(6),INTENT(OUT):: dvdu
    REAL(KIND=8),DIMENSION(6),INTENT(OUT):: atomicx
    ! Local variables
-   REAL(KIND=8):: ma,mb
    REAL(KIND=8):: vcorra,vcorrb
    ! Run section
-   ma=system_mass(1)
-   mb=system_mass(2)
-   CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molecx,atomicx)
+   atomicx(:)=from_molecular_to_atomic(molecx)
    SELECT CASE(this%natomic)
       CASE(1)
          CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),v(1),dvdu(1:3))
@@ -711,90 +708,6 @@ SUBROUTINE RAWINTERPOL_CRP6D(this)
    RETURN
 END SUBROUTINE RAWINTERPOL_CRP6D
 !###########################################################
-!# SUBROUTINE: FROM_MOLECULAR_TO_ATOMIC 
-!###########################################################
-!> @brief
-!! Go from molecular coordinates x,y,z,r,theta,phi to
-!! xa,ya,za,xb,yb,zb
-!-----------------------------------------------------------
-SUBROUTINE FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   REAL(KIND=8),INTENT(IN) :: ma,mb
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: molcoord
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: atomcoord
-   ! Run section
-   atomcoord(1)=molcoord(1)+(mb/(ma+mb))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
-   atomcoord(2)=molcoord(2)+(mb/(ma+mb))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
-   atomcoord(3)=molcoord(3)+(mb/(ma+mb))*molcoord(4)*dcos(molcoord(5))
-   atomcoord(4)=molcoord(1)-(ma/(ma+mb))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
-   atomcoord(5)=molcoord(2)-(ma/(ma+mb))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
-   atomcoord(6)=molcoord(3)-(ma/(ma+mb))*molcoord(4)*dcos(molcoord(5))
-   RETURN
-END SUBROUTINE FROM_MOLECULAR_TO_ATOMIC
-!###########################################################
-!# SUBROUTINE: FROM_ATOMIC_TO_MOLECULAR 
-!###########################################################
-!> @brief
-!! Goes from atomic coordinates xa,ya,za,xb,yb,zb to molecular
-!! coordinates x,y,z,r,theta,phi.
-!> @details
-!! - We have enforced @f$\theta \in [0,\pi]@f$ and @f$\phi \in [0,2\pi)@f$
-!-----------------------------------------------------------
-SUBROUTINE FROM_ATOMIC_TO_MOLECULAR(ma,mb,atomcoord,molcoord)
-   ! Initial declarations
-   IMPLICIT NONE
-   ! I/O variables
-   REAL(KIND=8),INTENT(IN) :: ma,mb
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: atomcoord
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: molcoord
-   ! Local variables
-   ! Run section
-   molcoord(1)=(1.D0/(ma+mb))*(atomcoord(1)*ma+atomcoord(4)*mb)
-   molcoord(2)=(1.D0/(ma+mb))*(atomcoord(2)*ma+atomcoord(5)*mb)
-   molcoord(3)=(1.D0/(ma+mb))*(atomcoord(3)*ma+atomcoord(6)*mb)
-   molcoord(4)=dsqrt((atomcoord(1)-atomcoord(4))**2.D0+&
-      (atomcoord(2)-atomcoord(5))**2.D0+(atomcoord(3)-atomcoord(6))**2.D0)
-   molcoord(5)=dacos((atomcoord(3)-atomcoord(6))/molcoord(4))
-   SELECT CASE(atomcoord(1)>atomcoord(4))
-      CASE(.TRUE.)
-         molcoord(6)=datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(atomcoord(1)<atomcoord(4))
-      CASE(.TRUE.)
-         molcoord(6)=PI+datan((atomcoord(2)-atomcoord(5))/(atomcoord(1)-atomcoord(4)))
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(atomcoord(1)==atomcoord(4))
-      CASE(.TRUE.)
-         ! do nothing
-      CASE(.FALSE.)
-         WRITE(0,*) 'FROM_ATOMIC_TO_MOLECULAR ERR: this message should never be printed'
-         CALL EXIT(1)
-   END SELECT
-   SELECT CASE(atomcoord(2)>atomcoord(5))
-      CASE(.TRUE.)
-         molcoord(6)=PI/2.D0
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(atomcoord(2)<atomcoord(5))
-      CASE(.TRUE.)
-         molcoord(6)=3.D0*PI/2.D0
-         RETURN
-      CASE(.FALSE.)
-         WRITE(0,*) 'FROM_ATOMIC_TO_MOLECULAR ERR: this message should never be printed'
-         CALL EXIT(1)
-   END SELECT
-END SUBROUTINE FROM_ATOMIC_TO_MOLECULAR
-!###########################################################
 !# SUBROUTINE: SMOOTH_CRP6D
 !###########################################################
 !> @brief
@@ -808,14 +721,14 @@ SUBROUTINE SMOOTH_CRP6D(this)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-    CLASS(CRP6D),INTENT(INOUT) :: this
+    CLASS(CRP6D),INTENT(INOUT):: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord,dummy
-   INTEGER(KIND=4) :: nr,nz
-   INTEGER(KIND=4) :: i,j,k,l ! counters
-   CHARACTER(LEN=14),PARAMETER :: routinename="SMOOTH_CRP6D: "
-   REAL(KIND=8) :: newpot
-   REAL(KIND=8),DIMENSION(2) :: atomic_v
+   REAL(KIND=8),DIMENSION(6):: molcoord,atomcoord,dummy
+   INTEGER(KIND=4):: nr,nz
+   INTEGER(KIND=4):: i,j,k,l ! counters
+   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_CRP6D: "
+   REAL(KIND=8):: newpot
+   REAL(KIND=8),DIMENSION(2):: atomic_v
    ! Run section
    DO i = 1, this%nsites ! cycle wyckoff sites
       molcoord(1)=this%wyckoffsite(i)%x
@@ -853,17 +766,15 @@ SUBROUTINE ROUGH_CRP6D(this)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-    CLASS(CRP6D),INTENT(INOUT) :: this
+    CLASS(CRP6D),INTENT(INOUT):: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
-   INTEGER(KIND=4) :: nr,nz
-   INTEGER(KIND=4) :: i,j,k,l ! counters
-   REAL(KIND=8) :: ma,mb
-   CHARACTER(LEN=13),PARAMETER :: routinename="ROUGH_CRP6D: "
-   REAL(KIND=8) :: newpot
+   REAL(KIND=8),DIMENSION(6):: molcoord,atomcoord
+   INTEGER(KIND=4):: nr,nz
+   INTEGER(KIND=4):: i,j,k,l ! counters
+   REAL(KIND=8):: newpot
+   ! Parameters
+   CHARACTER(LEN=*),PARAMETER:: routinename="ROUGH_CRP6D: "
    ! Run section
-   ma=system_mass(1)
-   mb=system_mass(2)
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
          molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
@@ -876,7 +787,7 @@ SUBROUTINE ROUGH_CRP6D(this)
             DO l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
-               CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
+               atomcoord(:)=from_molecular_to_atomic(molcoord)
 #ifdef DEBUG
                CALL DEBUG_WRITE(routinename,"Molecular coords:")
                CALL DEBUG_WRITE(routinename,molcoord)
@@ -924,12 +835,9 @@ SUBROUTINE SMOOTH_EXTRA_CRP6D(this)
    REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
-   REAL(KIND=8) :: ma,mb
    CHARACTER(LEN=20),PARAMETER :: routinename="SMOOTH_EXTRA_CRP6D: "
    REAL(KIND=8) :: newpot
    ! Run section
-   ma=system_mass(1)
-   mb=system_mass(2)
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
          molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
@@ -942,7 +850,7 @@ SUBROUTINE SMOOTH_EXTRA_CRP6D(this)
             DO l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
-               CALL FROM_MOLECULAR_TO_ATOMIC(ma,mb,molcoord,atomcoord)
+               atomcoord(:)=from_molecular_to_atomic(molcoord)
 #ifdef DEBUG
                CALL DEBUG_WRITE(routinename,"Molecular coords:")
                CALL DEBUG_WRITE(routinename,molcoord)

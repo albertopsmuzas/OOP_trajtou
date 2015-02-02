@@ -11,12 +11,11 @@
 PROGRAM molec2atom
 ! Initial declarations
 use DEBUG_MOD, only: VERBOSE_WRITE
-use SYSTEM_MOD, only: INITIALIZE_SYSTEM,system_mass
-use CRP6D_MOD, only: FROM_MOLECULAR_TO_ATOMIC
+use SYSTEM_MOD, only: INITIALIZE_SYSTEM,from_molecular_to_atomic
 IMPLICIT NONE
 ! variables
 CHARACTER(LEN=1024):: auxstring,luafile
-REAL(KIND=8),DIMENSION(6):: molec_coord, atomic_coord
+REAL(KIND=8),DIMENSION(6):: molec_coord
 ! Run yeah, tun
 SELECT CASE(command_argument_count())
    CASE(7)
@@ -41,6 +40,5 @@ CALL INITIALIZE_SYSTEM(trim(luafile))
 CALL VERBOSE_WRITE("***********************************************")
 CALL VERBOSE_WRITE("** FROM MOLECULAR COORDINATES TO ATOMIC ONES **")
 CALL VERBOSE_WRITE("***********************************************")
-CALL FROM_MOLECULAR_TO_ATOMIC(system_mass(1),system_mass(2),molec_coord,atomic_coord)
-WRITE(*,*) atomic_coord(:)
+WRITE(*,*) from_molecular_to_atomic(molec_coord(:))
 END PROGRAM molec2atom

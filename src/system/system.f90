@@ -120,4 +120,64 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
 #endif
    RETURN
 END SUBROUTINE INITIALIZE_SYSTEM
+!###########################################################
+! FUNCTION: from_molecular_to_atomic
+!###########################################################
+!> @brief
+!! Go from molecular coordinates x,y,z,r,theta,phi to
+!! xa,ya,za,xb,yb,zb
+!-----------------------------------------------------------
+PURE FUNCTION from_molecular_to_atomic(molcoord) result(atomcoord)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   REAL(KIND=8),DIMENSION(6),INTENT(IN):: molcoord
+   ! Dymmy function variable
+   REAL(KIND=8),DIMENSION(6):: atomcoord
+   ! Local
+   REAL(KIND=8):: masa
+   ! Run section
+   masa=sum(system_mass(:))
+   atomcoord(1)=molcoord(1)+(system_mass(2)/(masa))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(2)=molcoord(2)+(system_mass(2)/(masa))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(3)=molcoord(3)+(system_mass(2)/(masa))*molcoord(4)*dcos(molcoord(5))
+   atomcoord(4)=molcoord(1)-(system_mass(1)/(masa))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(5)=molcoord(2)-(system_mass(1)/(masa))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(6)=molcoord(3)-(system_mass(1)/(masa))*molcoord(4)*dcos(molcoord(5))
+   RETURN
+END FUNCTION from_molecular_to_atomic
+!###########################################################
+! FUNCTION: from_atomic_to_molecular
+!###########################################################
+!> @brief
+!! Goes from atomic coordinates xa,ya,za,xb,yb,zb to molecular
+!! coordinates x,y,z,r,theta,phi.
+!> @details
+!! - We have enforced @f$\theta \in [0,\pi]@f$ and @f$\phi \in [0,2\pi)@f$
+!-----------------------------------------------------------
+PURE FUNCTION from_atomic_to_molecular(atomcoord) result(molcoord)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   REAL(KIND=8),DIMENSION(6),INTENT(IN):: atomcoord
+   ! Dummy function variable
+   REAL(KIND=8),DIMENSION(6):: molcoord
+   ! Local variables
+   REAL(KIND=8):: masa
+   ! Run section
+   masa=sum(system_mass(:))
+   molcoord(1)=(1.D0/(masa))*(atomcoord(1)*system_mass(1)+atomcoord(4)*system_mass(2))
+   molcoord(2)=(1.D0/(masa))*(atomcoord(2)*system_mass(1)+atomcoord(5)*system_mass(2))
+   molcoord(3)=(1.D0/(masa))*(atomcoord(3)*system_mass(1)+atomcoord(6)*system_mass(2))
+   molcoord(4)=dsqrt((atomcoord(1)-atomcoord(4))**2.D0+&
+      (atomcoord(2)-atomcoord(5))**2.D0+(atomcoord(3)-atomcoord(6))**2.D0)
+   molcoord(5)=dacos((atomcoord(3)-atomcoord(6))/molcoord(4))
+   molcoord(6)=datan2((atomcoord(2)-atomcoord(5)),(atomcoord(1)-atomcoord(4)))
+   SELECT CASE(molcoord(6)<0.d0)
+      CASE(.true.)
+         molcoord(6)=molcoord(6)+2.d0*pi
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+END FUNCTION from_atomic_to_molecular
 END MODULE SYSTEM_MOD
