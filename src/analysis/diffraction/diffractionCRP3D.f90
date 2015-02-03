@@ -1,7 +1,6 @@
 MODULE DIFFRACTIONCRP3D_MOD
 use SYSTEM_MOD
 use INITATOM_MOD, only: Initatom
-use SURFACE_MOD, only: Surface
 use CRP3D_MOD, only: CRP3D
 #ifdef DEBUG
 use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
@@ -25,7 +24,6 @@ END TYPE PeakCRP3D
 !----------------------------
 TYPE :: Allowed_peaksCRP3D
    PRIVATE
-   TYPE(Surface):: surf
    TYPE(Initatom):: inicond
    TYPE(CRP3D):: thispes
    REAL(KIND=8):: E
@@ -40,17 +38,15 @@ TYPE :: Allowed_peaksCRP3D
 END TYPE Allowed_peaksCRP3D
 !=======================================================
 CONTAINS
-SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP3D(this,surfname,inicondname)
+SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP3D(this)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Allowed_peaksCRP3D),INTENT(OUT):: this
-   CHARACTER(LEN=*),INTENT(IN) :: surfname,inicondname
    ! Local variables
    ! Run section
-   CALL this%surf%INITIALIZE(surfname)
-   CALL this%thispes%INITIALIZE("INcrp3d.inp")
-   CALL this%inicond%INITIALIZE(inicondname)
+   CALL this%thispes%INITIALIZE()
+   CALL this%inicond%INITIALIZE()
    CALL this%inicond%GENERATE_TRAJS(this%thispes)
    RETURN
 END SUBROUTINE 
@@ -85,8 +81,8 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
    REAL(KIND=8) :: beta ! angle of incident beam projected on unit cell surface
    REAL(KIND=8) :: theta_in ! incidence angle measured from surface plane
 	! Pointer adjudication
-	a=this%surf%norm_s1
-	b=this%surf%norm_s2
+	a=system_surface%norm_s1
+	b=system_surface%norm_s2
 	beta=this%inicond%vpar_angle%getvalue()
 	theta_in=this%inicond%vz_angle%getvalue()
 	! FIRE IN THE HOLE>! ......................
@@ -95,7 +91,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
 #endif
 	E = this%inicond%E_norm%getvalue()/(DSIN(theta_in)**2.D0)
 	this%E = E
-	gamma = DACOS(DOT_PRODUCT(this%surf%s1,this%surf%s2)/(a*b))
+	gamma = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
    mass=system_mass(1)
 	pinit_par = DSQRT(2.D0*mass*(E - this%inicond%E_norm%getvalue()))
 	kinit_par(1) = pinit_par*a*DCOS(beta)/(2.D0*PI)
@@ -281,13 +277,13 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
 	REAL(KIND=8) :: a, b ! length of surface main axis
 	! Pointers assignation
 	beta=this%inicond%vpar_angle%getvalue()
-	a=this%surf%norm_s1
-	b=this%surf%norm_s2
+	a=system_surface%norm_s1
+	b=system_surface%norm_s2
 	! RUN SECTION -------------------------
 #ifdef DEBUG
 	CALL VERBOSE_WRITE(routinename, "Starting job")
 #endif
-	gamma = DACOS(DOT_PRODUCT(this%surf%s1,this%surf%s2)/(a*b))
+	gamma = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
 	to_rec_space(1,1) = a/(2.D0*PI)
 	to_rec_space(1,2) = 0.D0
 	to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)

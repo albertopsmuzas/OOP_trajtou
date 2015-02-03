@@ -78,8 +78,8 @@ dynamics.o: units.o link_PES.o inicond.o link_integrator.o
 dynatom.o: debug.o dynamics.o initatom.o system.o
 dyndiatomic.o: debug.o dynamics.o initdiatomic.o system.o
 # Analysis -------------------------------------------------------------------------------
-diffractionCRP3D.o: debug.o surface.o initatom.o CRP3D.o system.o
-diffractionCRP6D.o: debug.o surface.o initdiatomic.o CRP6D.o system.o
+diffractionCRP3D.o: debug.o  initatom.o CRP3D.o system.o
+diffractionCRP6D.o: debug.o  initdiatomic.o CRP6D.o system.o
 # Integrator -------------------------------------------------------------------------------
 link_integrator.o: integrator_o1.o bulirsch_stoer.o
 integrator_o1.o:
