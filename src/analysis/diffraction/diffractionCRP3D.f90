@@ -306,6 +306,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
          CASE(.TRUE.)
             ! do nothing
          CASE(.FALSE.)
+            IF(ioerr/=-1) WRITE(*,*) routinename//'Unexpected error in scattered trajs file. Err Code: ',ioerr
             EXIT
       END SELECT
       IF (stat.EQ."Scattered") THEN

@@ -268,7 +268,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	REAL(KIND=8), DIMENSION(2) :: dp ! variation of momentum
 	REAL(KIND=8), DIMENSION(2) :: dk ! variation of momentum in rec. space coord
 	CHARACTER(LEN=10) :: stat
-	CHARACTER(LEN=23), PARAMETER :: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
+	CHARACTER(LEN=*), PARAMETER :: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
    INTEGER(KIND=4) :: ioerr
 	! Pointer definitions
 	REAL(KIND=8) :: beta ! angle between incident parallel momentum respect to u1 (surface vector)
@@ -303,6 +303,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
          CASE(.TRUE.)
             ! do nothing
          CASE(.FALSE.)
+            IF(ioerr/=-1) WRITE(*,*) routinename//'Unexpected error in scattered trajs file. Err Code: ',ioerr
             EXIT
       END SELECT
       IF (stat.EQ."Scattered") THEN
