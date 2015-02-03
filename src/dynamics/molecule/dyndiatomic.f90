@@ -408,13 +408,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       ! Storing atomic DOF's in only one array
       molec_dofs(1:6)=molecule%r(1:6)
       molec_dofs(7:12)=molecule%p(1:6)
-      SELECT CASE(dsin(molec_dofs(5))<=0.D0) ! when sinus(theta) <= 0
-         CASE(.TRUE.)
-            molec_dofs(6)=0.D0 ! phi cannot be defined
-            molec_dofs(12)=0.D0 ! neither its conjugate momentum
-         CASE(.FALSE.)
-            ! Usual definition of coordinates
-      END SELECT
+      molec_dofs(:)=correctSphPoint(molec_dofs)
       ! Initial values for the derivatives
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Molecular DOFS : ",molec_dofs)
@@ -458,6 +452,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
 #endif
       ! Call integrator
       CALL this%BSSTEP(molec_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
+      molec_dofs(:)=correctSphPoint(molec_dofs)
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Atomic DOFs after integration: ",molec_dofs)
 #endif
@@ -853,7 +848,12 @@ SUBROUTINE TIME_DERIVS_SPHERICAL_DYNDIATOMIC(this,sphCoord,tDeriv,fin)
          tDeriv(3)=sphCoord(9)/mass
          tDeriv(4)=sphCoord(10)/mu
          tDeriv(5)=sphCoord(11)/(mu*(sphCoord(4)**2.D0))
-         tDeriv(6)=(sphCoord(12)/(dsin(sphCoord(5)))**2.d0)/(mu*(sphCoord(4)**2.D0))
+         SELECT CASE(dsin(sphCoord(5))==0.d0)
+            CASE(.true.)
+               tDeriv(6)=0.d0
+            CASE(.false.)
+               tDeriv(6)=(sphCoord(12)/(dsin(sphCoord(5)))**2.d0)/(mu*(sphCoord(4)**2.D0))
+         END SELECT
          ! Set time derivatives of momenta
          CALL this%thispes%GET_V_AND_DERIVS(sphCoord(1:6),v,tDeriv(7:12))
          tDeriv(7) =-tDeriv(7)
@@ -917,9 +917,7 @@ SUBROUTINE TIME_DERIVS_CARTESIAN_DYNDIATOMIC(this,cartCoord,tDeriv,fin)
          mtrx_dmolecdatom(1,6)=-dy/rxy**2.0
          mtrx_dmolecdatom(2,6)=dx/rxy**2.d0
          mtrx_dmolecdatom(3,6)=0.d0
-         mtrx_dmolecdatom(4:6,4)=-mtrx_dmolecdatom(1:3,4)
-         mtrx_dmolecdatom(4:6,5)=-mtrx_dmolecdatom(1:3,5)
-         mtrx_dmolecdatom(4:6,6)=-mtrx_dmolecdatom(1:3,6)
+         mtrx_dmolecdatom(4:6,4:6)=-mtrx_dmolecdatom(1:3,4:6)
          ! Get Derivatives in cartesian coordinates
          CALL this%thispes%GET_V_AND_DERIVS(sphCoord(:),v,sphDeriv(:))
          cartDeriv(:)=matmul(mtrx_dmolecdatom,sphDeriv)
@@ -1181,9 +1179,9 @@ SUBROUTINE BSSTEP_DYNDIATOMIC(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	REAL(KIND=8),PARAMETER :: TINY = 1.D-30 
 	REAL(KIND=8),PARAMETER :: SCALMX = 0.1D0
 	REAL(KIND=8),PARAMETER :: REDMIN = 0.7D0
-	REAL(KIND=8),PARAMETER :: REDMAX = 1.D-5
+	REAL(KIND=8),PARAMETER :: REDMAX = 1.D-10
 	INTEGER,PARAMETER :: NMAX = 50
-	INTEGER,PARAMETER :: KMAXX = 8
+	INTEGER,PARAMETER :: KMAXX = 11
 	INTEGER,PARAMETER :: IMAX = KMAXX+1
 	CHARACTER(LEN=*),PARAMETER :: routinename = "BSSTEP_DYNDIATOMIC: "
 	! Local variables
@@ -1197,7 +1195,7 @@ SUBROUTINE BSSTEP_DYNDIATOMIC(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	LOGICAL :: first,reduct
 	SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
 	DATA first/.TRUE./,epsold/-1./
-	DATA nseq /2,4,6,8,10,12,14,16,18/
+	DATA nseq /2,4,6,8,10,12,14,16,18,20,22,24/
 	! HEY, HO! LET'S GO !!! -----------------------------
 	switch = .FALSE.
 	IF (eps.NE.epsold) THEN !A new tolerance, so reinitialize.
@@ -1301,5 +1299,6 @@ SUBROUTINE BSSTEP_DYNDIATOMIC(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	END IF
 	RETURN
 END SUBROUTINE BSSTEP_DYNDIATOMIC
+
 
 END MODULE DYNDIATOMIC_MOD

@@ -30,7 +30,7 @@ debug.o:
 maths.o:
 units.o: debug.o 
 surface.o: debug.o units.o maths.o
-system.o: debug.o units.o surface.o
+system.o: debug.o units.o surface.o maths.o
 # Potential energy surfaces section -----------------------------------------------------
 link_PES.o: PES.o CRP3D.o CRP6D.o
 PES.o: surface.o

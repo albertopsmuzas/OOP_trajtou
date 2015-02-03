@@ -120,7 +120,7 @@ SUBROUTINE DRAW_DRAWTRAJ (this,order,dynamicsfilename,outputfilename)
       i=i+1
       surf_aux=system_surface
       ! read section
-      READ(runit,*,iostat=ioerr) dummy(1:6),xcm,dummy(7:15),xa,xb 
+      READ(runit,*,iostat=ioerr) dummy(1:7),xcm,dummy(7:15),xa,xb
       dx(1:2)=xcm(1:2)-init_xcm(1:2)
       ! Check if EOF reached
       SELECT CASE(ioerr/=0)

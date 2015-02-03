@@ -7,12 +7,13 @@
 !##########################################################
 MODULE SYSTEM_MOD
 ! Initial declarations
-   USE UNITS_MOD
-   USE SURFACE_MOD
-   USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
-   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
+   use UNITS_MOD
+   use SURFACE_MOD
+   use MATHS_MOD, only: INV_MTRX
+   use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
+   use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #ifdef DEBUG
-   USE DEBUG_MOD
+   use DEBUG_MOD
 #endif
 IMPLICIT NONE
 ! Global variables
@@ -177,15 +178,23 @@ FUNCTION from_molecular_to_atomic_phaseSpace(molcoord) result(atomcoord)
    mtrx(1,4)=dsin(molcoord(5))*dcos(molcoord(6))/nua
    mtrx(2,4)=dsin(molcoord(5))*dsin(molcoord(6))/nua
    mtrx(3,4)=dcos(molcoord(5))/nua
+   mtrx(4,4)=-dsin(molcoord(5))*dcos(molcoord(6))/nub
+   mtrx(5,4)=-dsin(molcoord(5))*dsin(molcoord(6))/nub
+   mtrx(6,4)=-dcos(molcoord(5))/nub
    mtrx(1,5)=dcos(molcoord(5))*dcos(molcoord(6))/(nua*molcoord(4))
    mtrx(2,5)=dcos(molcoord(5))*dsin(molcoord(6))/(nua*molcoord(4))
    mtrx(3,5)=dsin(molcoord(5))/(nua*molcoord(4))
+   mtrx(4,5)=-dcos(molcoord(5))*dcos(molcoord(6))/(nub*molcoord(4))
+   mtrx(5,5)=-dcos(molcoord(5))*dsin(molcoord(6))/(nub*molcoord(4))
+   mtrx(6,5)=-dsin(molcoord(5))/(nub*molcoord(4))
    SELECT CASE(dsin(molcoord(5)) /= 0.d0)
        CASE(.true.)
           mtrx(1,6)=-dsin(molcoord(6))/(nua*dsin(molcoord(5)))
           mtrx(2,6)=dcos(molcoord(6))/(nua*dsin(molcoord(5)))
           mtrx(3,6)=0.d0
-          mtrx(4:6,4:6)=-mtrx(1:3,1:3)
+          mtrx(4,6)=dsin(molcoord(6))/(nub*dsin(molcoord(5)))
+          mtrx(5,6)=-dcos(molcoord(6))/(nub*dsin(molcoord(5)))
+          mtrx(6,6)=0.d0
        CASE(.false.)
           ! do nothing
    END SELECT
@@ -226,4 +235,110 @@ PURE FUNCTION from_atomic_to_molecular(atomcoord) result(molcoord)
          ! do nothing
    END SELECT
 END FUNCTION from_atomic_to_molecular
+
+FUNCTION from_atomic_to_molecular_phaseSpace(atomcoord) result(molcoord)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   REAL(KIND=8),DIMENSION(12),INTENT(IN):: atomcoord
+   ! Dummy function variable
+   REAL(KIND=8),DIMENSION(12):: molcoord
+   ! Local variables
+   REAL(KIND=8):: masa,nua,nub
+   REAL(KIND=8),DIMENSION(6,6):: mtrx, invMtrx
+   DATA mtrx(:,1)/1.d0,0.d0,0.d0,1.d0,0.d0,0.d0/
+   DATA mtrx(:,2)/0.d0,1.d0,0.d0,0.d0,1.d0,0.d0/
+   DATA mtrx(:,3)/0.d0,0.d0,1.d0,0.d0,0.d0,1.d0/
+   DATA mtrx(:,6)/0.d0,0.d0,0.d0,0.d0,0.d0,0.d0/
+   ! Run section
+   masa=sum(system_mass(:))
+   nua=system_mass(1)/masa
+   nub=system_mass(2)/masa
+   !
+   molcoord(1)=(1.D0/(masa))*(atomcoord(1)*system_mass(1)+atomcoord(4)*system_mass(2))
+   molcoord(2)=(1.D0/(masa))*(atomcoord(2)*system_mass(1)+atomcoord(5)*system_mass(2))
+   molcoord(3)=(1.D0/(masa))*(atomcoord(3)*system_mass(1)+atomcoord(6)*system_mass(2))
+   molcoord(4)=dsqrt((atomcoord(1)-atomcoord(4))**2.D0+&
+      (atomcoord(2)-atomcoord(5))**2.D0+(atomcoord(3)-atomcoord(6))**2.D0)
+   molcoord(5)=dacos((atomcoord(3)-atomcoord(6))/molcoord(4))
+   molcoord(6)=datan2((atomcoord(2)-atomcoord(5)),(atomcoord(1)-atomcoord(4)))
+   SELECT CASE(molcoord(6)<0.d0)
+      CASE(.true.)
+         molcoord(6)=molcoord(6)+2.d0*pi
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+   mtrx(1,4)=dsin(molcoord(5))*dcos(molcoord(6))/nua
+   mtrx(2,4)=dsin(molcoord(5))*dsin(molcoord(6))/nua
+   mtrx(3,4)=dcos(molcoord(5))/nua
+   mtrx(4,4)=-dsin(molcoord(5))*dcos(molcoord(6))/nub
+   mtrx(5,4)=-dsin(molcoord(5))*dsin(molcoord(6))/nub
+   mtrx(6,4)=-dcos(molcoord(5))/nub
+
+   mtrx(1,5)=dcos(molcoord(5))*dcos(molcoord(6))/(nua*molcoord(4))
+   mtrx(2,5)=dcos(molcoord(5))*dsin(molcoord(6))/(nua*molcoord(4))
+   mtrx(3,5)=dsin(molcoord(5))/(nua*molcoord(4))
+   mtrx(4,5)=-dcos(molcoord(5))*dcos(molcoord(6))/(nub*molcoord(4))
+   mtrx(5,5)=-dcos(molcoord(5))*dsin(molcoord(6))/(nub*molcoord(4))
+   mtrx(6,5)=-dsin(molcoord(5))/(nub*molcoord(4))
+   SELECT CASE(dsin(molcoord(5)) /= 0.d0)
+       CASE(.true.)
+          mtrx(1,6)=-dsin(molcoord(6))/(nua*dsin(molcoord(5)))
+          mtrx(2,6)=dcos(molcoord(6))/(nua*dsin(molcoord(5)))
+          mtrx(3,6)=0.d0
+          mtrx(4,6)=dsin(molcoord(6))/(nub*dsin(molcoord(5)))
+          mtrx(5,6)=-dcos(molcoord(6))/(nub*dsin(molcoord(5)))
+          mtrx(6,6)=0.d0
+       CASE(.false.)
+          ! do nothing
+   END SELECT
+   CALL INV_MTRX(6,mtrx,invMtrx)
+   write(*,*) 'patata: ',invMtrx
+   molcoord(7:12)=matmul(invMtrx,atomcoord(7:12))
+   RETURN
+END FUNCTION from_atomic_to_molecular_phaseSpace
+!###############################################################################################
+!# FUNCTION : correctSphPoint ##################################################################
+!###############################################################################################
+!> @brief
+!! Calculates the correct definition of a given point in phase space restricted to system DOFs.
+!
+!> @param[in] phaseSpacePoint(12) - real(kind=8) Point in phase space. Assumed in spherical coordinates
+!------------------------------------------------------------------------------------------------
+FUNCTION correctSphPoint(phaseSpacePoint) result(goodPoint)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   REAL(KIND=8),INTENT(IN),DIMENSION(12):: phaseSpacePoint
+   ! Dummy function variable
+   REAL(KIND=8),DIMENSION(12):: goodPoint
+   CHARACTER(LEN=*),PARAMETER:: routinename='correctSphPoint: '
+   ! Run section
+   goodPoint(:)=phaseSpacePoint(:)
+   ! Theta switches
+   SELECT CASE(dsin(goodPoint(5))<0.d0)
+      CASE(.true.)
+#ifdef DEBUG
+         WRITE(0,*) routinename//'Unexpected negative theta sinus. Reconsider this function'
+#endif
+         CALL EXIT(1)
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(dsin(goodPoint(5))==0.d0)
+      CASE(.true.) ! phi angle and momenta cannot be deffined. Set them to zero
+         goodPoint(6)=0.d0
+         goodPoint(12)=0.d0
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+   ! Phi Switch
+   SELECT CASE(goodPoint(6)<0)
+      CASE(.true.)
+         goodPoint(6)=goodPoint(6)+2.d0*pi
+      CASE(.false.)
+         ! do nothing
+   END SELECT
+END FUNCTION correctSphPoint
+
 END MODULE SYSTEM_MOD
