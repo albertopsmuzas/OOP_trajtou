@@ -73,7 +73,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	REAL(KIND=8) :: Theta_out ! deflection angle respect to surface plane
     REAL(KIND=8) :: mass
 	INTEGER(KIND=4) :: i, k ! Counters
-	INTEGER(KIND=4) :: order
+	INTEGER(KIND=4) :: order, realorder
 	INTEGER(KIND=4) :: count_peaks
 	INTEGER(KIND=4), DIMENSION(2) :: g ! (n,m) vector
 	CHARACTER(LEN=19), PARAMETER :: routinename = "SET_ALLOWED_PEAKS: "
@@ -144,7 +144,8 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
       END SELECT
 		Phi = DATAN(p(2)/p(3))
 		Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-		WRITE(11,*) count_peaks, order, g, Psi, Phi, Theta_out
+        CALL SET_REALORDER_CUAD(order,g,realorder)
+		WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
 	END IF
 	DEALLOCATE(allowed)
 	DO
@@ -165,7 +166,8 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Psi = DATAN(p(2)/p(1))
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-				WRITE(11,*) count_peaks, order, g, Psi, Phi, Theta_out
+                CALL SET_REALORDER_CUAD(order,g,realorder)
+				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		!----------------------
@@ -182,7 +184,8 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Psi = DATAN(p(2)/p(1))
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-				WRITE(11,*) count_peaks, order, g, Psi, Phi, Theta_out
+                CALL SET_REALORDER_CUAD(order,g,realorder)
+				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		!----
@@ -199,7 +202,8 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Psi = DATAN(p(2)/p(1))
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-				WRITE(11,*) count_peaks, order, g, Psi, Phi, Theta_out
+                CALL SET_REALORDER_CUAD(order,g,realorder)
+				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		!----
@@ -216,7 +220,8 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Psi = DATAN(p(2)/p(1))
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-				WRITE(11,*) count_peaks, order, g, Psi, Phi, Theta_out
+                CALL SET_REALORDER_CUAD(order,g,realorder)
+				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		DO i = 1, 8*order
@@ -442,5 +447,61 @@ SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
    CLOSE(12)
    RETURN
 END SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
+!###########################################################
+!# SUBROUTINE: SET_REALORDER_CUAD
+!###########################################################
+!> @brief
+!! Given environment order and peak labels, sets real diffraction
+!! order.
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date Nov/2014
+!> @version 1.0
+!-----------------------------------------------------------
+SUBROUTINE SET_REALORDER_CUAD(order,g,realorder)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   INTEGER(KIND=4),INTENT(IN) :: order
+   INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: g
+   INTEGER(KIND=4),INTENT(OUT) :: realorder
+   ! Run section
+   SELECT CASE(g(1)==0 .AND. g(2)==0)
+      CASE(.TRUE.)
+         realorder=order
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(g(1)==0 .OR. g(2)==0)
+      CASE(.TRUE.)
+         realorder=order*(order+1)/2
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(abs(g(1))==abs(g(2)))
+      CASE(.TRUE.)
+         realorder=((order+1)*(order+2)/2)-1
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(abs(g(1))==order)
+      CASE(.TRUE.)
+         realorder=(order*(order+1)/2)+abs(g(2))
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   SELECT CASE(abs(g(2))==order)
+      CASE(.TRUE.)
+         realorder=(order*(order+1)/2)+abs(g(1))
+         RETURN
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   RETURN
+END SUBROUTINE SET_REALORDER_CUAD
 !
 END MODULE DIFFRACTIONCRP6D_MOD
