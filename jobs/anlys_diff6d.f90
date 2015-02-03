@@ -12,7 +12,7 @@ REAL(KIND=4):: timer
 ! HEY HO, LET'S GO --------------------------------------
 ! Get input
 SELECT CASE(command_argument_count())
-   CASE(4)
+   CASE(1)
       CALL GET_COMMAND_ARGUMENT(1,auxString)
       CALL INITIALIZE_SYSTEM(trim(auxString))
       CALL VERBOSE_WRITE("******************************************************")
