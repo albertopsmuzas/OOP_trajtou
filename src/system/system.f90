@@ -336,6 +336,12 @@ FUNCTION correctSphPoint(phaseSpacePoint) result(goodPoint)
       CASE(.false.)
          ! do nothing
    END SELECT
+   SELECT CASE(goodPoint(6)>2.0*pi)
+      CASE(.true.)
+         goodPoint(6)=goodPoint(6)-2.d0*pi
+      CASE(.false.)
+         ! do nothing
+   END SELECT
 END FUNCTION correctSphPoint
 
 END MODULE SYSTEM_MOD
