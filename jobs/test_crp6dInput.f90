@@ -11,6 +11,7 @@ PROGRAM TEST_CRP6DINPUT
 ! Initial declarations
 use SYSTEM_MOD
 use CRP6D_MOD, only: CRP6D
+use DEBUG_MOD, only: SET_VERBOSE_MODE
 ! use some modules?
 IMPLICIT NONE
 ! Variables
