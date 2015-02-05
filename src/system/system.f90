@@ -317,11 +317,8 @@ FUNCTION correctSphPoint(phaseSpacePoint) result(goodPoint)
    goodPoint(:)=phaseSpacePoint(:)
    ! Theta switches
    SELECT CASE(dsin(goodPoint(5))<0.d0)
-      CASE(.true.)
-#ifdef DEBUG
-         WRITE(0,*) routinename//'Unexpected negative theta sinus. Reconsider this function'
-#endif
-         CALL EXIT(1)
+      CASE(.true.) ! project into 0~pi range
+         goodPoint(5)=dacos(dcos(goodPoint(5)))
       CASE(.false.)
          ! do nothing
    END SELECT
