@@ -1,0 +1,55 @@
+#!/bin/bash
+inputFile=$1
+if [[ $# != 1 ]]; then
+	echo Wrong number of arguments. One string needed: a complete lua config file
+	echo Number of given arguments: $#
+	exit 1
+fi
+# Run, run
+line=$(grep -n trajList $inputFile | awk -F ':' '{print $1}')
+let preLine=line-1
+let posLine=line+1
+echo WARNING!: list of trajectories was suggested in input file. It will be ignored.
+echo Define number of mini-jobs:
+read nJobs
+echo You\'ve defined $nJobs jobs
+echo Define number of trajs per job:
+read trajJobs
+echo You\'ve defined $trajJobs trajs per job
+let totTrajs=trajJobs*nJobs
+echo
+echo ------------------------------
+echo TOT TRAJS: $totTrajs
+echo NJOBS: $nJobs
+echo TRAJS/JOB: $trajJobs
+echo ------------------------------
+echo
+echo Are these parameters correct?
+select control in yes no;do
+	case $control in
+		yes)
+			echo A job partition will be made
+			break;;
+		no)
+			echo Oooops, re-run this script with correct parameters
+			exit 1;;
+		*)
+			echo Incorrect option;;
+	esac
+done
+if [[ -f 'INseed.inp' ]]; then
+	echo There\'s a seed file INseed.inp. It will be used
+else
+	echo There isn\'t any seed file. Generating one based on systemclock.
+	trajtouNewSeed.x > 'INseed.inp'
+fi
+for i in $(seq 1 $nJobs);do
+	jobID='trajtou_'$i
+	mkdir $jobID
+	let initTraj=trajJobs*i-trajJobs+1
+	let endTraj=i*trajJobs
+	head -n $preLine $inputFile > $jobID/$inputFile
+	echo 'initialConditions.trajList={from='$initTraj',to='$endTraj'}' >> $jobID/$inputFile
+	tail -n +$posLine $inputFile >> $jobID/$inputFile
+	ln -s ../INseed.inp $jobID/INseed.inp
+done
