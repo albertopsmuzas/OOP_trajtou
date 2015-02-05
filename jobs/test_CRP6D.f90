@@ -1,29 +1,43 @@
 PROGRAM TEST_CRP6D
 ! Initial declarations
-USE CRP6D_MOD
-USE DEBUG_MOD
-USE UNITS_MOD
+use SYSTEM_MOD
+use CRP6D_MOD, only: CRP6D
+use DEBUG_MOD, only: VERBOSE_WRITE
+use UNITS_MOD, only: Length
 IMPLICIT NONE
 ! Variables
-TYPE(CRP6D) :: thispes
-TYPE(CRP6D) :: thispesraw
-INTEGER(KIND=4) :: i,j
-CHARACTER(LEN=11) :: filename
-CHARACTER(LEN=15) :: filename1
-CHARACTER(LEN=13) :: realname
-CHARACTER(LEN=17) :: realname1
-TYPE(Length) :: r,z
-REAL(KIND=8) :: r1,r2,z1,z2
-REAL(KIND=8),DIMENSION(6) :: pos
-CALL SET_VERBOSE_MODE(.FALSE.)
-CALL SET_DEBUG_MODE(.FALSE.)
-! STEP 1: READ CRP6D INPUT FILES
-CALL thispes%READ("INcrp6d.inp")
-CALL thispesraw%READ("INcrp6d.inp")
+CHARACTER(LEN=1024):: luaFile
+REAL(KIND=4),DIMENSION(2):: timearr
+REAL(KIND=4):: timer
+TYPE(CRP6D):: thispes
+TYPE(CRP6D):: thispesraw
+INTEGER(KIND=4):: i,j
+CHARACTER(LEN=11):: filename
+CHARACTER(LEN=15):: filename1
+CHARACTER(LEN=13):: realname
+CHARACTER(LEN=17):: realname1
+TYPE(Length):: r,z
+REAL(KIND=8):: r1,r2,z1,z2
+REAL(KIND=8),DIMENSION(6):: pos
+! STEP 1: INITIALIZE SYSTEM VIA LUA CONFIG FILE
+SELECT CASE(command_argument_count())
+   CASE(1)
+      CALL GET_COMMAND_ARGUMENT(1,luaFile)
+   CASE DEFAULT
+      WRITE(0,*) "ERR: Bad number of arguments: ",command_argument_count()
+      WRITE(0,*) "It is only needed one string, which is a config lua file"
+      CALL EXIT(1)
+END SELECT
+CALL INITIALIZE_SYSTEM(trim(luaFile))
+CALL VERBOSE_WRITE('##############################################')
+CALL VERBOSE_WRITE('########## TEST CRP6D INTERPOLATION ##########')
+CALL VERBOSE_WRITE('##############################################')
+CALL ETIME(timearr,timer)
+CALL thispes%READ(fileName=trim(luaFile), tableName='pes')
+CALL thispesraw%READ(fileName=trim(luaFile), tableName='pes')
 CALL thispes%INTERPOL()
 CALL thispesraw%RAWINTERPOL()
 ! STEP 2: PLOT SOME GRAPHS
-! Prepare some units
 CALL r%READ(0.4D0,"angst")
 CALL z%READ(0.25D0,"angst")
 CALL r%TO_STD()
@@ -36,7 +50,7 @@ CALL r%TO_STD()
 CALL z%TO_STD()
 z2=z%getvalue()
 r2=r%getvalue()
-! Print graphs
+! STEP 3: PRINT GRAPHS
 DO i=1,thispes%nsites
    DO j = 1, thispes%wyckoffsite(i)%n2dcuts
       WRITE(filename,'(I1,A10)') j,"-cut2d.dat"
@@ -62,7 +76,11 @@ DO i=1,thispes%nsites
       CALL thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOTDATA(realname1)
    END DO
 END DO
-CALL thispes%farpot%PLOT(100,"vacuumpot.dat")
-
-CALL EXIT(0)
+CALL ETIME(timearr,timer)
+! PRINT TIMES
+CALL VERBOSE_WRITE("****************** RUN TIME ***************************")
+CALL VERBOSE_WRITE('',"User time: ",real(timearr(1),kind=8))
+CALL VERBOSE_WRITE('',"System time: ", real(timearr(2),kind=8))
+CALL VERBOSE_WRITE('',"Total time: ",real(timer,kind=8))
+CALL VERBOSE_WRITE("******************************************************")
 END PROGRAM TEST_CRP6D

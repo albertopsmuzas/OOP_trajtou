@@ -9,9 +9,8 @@
 !##################################################
 PROGRAM TEST_CRP6DINPUT
 ! Initial declarations
-USE DEBUG_MOD
-USE CRP6D_MOD
-USE SYSTEM_MOD
+use SYSTEM_MOD
+use CRP6D_MOD, only: CRP6D
 ! use some modules?
 IMPLICIT NONE
 ! Variables
