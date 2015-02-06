@@ -260,6 +260,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	! Local variables
 	INTEGER(KIND=4) :: totscatt
    INTEGER(KIND=4) :: tottrajs
+   INTEGER(KIND=4) :: allowedScatt
 	INTEGER(KIND=4) :: id
 	INTEGER(KIND=4) :: dummy_int
 	INTEGER(KIND=4) :: i,j ! counters
@@ -275,6 +276,12 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	CHARACTER(LEN=10) :: stat
 	CHARACTER(LEN=*), PARAMETER :: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
    INTEGER(KIND=4) :: ioerr
+   LOGICAL:: isAllowed
+   ! Read/write units
+   INTEGER(KIND=4),PARAMETER:: rwuMap=12
+   INTEGER(KIND=4),PARAMETER:: wuUnmap=13
+   INTEGER(KIND=4),PARAMETER:: ruScatt=14
+   INTEGER(KIND=4),PARAMETER:: wuSeen=15
 	! Pointer definitions
 	REAL(KIND=8) :: beta ! angle between incident parallel momentum respect to u1 (surface vector)
 	REAL(KIND=8) :: a, b ! length of surface main axis
@@ -292,18 +299,22 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)
 	to_rec_space(2,2) = b*DSIN(gamma)/(2.D0*PI)
 	!---------
-   OPEN(12,FILE="OUTANA6Dmappingpeaks.out",STATUS="replace")
-   WRITE(12,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
-   WRITE(12,*) "# Format: traj id/ ----> /peak id"
-   WRITE(12,*) "# ----------------------------------------------------------------"
-   OPEN(11,FILE="OUTDYN6Dscattered.out",STATUS="old")
-   READ(11,*) ! dummy line
-   READ(11,*) ! dummy line
-   READ(11,*) ! dummy line
+   OPEN(unit=rwuMap,file="OUTANA6Dmappingpeaks.out",status="replace",action='readwrite')
+   WRITE(rwuMap,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
+   WRITE(rwuMap,*) "# Format: traj id/ ----> /peak id"
+   WRITE(rwuMap,*) "# ----------------------------------------------------------------"
+   OPEN(unit=wuUnmap,file='OUTANA6Dunmappedtrajs.out',status='replace',action='write')
+   WRITE(wuUnmap,*) '# ***** LIST OF UNMAPPED TRAJS *****'
+	WRITE(wuUnmap,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
+   OPEN(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
+   READ(ruScatt,*) ! dummy line
+   READ(ruScatt,*) ! dummy line
+   READ(ruScatt,*) ! dummy line
    i=0
+   j=0
    DO 
       i=i+1
-      READ(11,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy(:),p(:)
+      READ(ruScatt,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy(:),p(:)
       SELECT CASE(ioerr==0)
          CASE(.TRUE.)
             ! do nothing
@@ -311,48 +322,65 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
             IF(ioerr/=-1) WRITE(*,*) routinename//'Unexpected error in scattered trajs file. Err Code: ',ioerr
             EXIT
       END SELECT
-      IF (stat.EQ."Scattered") THEN
-         dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
-         dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
-         dk = MATMUL(to_rec_space,dp)
-         g(1) = NINT(dk(1))
-         g(2) = NINT(dk(2))
-         DO j= 1,SIZE(this%peaks)
-            IF ((this%peaks(j)%g(1).EQ.g(1)).AND.(this%peaks(j)%g(2).EQ.g(2))) THEN
-               WRITE(12,*) id," ----> ",this%peaks(j)%id
-               EXIT
-            END IF
-         END DO
-      END IF
+      SELECT CASE(stat)
+         CASE('Scattered')
+            dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
+            dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
+            dk = MATMUL(to_rec_space,dp)
+            g(1) = NINT(dk(1))
+            g(2) = NINT(dk(2))
+            DO j= 1,SIZE(this%peaks)
+               SELECT CASE((this%peaks(j)%g(1).EQ.g(1)).AND.(this%peaks(j)%g(2).EQ.g(2)))
+                  CASE(.true.)
+                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id
+                     isAllowed=.true.
+                     EXIT
+                  CASE(.false.)
+                     isAllowed=.false.
+               END SELECT
+            END DO
+         CASE DEFAULT
+            ! do nothing
+      END SELECT
+      SELECT CASE(isAllowed)
+         CASE(.true.)
+            j=j+1
+         CASE(.false.)
+   			WRITE(wuUnmap,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2), &
+	   			    this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
+      END SELECT
    END DO
    totscatt=i-1
+   allowedScatt=j-1
    tottrajs=this%inicond%ntraj-this%inicond%nstart+1
    WRITE(*,*) "==========================================================="
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: total trajs: ",tottrajs
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: scattered trajs: ",totscatt
-   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",totscatt/tottrajs
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: allowed scattered trajs:",allowedScatt
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ", allowedScatt/tottrajs
    WRITE(*,*) "==========================================================="
-	REWIND(12)
-	READ(12,*) ! dummy line
-	READ(12,*) ! dummy line
-	READ(12,*) ! dummy line
-	DO i=1, totscatt
-		READ(12,*) dummy_int,stat,id
+	REWIND(unit=rwuMap)
+	READ(rwuMap,*) ! dummy line
+	READ(rwuMap,*) ! dummy line
+	READ(rwuMap,*) ! dummy line
+	DO i=1,allowedScatt
+		READ(rwuMap,*) dummy_int,stat,id
 		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/tottrajs
 	END DO
-	CLOSE(12)
-	CLOSE(11)
-	OPEN(13,FILE="OUTANA6Dseenpeaks.out",STATUS = "replace") ! re-write allowed peaks file with probabilities printed
-	WRITE(13,*) "# ***** ALLOWED PEAKS *****"
-	WRITE(13,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
-	WRITE(13,*) "# -----------------------------------------------------------"
+	CLOSE(unit=rwuMap)
+	CLOSE(unit=ruScatt)
+	CLOSE(unit=wuUnmap)
+	OPEN(unit=wuSeen,file="OUTANA6Dseenpeaks.out",status="replace",action='write') ! re-write allowed peaks file with probabilities printed
+	WRITE(wuSeen,*) "# ***** ALLOWED PEAKS *****"
+	WRITE(wuSeen,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
+	WRITE(wuSeen,*) "# -----------------------------------------------------------"
 	DO i=1, SIZE(this%peaks)
 		IF (this%peaks(i)%prob.NE.0.D0) THEN
-			WRITE(13,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2), &
+			WRITE(wuSeen,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2), &
 				    this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
 		END IF
 	END DO
-	CLOSE(13)
+	CLOSE(unit=wuSeen)
 	RETURN
 END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
 !####################################################################################
