@@ -337,7 +337,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    REAL(KIND=8):: Eint,Ecm
    REAL(KIND=8),DIMENSION(6)::  dummy
    REAL(KIND=8),DIMENSION(6):: atomiccoord
-   REAL(KIND=8),DIMENSION(12):: molec_dofs, s, dfdt
+   REAL(KIND=8),DIMENSION(12):: molec_dofs, molec_dofsCorrect,s, dfdt
    REAL(KIND=8):: ma,mb
    REAL(KIND=8):: L2
    LOGICAL:: maxtime_reached
@@ -886,7 +886,7 @@ SUBROUTINE TIME_DERIVS_CARTESIAN_DYNDIATOMIC(this,cartCoord,tDeriv,fin)
    ! Local variables
    REAL(KIND=8),DIMENSION(6):: sphCoord,cartDeriv,sphDeriv
    REAL(KIND=8),DIMENSION(6,6):: mtrx_dmolecdatom
-   REAL(KIND=8):: rxy, dx, dy, dz
+   REAL(KIND=8):: rxy, dx, dy, dz, r2
    REAL(KIND=8):: mass,nua,nub
    REAL(KIND=8):: v ! dummy variable
    CHARACTER(LEN=*),PARAMETER:: routinename = "TIME_DERIVS_DYNDIATOMIC: "
@@ -903,19 +903,25 @@ SUBROUTINE TIME_DERIVS_CARTESIAN_DYNDIATOMIC(this,cartCoord,tDeriv,fin)
          dx=cartCoord(1)-cartCoord(4)
          dy=cartCoord(2)-cartCoord(5)
          dz=cartCoord(3)-cartCoord(6)
-         ! Initialize auxiliar expressions
          rxy=dsqrt(dx**2.d0+dy**2.d0)
+         r2=sphCoord(4)**2.d0
+         ! Initialize auxiliar expressions
          mtrx_dmolecdatom(:,1)=[nua,0.d0,0.d0,nub,0.d0,0.d0]
          mtrx_dmolecdatom(:,2)=[0.d0,nua,0.d0,0.d0,nub,0.d0]
          mtrx_dmolecdatom(:,3)=[0.d0,0.d0,nua,0.d0,0.d0,nub]
-         mtrx_dmolecdatom(1,4)=dx/(sphCoord(4)**2.d0)
-         mtrx_dmolecdatom(2,4)=dy/(sphCoord(4)**2.d0)
-         mtrx_dmolecdatom(3,4)=dz/(sphCoord(4)**2.d0)
-         mtrx_dmolecdatom(1,5)=dx*dz*(rxy**(-1.d0))*(sphCoord(4)**(-1.5d0))
-         mtrx_dmolecdatom(2,5)=dy*dz*(rxy**(-1.d0))*(sphCoord(4)**(-1.5d0))
-         mtrx_dmolecdatom(3,5)=(dz*dz*(sphCoord(4)**(-1.5d0))+1)*(rxy**(-1.d0))
-         mtrx_dmolecdatom(1,6)=-dy/rxy**2.0
-         mtrx_dmolecdatom(2,6)=dx/rxy**2.d0
+         mtrx_dmolecdatom(1,4)=dx/sphCoord(4)
+         mtrx_dmolecdatom(2,4)=dy/sphCoord(4)
+         mtrx_dmolecdatom(3,4)=dz/sphCoord(4)
+         SELECT CASE(rxy==0.d0)
+            CASE(.true.)
+               mtrx_dmolecdatom(1:2,5:6)=0.d0
+            CASE(.false.)
+               mtrx_dmolecdatom(1,5)=(dx*dz)/(rxy*r2)
+               mtrx_dmolecdatom(2,5)=(dy*dz)/(rxy*r2)
+               mtrx_dmolecdatom(1,6)=-dy/(rxy**2.d0)
+               mtrx_dmolecdatom(2,6)=dx/(rxy**2.d0)
+         END SELECT
+         mtrx_dmolecdatom(3,5)=-rxy/r2
          mtrx_dmolecdatom(3,6)=0.d0
          mtrx_dmolecdatom(4:6,4:6)=-mtrx_dmolecdatom(1:3,4:6)
          ! Get Derivatives in cartesian coordinates

@@ -249,7 +249,7 @@ FUNCTION from_atomic_to_molecular_phaseSpace(atomcoord) result(molcoord)
    DATA mtrx(:,1)/1.d0,0.d0,0.d0,1.d0,0.d0,0.d0/
    DATA mtrx(:,2)/0.d0,1.d0,0.d0,0.d0,1.d0,0.d0/
    DATA mtrx(:,3)/0.d0,0.d0,1.d0,0.d0,0.d0,1.d0/
-   DATA mtrx(:,6)/0.d0,0.d0,0.d0,0.d0,0.d0,0.d0/
+   DATA mtrx(:,6)/1.d0,1.d0,0.d0,-1.d0,-1.d0,0.d0/
    ! Run section
    masa=sum(system_mass(:))
    nua=system_mass(1)/masa
@@ -289,12 +289,13 @@ FUNCTION from_atomic_to_molecular_phaseSpace(atomcoord) result(molcoord)
           mtrx(4,6)=dsin(molcoord(6))/(nub*dsin(molcoord(5)))
           mtrx(5,6)=-dcos(molcoord(6))/(nub*dsin(molcoord(5)))
           mtrx(6,6)=0.d0
+          CALL INV_MTRX(6,mtrx,invMtrx)
+          molcoord(7:12)=matmul(invMtrx,atomcoord(7:12))
        CASE(.false.)
-          ! do nothing
+         CALL INV_MTRX(6,mtrx,invMtrx)
+         molcoord(7:12)=matmul(invMtrx,atomcoord(7:12))
+         molcoord(12)=0.d0
    END SELECT
-   CALL INV_MTRX(6,mtrx,invMtrx)
-   write(*,*) 'patata: ',invMtrx
-   molcoord(7:12)=matmul(invMtrx,atomcoord(7:12))
    RETURN
 END FUNCTION from_atomic_to_molecular_phaseSpace
 !###############################################################################################

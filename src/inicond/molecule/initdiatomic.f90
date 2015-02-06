@@ -478,9 +478,9 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
    REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint
    REAL(KIND=8),DIMENSION(9):: random_kernel
-   REAL(KIND=8):: rnd_delta,rnd_phi,rnd_theta,rnd_eta,rnd_sign1,rnd_sign2,rnd_mu
+   REAL(KIND=8):: rnd_delta,rnd_phi,rnd_theta,rnd_eta,rnd_sign,rnd_mu
    REAL(KIND=8):: eta
-   REAL(KIND=8):: ang_momentum,L,L_theta
+   REAL(KIND=8):: L,L_theta
    ! YIPPIEE KI YAY !! -------------------
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New set of trajectories")
@@ -502,7 +502,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    mu = product(system_mass(1:2))/masa
    Enorm = this%E_norm%getvalue()
    Eint = this%evirot%getvalue()
-   ang_momentum=dsqrt(dfloat(this%init_qn(2)*(this%init_qn(2)+1)))
+   L=dsqrt(dfloat(this%init_qn(2)*(this%init_qn(2)+1)))
    DO i=1,this%ntraj
       CALL RANDOM_NUMBER(random_kernel(:))
       IF((this%control_posX).AND.(.NOT.this%control_posY)) THEN
@@ -540,17 +540,10 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
       rnd_mu=random_kernel(7)
       SELECT CASE(random_kernel(8)<0.5d0)
          CASE(.true.)
-            rnd_sign1=1.d0
+            rnd_sign=1.d0
          CASE DEFAULT
-            rnd_sign1=-1.d0
+            rnd_sign=-1.d0
       END SELECT
-      SELECT CASE(random_kernel(9)<0.5d0)
-         CASE(.true.)
-            rnd_sign2=1.d0
-         CASE DEFAULT
-            rnd_sign2=-1.d0
-      END SELECT
-      L=rnd_sign1*ang_momentum ! actual angular momentum for this trajectory
       SELECT CASE(L==0.d0)
         CASE(.true.)
             L_theta=0.d0
@@ -568,8 +561,8 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                 ! phi
                   ! Get internal momenta
                   eta=dacos(dcos(L_theta)/dsin(this%trajs(i)%r(5)))
-                  this%trajs(i)%p(5)=-L*dsin(eta)                                    ! ptheta
-                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+                  this%trajs(i)%p(5)=rnd_sign*L*dsin(eta)                                    ! ptheta
+                  this%trajs(i)%p(6)=L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
                CASE(.FALSE.)
                   ! Get internal coordinates
                   this%trajs(i)%r(5)=dacos(2.D0*rnd_theta-1.d0)                      ! theta
@@ -577,7 +570,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   ! Get internal momenta
                   eta=2.D0*PI*rnd_eta
                   this%trajs(i)%p(5)=-L*dsin(eta)                                    ! ptheta
-                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
+                  this%trajs(i)%p(6)=L*dcos(eta)*dsin(this%trajs(i)%r(5))  ! pphi
             END SELECT
             ! Internal energy
             this%trajs(i)%Eint=((L/this%vibrpot%getreq())**2.D0)/(2.D0*mu)
@@ -591,8 +584,8 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   this%trajs(i)%r(6)=2.D0*PI*rnd_phi                                ! phi
                   ! Get internal momenta
                   eta=dacos(dcos(L_theta)/dsin(this%trajs(i)%r(5)))
-                  this%trajs(i)%p(5)=-L*dsin(eta)                                   ! ptheta
-                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
+                  this%trajs(i)%p(5)=rnd_sign*L*dsin(eta)                                   ! ptheta
+                  this%trajs(i)%p(6)=L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
                CASE(.FALSE.)
                   ! Get internal coordinates
                   this%trajs(i)%r(5)=dacos(2.D0*rnd_theta-1.d0)                     ! theta
@@ -600,7 +593,7 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
                   ! Get internal momenta
                   eta=2.D0*PI*rnd_eta
                   this%trajs(i)%p(5)=-L*dsin(eta)                                   ! ptheta
-                  this%trajs(i)%p(6)=rnd_sign2*L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
+                  this%trajs(i)%p(6)=L*dcos(eta)*dsin(this%trajs(i)%r(5)) ! pphi
             END SELECT
             ! Internal energy
             this%trajs(i)%Eint=(this%trajs(i)%p(4)**2.D0)/(2.D0*mu)+this%rovibrpot%getpot(this%trajs(i)%r(4))

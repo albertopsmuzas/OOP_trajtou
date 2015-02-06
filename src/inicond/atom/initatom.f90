@@ -18,7 +18,7 @@ IMPLICIT NONE
 !> @brief
 !! Atom subtype dynamics object
 !----------------------------------------------------
-TYPE,EXTENDS(Dynobject) ::  Atom
+TYPE,EXTENDS(Dynobject)::  Atom
    CONTAINS
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_ATOM
 END TYPE Atom
