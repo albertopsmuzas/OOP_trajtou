@@ -305,13 +305,13 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
    WRITE(rwuMap,*) "# ----------------------------------------------------------------"
    OPEN(unit=wuUnmap,file='OUTANA6Dunmappedtrajs.out',status='replace',action='write')
    WRITE(wuUnmap,*) '# ***** LIST OF UNMAPPED TRAJS *****'
-	WRITE(wuUnmap,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
+	WRITE(wuUnmap,*) "# Format: id/n,m/dkx,dky"
    OPEN(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
    READ(ruScatt,*) ! dummy line
    READ(ruScatt,*) ! dummy line
    READ(ruScatt,*) ! dummy line
    i=0
-   j=0
+   allowedScatt=0
    DO 
       i=i+1
       READ(ruScatt,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy(:),p(:)
@@ -338,26 +338,24 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
                   CASE(.false.)
                      isAllowed=.false.
                END SELECT
-            END DO
-         CASE DEFAULT
+         END DO
+      CASE DEFAULT
             ! do nothing
       END SELECT
       SELECT CASE(isAllowed)
          CASE(.true.)
-            j=j+1
+            allowedScatt=allowedScatt+1
          CASE(.false.)
-   			WRITE(wuUnmap,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2), &
-	   			    this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
+            WRITE(wuUnmap,*) id,g(:),dk(:)
       END SELECT
    END DO
    totscatt=i-1
-   allowedScatt=j-1
    tottrajs=this%inicond%ntraj-this%inicond%nstart+1
    WRITE(*,*) "==========================================================="
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: total trajs: ",tottrajs
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: scattered trajs: ",totscatt
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: allowed scattered trajs:",allowedScatt
-   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ", allowedScatt/tottrajs
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ", dfloat(allowedScatt)/dfloat(tottrajs)
    WRITE(*,*) "==========================================================="
 	REWIND(unit=rwuMap)
 	READ(rwuMap,*) ! dummy line
