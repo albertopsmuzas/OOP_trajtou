@@ -411,11 +411,11 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       molec_dofs(:)=correctSphPoint(molec_dofs)
       ! Initial values for the derivatives
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Molecular DOFS : ",molec_dofs)
+      CALL DEBUG_WRITE(routinename,"Molecular DOFS : ",molec_dofs)
 #endif
       CALL this%TIME_DERIVS(molec_dofs,dfdt,switch)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Time derivatives: ",dfdt)
+      CALL DEBUG_WRITE(routinename,"Time derivatives: ",dfdt)
 #endif
       SELECT CASE(switch)
          CASE(.TRUE.)
@@ -448,7 +448,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       init_E = molecule%E
       ! Integrate and choose the correct time-step
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Energy before integration:",molecule%E)
+      CALL DEBUG_WRITE(routinename,"Energy before integration:",molecule%E)
 #endif
       ! Call integrator
       CALL this%BSSTEP(molec_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
@@ -463,8 +463,8 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             dt = dt/2.D0 
             t = init_t
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Error encountered while integration of eq. of motion")
-            CALL VERBOSE_WRITE(routinename,"Halving time-step to: ", dt)
+            CALL DEBUG_WRITE(routinename,"Error encountered while integration of eq. of motion")
+            CALL DEBUG_WRITE(routinename,"Halving time-step to: ", dt)
 #endif
             CYCLE
          CASE(.FALSE.)
@@ -483,7 +483,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       Eint=(molec_dofs(10)**2.D0+L2/(molec_dofs(4)**2.d0))/(2.d0*mu)
       E=Ecm+Eint+v
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
+      CALL DEBUG_WRITE(routinename,"Energy after integration:",E)
 #endif
       SELECT CASE (DABS(E-molecule%init_E) > this%energyTolerance*molecule%init_E)
          CASE(.TRUE.)
@@ -492,7 +492,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             dt = dt/2.D0
             t = init_t
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Poor energy conservation. Cycling.")
+            CALL DEBUG_WRITE(routinename,"Poor energy conservation. Cycling.")
 #endif
             CYCLE
       CASE(.FALSE.)
@@ -665,9 +665,6 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             CALL EXIT(1)
       END SELECT
    END DO
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Writing in dynamics.out")
-#endif
    SELECT CASE(this%nfollow/=0)
       CASE(.TRUE.)
          CLOSE(this%wufo)
