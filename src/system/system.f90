@@ -1,7 +1,7 @@
 !#########################################################
 ! MODULE: SYSTEM_MOD
 !> @brief
-!! Public module which compiles interesting variables to 
+!! Public module which constains interesting variables and subprobrams to
 !! keep during runtime. Debug variables are separated in the
 !! DEBUG_MOD
 !##########################################################
@@ -344,5 +344,52 @@ FUNCTION correctSphPoint(phaseSpacePoint) result(goodPoint)
          ! do nothing
    END SELECT
 END FUNCTION correctSphPoint
+!###############################################################################################
+!# FUNCTION : normalDistRandom #################################################################
+!###############################################################################################
+!> @brief
+!! Review of old gasdev subroutine to generate a normally distributed deviate with zero mean and
+!! unit variance. Old file can be checked in FORTRAN'77 Numerical Recipes. Result will lie
+!! between -1.d0 and 1.d0
+!
+!> @details
+!! - Uses random_number intrinsic subroutine to generate uniform deviates
+!! - Assumes that random_number was initialized at some point in the code prior to the call
+!
+!> @param[in] useStored - logical, optional. If it is given, an already stored number
+!!                        will be used instead of searching for a new suitable one. It
+!!                        does not matter the value, but I'd suggest to use always .true.
+!!                        If it is your first call, don't use this optional parameter.
+!------------------------------------------------------------------------------------------------
+function normalDistRandom(useStored) result(rndReal)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   logical,optional,intent(in):: useStored
+   real(kind=8):: rndReal ! dummy function variable
+   ! Local variables
+   real(kind=8):: r2
+   real(kind=8),dimension(2):: v
+   real(kind=8):: rndStored
+   save rndStored
+   data r2/3.d0/ ! initialize r^2 with a non suitable value
+   ! Run section --------------------------
+   select case(present(useStored))
+      case(.true.)
+         rndReal=rndStored
+
+      case(.false.)
+      do while (r2>=1.0 .or. r2==0.d0)
+         call random_number(v)
+         v(:)=2.d0*v(:)-1.d0
+         r2=dot_product(v,v)
+      end do
+      rndReal=v(1)*dsqrt(-2.d0*dlog(r2)/r2)
+      rndStored=v(2)*dsqrt(-2.d0*dlog(r2)/r2)
+
+   end select
+   return
+end function normalDistRandom
+
 
 END MODULE SYSTEM_MOD

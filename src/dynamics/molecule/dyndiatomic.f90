@@ -337,7 +337,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    REAL(KIND=8):: Eint,Ecm
    REAL(KIND=8),DIMENSION(6)::  dummy
    REAL(KIND=8),DIMENSION(6):: atomiccoord
-   REAL(KIND=8),DIMENSION(12):: molec_dofs, molec_dofsCorrect,s, dfdt
+   REAL(KIND=8),DIMENSION(12):: molec_dofs, s, dfdt
    REAL(KIND=8):: ma,mb
    REAL(KIND=8):: L2
    LOGICAL:: maxtime_reached
@@ -1182,9 +1182,9 @@ SUBROUTINE BSSTEP_DYNDIATOMIC(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	REAL(KIND=8),PARAMETER :: TINY = 1.D-30 
 	REAL(KIND=8),PARAMETER :: SCALMX = 0.1D0
 	REAL(KIND=8),PARAMETER :: REDMIN = 0.7D0
-	REAL(KIND=8),PARAMETER :: REDMAX = 1.D-10
+	REAL(KIND=8),PARAMETER :: REDMAX = 1.D-6
 	INTEGER,PARAMETER :: NMAX = 50
-	INTEGER,PARAMETER :: KMAXX = 11
+	INTEGER,PARAMETER :: KMAXX = 8
 	INTEGER,PARAMETER :: IMAX = KMAXX+1
 	CHARACTER(LEN=*),PARAMETER :: routinename = "BSSTEP_DYNDIATOMIC: "
 	! Local variables
@@ -1198,7 +1198,7 @@ SUBROUTINE BSSTEP_DYNDIATOMIC(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	LOGICAL :: first,reduct
 	SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
 	DATA first/.TRUE./,epsold/-1./
-	DATA nseq /2,4,6,8,10,12,14,16,18,20,22,24/
+	DATA nseq /2,4,6,8,10,12,14,16,18/
 	! HEY, HO! LET'S GO !!! -----------------------------
 	switch = .FALSE.
 	IF (eps.NE.epsold) THEN !A new tolerance, so reinitialize.
