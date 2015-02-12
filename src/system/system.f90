@@ -355,13 +355,8 @@ END FUNCTION correctSphPoint
 !> @details
 !! - Uses random_number intrinsic subroutine to generate uniform deviates
 !! - Assumes that random_number was initialized at some point in the code prior to the call
-!
-!> @param[in] useStored - logical, optional. If it is given, an already stored number
-!!                        will be used instead of searching for a new suitable one. It
-!!                        does not matter the value, but I'd suggest to use always .true.
-!!                        If it is your first call, don't use this optional parameter.
 !------------------------------------------------------------------------------------------------
-function normalDistRandom(useStored) result(rndReal)
+function normalDistRandom() result(rndReal)
    ! Initial declarations
    implicit none
    ! I/O variables
@@ -371,12 +366,16 @@ function normalDistRandom(useStored) result(rndReal)
    real(kind=8):: r2
    real(kind=8),dimension(2):: v
    real(kind=8):: rndStored
-   save rndStored
-   data r2/3.d0/ ! initialize r^2 with a non suitable value
+   logical:: useStored
+   ! Initialization/Storage variables section
+   save rndStored, useStored ! conserve this values from call to call
+   data r2/3.d0/             ! initialize r^2 with a non suitable value
+   data useStored/.false./   ! don't use useStored by default
    ! Run section --------------------------
-   select case(present(useStored))
+   select case(useStored)
       case(.true.)
          rndReal=rndStored
+         useStored=.false. ! next call won't use stored value
 
       case(.false.)
       do while (r2>=1.0 .or. r2==0.d0)
@@ -386,6 +385,7 @@ function normalDistRandom(useStored) result(rndReal)
       end do
       rndReal=v(1)*dsqrt(-2.d0*dlog(r2)/r2)
       rndStored=v(2)*dsqrt(-2.d0*dlog(r2)/r2)
+      useStored=.true. ! next call will use stored value
 
    end select
    return

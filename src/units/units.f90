@@ -58,6 +58,25 @@ CONTAINS
    PROCEDURE,PUBLIC :: TO_ANGST => TO_ANGST_LENGTH
 END TYPE Length
 !//////////////////////////////////////////////////////////////////////
+! SUBTYPE: Temperature
+! --------------------
+!> @brief
+!! Temperature quantity subtype
+!
+!> - Supported units: @a Celsius, @a Kelvin, @a Farenheit
+!
+!> @author A.P. Muzas - alberto.muzas@uam.es
+!> @date Feb/2015
+!> @version 1.0
+!> @see  quantity
+!----------------------------------------------------------------------
+TYPE,EXTENDS(Quantity) :: Temperature
+CONTAINS
+   PROCEDURE,PUBLIC:: TO_STD => TO_KELVIN_UNITS
+   PROCEDURE,PUBLIC:: TO_CELSIUS => TO_CELSIUS_UNITS
+   PROCEDURE,PUBLIC:: TO_FARENHEIT => TO_FARENHEIT_UNITS
+END TYPE Temperature
+!//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Energy
 ! ---------------
 !> @brief
@@ -299,11 +318,7 @@ END SUBROUTINE LENGTH_AU
 !# SUBROUTINE: TO_ANGST_LENGTH 
 !###########################################################
 !> @brief
-!! go to angstroem units
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date Apr/2014
-!> @version 1.0
+!! simple units change function. From au to angstroem units
 !-----------------------------------------------------------
 SUBROUTINE TO_ANGST_LENGTH(this)
    ! Initial declarations     
@@ -324,6 +339,29 @@ SUBROUTINE TO_ANGST_LENGTH(this)
    END SELECT
    RETURN
 END SUBROUTINE TO_ANGST_LENGTH
+!###########################################################
+!# SUBROUTINE: TO_CELSIUS_UNITS
+!###########################################################
+!> @brief
+!! simple units change function. From au to angstroem units
+!-----------------------------------------------------------
+subroutine TO_KELVIN_UNITS(this)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Temperature),intent(inout):: this
+   ! Run section
+   select case(this%units)
+      case('Kelvin')
+         ! do nothing
+      case('Celsius')
+         this%mag=this%mag+kelvinParam
+      case('Farenheit')
+         
+   end select
+   this%units='Kelvin'
+   return
+end subroutine TO_KELVIN_UNITS
 !############################################################
 !# SUBROUTINE: MASS_AU ######################################
 !############################################################
