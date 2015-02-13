@@ -73,8 +73,6 @@ END TYPE Length
 TYPE,EXTENDS(Quantity) :: Temperature
 CONTAINS
    PROCEDURE,PUBLIC:: TO_STD => TO_KELVIN_UNITS
-   PROCEDURE,PUBLIC:: TO_CELSIUS => TO_CELSIUS_UNITS
-   PROCEDURE,PUBLIC:: TO_FARENHEIT => TO_FARENHEIT_UNITS
 END TYPE Temperature
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Energy
@@ -156,6 +154,9 @@ REAL(KIND=8),PARAMETER:: au2ps = 2.418884326505D-5
 REAL(KIND=8),PARAMETER:: hmass2au = 1837.15264409D0
 REAL(KIND=8),PARAMETER:: dmass2au = 3671.482934845D0
 REAL(KIND=8),PARAMETER:: pmass2au = 1836.15267247D0
+real(kind=8),parameter:: kelvinParam=273.15d0
+real(kind=8),parameter:: fahrenheitParam=459.67d0
+real(kind=8),parameter:: boltzmann=8.617332478d-5/au2ev
 REAL(KIND=8),PARAMETER:: pi=dacos(-1.D0)
 !//////////////////////////////////////////////////////////////////////
 
@@ -343,7 +344,7 @@ END SUBROUTINE TO_ANGST_LENGTH
 !# SUBROUTINE: TO_CELSIUS_UNITS
 !###########################################################
 !> @brief
-!! simple units change function. From au to angstroem units
+!! simple units change function.
 !-----------------------------------------------------------
 subroutine TO_KELVIN_UNITS(this)
    ! Initial declarations
@@ -356,8 +357,12 @@ subroutine TO_KELVIN_UNITS(this)
          ! do nothing
       case('Celsius')
          this%mag=this%mag+kelvinParam
-      case('Farenheit')
-         
+      case('Fahrenheit')
+         this%mag=(this%mag+fahrenheitParam)*5.d0/9.d0
+      case default
+         write(0,*) 'TO_KELVIN ERR: incorrect units'
+         write(0,*) 'Supported ones: Kelvin, Celsius, Fahrenheit'
+         call exit(1)
    end select
    this%units='Kelvin'
    return

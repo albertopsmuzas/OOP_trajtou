@@ -360,21 +360,23 @@ function normalDistRandom() result(rndReal)
    ! Initial declarations
    implicit none
    ! I/O variables
-   logical,optional,intent(in):: useStored
    real(kind=8):: rndReal ! dummy function variable
    ! Local variables
    real(kind=8):: r2
    real(kind=8),dimension(2):: v
    real(kind=8):: rndStored
    logical:: useStored
+   integer(kind=4):: iSeed
    ! Initialization/Storage variables section
-   save rndStored, useStored ! conserve this values from call to call
+   save rndStored,useStored  ! conserve this values from call to call
    data r2/3.d0/             ! initialize r^2 with a non suitable value
    data useStored/.false./   ! don't use useStored by default
+   data iSeed/1/
    ! Run section --------------------------
    select case(useStored)
       case(.true.)
          rndReal=rndStored
+         write(*,*) rndReal
          useStored=.false. ! next call won't use stored value
 
       case(.false.)
@@ -385,6 +387,7 @@ function normalDistRandom() result(rndReal)
       end do
       rndReal=v(1)*dsqrt(-2.d0*dlog(r2)/r2)
       rndStored=v(2)*dsqrt(-2.d0*dlog(r2)/r2)
+      write(*,*) rndReal,rndStored
       useStored=.true. ! next call will use stored value
 
    end select

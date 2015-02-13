@@ -14,28 +14,31 @@ MODULE INITATOMSURF_MOD
 #endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////
-! TYPE: Atoms
+! TYPE: AtomSurf
 !> @brief
 !! Atom subtype dynamics object
 !----------------------------------------------------
 TYPE,EXTENDS(DynObject)::  AtomSurf
    CONTAINS
       PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_ATOMSURF
-END TYPE Atom
+END TYPE AtomSurf
 !/////////////////////////////////////////////////////
 ! TYPE: INITATOMSURF
 !> @brief
 !! Sets initial conditions for atoms
 !----------------------------------------------------
-TYPE,EXTENDS(IniCond) :: InitAtomSurf
-   LOGICAL :: control_vel, control_posX, control_posY, control_out, control_seed
-   TYPE(Energy) :: E_norm
-   TYPE(Angle) :: vz_angle, vpar_angle
-   REAL(KIND=8) :: impact_x, impact_y
-   TYPE(Length) :: init_z ! initial Z value
+TYPE,EXTENDS(IniCond):: InitAtomSurf
+   LOGICAL:: control_vel, control_posX, control_posY, control_out, control_seed
+   TYPE(Energy):: E_norm
+   TYPE(Angle):: vz_angle, vpar_angle
+   TYPE(Length):: init_z ! initial Z value
+   type(Temperature):: temp
+   type(Mass):: surfMass
+   real(kind=8),dimension(3):: freqs
+   REAL(KIND=8):: impact_x, impact_y
    CONTAINS
-      PROCEDURE,PUBLIC :: INITIALIZE => INITIALIZE_INITATOMSURF
-      PROCEDURE,PUBLIC :: GENERATE_TRAJS => GENERATE_TRAJS_INITATOMSURF
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_INITATOMSURF
+      PROCEDURE,PUBLIC:: GENERATE_TRAJS => GENERATE_TRAJS_INITATOMSURF
 END TYPE InitAtomSurf
 !////////////////////////////////////////////////////
 CONTAINS
@@ -100,7 +103,7 @@ END SUBROUTINE INITIALIZE_ATOMSURF
 SUBROUTINE INITIALIZE_INITATOMSURF(this,filename)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Initatom),INTENT(OUT):: this
+   CLASS(InitAtomSurf),INTENT(OUT):: this
    CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename
    ! Local variables
    INTEGER:: i ! counters
@@ -108,7 +111,7 @@ SUBROUTINE INITIALIZE_INITATOMSURF(this,filename)
    CHARACTER(LEN=*), PARAMETER :: routinename = "INITIALIZE_INITATOMSURF: "
    ! Lua variables
    TYPE(flu_State):: conf
-   INTEGER(KIND=4):: inicond_table,trajlist_table,magnitude_table,control_table,out_table
+   INTEGER(KIND=4):: inicond_table,trajlist_table,magnitude_table,control_table,out_table,osciSurf_table
    INTEGER(KIND=4):: auxtable
    INTEGER(KIND=4):: ierr
    ! Auxiliary (dummy) variables
@@ -130,7 +133,7 @@ SUBROUTINE INITIALIZE_INITATOMSURF(this,filename)
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='kind',val=auxstring)
    this%kind=trim(auxstring)
    SELECT CASE(this%kind)
-      CASE('Atoms')
+      CASE('AtomSurfs')
          ! do nothing
       CASE DEFAULT
          WRITE(0,*) "INITIALIZE_IINITATOMSURF ERR: wrong kind of initial conditions"
@@ -239,6 +242,36 @@ SUBROUTINE INITIALIZE_INITATOMSURF(this,filename)
       CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_y)
    END IF
 #endif
+   ! get Surface oscillator parameters
+   call aot_table_open(L=conf,parent=inicond_table,thandle=osciSurf_table,key='surfaceOscillator')
+   call aot_get_val(L=conf,ErrCode=ierr,thandle=osciSurf_table,key='wx',val=this%freqs(1))
+   call aot_get_val(L=conf,ErrCode=ierr,thandle=osciSurf_table,key='wy',val=this%freqs(2))
+   call aot_get_val(L=conf,ErrCode=ierr,thandle=osciSurf_table,key='wz',val=this%freqs(3))
+   select case(product(this%freqs(:))==0.d0)
+      case(.true.)
+         write(0,*) 'ERR: '//routinename//'One or more of the initial surface frequencies are zero'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+   end select
+   call aot_table_open(L=conf,parent=osciSurf_table,thandle=magnitude_table,key='temperature')
+   call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxReal)
+   call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxString)
+   call this%temp%READ(auxReal,trim(auxString))
+   call this%temp%to_std()
+   call aot_table_close(L=conf,thandle=magnitude_table)
+   call aot_table_open(L=conf,parent=osciSurf_table,thandle=magnitude_table,key='mass')
+   call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxReal)
+   call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxString)
+   call this%surfMass%READ(auxReal,trim(auxString))
+   call this%surfMass%to_std()
+   call aot_table_close(L=conf,thandle=magnitude_table)
+   call aot_table_close(L=conf,thandle=osciSurf_table)
+#ifdef DEBUG
+   call verbose_write(routinename,'Surface mass (au): ',this%surfMass%getValue())
+   call verbose_write(routinename,'Surface frequencies (au): ',this%freqs(:))
+   call verbose_write(routinename,'Surface temperature (kelvin): ',this%temp%getValue())
+#endif
    ! get output control
    CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=out_table,key='outputFile')
    auxint=aot_table_length(L=conf,thandle=out_table)
@@ -309,7 +342,7 @@ END SUBROUTINE INITIALIZE_INITATOMSURF
 SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Initatom),INTENT(INOUT):: this
+   CLASS(InitAtomSurf),INTENT(INOUT):: this
    CLASS(PES),INTENT(IN):: thispes
    ! IMPORTANT: unit used to write
    INTEGER(KIND=4),PARAMETER :: wunit=923
@@ -319,12 +352,14 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
    REAL(KIND=8):: delta,alpha,Enorm,masa,v
    REAL(KIND=8),DIMENSION(3) :: dummy
    REAL(KIND=8),DIMENSION(2) :: random_kernel
+   real(kind=8):: beta
    ! YIPPIEE KI YAY !! -------------------
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New set of trajectories")
    CALL VERBOSE_WRITE(routinename,"Allocating trajs: ", this%ntraj)
 #endif
-   ALLOCATE(Atom::this%trajs(this%ntraj))
+   beta=1.d0/(boltzmann*this%temp%getvalue())
+   ALLOCATE(AtomSurf::this%trajs(this%ntraj))
    DO i=1,this%ntraj
       CALL RANDOM_NUMBER(random_kernel(:))
       IF((this%control_posX).AND.(.NOT.this%control_posY)) THEN
@@ -344,9 +379,15 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
          this%trajs(i)%r(2) = this%impact_y
       END IF
       this%trajs(i)%r(3) = this%init_z%getvalue()
+      ! Initial surf parameters
+      this%trajs(i)%r(4) = normalDistRandom()/(this%freqs(1)*dsqrt(beta*this%surfMass%getvalue()))
+      this%trajs(i)%r(5) = normalDistRandom()/(this%freqs(2)*dsqrt(beta*this%surfMass%getvalue()))
+      this%trajs(i)%r(6) = normalDistRandom()/(this%freqs(3)*dsqrt(beta*this%surfMass%getvalue()))
+      this%trajs(i)%p(4) = normalDistRandom()/dsqrt(beta/this%surfMass%getvalue())
+      this%trajs(i)%p(5) = normalDistRandom()/dsqrt(beta/this%surfMass%getvalue())
+      this%trajs(i)%p(6) = normalDistRandom()/dsqrt(beta/this%surfMass%getvalue())
       ! Change to cartesian coordinates (impact parameters are in surface coordinates)
       this%trajs(i)%r(1:2) = system_surface%surf2cart(this%trajs(i)%r(1:2))
-      ! projectin into IWS cell leads to errors in the dynamics (wrong sampling)
       IF (system_surface%units/="au") THEN
          WRITE(0,*) "GENERATE_TRAJS_ATOMS ERR: Surface should be in atomic units!"
          CALL EXIT(1)
@@ -358,15 +399,14 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
       this%trajs(i)%p(3) = -DSQRT(2.D0*masa*Enorm)  ! Z momentum (m*v_z), negative (pointing uppon the surface)
       this%trajs(i)%p(1) = DCOS(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
       this%trajs(i)%p(2) = DSIN(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
-      CALL thispes%GET_V_AND_DERIVS(this%trajs(i)%r,v,dummy)
-      this%trajs(i)%E = Enorm/(DSIN(alpha)**2.D0)+v
+      CALL thispes%GET_V_AND_DERIVS(this%trajs(i)%r(1:3)-this%trajs(i)%r(4:6),v,dummy)
+      dummy(:)=dot_product(this%trajs(i)%r(4:6),this%freqs(:))
+      this%trajs(i)%E = 0.5d0*this%surfMass%getValue()*norm2(dummy(:))**2.d0+ &                 ! Surface's kinetic term +
+                        (0.5d0/this%surfMass%getvalue())*norm2(this%trajs(i)%p(4:6))**2.d0+ &   ! Surface's harmonic potential +
+                        Enorm/(DSIN(alpha)**2.D0)+v                                             ! Projectile's kinetic term + pot
       ! Setting initial values
-      this%trajs(i)%init_r(1) = this%trajs(i)%r(1)
-      this%trajs(i)%init_r(2) = this%trajs(i)%r(2)
-      this%trajs(i)%init_r(3) = this%trajs(i)%r(3)
-      this%trajs(i)%init_p(1) = this%trajs(i)%p(1)
-      this%trajs(i)%init_p(2) = this%trajs(i)%p(2)
-      this%trajs(i)%init_p(3) = this%trajs(i)%p(3)
+      this%trajs(i)%init_r(:) = this%trajs(i)%r(:)
+      this%trajs(i)%init_p(:) = this%trajs(i)%p(:)
    END DO
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Initial trajectory: ",this%nstart)
@@ -376,11 +416,11 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
    SELECT CASE(this%control_out)
       CASE(.TRUE.)
          OPEN(wunit,FILE=this%output_file,STATUS="replace")
-         WRITE(wunit,*) "# FILE CREATED BY : GENERATE_TRAJS_ATOMS ================================================================="
-         WRITE(wunit,*) "# Format:   traj_num      X,Y,Z (a.u.)      Px,Py,Pz(a.u.)"
-         WRITE(wunit,*) "# Initial total Energy (a.u.) / (eV) : ", this%trajs(1)%E, " /  ", this%trajs(1)%E*au2ev
-         WRITE(wunit,*) "# Perpendicular Energy (a.u.) / (eV) : ", this%E_norm%getvalue(), " / ", this%E_norm%getvalue()*au2ev
-         WRITE(wunit,*) "# MASS (a.u.) / proton_mass : ", masa," / ", masa/pmass2au
+         WRITE(wunit,*) "# FILE CREATED BY : GENERATE_TRAJS_ATOMSSURF ============================================================="
+         WRITE(wunit,*) "# Format:   Id/E(au)/X,Y,Z,Xs,Ys,Zs(au)/Px,Py,Pz,Pxs,Pys,Pzs(au)"
+         WRITE(wunit,*) "# Projectile's normal energy (a.u.) / (eV) : ", this%E_norm%getvalue(), " / ", this%E_norm%getvalue()*au2ev
+         WRITE(wunit,*) "# Projectile's mass (a.u.) / proton mass : ", masa," / ", masa/pmass2au
+         write(wunit,*) "# Surface's mass (au) / proton mass: ",this%surfMass%getValue()," / ",this%surfMass%getValue()/pmass2au
          WRITE(wunit,*) "# Incidence angle (deg): ", this%vz_angle%getvalue()*180.D0/PI
          WRITE(wunit,*) "# Parallel velocity direction (deg): ", this%vpar_angle%getvalue()*180.D0/PI
          IF ((this%control_posX).AND.(.NOT.this%control_posY)) THEN
@@ -397,7 +437,7 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
          END IF
          WRITE(wunit,*) "# ======================================================================================================="
          DO i=this%nstart,this%ntraj
-            WRITE(wunit,'(1X,I10,3(3F20.7))') i,this%trajs(i)%init_r,this%trajs(i)%init_p
+            WRITE(wunit,'(1X,I10,F15.7,2(6F20.7))') i,this%trajs(i)%E,this%trajs(i)%init_r(:),this%trajs(i)%init_p(:)
          END DO
          CLOSE(wunit)
 #ifdef DEBUG
