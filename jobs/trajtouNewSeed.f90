@@ -1,15 +1,21 @@
 program trajtouNewSeed
    ! initial declarations
+   use SYSTEM_MOD, only: system_iSeed, generate_seed, system_seedFilename
    implicit none
-   ! Variables
-   integer(kind=4):: nseed,clock
-   integer(kind=4),dimension(:),allocatable:: seed
-   integer(kind=4):: i ! counters
+   ! Local variables
+   integer(kind=1):: iStat
    ! Run section
-   call random_seed(size=nseed)
-   allocate(seed(nseed))
-   call random_seed(put=seed(:))
-   call system_clock(count=clock)
-   seed(:) = clock+ 37*(/ (i - 1,i = 1,nseed) /)
-   write(*,*) seed(:)
+   call generate_seed(iStat)
+   select case(iStat)
+      case(0)
+         write(*,*) 'Seed read from '//system_seedFilename
+      case(1)
+         write(*,*) 'Seed generated from /dev/urandom'
+      case(2)
+         write(*,*) 'Seed generated from system clock'
+      case default
+         write(*,*) 'Unknown iStat specificator'
+         call exit(1)
+   end select
+   write(*,*) system_iSeed(:)
 end program trajtouNewSeed

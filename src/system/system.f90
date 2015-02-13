@@ -23,7 +23,115 @@ CHARACTER(LEN=:),ALLOCATABLE:: system_inputfile
 CHARACTER(LEN=:),ALLOCATABLE:: system_pespath
 TYPE(Surface):: system_surface
 INTEGER(KIND=4):: system_natoms
+integer(kind=4),dimension(:),allocatable:: system_iSeed
+character(len=*),parameter:: system_seedFilename='INseed.inp'
 CONTAINS
+!###########################################################
+!# SUBROUTINE: generate_seed
+!###########################################################
+!> @brief
+!! Generates a good seed and stores it in system_iSeed
+!
+!> @param[out] iStat - integer(kind=1),optional: if given, it'll store
+!!                     the status of the seed generation:
+!!                     - 0) read from default seed input file
+!!                     - 1) read from /dev/urandom
+!!                     - 2) generated from system_clock
+!-----------------------------------------------------------
+subroutine generate_seed(iStat)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   integer(kind=1),intent(out),optional:: iStat
+   ! Local variables
+   logical:: fileExists
+   integer(kind=4):: seedLength
+   integer(kind=4):: i ! counter
+   integer(kind=1):: iErr
+   integer(kind=8):: t
+   integer(kind=4),dimension(8):: dt
+   integer(kind=4):: pid
+   ! R/W units and parameters
+   integer(kind=1),parameter:: ruSeed=17
+   integer(kind=1),parameter:: wuSeed=18
+   character(len=*),parameter:: routinename='GENERATE_SEED: '
+   ! Run section
+   select case(allocated(system_iSeed))
+      case(.true.)  ! bad news
+         write(0,*) 'ERR: '//routinename//'System iseed was already allocated'
+         call exit(1)
+      case(.false.) ! allocate seed with proper length
+         call random_seed(size=seedLength)
+         allocate(system_iSeed(seedLength))
+   end select
+   inquire(file=system_seedFilename,exist=fileExists)
+   select case(fileExists)
+      case(.true.)
+         open(unit=ruSeed,file=system_seedFilename,status='old',action='read')
+         read(ruSeed,*,iostat=iErr) system_iSeed(:) ! we are assuming that this is a good seed. No checks
+         close(ruSeed)
+         select case(iErr)
+            case(0)
+               ! do nothing
+            case default
+               write(0,*) 'ERR: '//routinename//'Unexpected error while reading '//system_seedFilename//' file'
+               write(0,*) 'IOSTAT error code: ',iErr
+               call exit(1)
+         end select
+         if(present(iStat)) iStat=0
+      case(.false.)
+         ! try to get random iSeed from computer
+         open(unit=ruSeed,file='/dev/urandom',access='stream',form='unformatted',action='read',status='old',iostat=iErr)
+         select case(iErr)
+            case(0)
+               read(ruSeed) system_iSeed(:)
+               close(ruSeed)
+               if(present(iStat)) iStat=1
+
+            case default
+               call system_clock(t)
+               select case(t==0)
+                  case(.true.)
+                     call date_and_time(values=dt)
+                     t = (dt(1)-1970)*365_8*24*60*60*1000 &
+                         +dt(2)*31_8*24*60*60*1000 &
+                         +dt(3)*24_8*60*60*1000 &
+                         +dt(5)*60*60*1000 &
+                         +dt(6)*60*1000+dt(7)*1000+dt(8)
+                     if(present(iStat)) iStat=2
+
+                  case(.false.)
+                     ! do nothing
+               end select
+               pid=getpid()
+               t=ieor(t,int(pid,kind(t)))
+               do i=1,seedLength
+                  system_iSeed(i)=lcg(t)
+               end do
+
+         end select
+               ! Store used seed
+               open(unit=wuSeed,file=system_seedFilename,status='new',action='write')
+               write(wuSeed,*) system_iSeed(:)
+               close(wuSeed)
+   end select
+   return
+   contains
+   ! seeding function
+   function lcg(iFeed) result(iSeed)
+      implicit none
+      integer(kind=8),intent(inout):: iFeed
+      integer(kind=4):: iSeed
+      select case(iFeed)
+         case(0) ! badneeeessss
+            iFeed=104729_8
+         case default
+            iFeed=mod(iFeed,4294967296_8)
+      end select
+      iFeed=mod(iFeed * 279470273_8, 4294967291_8)
+      iSeed = int(mod(iFeed, int(huge(0),kind=8)), kind=4)
+   end function lcg
+end subroutine generate_seed
 !###########################################################
 !# SUBROUTINE: INITIALIZE_SYSTEM
 !###########################################################
@@ -366,20 +474,17 @@ function normalDistRandom() result(rndReal)
    real(kind=8),dimension(2):: v
    real(kind=8):: rndStored
    logical:: useStored
-   integer(kind=4):: iSeed
    ! Initialization/Storage variables section
    save rndStored,useStored  ! conserve this values from call to call
-   data r2/3.d0/             ! initialize r^2 with a non suitable value
-   data useStored/.false./   ! don't use useStored by default
-   data iSeed/1/
+   data useStored/.false./             ! don't use useStored by default
    ! Run section --------------------------
    select case(useStored)
       case(.true.)
          rndReal=rndStored
-         write(*,*) rndReal
          useStored=.false. ! next call won't use stored value
 
       case(.false.)
+      r2=3.d0 ! ensures bad initial r2 number
       do while (r2>=1.0 .or. r2==0.d0)
          call random_number(v)
          v(:)=2.d0*v(:)-1.d0
@@ -387,7 +492,6 @@ function normalDistRandom() result(rndReal)
       end do
       rndReal=v(1)*dsqrt(-2.d0*dlog(r2)/r2)
       rndStored=v(2)*dsqrt(-2.d0*dlog(r2)/r2)
-      write(*,*) rndReal,rndStored
       useStored=.true. ! next call will use stored value
 
    end select

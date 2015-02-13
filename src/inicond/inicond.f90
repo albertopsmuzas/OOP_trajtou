@@ -73,7 +73,6 @@ TYPE,ABSTRACT:: Inicond
    CHARACTER(LEN=:),ALLOCATABLE:: output_file
    INTEGER:: ntraj ! number of trajectories
    INTEGER:: nstart ! initial trajectory
-   INTEGER,DIMENSION(:),ALLOCATABLE:: seed ! Seed for random number generation
    CLASS(Dynobject),DIMENSION(:),ALLOCATABLE:: trajs
    CONTAINS
       PROCEDURE(INITIALIZE_INICOND),DEFERRED,PUBLIC:: INITIALIZE

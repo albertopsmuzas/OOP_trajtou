@@ -28,7 +28,7 @@ END TYPE Atom
 !! Sets initial conditions for atoms
 !----------------------------------------------------
 TYPE,EXTENDS(Inicond) :: Initatom
-   LOGICAL :: control_vel, control_posX, control_posY, control_out, control_seed
+   LOGICAL :: control_vel, control_posX, control_posY, control_out
    TYPE(Energy) :: E_norm
    TYPE(Angle) :: vz_angle, vpar_angle
    REAL(KIND=8) :: impact_x, impact_y
@@ -252,40 +252,14 @@ SUBROUTINE INITIALIZE_INITATOM(this,filename)
    END SELECT
    CALL AOT_TABLE_CLOSE(L=conf,thandle=out_table)
    ! get seed control
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='seedRead',val=this%control_seed)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Output files?: ",this%control_out)
    CALL VERBOSE_WRITE(routinename,"Output file name: ",this%output_file)
-   CALL VERBOSE_WRITE(routinename,"Seed read from file?: ",this%control_seed)
 #endif
-   SELECT CASE(this%control_seed)
-      CASE(.TRUE.)
-         CALL RANDOM_SEED(SIZE=size_seed)
+   call generate_seed()
+   call random_seed(put=system_iSeed(:))
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Default size for seed array: ",size_seed)
-#endif
-         ALLOCATE(this%seed(1:size_seed))
-         OPEN(12,FILE="INseed.inp",STATUS="old")
-         READ(12,*) this%seed
-         CLOSE(12)
-         CALL RANDOM_SEED(PUT=this%seed)
-      CASE(.FALSE.)
-         CALL RANDOM_SEED(SIZE=size_seed)
-         ALLOCATE(this%seed(1:size_seed))
-         CALL SYSTEM_CLOCK(COUNT=clock)
-         this%seed = clock+ 37*(/ (i - 1, i = 1, size_seed) /)
-         CALL RANDOM_SEED(PUT=this%seed)
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Seed generated from CPU time: ",clock)
-#endif
-         OPEN(12,FILE="INseed.inp",STATUS="replace")
-         WRITE(12,*) this%seed
-         CLOSE(12)
-   END SELECT
-#ifdef DEBUG
-   DO i=1,size_seed
-      CALL VERBOSE_WRITE(routinename,this%seed(i))
-   END DO
+   CALL VERBOSE_WRITE(routinename,'System seed: ',system_iSeed(:))
 #endif
    RETURN
 END SUBROUTINE INITIALIZE_INITATOM
@@ -385,13 +359,13 @@ SUBROUTINE GENERATE_TRAJS_INITATOM(this,thispes)
          WRITE(wunit,*) "# Parallel velocity direction (deg): ", this%vpar_angle%getvalue()*180.D0/PI
          IF ((this%control_posX).AND.(.NOT.this%control_posY)) THEN
             WRITE(wunit,*) "# Random X impact parameter"
-            WRITE(wunit,*) "# Seed used: ", this%seed
+            WRITE(wunit,*) "# Seed used: ",system_iSeed(:)
          ELSE IF ((.NOT.this%control_posX).AND.(this%control_posY)) THEN
             WRITE(wunit,*) "# Random Y impact parameter"
-            WRITE(wunit,*) "# Seed used: ", this%seed
+            WRITE(wunit,*) "# Seed used: ",system_iSeed(:)
          ELSE IF ((this%control_posX).AND.(this%control_posY)) THEN
             WRITE(wunit,*) "# Random X and Y impact parameters"
-            WRITE(wunit,*) "# Seed used: ", this%seed
+            WRITE(wunit,*) "# Seed used: ",system_iSeed(:)
          ELSE
             WRITE(wunit,*) "# X, Y values are not random numbers"
          END IF

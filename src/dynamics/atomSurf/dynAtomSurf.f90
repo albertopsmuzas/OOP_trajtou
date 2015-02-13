@@ -1,20 +1,20 @@
 !##########################################################
-! MODULE: DYNATOM_MOD
+! MODULE: DYNATOMSURF_MOD
 !> @brief
 !! Provides tools to run dynamics on atoms
 !##########################################################
-MODULE DYNATOM_MOD
-   USE DYNAMICS_MOD
-   USE SYSTEM_MOD
-   USE INITATOM_MOD
-   USE AOTUS_MODULE, ONLY: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
-   USE AOT_TABLE_MODULE, ONLY: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
+MODULE DYNATOMSURF_MOD
+   use SYSTEM_MOD
+   use DYNAMICS_MOD
+   use INITATOM_MOD
+   use AOTUS_MODULE, only: flu_State,OPEN_CONFIG_FILE,CLOSE_CONFIG, AOT_GET_VAL
+   use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN,AOT_TABLE_CLOSE,AOT_TABLE_LENGTH,AOT_TABLE_GET_VAL
 #ifdef DEBUG
-   USE DEBUG_MOD
+   use DEBUG_MOD, only: verbose_write,debug_write
 #endif
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////
-! TYPE: Dynatom
+! TYPE: DynAtomSurf
 !> @brief
 !! Stores information for a dynamics job with atoms
 !
@@ -27,7 +27,7 @@ IMPLICIT NONE
 !> @param zads - Z for adsorbed atoms
 !> @param zabs - Z for absorbed atoms
 !----------------------------------------------------------
-TYPE,EXTENDS(Dynamics):: Dynatom
+TYPE,EXTENDS(Dynamics):: DynAtomSurf
    CHARACTER(LEN=:),ALLOCATABLE:: extrapol
    CHARACTER(LEN=:),ALLOCATABLE:: scaling
    REAL(KIND=8):: eps
@@ -45,29 +45,29 @@ TYPE,EXTENDS(Dynamics):: Dynatom
 
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_DYNATOM
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_DYNATOMSURF
       ! Tools block
-      PROCEDURE,PUBLIC:: RUN => RUN_DYNATOM
+      PROCEDURE,PUBLIC:: RUN => RUN_DYNATOMSURF
       ! Private block
-      PROCEDURE,PRIVATE:: DO_DYNAMICS => DO_DYNAMICS_DYNATOM
-      PROCEDURE,PRIVATE:: TIME_DERIVS => TIME_DERIVS_DYNATOM
-      PROCEDURE,PRIVATE:: MMID => MMID_DYNATOM
-      PROCEDURE,PRIVATE:: BSSTEP => BSSTEP_DYNATOM
-      PROCEDURE,PRIVATE:: POLINOM_EXTRAPOL => PZEXTR_DYNATOM
-      PROCEDURE,PRIVATE:: RATIONAL_EXTRAPOL => RZEXTR_DYNATOM
-END TYPE Dynatom
+      PROCEDURE,PRIVATE:: DO_DYNAMICS => DO_DYNAMICS_DYNATOMSURF
+      PROCEDURE,PRIVATE:: TIME_DERIVS => TIME_DERIVS_DYNATOMSURF
+      PROCEDURE,PRIVATE:: MMID => MMID_DYNATOMSURF
+      PROCEDURE,PRIVATE:: BSSTEP => BSSTEP_DYNATOMSURF
+      PROCEDURE,PRIVATE:: POLINOM_EXTRAPOL => PZEXTR_DYNATOMSURF
+      PROCEDURE,PRIVATE:: RATIONAL_EXTRAPOL => RZEXTR_DYNATOMSURF
+END TYPE DynAtomSurf
 !//////////////////////////////////////////////////////////
 CONTAINS
 !#####################################################################
-!# SUBROUTINE: INITIALIZE_DYNATOM ####################################
+!# SUBROUTINE: INITIALIZE_DYNATOMSURF ####################################
 !#####################################################################
 !> @brief 
 !! Specific implementation of READ subroutine for atomic dynamics
 !---------------------------------------------------------------------
-SUBROUTINE INITIALIZE_DYNATOM(this,filename)
+SUBROUTINE INITIALIZE_DYNATOMSURF(this,filename)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Dynatom),INTENT(OUT) :: this
+   CLASS(DynAtomSurf),INTENT(OUT) :: this
    CHARACTER(LEN=*),OPTIONAL,INTENT(IN) :: filename
    ! Local variables
    INTEGER(KIND=4):: i ! counters
@@ -79,7 +79,7 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
    REAL(KIND=8):: auxreal
    CHARACTER(LEN=1024):: auxstring
    ! Parameters 
-   CHARACTER(LEN=*),PARAMETER:: routinename = "INITIALIZE_DYNATOM: "
+   CHARACTER(LEN=*),PARAMETER:: routinename = "INITIALIZE_DYNATOMSURF: "
    ! YIPEE KI YAY -----------------------------
    SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
       CASE(.TRUE.)
@@ -97,13 +97,13 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
       CASE(0)
          ! do nothing
       CASE DEFAULT
-         WRITE(0,*) 'INITIALIZE_DYNATOM: Fatal Error when opening the Lua config file'
+         WRITE(0,*) 'INITIALIZE_DYNATOMSURF: Fatal Error when opening the Lua config file'
          CALL EXIT(1)
    END SELECT
    CALL AOT_TABLE_OPEN(L=conf,thandle=dyn_table,key='dynamics')
    SELECT CASE(dyn_table)
       CASE(0)
-         WRITE(0,*) "READ_DYNATOM ERR: empty dynamics table"
+         WRITE(0,*) "READ_DYNATOMSURF ERR: empty dynamics table"
          CALL EXIT(1)
       CASE DEFAULT
          ! do nothing
@@ -115,7 +115,7 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
       CASE("Atoms")
          ! do nothing
       CASE DEFAULT
-         WRITE(0,*) "INITIALIZE_DYNATOM ERR: Expected Atom for dynamics.kind"
+         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Expected Atom for dynamics.kind"
          CALL EXIT(1)
    END SELECT
 #ifdef DEBUG
@@ -130,7 +130,7 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
          ALLOCATE(CRP3D::this%thispes)
          CALL this%thispes%INITIALIZE()
       CASE DEFAULT
-         WRITE(0,*) "READ_DYNATOM ERR: PES not implemented for Atoms dynamics."
+         WRITE(0,*) "READ_DYNATOMSURF ERR: PES not implemented for Atoms dynamics."
          WRITE(0,*) "Available ones: CRP3D"
          CALL EXIT(1)
    END SELECT
@@ -144,7 +144,7 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
          CALL this%thisinicond%INITIALIZE()
          CALL this%thisinicond%GENERATE_TRAJS(this%thispes)
       CASE DEFAULT
-         WRITE(0,*) "INITIALIZE_DYNATOM ERR: Initial conditions not implemented for atom dynamics"
+         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Initial conditions not implemented for atom dynamics"
          WRITE(0,*) "Available ones: Atoms"
          CALL EXIT(1)
    END SELECT
@@ -237,7 +237,7 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
       CASE('Equal','Smart')
          ! do nothing
       CASE DEFAULT
-         WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong error scaling keyword: "
+         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Wrong error scaling keyword: "
          WRITE(0,*) "Only available: Equal and Smart"
          WRITE(0,*) "You have written: ", this%scaling
          CALL EXIT(1)
@@ -249,7 +249,7 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
       CASE('Polinomi','Rational')
          ! do nothing
       CASE DEFAULT
-         WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong extrapolation keyword: "
+         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Wrong extrapolation keyword: "
          WRITE(0,*) "Only available: Polinomi and Rational"
          WRITE(0,*) "You have written: ", this%extrapol
          CALL EXIT(1)
@@ -267,31 +267,31 @@ SUBROUTINE INITIALIZE_DYNATOM(this,filename)
    CALL AOT_TABLE_CLOSE(L=conf,thandle=dyn_table)
    CALL CLOSE_CONFIG(conf)
    RETURN
-END SUBROUTINE INITIALIZE_DYNATOM
+END SUBROUTINE INITIALIZE_DYNATOMSURF
 !###############################################################
-!# SUBROUTINE: RUN_DYNATOM #####################################
+!# SUBROUTINE: RUN_DYNATOMSURF #####################################
 !###############################################################
 !> @brief
 !! Launch trajectories as said in @b inicondat variable
 !---------------------------------------------------------------
-SUBROUTINE RUN_DYNATOM(this)
+SUBROUTINE RUN_DYNATOMSURF(this)
    IMPLICIT NONE
    ! I/O variables 
-   CLASS(Dynatom),INTENT(INOUT) :: this
+   CLASS(DynAtomSurf),INTENT(INOUT):: this
    ! Local variables 
-   INTEGER :: i ! counters
-   CHARACTER(LEN=20),PARAMETER :: routinename = "RUN_DYNAMICS_ATOMS: "
+   INTEGER(KIND=4):: i ! counters
+   CHARACTER(LEN=*),PARAMETER:: routinename = "RUN_DYNAMICS_ATOMS: "
    ! HEY HO! LET'S GO !!! ------
    ! Check files for all traj status
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wusc,"OUTDYN3Dscattered.out","SCATTERED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wupa,"OUTDYN3Dpatologic.out","PATOLOGIC TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wuto,"OUTDYN3Dtimeout.out","TIME-OUT TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wutr,"OUTDYN3Dtrapped.out","TRAPPED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wuad,"OUTDYN3Dadsorbed.out","ADSORBED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wuab,"OUTDYN3Dabsorbed.out","ABSORBED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wust,"OUTDYN3Dstopped.out","STOPPED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOMSURF(this%wusc,"OUTDYN3Dscattered.out","SCATTERED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOMSURF(this%wupa,"OUTDYN3Dpatologic.out","PATOLOGIC TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOMSURF(this%wuto,"OUTDYN3Dtimeout.out","TIME-OUT TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOMSURF(this%wutr,"OUTDYN3Dtrapped.out","TRAPPED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOMSURF(this%wuad,"OUTDYN3Dadsorbed.out","ADSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOMSURF(this%wuab,"OUTDYN3Dabsorbed.out","ABSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOMSURF(this%wust,"OUTDYN3Dstopped.out","STOPPED TRAJS")
    ! Check turning points file
-   CALL FILE_TURNING_DYNATOM(this%wutp)
+   CALL FILE_TURNING_DYNATOMSURF(this%wutp)
    ! Run trajectories one by one
    DO i=this%thisinicond%nstart,this%thisinicond%ntraj
 #ifdef DEBUG
@@ -309,18 +309,18 @@ SUBROUTINE RUN_DYNATOM(this)
    CLOSE(this%wust)
    CLOSE(this%wutp)
    RETURN
-END SUBROUTINE RUN_DYNATOM
+END SUBROUTINE RUN_DYNATOMSURF
 !##############################################################
-!# SUBROUTINE : DO_DYNAMICS_DYNATOM ###########################
+!# SUBROUTINE : DO_DYNAMICS_DYNATOMSURF ###########################
 !##############################################################
 !> @brief
 !! Integrates equation of motion following specifications stored
 !! in @b this
 !--------------------------------------------------------------
-SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
+SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Dynatom),TARGET,INTENT(INOUT):: this
+   CLASS(DynAtomSurf),TARGET,INTENT(INOUT):: this
    INTEGER(KIND=4),INTENT(IN):: idtraj
    ! Local variables
    INTEGER:: i, cycles ! counters
@@ -329,7 +329,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
    REAL(KIND=8),DIMENSION(6):: atom_dofs, s, dfdt
    LOGICAL:: maxtime_reached
    LOGICAL:: switch, in_list
-   CHARACTER(LEN=*),PARAMETER:: routinename = "DO_DYNAMICS_DYNATOM: "
+   CHARACTER(LEN=*),PARAMETER:: routinename = "DO_DYNAMICS_DYNATOMSURF: "
    CLASS(Dynobject),POINTER:: atomo
    REAL(KIND=8):: masa
    ! Some Formats
@@ -356,7 +356,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
          ! Check if this traj is in list
          SELECT CASE(in_list)
             CASE(.TRUE.) ! Follow that traj!
-               CALL FILE_FOLLOWTRAJ_DYNATOM(this%wufo,idtraj)
+               CALL FILE_FOLLOWTRAJ_DYNATOMSURF(this%wufo,idtraj)
 #ifdef DEBUG
                CALL VERBOSE_WRITE(routinename,"Trajectory followed: ",idtraj)
 #endif
@@ -403,12 +403,12 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
          CASE(.TRUE.)
             SELECT CASE(cycles)
                CASE(1)
-                  WRITE(0,*) "DO_DYNAMICS_DYNATOM ERR: Initial position is not adequate"
+                  WRITE(0,*) "DO_DYNAMICS_DYNATOMSURF ERR: Initial position is not adequate"
                   WRITE(0,*) "Atomo id: ", idtraj
                   WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
                   CALL EXIT(1)
                CASE DEFAULT
-                  WRITE(0,*) "DO_DYNAMICS_DYNATOM ERR: This error is quite uncommon, guess what is happening by your own."
+                  WRITE(0,*) "DO_DYNAMICS_DYNATOMSURF ERR: This error is quite uncommon, guess what is happening by your own."
                   WRITE(0,*) "Atom id: ", idtraj
                   WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
                   CALL EXIT(1)
@@ -595,7 +595,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
             END SELECT
             CYCLE
          CASE(.FALSE.)
-            WRITE(0,*) "DO_DYNAMICS_DYNATOM ERR: Switches failed to classify this traj"
+            WRITE(0,*) "DO_DYNAMICS_DYNATOMSURF ERR: Switches failed to classify this traj"
             CALL EXIT(1)
       END SELECT
    END DO
@@ -606,9 +606,9 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
          ! do nothing
    END SELECT
    RETURN
-END SUBROUTINE DO_DYNAMICS_DYNATOM
+END SUBROUTINE DO_DYNAMICS_DYNATOMSURF
 !###########################################################
-!# SUBROUTINE: FILE_TRAJSTATUS_DYNATOM
+!# SUBROUTINE: FILE_TRAJSTATUS_DYNATOMSURF
 !###########################################################
 !> @brief
 !! If file exists, open unit in append mode, else, create the file
@@ -622,7 +622,7 @@ END SUBROUTINE DO_DYNAMICS_DYNATOM
 !> @date Aug/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE FILE_TRAJSTATUS_DYNATOM(wunit,filename,title)
+SUBROUTINE FILE_TRAJSTATUS_DYNATOMSURF(wunit,filename,title)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
@@ -631,7 +631,7 @@ SUBROUTINE FILE_TRAJSTATUS_DYNATOM(wunit,filename,title)
    CHARACTER(LEN=*),INTENT(IN) :: title
    ! Local variables
    LOGICAL :: file_exists
-   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_TRAJSTATUS_DYNATOM "
+   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_TRAJSTATUS_DYNATOMSURF "
    ! Run section
    INQUIRE(FILE=filename,EXIST=file_exists)
    SELECT CASE(file_exists)
@@ -653,9 +653,9 @@ SUBROUTINE FILE_TRAJSTATUS_DYNATOM(wunit,filename,title)
 #endif
    END SELECT
    RETURN
-END SUBROUTINE FILE_TRAJSTATUS_DYNATOM
+END SUBROUTINE FILE_TRAJSTATUS_DYNATOMSURF
 !###########################################################
-!# SUBROUTINE: FILE_TURNING_DYNATOM
+!# SUBROUTINE: FILE_TURNING_DYNATOMSURF
 !###########################################################
 !> @brief
 !! If  OUTDYN3Dturning.out exists, open unit in append mode, else, create the file
@@ -667,7 +667,7 @@ END SUBROUTINE FILE_TRAJSTATUS_DYNATOM
 !> @date Aug/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE FILE_TURNING_DYNATOM(wunit)
+SUBROUTINE FILE_TURNING_DYNATOMSURF(wunit)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
@@ -676,7 +676,7 @@ SUBROUTINE FILE_TURNING_DYNATOM(wunit)
    CHARACTER(LEN=19),PARAMETER :: filename="OUTDYN3Dturning.out"
    CHARACTER(LEN=34),PARAMETER :: title="TURNING POINTS FOR SCATTERED TRAJS"
    LOGICAL :: file_exists
-   CHARACTER(LEN=21),PARAMETER :: routinename="FILE_TURNING_DYNATOM "
+   CHARACTER(LEN=21),PARAMETER :: routinename="FILE_TURNING_DYNATOMSURF "
    ! Run section
    INQUIRE(FILE=filename,EXIST=file_exists)
    SELECT CASE(file_exists)
@@ -701,9 +701,9 @@ SUBROUTINE FILE_TURNING_DYNATOM(wunit)
 #endif
    END SELECT
    RETURN
-END SUBROUTINE FILE_TURNING_DYNATOM
+END SUBROUTINE FILE_TURNING_DYNATOMSURF
 !###########################################################
-!# SUBROUTINE: FILE_FOLLOWTRAJ_DYNATOM
+!# SUBROUTINE: FILE_FOLLOWTRAJ_DYNATOMSURF
 !###########################################################
 !> @brief
 !! Open file OUTDYN3D'trajid'.out in replace mode. The unit is
@@ -716,7 +716,7 @@ END SUBROUTINE FILE_TURNING_DYNATOM
 !> @date Aug/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE FILE_FOLLOWTRAJ_DYNATOM(wunit,idtraj)
+SUBROUTINE FILE_FOLLOWTRAJ_DYNATOMSURF(wunit,idtraj)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
@@ -725,7 +725,7 @@ SUBROUTINE FILE_FOLLOWTRAJ_DYNATOM(wunit,idtraj)
    CHARACTER(LEN=10) :: idstring
    CHARACTER(LEN=26) :: filename
    CHARACTER(LEN=24),PARAMETER :: title="TIME EVOLUTION OF A TRAJ"
-   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_FOLLOWTRAJ_DYNATOM "
+   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_FOLLOWTRAJ_DYNATOMSURF "
    ! Run section
    WRITE(idstring,'(I10.10)') idtraj
    filename='OUTDYN3Dtraj'//trim(idstring)//'.out'
@@ -739,9 +739,9 @@ SUBROUTINE FILE_FOLLOWTRAJ_DYNATOM(wunit,idtraj)
    CALL VERBOSE_WRITE(routinename,"Appending info to this file")
 #endif
    RETURN
-END SUBROUTINE FILE_FOLLOWTRAJ_DYNATOM
+END SUBROUTINE FILE_FOLLOWTRAJ_DYNATOMSURF
 !###############################################################
-!# SUBROUTINE : TIME_DERIVS_DYNATOM ########################
+!# SUBROUTINE : TIME_DERIVS_DYNATOMSURF ########################
 !###############################################################
 !> @brief
 !! Gives dzdt at z and t values from Hamilton equations of motion
@@ -751,10 +751,10 @@ END SUBROUTINE FILE_FOLLOWTRAJ_DYNATOM
 !> @param[out] dzdt - time derivatives of position and momenta
 !> @param[out] fin - controls errors
 !--------------------------------------------------------------
-SUBROUTINE TIME_DERIVS_DYNATOM(this,z,dzdt,fin)
+SUBROUTINE TIME_DERIVS_DYNATOMSURF(this,z,dzdt,fin)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Dynatom),INTENT(IN) :: this
+   CLASS(DynAtomSurf),INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(6),INTENT(IN) :: z
    REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dzdt
    LOGICAL, INTENT(OUT) :: fin
@@ -762,7 +762,7 @@ SUBROUTINE TIME_DERIVS_DYNATOM(this,z,dzdt,fin)
    INTEGER :: i ! counters
    REAL(KIND=8) :: mass
    REAL(KIND=8) :: v ! dummy variable
-   CHARACTER(LEN=21),PARAMETER :: routinename = "TIME_DERIVS_DYNATOM: "
+   CHARACTER(LEN=21),PARAMETER :: routinename = "TIME_DERIVS_DYNATOMSURF: "
    ! ROCK THE CASBAH ! ---------------------
    SELECT CASE(this%thispes%is_allowed(z(1:3)))
       CASE(.FALSE.)
@@ -777,7 +777,7 @@ SUBROUTINE TIME_DERIVS_DYNATOM(this,z,dzdt,fin)
          FORALL (i=4:6) dzdt(i) = -dzdt(i) ! -dV/dx (minus sign comes from here)
    END SELECT
    RETURN
-END SUBROUTINE TIME_DERIVS_DYNATOM
+END SUBROUTINE TIME_DERIVS_DYNATOMSURF
 !#########################################################################################
 !# SUBROUTINE: MMID_ATOM #################################################################
 !#########################################################################################
@@ -802,10 +802,10 @@ END SUBROUTINE TIME_DERIVS_DYNATOM
 !
 !> @see Fortran 77 numerical recipes
 !-----------------------------------------------------------------------------------------
-SUBROUTINE MMID_DYNATOM(this,y,dydx,xs,htot,nstep,yout,switch)
+SUBROUTINE MMID_DYNATOMSURF(this,y,dydx,xs,htot,nstep,yout,switch)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Dynatom),INTENT(IN) :: this
+   CLASS(DynAtomSurf),INTENT(IN) :: this
    INTEGER,INTENT(IN) :: nstep
    REAL(KIND=8),DIMENSION(6), INTENT(IN) :: y,dydx
    REAL(KIND=8),DIMENSION(6), INTENT(OUT) :: yout
@@ -850,9 +850,9 @@ SUBROUTINE MMID_DYNATOM(this,y,dydx,xs,htot,nstep,yout,switch)
       yout(i)=0.5D0*(ym(i)+yn(i)+h*yout(i))
    END DO
    RETURN
-END SUBROUTINE MMID_DYNATOM
+END SUBROUTINE MMID_DYNATOMSURF
 !##################################################################################################
-!# SUBROUTINE: RZEXTR_DYNATOM #####################################################################
+!# SUBROUTINE: RZEXTR_DYNATOMSURF #####################################################################
 !################################################################################################## 
 !> @brief 
 !! - A part of the Burlich-Stoer algorithm. Uses diagonal rational function extrapolation. 
@@ -861,10 +861,10 @@ END SUBROUTINE MMID_DYNATOM
 !! Taken from Numerical recipes in Fortran 77
 !> @see pzextr
 !--------------------------------------------------------------------------------------------------
-SUBROUTINE RZEXTR_DYNATOM(this,iest,xest,yest,yz,dy,nv)
+SUBROUTINE RZEXTR_DYNATOMSURF(this,iest,xest,yest,yz,dy,nv)
 	IMPLICIT NONE
 	! I/O variables
-   CLASS(Dynatom),INTENT(IN):: this
+   CLASS(DynAtomSurf),INTENT(IN):: this
 	INTEGER,INTENT(IN) :: iest, nv
 	REAL(KIND=8),INTENT(IN) :: xest
 	REAL(KIND=8),DIMENSION(nv), INTENT(IN) :: yest
@@ -916,9 +916,9 @@ SUBROUTINE RZEXTR_DYNATOM(this,iest,xest,yest,yz,dy,nv)
 		END DO
 	END IF
 	RETURN
-END SUBROUTINE RZEXTR_DYNATOM
+END SUBROUTINE RZEXTR_DYNATOMSURF
 !############################################################################################
-!# SUBROUTINE : PZEXTR_DYNATOM ##############################################################
+!# SUBROUTINE : PZEXTR_DYNATOMSURF ##############################################################
 !############################################################################################
 !!> @brief
 !! Uses polynomial extrapolation to evaluate nv functions at x = 0 by fitting a polynomial to a
@@ -932,10 +932,10 @@ END SUBROUTINE RZEXTR_DYNATOM
 !
 !> @see Numerical recipes in fortran 77 
 !--------------------------------------------------------------------------------------------
-SUBROUTINE PZEXTR_DYNATOM(this,iest,xest,yest,yz,dy,nv)
+SUBROUTINE PZEXTR_DYNATOMSURF(this,iest,xest,yest,yz,dy,nv)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Dynatom),INTENT(IN):: this
+   CLASS(DynAtomSurf),INTENT(IN):: this
    INTEGER,INTENT(IN) :: iest, nv
    REAL(KIND=8),INTENT(IN) :: xest
    REAL(KIND=8),DIMENSION(nv),INTENT(IN) :: yest
@@ -981,7 +981,7 @@ SUBROUTINE PZEXTR_DYNATOM(this,iest,xest,yest,yz,dy,nv)
       END DO
    END IF
    RETURN
-END SUBROUTINE PZEXTR_DYNATOM
+END SUBROUTINE PZEXTR_DYNATOMSURF
 !###############################################################################################
 !# SUBROUTINE : BSSTEP_ATOM ####################################################################
 !###############################################################################################
@@ -1010,10 +1010,10 @@ END SUBROUTINE PZEXTR_DYNATOM
 !! - Should be generalized (pending task)
 !! - Should use dynamic memory (pending task)
 !------------------------------------------------------------------------------------------------
-SUBROUTINE BSSTEP_DYNATOM(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
+SUBROUTINE BSSTEP_DYNATOMSURF(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(Dynatom),INTENT(IN) :: this
+	CLASS(DynAtomSurf),INTENT(IN) :: this
 	REAL(KIND=8), INTENT(IN) :: eps     ! required accuracy
 	REAL(KIND=8), INTENT(IN) ::  htry   ! step to try
 	REAL(KIND=8), DIMENSION(6) :: yscal ! factors to scale error 
@@ -1034,7 +1034,7 @@ SUBROUTINE BSSTEP_DYNATOM(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	INTEGER,PARAMETER :: NMAX = 50
 	INTEGER,PARAMETER :: KMAXX = 8
 	INTEGER,PARAMETER :: IMAX = KMAXX+1
-	CHARACTER(LEN=16), PARAMETER :: routinename = "BSSTEP_DYNATOM: "
+	CHARACTER(LEN=16), PARAMETER :: routinename = "BSSTEP_DYNATOMSURF: "
 	! Local variables
 	INTEGER, DIMENSION(IMAX) :: nseq
 	REAL(KIND=8), DIMENSION(KMAXX) :: err
@@ -1149,5 +1149,5 @@ SUBROUTINE BSSTEP_DYNATOM(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 		END IF
 	END IF
 	RETURN
-END SUBROUTINE BSSTEP_DYNATOM
-END MODULE DYNATOM_MOD
+END SUBROUTINE BSSTEP_DYNATOMSURF
+END MODULE DYNATOMSURF_MOD
