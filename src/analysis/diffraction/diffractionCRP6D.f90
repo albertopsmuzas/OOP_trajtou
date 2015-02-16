@@ -425,9 +425,11 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
 	   ! Local variables
 	   real(kind=8):: deltaJ,diff
 	   integer(kind=4):: i ! counter
+	   integer(kind=4):: firstI
 	   ! Run section
 	   deltaJ=dfloat(dJ)*0.5d0
-      do i=0,1000,dJ ! almost infinite loop
+	   firstI=mod(this%inicond%init_qn(2),2)
+      do i=firstI,1000,dJ ! almost infinite loop
 	      diff=J-dfloat(i)
 	      select case( dabs(diff)<=deltaJ )
 	      case(.true.)
