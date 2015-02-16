@@ -4,13 +4,13 @@
 !! Provides tools to run dynamics on atoms
 !##########################################################
 MODULE DYNATOMSURF_MOD
-   use SYSTEM_MOD
-   use DYNAMICS_MOD
-   use INITATOM_MOD
-   use AOTUS_MODULE, only: flu_State,OPEN_CONFIG_FILE,CLOSE_CONFIG, AOT_GET_VAL
-   use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN,AOT_TABLE_CLOSE,AOT_TABLE_LENGTH,AOT_TABLE_GET_VAL
+use SYSTEM_MOD
+use DYNAMICS_MOD
+use INITATOMSURF_MOD, only: InitAtomSurf
+use AOTUS_MODULE, only: flu_State,OPEN_CONFIG_FILE,CLOSE_CONFIG, AOT_GET_VAL
+use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN,AOT_TABLE_CLOSE,AOT_TABLE_LENGTH,AOT_TABLE_GET_VAL
 #ifdef DEBUG
-   use DEBUG_MOD, only: verbose_write,debug_write
+use DEBUG_MOD, only: verbose_write,debug_write
 #endif
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////
@@ -31,6 +31,7 @@ TYPE,EXTENDS(Dynamics):: DynAtomSurf
    CHARACTER(LEN=:),ALLOCATABLE:: extrapol
    CHARACTER(LEN=:),ALLOCATABLE:: scaling
    REAL(KIND=8):: eps
+   real(kind=8):: energyTolerance
    TYPE(Length):: zstop, dzstop
    TYPE(Length):: zscatt,zads,zabs
    INTEGER(KIND=4),PRIVATE:: wusc=800 ! write unit for scattered trajs
@@ -112,10 +113,10 @@ SUBROUTINE INITIALIZE_DYNATOMSURF(this,filename)
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='kind',val=auxstring)
    this%kind=trim(auxstring)
    SELECT CASE(this%kind)
-      CASE("Atoms")
+      CASE("AtomSurfs")
          ! do nothing
       CASE DEFAULT
-         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Expected Atom for dynamics.kind"
+         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Expected AtomSurfs for dynamics.kind"
          CALL EXIT(1)
    END SELECT
 #ifdef DEBUG
@@ -139,13 +140,13 @@ SUBROUTINE INITIALIZE_DYNATOMSURF(this,filename)
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='kind',val=auxstring)
    CALL AOT_TABLE_CLOSE(L=conf,thandle=inicond_table)
    SELECT CASE(trim(auxstring))
-      CASE('Atoms')
-         ALLOCATE(Initatom::this%thisinicond)
+      CASE('AtomSurfs')
+         ALLOCATE(InitAtomSurf::this%thisinicond)
          CALL this%thisinicond%INITIALIZE()
          CALL this%thisinicond%GENERATE_TRAJS(this%thispes)
       CASE DEFAULT
-         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Initial conditions not implemented for atom dynamics"
-         WRITE(0,*) "Available ones: Atoms"
+         WRITE(0,*) "INITIALIZE_DYNATOMSURF ERR: Initial conditions not implemented for AtomSurf dynamics"
+         WRITE(0,*) "Available ones: AtomSurfs"
          CALL EXIT(1)
    END SELECT
    ! Get time step
@@ -260,6 +261,7 @@ SUBROUTINE INITIALIZE_DYNATOMSURF(this,filename)
 #endif
    ! get eps
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='precision',val=this%eps)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=dyn_table,key='energyTolerance',val=this%energyTolerance)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"Read: precision of integration (dimensionless factor): ",this%eps)
 #endif
@@ -326,18 +328,19 @@ SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
    INTEGER:: i, cycles ! counters
    REAL(KIND=8):: t,dt,E,init_t,init_E,v,dt_did,dt_next,zmin,angle
    REAL(KIND=8),DIMENSION(3):: dummy
-   REAL(KIND=8),DIMENSION(6):: atom_dofs, s, dfdt
+   REAL(KIND=8),DIMENSION(12):: atomSurf_dofs, s, dfdt
    LOGICAL:: maxtime_reached
    LOGICAL:: switch, in_list
    CHARACTER(LEN=*),PARAMETER:: routinename = "DO_DYNAMICS_DYNATOMSURF: "
-   CLASS(Dynobject),POINTER:: atomo
-   REAL(KIND=8):: masa
+   CLASS(Dynobject),POINTER:: atomoSurf
+   REAL(KIND=8):: masa,masaSurf
    ! Some Formats
-10 FORMAT(I7,1X,A10,1X,I4,1X,I5,1X,8(F15.5,1X)) ! Format to print in status files
-11 FORMAT(I7,1X,3(F10.5,1X)) ! Format to print in turning points file
+10 FORMAT(I7,1X,A10,1X,I4,1X,I4,1X,2(F15.5,1X),12(F15.5,1X)) ! Format to print in status files
+11 FORMAT(I7,1X,6(F10.5,1X)) ! Format to print in turning points file
    ! HEY HO!, LET'S GO!!! -------------------------
-   atomo => this%thisinicond%trajs(idtraj)
+   atomoSurf => this%thisinicond%trajs(idtraj)
    masa = system_mass(1)
+   masaSurf = system_surfMass
    ! Check if there are trajectories fo follow step by step
    in_list = .FALSE.
    SELECT CASE(this%nfollow)
@@ -368,17 +371,17 @@ SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
          END SELECT
    END SELECT
    cycles=0 
-   zmin = atomo%init_r(3)
+   zmin = atomoSurf%init_r(3)
    t=0.D0
-   atomo%ireb=0
-   atomo%ixyboun=0
+   atomoSurf%ireb=0
+   atomoSurf%ixyboun=0
    dt=this%delta_t%getvalue()
    ! Iterations
    DO
       switch = .FALSE.
       cycles = cycles+1
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Cycle: ",cycles)
+      CALL DEBUG_WRITE(routinename,"Cycle: ",cycles)
 #endif
       ! We cannot go beyond maximum time defined
       SELECT CASE(t+dt > this%max_t%getvalue())
@@ -389,15 +392,15 @@ SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
       END SELECT
       init_t = t
       ! Storing atomic DOF's in only one array
-      atom_dofs(1:3)=atomo%r(1:3)
-      atom_dofs(4:6)=atomo%p(1:3)
+      atomSurf_dofs(1:6)=atomoSurf%r(:)
+      atomSurf_dofs(7:12)=atomoSurf%p(:)
       ! Initial values for the derivatives
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Atomic DOFS : ",atom_dofs)
+      CALL DEBUG_WRITE(routinename,"Atomic DOFS : ",atomSurf_dofs)
 #endif
-      CALL this%TIME_DERIVS(atom_dofs,dfdt,switch)
+      CALL this%TIME_DERIVS(atomSurf_dofs,dfdt,switch)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Time derivatives: ",dfdt)
+      CALL DEBUG_WRITE(routinename,"Time derivatives: ",dfdt)
 #endif
       SELECT CASE(switch)
          CASE(.TRUE.)
@@ -405,12 +408,12 @@ SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
                CASE(1)
                   WRITE(0,*) "DO_DYNAMICS_DYNATOMSURF ERR: Initial position is not adequate"
                   WRITE(0,*) "Atomo id: ", idtraj
-                  WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
+                  WRITE(0,*) "Atom DOF'S: ", atomSurf_dofs(:)
                   CALL EXIT(1)
                CASE DEFAULT
                   WRITE(0,*) "DO_DYNAMICS_DYNATOMSURF ERR: This error is quite uncommon, guess what is happening by your own."
                   WRITE(0,*) "Atom id: ", idtraj
-                  WRITE(0,*) "Atom DOF'S: ", atom_dofs(:)
+                  WRITE(0,*) "Atom DOF'S: ", atomSurf_dofs(:)
                   CALL EXIT(1)
             END SELECT
          CASE(.FALSE.)
@@ -419,23 +422,23 @@ SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
       ! Construct scaling array
       SELECT CASE(this%scaling)
          CASE("Smart")
-            FORALL (i=1:6) s(i) = DABS(atom_dofs(i))+DABS(dt*dfdt(i)) ! Numerical Recipes.  
+            FORALL (i=1:12) s(i) = DABS(atomSurf_dofs(i))+DABS(dt*dfdt(i)) ! Numerical Recipes.
          CASE("Equal")
-            s(1:6)=1.D0
+            s(:)=1.D0
          CASE DEFAULT
             WRITE(0,*) "DO_DYNAMICS ERR: incorrect scaling Keyword"
             CALL EXIT(1)
       END SELECT
       ! Energy before time-integration (a.u.)
-      init_E = atomo%E
+      init_E = atomoSurf%E
       ! Integrate and choose the correct time-step
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Energy before integration:",atomo%E)
+      CALL DEBUG_WRITE(routinename,"Energy before integration:",atomoSurf%E)
 #endif
       ! Call integrator
-      CALL this%BSSTEP(atom_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
+      CALL this%BSSTEP(atomSurf_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Atomic DOFs after integration: ",atom_dofs)
+      CALL DEBUG_WRITE(routinename,"Atomic DOFs after integration: ",atomSurf_dofs)
 #endif
       SELECT CASE(switch)
          CASE(.TRUE.)
@@ -444,53 +447,56 @@ SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
             dt = dt/2.D0 
             t = init_t
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Error encountered while integration of eq. of motion")
-            CALL VERBOSE_WRITE(routinename,"Halving time-step to: ", dt)
+            CALL DEBUG_WRITE(routinename,"Error encountered while integration of eq. of motion")
+            CALL DEBUG_WRITE(routinename,"Halving time-step to: ", dt)
 #endif
             CYCLE
          CASE(.FALSE.)
             ! do nothing
       END SELECT
-      ! At this point, atom_dofs contains the new values for position and momenta
+      ! At this point, atomSurf_dofs contains the new values for position and momenta
       ! Let's obtain the potential value for this configuration
-      CALL this%thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy)
-      E = (atom_dofs(4)**2.D0+atom_dofs(5)**2.D0+atom_dofs(6)**2.D0)/(2.D0*masa)+v
+      CALL this%thispes%GET_V_AND_DERIVS(atomSurf_dofs(1:3)-atomSurf_dofs(4:6),v,dummy)
+      dummy(1:3)=atomSurf_dofs(4:6)*system_surfFreqs(1:3)
+      E = 0.5d0*dot_product(atomSurf_dofs(7:9),atomSurf_dofs(7:9))/masa         &
+         +0.5d0*dot_product(atomSurf_dofs(10:12),atomSurf_dofs(10:12))/masaSurf &
+         +0.5d0*masaSurf*dot_product(dummy,dummy) + v
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
+      CALL DEBUG_WRITE(routinename,"Energy after integration:",E)
 #endif
-      SELECT CASE (DABS(E-atomo%E) > this%eps*atomo%E)
+      SELECT CASE (DABS(E-atomoSurf%init_E) > this%energyTolerance*atomoSurf%init_E)
          CASE(.TRUE.)
             ! Problems with energy conservation
             ! reboot to previous step values
             dt = dt/2.D0
             t = init_t
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,"Poor energy conservation. Cycling.")
+            CALL DEBUG_WRITE(routinename,"Poor energy conservation. Cycling.")
 #endif
             CYCLE
       CASE(.FALSE.)
          ! do nothing
       END SELECT
       ! Check  bouncing points in Z direction (Z-Turning point)
-      SELECT CASE((atomo%p(3) < 0.D0).AND.(atom_dofs(6) > 0.D0))
+      SELECT CASE( atomoSurf%p(3)<0.D0 .and. atomSurf_dofs(9)>0.D0 )
          CASE(.TRUE.)
-            atomo%ireb = atomo%ireb +1
+            atomoSurf%ireb = atomoSurf%ireb +1
          CASE(.FALSE.)
             ! do nothing
       END SELECT
       ! Check bouncing points in XY (sign of Px or Py changes respect to previous integration step)
-      SELECT CASE ((DSIGN(atom_dofs(4),atom_dofs(4)).NE.DSIGN(atom_dofs(4),atomo%p(1))).OR. &
-                  (DSIGN(atom_dofs(5),atom_dofs(5)).NE.DSIGN(atom_dofs(5),atomo%p(2))))
+      SELECT CASE ((DSIGN(atomSurf_dofs(7),atomSurf_dofs(7)) /= DSIGN(atomSurf_dofs(7),atomoSurf%p(1))).OR. &
+                   (DSIGN(atomSurf_dofs(8),atomSurf_dofs(8)) /= DSIGN(atomSurf_dofs(8),atomoSurf%p(2))))
          CASE(.TRUE.)
-            atomo%ixyboun = atomo%ixyboun+1
+            atomoSurf%ixyboun = atomoSurf%ixyboun+1
          CASE(.FALSE.)
             ! do nothing
       END SELECT
       ! Store last minimum Z value reached. This will be the turning-point
-      SELECT CASE (atom_dofs(3) <= zmin)
+      SELECT CASE (atomSurf_dofs(3) <= zmin)
          CASE(.TRUE.)
-            zmin = atom_dofs(3)
-            atomo%turning_point(1:3) = atom_dofs(1:3)
+            zmin = atomSurf_dofs(3)
+            atomoSurf%turning_point(:) = atomSurf_dofs(1:6)
          CASE(.FALSE.)
             ! do nothing
       END SELECT
@@ -501,102 +507,125 @@ SUBROUTINE DO_DYNAMICS_DYNATOMSURF(this,idtraj)
          CASE(.FALSE.)
             maxtime_reached=.FALSE.
       END SELECT
-      SELECT CASE ((atom_dofs(3) <= this%zstop%getvalue()+this%dzstop%getvalue()).AND. &
-                  (atom_dofs(3) > this%zstop%getvalue()-this%dzstop%getvalue()))
+      SELECT CASE ((atomSurf_dofs(3) <= this%zstop%getvalue()+this%dzstop%getvalue()).AND. &
+                   (atomSurf_dofs(3) > this%zstop%getvalue()-this%dzstop%getvalue()))
          CASE(.TRUE.)
-            atomo%stat = "Stopped"
-            atomo%r(1:3) = atom_dofs(1:3)
-            atomo%p(1:3) = atom_dofs(4:6)
-            atomo%E = E
-            WRITE(this%wust,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+            atomoSurf%stat = "Stopped"
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E = E
+            WRITE(this%wust,10) idtraj,atomoSurf%stat,atomoSurf%ireb,atomoSurf%ixyboun,atomoSurf%E,t,atomoSurf%r,atomoSurf%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This trajectory was stopped')
+#endif
             EXIT
         CASE(.FALSE.)
            ! do nothing, next switch
       END SELECT
-      SELECT CASE ((atomo%r(3) >= this%zscatt%getvalue()).AND.(atomo%p(3) > 0.D0))
+      SELECT CASE ((atomSurf_dofs(3)-atomSurf_dofs(6) >= this%zscatt%getvalue()).AND.(atomSurf_dofs(9) > 0.D0))
          CASE(.TRUE.)
-            atomo%stat="Scattered"                                            
-            atomo%r(1:3)=atom_dofs(1:3)
-            atomo%p(1:3)=atom_dofs(4:6)
-            atomo%E=E
-            atomo%turning_point(1:2) = system_surface%project_unitcell(atomo%turning_point(1:2))
-            WRITE(this%wusc,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
-            WRITE(this%wutp,11) idtraj,atomo%turning_point(:)
+            atomoSurf%stat="Scattered"
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E=E
+            atomoSurf%turning_point(1:2) = system_surface%project_unitcell(atomoSurf%turning_point(1:2))
+            WRITE(this%wusc,10) idtraj,atomoSurf%stat,atomoSurf%ireb,atomoSurf%ixyboun,atomoSurf%E,t,atomoSurf%r,atomoSurf%p
+            WRITE(this%wutp,11) idtraj,atomoSurf%turning_point(:)
+#ifdef DEBUG
+            call verbose_write(routinename,'This trajectory was scattered')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing next switch
       END SELECT
-      SELECT CASE ((atom_dofs(3) <= this%zabs%getvalue()).AND.(atom_dofs(6) < 0.D0))
+      SELECT CASE ((atomSurf_dofs(3)-atomSurf_dofs(6) <= this%zabs%getvalue()).AND.(atomSurf_dofs(9) < 0.D0))
          CASE(.TRUE.)
-            atomo%stat = "Absorbed"
-            atomo%r(1:3) = atom_dofs(1:3)
-            atomo%p(1:3) = atom_dofs(4:6)
-            atomo%E = E
-            WRITE(this%wuab,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+            atomoSurf%stat = "Absorbed"
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E = E
+            WRITE(this%wuab,10) idtraj,atomoSurf%stat,atomoSurf%ireb,atomoSurf%ixyboun,atomoSurf%E,t,atomoSurf%r,atomoSurf%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This trajectory was absorbed')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE ((v < 0.D0).AND.(atom_dofs(3) <= this%zads%getvalue()).AND.maxtime_reached)
+      SELECT CASE ((v < 0.D0).AND.(atomSurf_dofs(3)-atomSurf_dofs(6) <= this%zads%getvalue()).AND.maxtime_reached)
          CASE(.TRUE.)
-            atomo%stat = "Adsorbed"
-            atomo%r(1:3) = atom_dofs(1:3)
-            atomo%p(1:3) = atom_dofs(4:6)
-            atomo%E = E
-            WRITE(this%wuad,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+            atomoSurf%stat = "Adsorbed"
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E = E
+            WRITE(this%wuad,10) idtraj,atomoSurf%stat,atomoSurf%ireb,atomoSurf%ixyboun,atomoSurf%E,t,atomoSurf%r,atomoSurf%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This trajectory was adsorbed')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE (atom_dofs(3) <= this%zads%getvalue() .AND. maxtime_reached)
+      SELECT CASE (atomSurf_dofs(3)-atomSurf_dofs(6) <= this%zads%getvalue() .AND. maxtime_reached)
          CASE(.TRUE.)
-            atomo%stat = "Trapped"
-            atomo%r(1:3) = atom_dofs(1:3)
-            atomo%p(1:3) = atom_dofs(4:6)
-            atomo%E = E
-            WRITE(this%wutr,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+            atomoSurf%stat = "Trapped"
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E = E
+            WRITE(this%wutr,10) idtraj,atomoSurf%stat,atomoSurf%ireb,atomoSurf%ixyboun,atomoSurf%E,t,atomoSurf%r,atomoSurf%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This trajectory was trapped')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
       SELECT CASE (maxtime_reached)
          CASE(.TRUE.)
-            atomo%stat = "Time-out"
-            atomo%r(1:3) = atom_dofs(1:3)
-            atomo%p(1:3) = atom_dofs(4:6)
-            atomo%E = E
-            WRITE(this%wuto,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+            atomoSurf%stat = "Time-out"
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E = E
+            WRITE(this%wuto,10) idtraj,atomoSurf%stat,atomoSurf%ireb,atomoSurf%ixyboun,atomoSurf%E,t,atomoSurf%r,atomoSurf%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This trajectory was timed-out')
+#endif
             EXIT
          CASE(.FALSE.)
             !do nothing next switch
       END SELECT
       SELECT CASE((cycles > 1000).AND.(dt < 1.D-9))
          CASE(.TRUE.)
-            atomo%stat = "Patologic"
-            atomo%r(1:3) = atom_dofs(1:3)
-            atomo%p(1:3) = atom_dofs(4:6)
-            atomo%E = E
-            WRITE(this%wupa,10) idtraj,atomo%stat,atomo%ireb,atomo%ixyboun,atomo%E,t,atomo%r,atomo%p
+            atomoSurf%stat = "Patologic"
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E = E
+            WRITE(this%wupa,10) idtraj,atomoSurf%stat,atomoSurf%ireb,atomoSurf%ixyboun,atomoSurf%E,t,atomoSurf%r,atomoSurf%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This trajectory was patologic')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
       SELECT CASE(.NOT.maxtime_reached)
-      CASE(.TRUE.)
-         atomo%r(1:3) = atom_dofs(1:3)
-            atomo%p(1:3) = atom_dofs(4:6)
-            atomo%E = E
+         CASE(.TRUE.)
+            atomoSurf%r(:) = atomSurf_dofs(1:6)
+            atomoSurf%p(:) = atomSurf_dofs(7:12)
+            atomoSurf%E = E
             dt = dt_next
             SELECT CASE((this%nfollow.NE.0).AND.(in_list))
                CASE(.TRUE.)
-                  WRITE(this%wufo,*) t,dt_did,atomo%E,(atomo%p(3)**2.D0)/(2.D0*masa),v,atomo%r(:),atomo%p(:) 
+                  WRITE(this%wufo,*) t,dt_did,atomoSurf%E,(atomoSurf%p(3)**2.D0)/(2.D0*masa),v,atomoSurf%r(:),atomoSurf%p(:)
                CASE(.FALSE.)
-                  ! do nothing
+               ! do nothing
             END SELECT
             CYCLE
+
          CASE(.FALSE.)
             WRITE(0,*) "DO_DYNAMICS_DYNATOMSURF ERR: Switches failed to classify this traj"
             CALL EXIT(1)
+
       END SELECT
    END DO
    SELECT CASE(this%nfollow/=0)
@@ -631,7 +660,7 @@ SUBROUTINE FILE_TRAJSTATUS_DYNATOMSURF(wunit,filename,title)
    CHARACTER(LEN=*),INTENT(IN) :: title
    ! Local variables
    LOGICAL :: file_exists
-   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_TRAJSTATUS_DYNATOMSURF "
+   CHARACTER(LEN=*),PARAMETER :: routinename="FILE_TRAJSTATUS_DYNATOMSURF "
    ! Run section
    INQUIRE(FILE=filename,EXIST=file_exists)
    SELECT CASE(file_exists)
@@ -644,7 +673,8 @@ SUBROUTINE FILE_TRAJSTATUS_DYNATOMSURF(wunit,filename,title)
       CASE(.FALSE.)
          OPEN(wunit,FILE=filename,STATUS="new")
          WRITE(wunit,*) "# ***** ",title," *****"
-         WRITE(wunit,*) "# Format: id/status/ireb/ixyboun/Etot(a.u.)/t(a.u.)/X,Y,Z(a.u.)/Px,Py,Pz(a.u.)"
+         WRITE(wunit,*) "# Format: id/status/ireb/ixyboun/Etot(au)/t(au)/X,Y,Z,Xs,Ys,Zs(au)/&
+                        &/Px,Py,Pz,Pxs,Pys,Pzs(au)"
          WRITE(wunit,*) "# -----------------------------------------------------------"
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
@@ -676,7 +706,7 @@ SUBROUTINE FILE_TURNING_DYNATOMSURF(wunit)
    CHARACTER(LEN=19),PARAMETER :: filename="OUTDYN3Dturning.out"
    CHARACTER(LEN=34),PARAMETER :: title="TURNING POINTS FOR SCATTERED TRAJS"
    LOGICAL :: file_exists
-   CHARACTER(LEN=21),PARAMETER :: routinename="FILE_TURNING_DYNATOMSURF "
+   CHARACTER(LEN=*),PARAMETER :: routinename="FILE_TURNING_DYNATOMSURF "
    ! Run section
    INQUIRE(FILE=filename,EXIST=file_exists)
    SELECT CASE(file_exists)
@@ -692,7 +722,7 @@ SUBROUTINE FILE_TURNING_DYNATOMSURF(wunit)
          WRITE(wunit,*) "# Description: positions of scattered atoms at their lowest  "
          WRITE(wunit,*) "#              Z value reached during the dynamics. X and Y  "
          WRITE(wunit,*) "#              values are projected in the unit cell.        "
-         WRITE(wunit,*) "# Format: id/X,Y,Z(a.u.)                                   "
+         WRITE(wunit,*) "# Format: id/X,Y,Z,Xs,Ys,Zs(au)                                   "
          WRITE(wunit,*) "# -----------------------------------------------------------"
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
@@ -724,14 +754,15 @@ SUBROUTINE FILE_FOLLOWTRAJ_DYNATOMSURF(wunit,idtraj)
    ! Local variables
    CHARACTER(LEN=10) :: idstring
    CHARACTER(LEN=26) :: filename
-   CHARACTER(LEN=24),PARAMETER :: title="TIME EVOLUTION OF A TRAJ"
-   CHARACTER(LEN=24),PARAMETER :: routinename="FILE_FOLLOWTRAJ_DYNATOMSURF "
+   CHARACTER(LEN=*),PARAMETER :: title="TIME EVOLUTION OF A TRAJ"
+   CHARACTER(LEN=*),PARAMETER :: routinename="FILE_FOLLOWTRAJ_DYNATOMSURF "
    ! Run section
    WRITE(idstring,'(I10.10)') idtraj
    filename='OUTDYN3Dtraj'//trim(idstring)//'.out'
    OPEN(wunit,FILE=filename,STATUS="replace",ACTION="write")
    WRITE(wunit,*) "# ***** ",title," *****"
-   WRITE(wunit,*) "# Format: t(a.u.)/dt(a.u.)/Etot(a.u.)/Enorm(a.u.)/Pot(a.u.)/X,Y,Z(a.u.)/Px,Py,Pz(a.u.)"
+   WRITE(wunit,*) "# Format: t(au)/dt(au)/Etot(au)/Enorm(au)/Pot(au)/X,Y,Z,Xs,Ys,Zs(au)/&
+                   &Px,Py,Pz,Pxs,Pys,Pzs(au)"
    WRITE(wunit,*) "# ----------------------------------------------------------------"
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New file created: ",filename)
@@ -747,34 +778,32 @@ END SUBROUTINE FILE_FOLLOWTRAJ_DYNATOMSURF
 !! Gives dzdt at z and t values from Hamilton equations of motion
 !
 !> @param[in] this - Provides some data
-!> @param[in] z - array of positions and momenta. z(1:3) -> positions, z(4:6) -> momenta 
+!> @param[in] z - array of positions and momenta. z(1:6) -> positions, z(7:12) -> momenta
 !> @param[out] dzdt - time derivatives of position and momenta
 !> @param[out] fin - controls errors
 !--------------------------------------------------------------
 SUBROUTINE TIME_DERIVS_DYNATOMSURF(this,z,dzdt,fin)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(DynAtomSurf),INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: z
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT) :: dzdt
-   LOGICAL, INTENT(OUT) :: fin
+   CLASS(DynAtomSurf),INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(12),INTENT(IN):: z
+   REAL(KIND=8),DIMENSION(12),INTENT(OUT):: dzdt
+   LOGICAL,INTENT(OUT):: fin
    ! Local variables
-   INTEGER :: i ! counters
-   REAL(KIND=8) :: mass
-   REAL(KIND=8) :: v ! dummy variable
-   CHARACTER(LEN=21),PARAMETER :: routinename = "TIME_DERIVS_DYNATOMSURF: "
+   REAL(KIND=8):: v ! dummy variable
+   CHARACTER(LEN=*),PARAMETER:: routinename = "TIME_DERIVS_DYNATOMSURF: "
    ! ROCK THE CASBAH ! ---------------------
-   SELECT CASE(this%thispes%is_allowed(z(1:3)))
+   SELECT CASE(this%thispes%is_allowed(z(1:3)-z(4:6)))
       CASE(.FALSE.)
          fin = .TRUE.
       CASE(.TRUE.)
          fin=.FALSE.
-         mass=system_mass(1) ! there'd be only one atom defined in the PES
-         DO i = 1, 3
-            dzdt(i) = z(i+3)/mass ! Px/m,  etc...
-         END DO
-         CALL this%thispes%GET_V_AND_DERIVS(z(1:3),v,dzdt(4:6))
-         FORALL (i=4:6) dzdt(i) = -dzdt(i) ! -dV/dx (minus sign comes from here)
+         dzdt(1:3)=z(7:9)/system_mass(1)
+         dzdt(4:6)=z(10:12)/system_surfMass
+         call this%thispes%GET_V_AND_DERIVS(z(1:3)-z(4:6),v,dzdt(7:9))
+         dzdt(7:9)=-dzdt(7:9)
+         dzdt(10:12)=-dzdt(7:9)-system_surfMass*z(4:6)*system_surfFreqs(1:3)**2.d0
+         !           ^--- negative sign because the sign was changed in the previous line
    END SELECT
    RETURN
 END SUBROUTINE TIME_DERIVS_DYNATOMSURF
@@ -807,14 +836,14 @@ SUBROUTINE MMID_DYNATOMSURF(this,y,dydx,xs,htot,nstep,yout,switch)
    ! I/O variables
    CLASS(DynAtomSurf),INTENT(IN) :: this
    INTEGER,INTENT(IN) :: nstep
-   REAL(KIND=8),DIMENSION(6), INTENT(IN) :: y,dydx
-   REAL(KIND=8),DIMENSION(6), INTENT(OUT) :: yout
+   REAL(KIND=8),DIMENSION(12), INTENT(IN) :: y,dydx
+   REAL(KIND=8),DIMENSION(12), INTENT(OUT) :: yout
    REAL(KIND=8),INTENT(IN) :: xs,htot
    LOGICAL,INTENT(INOUT) :: switch
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: ym,yn
+   REAL(KIND=8),DIMENSION(12) :: ym,yn
    INTEGER :: i,n ! counters
-   INTEGER,PARAMETER :: nvar = 6
+   INTEGER,PARAMETER :: nvar = 12
    REAL(KIND=8) :: h,h2,swap,x
    ! ROCK THE CASBAH !!! ---------------------
    h=htot/DFLOAT(nstep) ! Stepsize this trip.
@@ -1013,37 +1042,37 @@ END SUBROUTINE PZEXTR_DYNATOMSURF
 SUBROUTINE BSSTEP_DYNATOMSURF(this,y,dydx,x,htry,eps,yscal,hdid,hnext,switch)
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(DynAtomSurf),INTENT(IN) :: this
-	REAL(KIND=8), INTENT(IN) :: eps     ! required accuracy
-	REAL(KIND=8), INTENT(IN) ::  htry   ! step to try
-	REAL(KIND=8), DIMENSION(6) :: yscal ! factors to scale error 
-	REAL(KIND=8), DIMENSION(6), INTENT(IN) :: dydx 
-	REAL(KIND=8), DIMENSION(6), INTENT(INOUT) :: y ! initial/final values for: X,Y,Z,Px,Py,Pz (in this order)
-	REAL(KIND=8), INTENT(INOUT) :: x
-	LOGICAL, INTENT(INOUT) :: switch ! .TRUE. if potential could not be calculated
-	REAL(KIND=8), INTENT(OUT) :: hdid  ! step actually used
-	REAL(KIND=8), INTENT(OUT) :: hnext ! guess of the next step
+	CLASS(DynAtomSurf),INTENT(IN):: this
+	REAL(KIND=8),INTENT(IN):: eps     ! required accuracy
+	REAL(KIND=8),INTENT(IN)::  htry   ! step to try
+	REAL(KIND=8),DIMENSION(12):: yscal ! factors to scale error
+	REAL(KIND=8),DIMENSION(12),INTENT(IN):: dydx
+	REAL(KIND=8),DIMENSION(12),INTENT(INOUT):: y ! initial/final values for: X,Y,Z,Px,Py,Pz (in this order)
+	REAL(KIND=8),INTENT(INOUT):: x
+	LOGICAL,INTENT(INOUT):: switch ! .TRUE. if potential could not be calculated
+	REAL(KIND=8),INTENT(OUT):: hdid  ! step actually used
+	REAL(KIND=8),INTENT(OUT):: hnext ! guess of the next step
 	! Parameters for this routine
-	INTEGER, PARAMETER :: nv = 6
-	REAL(KIND=8),PARAMETER :: SAFE1 = 0.25D0
-	REAL(KIND=8),PARAMETER :: SAFE2 = 0.7D0
-	REAL(KIND=8),PARAMETER :: TINY = 1.D-30 
-	REAL(KIND=8),PARAMETER :: SCALMX = 0.1D0
-	REAL(KIND=8),PARAMETER :: REDMIN = 0.7D0
-	REAL(KIND=8),PARAMETER :: REDMAX = 1.D-5
-	INTEGER,PARAMETER :: NMAX = 50
-	INTEGER,PARAMETER :: KMAXX = 8
-	INTEGER,PARAMETER :: IMAX = KMAXX+1
-	CHARACTER(LEN=16), PARAMETER :: routinename = "BSSTEP_DYNATOMSURF: "
+	INTEGER,PARAMETER:: nv = 12
+	REAL(KIND=8),PARAMETER:: SAFE1 = 0.25D0
+	REAL(KIND=8),PARAMETER:: SAFE2 = 0.7D0
+	REAL(KIND=8),PARAMETER:: TINY = 1.D-30
+	REAL(KIND=8),PARAMETER:: SCALMX = 0.1D0
+	REAL(KIND=8),PARAMETER:: REDMIN = 0.7D0
+	REAL(KIND=8),PARAMETER:: REDMAX = 1.D-5
+	INTEGER,PARAMETER:: NMAX = 50
+	INTEGER,PARAMETER:: KMAXX = 8
+	INTEGER,PARAMETER:: IMAX = KMAXX+1
+	CHARACTER(LEN=*),PARAMETER:: routinename = "BSSTEP_DYNATOMSURF: "
 	! Local variables
-	INTEGER, DIMENSION(IMAX) :: nseq
-	REAL(KIND=8), DIMENSION(KMAXX) :: err
-	REAL(KIND=8), DIMENSION(NMAX) :: yerr, ysav, yseq
-	REAL(KIND=8), DIMENSION(IMAX) :: a
-	REAL(KIND=8), DIMENSION(KMAXX,KMAXX) :: alf
-	INTEGER :: i,iq,k,kk,km,kmax,kopt
-	REAL(KIND=8) :: eps1,epsold,errmax,fact,h,red,scale,work,wrkmin,xest, xnew
-	LOGICAL :: first,reduct
+	INTEGER, DIMENSION(IMAX):: nseq
+	REAL(KIND=8),DIMENSION(KMAXX):: err
+	REAL(KIND=8),DIMENSION(NMAX):: yerr, ysav, yseq
+	REAL(KIND=8),DIMENSION(IMAX):: a
+	REAL(KIND=8),DIMENSION(KMAXX,KMAXX):: alf
+	INTEGER:: i,iq,k,kk,km,kmax,kopt
+	REAL(KIND=8):: eps1,epsold,errmax,fact,h,red,scale,work,wrkmin,xest, xnew
+	LOGICAL:: first,reduct
 	SAVE a,alf,epsold,first,kmax,kopt,nseq,xnew
 	DATA first/.TRUE./,epsold/-1./
 	DATA nseq /2,4,6,8,10,12,14,16,18/

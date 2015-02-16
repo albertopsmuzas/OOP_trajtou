@@ -473,7 +473,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       ! At this point, molec_dofs contains the new values for position and momenta
       ! Let's obtain the potential value for this configuration
       CALL this%thispes%GET_V_AND_DERIVS(molec_dofs(1:6),v,dummy)
-      Ecm = (molec_dofs(7)**2.D0+molec_dofs(8)**2.D0+molec_dofs(9)**2.D0)/(2.D0*masa)
+      Ecm = 0.5d0*dot_product(molec_dofs(7:9),molec_dofs(7:9))/masa
       SELECT CASE(dsin(molec_dofs(5))==0.d0)
          CASE(.true.)
             L2=molec_dofs(11)**2.d0

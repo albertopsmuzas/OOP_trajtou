@@ -32,10 +32,8 @@ TYPE,EXTENDS(IniCond):: InitAtomSurf
    TYPE(Energy):: E_norm
    TYPE(Angle):: vz_angle, vpar_angle
    TYPE(Length):: init_z ! initial Z value
-   type(Temperature):: temp
-   type(Mass):: surfMass
-   real(kind=8),dimension(3):: freqs
-   REAL(KIND=8):: impact_x, impact_y
+   type(Temperature):: surfTemp
+   REAL(KIND=8):: impact_x,impact_y
    CONTAINS
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_INITATOMSURF
       PROCEDURE,PUBLIC:: GENERATE_TRAJS => GENERATE_TRAJS_INITATOMSURF
@@ -111,7 +109,7 @@ SUBROUTINE INITIALIZE_INITATOMSURF(this,filename)
    CHARACTER(LEN=*), PARAMETER :: routinename = "INITIALIZE_INITATOMSURF: "
    ! Lua variables
    TYPE(flu_State):: conf
-   INTEGER(KIND=4):: inicond_table,trajlist_table,magnitude_table,control_table,out_table,osciSurf_table
+   INTEGER(KIND=4):: inicond_table,trajlist_table,magnitude_table,control_table,out_table
    INTEGER(KIND=4):: auxtable
    INTEGER(KIND=4):: ierr
    ! Auxiliary (dummy) variables
@@ -242,35 +240,15 @@ SUBROUTINE INITIALIZE_INITATOMSURF(this,filename)
       CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_y)
    END IF
 #endif
-   ! get Surface oscillator parameters
-   call aot_table_open(L=conf,parent=inicond_table,thandle=osciSurf_table,key='surfaceOscillator')
-   call aot_get_val(L=conf,ErrCode=ierr,thandle=osciSurf_table,key='wx',val=this%freqs(1))
-   call aot_get_val(L=conf,ErrCode=ierr,thandle=osciSurf_table,key='wy',val=this%freqs(2))
-   call aot_get_val(L=conf,ErrCode=ierr,thandle=osciSurf_table,key='wz',val=this%freqs(3))
-   select case(product(this%freqs(:))==0.d0)
-      case(.true.)
-         write(0,*) 'ERR: '//routinename//'One or more of the initial surface frequencies are zero'
-         call exit(1)
-      case(.false.)
-         ! do nothing
-   end select
-   call aot_table_open(L=conf,parent=osciSurf_table,thandle=magnitude_table,key='temperature')
+   ! get Surface temperature
+   call aot_table_open(L=conf,parent=inicond_table,thandle=magnitude_table,key='surfaceTemperature')
    call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxReal)
    call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxString)
-   call this%temp%READ(auxReal,trim(auxString))
-   call this%temp%to_std()
+   call this%surfTemp%READ(auxReal,trim(auxString))
+   call this%surfTemp%to_std()
    call aot_table_close(L=conf,thandle=magnitude_table)
-   call aot_table_open(L=conf,parent=osciSurf_table,thandle=magnitude_table,key='mass')
-   call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxReal)
-   call aot_get_val(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxString)
-   call this%surfMass%READ(auxReal,trim(auxString))
-   call this%surfMass%to_std()
-   call aot_table_close(L=conf,thandle=magnitude_table)
-   call aot_table_close(L=conf,thandle=osciSurf_table)
 #ifdef DEBUG
-   call verbose_write(routinename,'Surface mass (au): ',this%surfMass%getValue())
-   call verbose_write(routinename,'Surface frequencies (au): ',this%freqs(:))
-   call verbose_write(routinename,'Surface temperature (kelvin): ',this%temp%getValue())
+   call verbose_write(routinename,'Surface temperature (kelvin): ',this%surfTemp%getValue())
 #endif
    ! get output control
    CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=out_table,key='outputFile')
@@ -332,7 +310,7 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
    CALL VERBOSE_WRITE(routinename,"New set of trajectories")
    CALL VERBOSE_WRITE(routinename,"Allocating trajs: ", this%ntraj)
 #endif
-   beta=1.d0/(boltzmann*this%temp%getvalue())
+   beta=1.d0/(boltzmann*this%surfTemp%getvalue())
    ALLOCATE(AtomSurf::this%trajs(this%ntraj))
    DO i=1,this%ntraj
       CALL RANDOM_NUMBER(random_kernel(:))
@@ -354,12 +332,12 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
       END IF
       this%trajs(i)%r(3) = this%init_z%getvalue()
       ! Initial surf parameters
-      this%trajs(i)%r(4) = normalDistRandom()/(this%freqs(1)*dsqrt(beta*this%surfMass%getvalue()))
-      this%trajs(i)%r(5) = normalDistRandom()/(this%freqs(2)*dsqrt(beta*this%surfMass%getvalue()))
-      this%trajs(i)%r(6) = normalDistRandom()/(this%freqs(3)*dsqrt(beta*this%surfMass%getvalue()))
-      this%trajs(i)%p(4) = normalDistRandom()/dsqrt(beta/this%surfMass%getvalue())
-      this%trajs(i)%p(5) = normalDistRandom()/dsqrt(beta/this%surfMass%getvalue())
-      this%trajs(i)%p(6) = normalDistRandom()/dsqrt(beta/this%surfMass%getvalue())
+      this%trajs(i)%r(4) = normalDistRandom()/(system_surfFreqs(1)*dsqrt(beta*system_surfMass))
+      this%trajs(i)%r(5) = normalDistRandom()/(system_surfFreqs(2)*dsqrt(beta*system_surfMass))
+      this%trajs(i)%r(6) = normalDistRandom()/(system_surfFreqs(3)*dsqrt(beta*system_surfMass))
+      this%trajs(i)%p(4) = normalDistRandom()/dsqrt(beta/system_surfMass)
+      this%trajs(i)%p(5) = normalDistRandom()/dsqrt(beta/system_surfMass)
+      this%trajs(i)%p(6) = normalDistRandom()/dsqrt(beta/system_surfMass)
       ! Change to cartesian coordinates (impact parameters are in surface coordinates)
       this%trajs(i)%r(1:2) = system_surface%surf2cart(this%trajs(i)%r(1:2))
       IF (system_surface%units/="au") THEN
@@ -374,10 +352,11 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
       this%trajs(i)%p(1) = DCOS(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
       this%trajs(i)%p(2) = DSIN(delta)*DSQRT(2.D0*masa*Enorm/(DTAN(alpha)**2.D0))
       CALL thispes%GET_V_AND_DERIVS(this%trajs(i)%r(1:3)-this%trajs(i)%r(4:6),v,dummy)
-      dummy(:)=dot_product(this%trajs(i)%r(4:6),this%freqs(:))
-      this%trajs(i)%E = 0.5d0*this%surfMass%getValue()*norm2(dummy(:))**2.d0+ &                 ! Surface's kinetic term +
-                        (0.5d0/this%surfMass%getvalue())*norm2(this%trajs(i)%p(4:6))**2.d0+ &   ! Surface's harmonic potential +
-                        Enorm/(DSIN(alpha)**2.D0)+v                                             ! Projectile's kinetic term + pot
+      dummy(:)=this%trajs(i)%r(4:6)*system_surfFreqs(1:3)
+      this%trajs(i)%E =  0.5d0*system_surfMass*norm2(dummy(:))**2.d0 &                 ! Surface's kinetic term +
+                       + 0.5d0*(norm2(this%trajs(i)%p(4:6))**2.d0)/system_surfMass &   ! Surface's harmonic potential +
+                       + Enorm/(DSIN(alpha)**2.D0)+v                                   ! Projectile's kinetic term + pot
+      this%trajs(i)%init_E=this%trajs(i)%E
       ! Setting initial values
       this%trajs(i)%init_r(:) = this%trajs(i)%r(:)
       this%trajs(i)%init_p(:) = this%trajs(i)%p(:)
@@ -394,7 +373,7 @@ SUBROUTINE GENERATE_TRAJS_INITATOMSURF(this,thispes)
          WRITE(wunit,*) "# Format:   Id/E(au)/X,Y,Z,Xs,Ys,Zs(au)/Px,Py,Pz,Pxs,Pys,Pzs(au)"
          WRITE(wunit,*) "# Projectile's normal energy (a.u.) / (eV) : ", this%E_norm%getvalue(), " / ", this%E_norm%getvalue()*au2ev
          WRITE(wunit,*) "# Projectile's mass (a.u.) / proton mass : ", masa," / ", masa/pmass2au
-         write(wunit,*) "# Surface's mass (au) / proton mass: ",this%surfMass%getValue()," / ",this%surfMass%getValue()/pmass2au
+         write(wunit,*) "# Surface's mass (au) / proton mass: ",system_surfMass," / ",system_surfMass/pmass2au
          WRITE(wunit,*) "# Incidence angle (deg): ", this%vz_angle%getvalue()*180.D0/PI
          WRITE(wunit,*) "# Parallel velocity direction (deg): ", this%vpar_angle%getvalue()*180.D0/PI
          IF ((this%control_posX).AND.(.NOT.this%control_posY)) THEN

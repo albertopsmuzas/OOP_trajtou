@@ -11,13 +11,13 @@ IMPLICIT NONE
 !---------------------
 TYPE :: PeakCRP6D
    PRIVATE
-   INTEGER(KIND=4) :: id ! identification number
-   INTEGER(KIND=4) :: order ! order of the peak
-   INTEGER(KIND=4), DIMENSION(2) :: g ! coordinates in the reciprocal space lattice
-	REAL(KIND=8) :: Psi ! azimuthal exit angle
-	REAL(KIND=8) :: Phi ! deflection angle respect to incidence plane
-	REAL(KIND=8) :: Theta_out ! deflection angle respect to surface plane
-	REAL(KIND=8) :: Prob ! probability
+   INTEGER(KIND=4):: id ! identification number
+   INTEGER(KIND=4):: order ! order of the peak
+   INTEGER(KIND=4),DIMENSION(2):: g ! coordinates in the reciprocal space lattice
+	REAL(KIND=8):: Psi ! azimuthal exit angle
+	REAL(KIND=8):: Phi ! deflection angle respect to incidence plane
+	REAL(KIND=8):: Theta_out ! deflection angle respect to surface plane
+	REAL(KIND=8):: Prob ! probability
 END TYPE PeakCRP6D
 !======================================================
 ! Allowed_peaksCRP6D derived data
@@ -252,11 +252,17 @@ END SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D
 !####################################################################################
 ! - GENERATE_TRAJS_ATOMS and SET_Allowed_peaksCRP6D should have been executed before
 ! - At the moment only works with C4v cells
+!> @param[in] dJ - integer(kind=2): Variation of J
+!> @param[in] Ed - real(kind=8): Dissociation energy from Morse potential fit of vacuum potential
+!> @param[in] A  - real(kind=8): Parameter of Morse potential fit
 !------------------------------------------------------------------------------------
-SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
+SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
 	IMPLICIT NONE
 	! I/O variables
 	CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
+	integer(kind=4),intent(in):: dJ
+	real(kind=8),intent(in):: morseEd
+	real(kind=8),intent(in):: morseWidth
 	! Local variables
 	INTEGER(KIND=4) :: totscatt
    INTEGER(KIND=4) :: tottrajs
@@ -268,15 +274,16 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: peaks_prob
 	REAL(KIND=8), DIMENSION(2,2) :: to_rec_space
 	REAL(KIND=8) :: dummy_real
-   REAL(KIND=8),DIMENSION(9) :: dummy
+   REAL(KIND=8),DIMENSION(2) :: dummy
 	REAL(KIND=8) :: gamma ! angle between unit cell surface vectors
-	REAL(KIND=8), DIMENSION(2) :: p ! final momentum
-	REAL(KIND=8), DIMENSION(2) :: dp ! variation of momentum
-	REAL(KIND=8), DIMENSION(2) :: dk ! variation of momentum in rec. space coord
+	REAL(KIND=8),DIMENSION(6):: p,r ! final momentum and position
+	REAL(KIND=8),DIMENSION(2):: dp ! variation of momentum
+	REAL(KIND=8),DIMENSION(2):: dk ! variation of momentum in rec. space coord
+	real(kind=8)::finalJ,finalV,L2,Etot,Ecm,Erot,Evibr,masa,mu
 	CHARACTER(LEN=10) :: stat
-	CHARACTER(LEN=*), PARAMETER :: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
    INTEGER(KIND=4) :: ioerr
    LOGICAL:: isAllowed
+	CHARACTER(LEN=*), PARAMETER :: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
    ! Read/write units
    INTEGER(KIND=4),PARAMETER:: rwuMap=12
    INTEGER(KIND=4),PARAMETER:: wuUnmap=13
@@ -289,6 +296,8 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	beta=this%inicond%vpar_angle%getvalue()
 	a=system_surface%norm_s1
 	b=system_surface%norm_s2
+	masa=sum(system_mass(:))
+	mu=product(system_mass(:))/masa
 	! RUN SECTION -------------------------
 #ifdef DEBUG
 	CALL VERBOSE_WRITE(routinename, "Starting job")
@@ -301,7 +310,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	!---------
    OPEN(unit=rwuMap,file="OUTANA6Dmappingpeaks.out",status="replace",action='readwrite')
    WRITE(rwuMap,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
-   WRITE(rwuMap,*) "# Format: traj id/ ----> /peak id"
+   WRITE(rwuMap,*) "# Format: traj id/ ----> /peak id/n,m/V,J,mJ"
    WRITE(rwuMap,*) "# ----------------------------------------------------------------"
    OPEN(unit=wuUnmap,file='OUTANA6Dunmappedtrajs.out',status='replace',action='write')
    WRITE(wuUnmap,*) '# ***** LIST OF UNMAPPED TRAJS *****'
@@ -314,7 +323,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
    allowedScatt=0
    DO 
       i=i+1
-      READ(ruScatt,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy(:),p(:)
+      READ(ruScatt,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,Etot,dummy(:),r(:),p(:)
       SELECT CASE(ioerr==0)
          CASE(.TRUE.)
             ! do nothing
@@ -331,12 +340,36 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
             g(2) = NINT(dk(2))
             DO j= 1,SIZE(this%peaks)
                SELECT CASE((this%peaks(j)%g(1).EQ.g(1)).AND.(this%peaks(j)%g(2).EQ.g(2)))
-                  CASE(.true.)
-                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id
-                     isAllowed=.true.
-                     EXIT
-                  CASE(.false.)
-                     isAllowed=.false.
+               CASE(.true.)
+                  select case( dsin(r(5))==0.d0 )
+                  case(.true.)
+                     L2=p(5)**2.d0
+                  case(.false.)
+                     L2=p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0
+                  end select
+                  Ecm=0.5d0*dot_product(p(1:3),p(1:3))/masa
+                  Erot=0.5d0*L2/(mu*r(4)**2.d0)
+                  Evibr=Etot-Ecm-Erot
+                  finalJ=(-1.d0+dsqrt(1.d0+4.d0*L2))*0.5d0
+                  finalV=dsqrt(1.d0-Evibr/morseEd)+dsqrt(2.d0*morseEd/masa)/morseWidth-0.5d0
+                  select case( discretizeJ(finalJ,dJ)==0 )
+                  case(.true.)
+                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,this%peaks(j)%g(:),nint(finalV),0,0
+                  case(.false.)
+                     ! do nothing
+                  end select
+                  select case( nint(dabs(p(6)))>abs(discretizeJ(finalJ,dJ)) )
+                  case(.true.) ! aboid weird quantum states
+                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,this%peaks(j)%g(:),nint(finalV),discretizeJ(finalJ,dJ),&
+                                     sign(discretizeJ(finalJ,dJ),nint(p(6)))
+                  case(.false.) ! generic case
+                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,this%peaks(j)%g(:),nint(finalV),discretizeJ(finalJ,dJ),&
+                                     nint(p(6))
+                  end select
+                  isAllowed=.true.
+                  EXIT
+               CASE(.false.)
+                  isAllowed=.false.
                END SELECT
          END DO
       CASE DEFAULT
@@ -374,12 +407,38 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	WRITE(wuSeen,*) "# -----------------------------------------------------------"
 	DO i=1, SIZE(this%peaks)
 		IF (this%peaks(i)%prob.NE.0.D0) THEN
-			WRITE(wuSeen,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2), &
+			WRITE(wuSeen,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:), &
 				    this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
 		END IF
 	END DO
 	CLOSE(unit=wuSeen)
 	RETURN
+	contains
+	! included function
+	function discretizeJ(J,dJ) result(finalJ)
+	   implicit none
+	   ! I/O variables
+	   real(kind=8),intent(in):: J
+	   integer(kind=4),intent(in):: dJ
+	   ! function dummy variable
+	   integer(kind=4):: finalJ
+	   ! Local variables
+	   real(kind=8):: deltaJ,diff
+	   integer(kind=4):: i ! counter
+	   ! Run section
+	   deltaJ=dfloat(dJ)*0.5d0
+      do i=0,1000,dJ ! almost infinite loop
+	      diff=J-dfloat(i)
+	      select case( dabs(diff)<=deltaJ )
+	      case(.true.)
+	         exit
+	      case(.false.)
+	         cycle
+	      end select
+	   enddo
+	   finalJ=i
+	   return
+	end function discretizeJ
 END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
 !####################################################################################
 ! FUNCTION: EVALUATE_PEAK ###########################################################

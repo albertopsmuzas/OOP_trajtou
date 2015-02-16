@@ -454,7 +454,7 @@ SUBROUTINE DO_DYNAMICS_DYNATOM(this,idtraj)
       ! At this point, atom_dofs contains the new values for position and momenta
       ! Let's obtain the potential value for this configuration
       CALL this%thispes%GET_V_AND_DERIVS(atom_dofs(1:3),v,dummy)
-      E = (atom_dofs(4)**2.D0+atom_dofs(5)**2.D0+atom_dofs(6)**2.D0)/(2.D0*masa)+v
+      E = 0.5d0*dot_product(atom_dofs(4:6),atom_dofs(4:6))/masa + v
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Energy after integration:",E)
 #endif

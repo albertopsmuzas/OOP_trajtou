@@ -20,8 +20,7 @@ local initialConditions={
 
 	-- For 6D-atom + surf conditions
 	-- *****************************
-	-- Surface oscillator's initial conditions are always randomized
-	surfaceOscillator={wx=0.0,wy=0.0,wz=0.0,mass={0.0,'au'},temperature={0.0,'Kelvin'}},
+	sufaceTemperature={0.0,'Kelvin'},
 
 	-- For 6D-molecule initial conditions
 	-- **********************************

@@ -7,21 +7,29 @@ IMPLICIT NONE
 ! Variables
 TYPE(Allowed_peaksCRP6D):: anlyDiff
 CHARACTER(LEN=1024):: auxString
+real(kind=8):: morseEd, morseWidth
+integer(kind=4):: dJ
 REAL(KIND=4),DIMENSION(2):: timearr
 REAL(KIND=4):: timer
 ! HEY HO, LET'S GO --------------------------------------
 ! Get input
 SELECT CASE(command_argument_count())
-   CASE(1)
-      CALL GET_COMMAND_ARGUMENT(1,auxString)
+   CASE(4)
+      call get_command_argument(1,auxString)
       CALL INITIALIZE_SYSTEM(trim(auxString))
-      CALL VERBOSE_WRITE("******************************************************")
-      CALL VERBOSE_WRITE("************** DIFFRACTION ANALYSIS 6D ***************")
-      CALL VERBOSE_WRITE("******************************************************")
+      call get_command_argument(2,auxString)
+      read(auxString,*) dJ
+      call get_command_argument(3,auxString)
+      read(auxString,*) morseEd
+      call get_command_argument(4,auxString)
+      read(auxString,*) morseWidth
+      CALL VERBOSE_WRITE("*******************************************************************")
+      CALL VERBOSE_WRITE("********* DIFFRACTION ANALYSIS 6D (WITH QUANTUM BINNING) **********")
+      CALL VERBOSE_WRITE("*******************************************************************")
       CALL ETIME(timearr,timer)
       CALL anlyDiff%INITIALIZE()
       CALL anlyDiff%SETUP()
-      CALL anlyDiff%ASSIGN_PEAKS()
+      CALL anlyDiff%ASSIGN_PEAKS(dJ=dJ,morseEd=morseEd,morseWidth=morseWidth)
       CALL anlyDiff%PRINT_LABMOMENTA_AND_ANGLES()
       CALL ETIME(timearr,timer)
 
