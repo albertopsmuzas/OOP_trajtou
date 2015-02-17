@@ -396,7 +396,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
 	READ(rwuMap,*) ! dummy line
 	DO i=1,allowedScatt
 		READ(rwuMap,*) dummy_int,stat,id
-		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/tottrajs
+		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/dfloat(tottrajs)
 	END DO
 	CLOSE(unit=rwuMap)
 	CLOSE(unit=ruScatt)
