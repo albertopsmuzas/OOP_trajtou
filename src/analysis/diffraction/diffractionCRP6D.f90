@@ -356,15 +356,15 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
                   case(.true.)
                      WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),0,0
                   case(.false.)
-                     ! do nothing
+                     select case( nint(dabs(p(6)))>abs(discretizeJ(finalJ,dJ)) )
+                     case(.true.) ! aboid weird quantum states
+                        WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),&
+                                        sign(discretizeJ(finalJ,dJ),nint(p(6)))
+                     case(.false.) ! generic case
+                        WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),&
+                                        nint(p(6))
                   end select
-                  select case( nint(dabs(p(6)))>abs(discretizeJ(finalJ,dJ)) )
-                  case(.true.) ! aboid weird quantum states
-                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),&
-                                     sign(discretizeJ(finalJ,dJ),nint(p(6)))
-                  case(.false.) ! generic case
-                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),&
-                                     nint(p(6))
+                     ! do nothing
                   end select
                   isAllowed=.true.
                   EXIT
