@@ -22,6 +22,7 @@ local dynamics={
 		adsorption={},
 		absorption={},
 		dissociation={},
+		trappedAfter=1000,
 	},
 }
 return dynamics

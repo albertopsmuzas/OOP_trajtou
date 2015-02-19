@@ -37,12 +37,14 @@ select control in yes no;do
 			echo Incorrect option;;
 	esac
 done
+# SEED management
 if [[ -f 'INseed.inp' ]]; then
 	echo There\'s a seed file INseed.inp. It will be used
 else
-	echo There isn\'t any seed file. Generating one based on systemclock.
-	trajtouNewSeed.x > 'INseed.inp'
+	echo There\'s not a seed file. Generating one.
+	trajtouNewSeed.x 
 fi
+# Partition input
 for i in $(seq 1 $nJobs);do
 	jobID='trajtou_'$i
 	mkdir $jobID

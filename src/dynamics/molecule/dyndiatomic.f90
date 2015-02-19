@@ -30,8 +30,9 @@ TYPE,EXTENDS(Dynamics) :: DynDiatomic
    CHARACTER(LEN=:),ALLOCATABLE:: scaling
    REAL(KIND=8):: eps
    REAL(KIND=8):: energyTolerance
-   TYPE(Length):: zstop, dzstop
+   TYPE(Length):: zstop,dzstop
    TYPE(Length):: zscatt,zads,zabs,maxr
+   integer(kind=4):: maxZBounces
    INTEGER(KIND=4),PRIVATE:: wusc=900 ! write unit for scattered trajs
    INTEGER(KIND=4),PRIVATE:: wupa=901 ! write unit for pathologic trajs
    INTEGER(KIND=4),PRIVATE:: wuto=902 ! write unit for timed out trajs
@@ -206,6 +207,8 @@ SUBROUTINE INITIALIZE_DYNDIATOMIC(this,filename)
    CALL this%maxr%READ(auxreal,trim(auxstring))
    CALL this%maxr%TO_STD()
    CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get maximum number of bounces needed to stop a trajectory and call it trapped
+   call aot_get_val(L=conf,errCode=iErr,thandle=outCond_table,key='trappedAfter',val=this%maxZBounces)
    ! close out trajectory conditions table
    CALL AOT_TABLE_CLOSE(L=conf,thandle=outcond_table)
    ! some debugging options
@@ -218,6 +221,7 @@ SUBROUTINE INITIALIZE_DYNDIATOMIC(this,filename)
    CALL VERBOSE_WRITE(routinename,"Z adsorption benchmark (au): ",this%zads%getvalue())
    CALL VERBOSE_WRITE(routinename,"Z absortion benchmark (au): ",this%zabs%getvalue())
    CALL VERBOSE_WRITE(routinename,"Z dissociation benchmark (au): ",this%maxr%getvalue())
+   call verbose_write(routinename,'Max number of Z bounces: ',this%maxZBounces)
 #endif
    CALL AOT_TABLE_OPEN(L=conf,parent=dyn_table,thandle=follow_table,key='follow')
    this%nfollow=aot_table_length(L=conf,thandle=follow_table)
@@ -247,7 +251,7 @@ SUBROUTINE INITIALIZE_DYNDIATOMIC(this,filename)
       CASE DEFAULT
          WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong error scaling keyword: "
          WRITE(0,*) "Only available: Equal and Smart"
-         WRITE(0,*) "You have written: ", this%scaling
+         WRITE(0,*) "You have written: ",this%scaling
          CALL EXIT(1)
    END SELECT
    ! get extrapol method
@@ -259,7 +263,7 @@ SUBROUTINE INITIALIZE_DYNDIATOMIC(this,filename)
       CASE DEFAULT
          WRITE(0,*) "INITIALIZE_DYNATOM ERR: Wrong extrapolation keyword: "
          WRITE(0,*) "Only available: Polinomi and Rational"
-         WRITE(0,*) "You have written: ", this%extrapol
+         WRITE(0,*) "You have written: ",this%extrapol
          CALL EXIT(1)
    END SELECT
 #ifdef DEBUG
@@ -294,7 +298,7 @@ SUBROUTINE RUN_DYNDIATOMIC(this)
    CHARACTER(LEN=*),PARAMETER:: routinename = "RUN_DYNDIATOMIC: "
    ! HEY HO! LET'S GO !!! ------
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wusc,"OUTDYN6Dscattered.out","SCATTERED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wupa,"OUTDYN6Dpatologic.out","PATOLOGIC TRAJS")
+   CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wupa,"OUTDYN6Dpathological.out","PATHOLOGICAL TRAJS")
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wuto,"OUTDYN6Dtimeout.out","TIME-OUT TRAJS")
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wutr,"OUTDYN6Dtrapped.out","TRAPPED TRAJS")
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wuad,"OUTDYN6Dadsorbed.out","ADSORBED TRAJS")
@@ -495,19 +499,19 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             CALL DEBUG_WRITE(routinename,"Poor energy conservation. Cycling.")
 #endif
             CYCLE
-      CASE(.FALSE.)
+         CASE(.FALSE.)
          ! do nothing
       END SELECT
       ! Check  bouncing points in Z direction (Z- Turning point)
-      SELECT CASE((molecule%p(3) < 0.D0).AND.(molec_dofs(9) > 0.D0))
+      SELECT CASE( molecule%p(3) < 0.d0 .and. molec_dofs(9) > 0.d0 )
          CASE(.TRUE.)
             molecule%ireb = molecule%ireb +1
          CASE(.FALSE.)
             ! do nothing
       END SELECT
       ! Check bouncing points in XY (sign of Px or Py changes respect to previous integration step)
-      SELECT CASE ((DSIGN(molec_dofs(7),molec_dofs(7)).NE.DSIGN(molec_dofs(7),molecule%p(1))).OR. &
-                  (DSIGN(molec_dofs(8),molec_dofs(8)).NE.DSIGN(molec_dofs(8),molecule%p(2))))
+      SELECT CASE( dsign(1.d0,molec_dofs(7)) /= dsign(1.d0,molecule%p(1)) .or. &
+                   dsign(1.d0,molec_dofs(8)) /= dsign(1.d0,molecule%p(2)) )
          CASE(.TRUE.)
             molecule%ixyboun = molecule%ixyboun+1
          CASE(.FALSE.)
@@ -543,7 +547,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
         CASE(.FALSE.)
            ! do nothing, next switch
       END SELECT
-      SELECT CASE ((molecule%r(3) >= this%zscatt%getvalue()).AND.(molecule%p(3) > 0.D0))
+      SELECT CASE ( molec_dofs(3) >= this%zscatt%getvalue() .and. molec_dofs(9) > 0.D0 )
          CASE(.TRUE.)
             molecule%stat="Scattered"                                            
             molecule%r(1:6)=molec_dofs(1:6)
@@ -559,7 +563,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing next switch
       END SELECT
-      SELECT CASE ((molecule%r(4) > this%maxr%getvalue()))
+      SELECT CASE ( molec_dofs(4) > this%maxr%getvalue() .and. molec_dofs(10) < 0.d0 )
          CASE(.TRUE.)
             molecule%stat="Reacted"                                            
             molecule%r(1:6)=molec_dofs(1:6)
@@ -573,7 +577,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing next switch
       END SELECT
-      SELECT CASE ((molec_dofs(3) <= this%zabs%getvalue()).AND.(molec_dofs(9) < 0.D0))
+      SELECT CASE ( molec_dofs(3) <= this%zabs%getvalue() .and. molec_dofs(9) < 0.D0 )
          CASE(.TRUE.)
             molecule%stat = "Absorbed"
             molecule%r(1:6) = molec_dofs(1:6)
@@ -587,7 +591,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE ((v < 0.D0).AND.(molec_dofs(3) <= this%zads%getvalue()).AND.maxtime_reached)
+      SELECT CASE ( v < 0.D0 .and. molec_dofs(3) <= this%zads%getvalue() .and. maxtime_reached)
          CASE(.TRUE.)
             molecule%stat = "Adsorbed"
             molecule%r(1:6) = molec_dofs(1:6)
@@ -601,7 +605,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE (molec_dofs(3) <= this%zads%getvalue() .AND. maxtime_reached)
+      SELECT CASE( molecule%ireb > this%maxZBounces )
          CASE(.TRUE.)
             molecule%stat = "Trapped"
             molecule%r(1:6) = molec_dofs(1:6)
@@ -629,9 +633,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             !do nothing next switch
       END SELECT
-      SELECT CASE((cycles > 1000).AND.(dt < 1.D-9))
+      SELECT CASE( cycles > 1000 .and. dt < 1.d-6 )
          CASE(.TRUE.)
-            molecule%stat = "Patologic"
+            molecule%stat = "Pathologic"
             molecule%r(1:6) = molec_dofs(1:6)
             molecule%p(1:6) = molec_dofs(7:12)
             molecule%E = E
