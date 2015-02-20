@@ -398,9 +398,6 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    DO
       switch = .FALSE.
       cycles = cycles+1
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Cycle: ",cycles)
-#endif
       ! We cannot go beyond maximum time defined
       SELECT CASE(t+dt > this%max_t%getvalue())
          CASE(.TRUE.)
@@ -414,11 +411,10 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       molec_dofs(7:12)=molecule%p(1:6)
       molec_dofs(:)=correctSphPoint(molec_dofs)
       ! Initial values for the derivatives
-#ifdef DEBUG
-      CALL DEBUG_WRITE(routinename,"Molecular DOFS : ",molec_dofs)
-#endif
       CALL this%TIME_DERIVS(molec_dofs,dfdt,switch)
 #ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Cycle: ",cycles)
+      CALL DEBUG_WRITE(routinename,"Molecular DOFS : ",molec_dofs)
       CALL DEBUG_WRITE(routinename,"Time derivatives: ",dfdt)
 #endif
       SELECT CASE(switch)
@@ -547,7 +543,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
         CASE(.FALSE.)
            ! do nothing, next switch
       END SELECT
-      SELECT CASE ( molec_dofs(3) >= this%zscatt%getvalue() .and. molec_dofs(9) > 0.D0 )
+      SELECT CASE ( molec_dofs(3) >= this%zscatt%getvalue() .and. molec_dofs(9) > 0.D0 ) ! Z > Zscatt, Pz positive
          CASE(.TRUE.)
             molecule%stat="Scattered"                                            
             molecule%r(1:6)=molec_dofs(1:6)
@@ -563,7 +559,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing next switch
       END SELECT
-      SELECT CASE ( molec_dofs(4) > this%maxr%getvalue() .and. molec_dofs(10) < 0.d0 )
+      SELECT CASE ( molec_dofs(4) > this%maxr%getvalue() .and. molec_dofs(10) > 0.d0 ) ! R > maxR, Pr positive
          CASE(.TRUE.)
             molecule%stat="Reacted"                                            
             molecule%r(1:6)=molec_dofs(1:6)
@@ -577,7 +573,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing next switch
       END SELECT
-      SELECT CASE ( molec_dofs(3) <= this%zabs%getvalue() .and. molec_dofs(9) < 0.D0 )
+      SELECT CASE ( molec_dofs(3) < this%zabs%getvalue() .and. molec_dofs(9) < 0.D0 ) ! Z < Zabsorb, Pz negative
          CASE(.TRUE.)
             molecule%stat = "Absorbed"
             molecule%r(1:6) = molec_dofs(1:6)
@@ -591,7 +587,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE ( v < 0.D0 .and. molec_dofs(3) <= this%zads%getvalue() .and. maxtime_reached)
+      SELECT CASE ( v < 0.D0 .and. molec_dofs(3) < this%zads%getvalue() .and. maxtime_reached) ! Potential negative, Z < Zadsorb, time-out
          CASE(.TRUE.)
             molecule%stat = "Adsorbed"
             molecule%r(1:6) = molec_dofs(1:6)
@@ -605,7 +601,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE( molecule%ireb > this%maxZBounces )
+      SELECT CASE( molecule%ireb > this%maxZBounces .and. maxtime_reached ) ! Z bounces > bounces threshold, time-out
          CASE(.TRUE.)
             molecule%stat = "Trapped"
             molecule%r(1:6) = molec_dofs(1:6)
@@ -619,7 +615,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE (maxtime_reached)
+      SELECT CASE (maxtime_reached) ! time-out
          CASE(.TRUE.)
             molecule%stat = "Time-out"
             molecule%r(1:6) = molec_dofs(1:6)
@@ -633,7 +629,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             !do nothing next switch
       END SELECT
-      SELECT CASE( cycles > 1000 .and. dt < 1.d-6 )
+      SELECT CASE( cycles > 100 .and. dt < 1.d-6 ) ! many cycles, stupidly short time-step
          CASE(.TRUE.)
             molecule%stat = "Pathologic"
             molecule%r(1:6) = molec_dofs(1:6)

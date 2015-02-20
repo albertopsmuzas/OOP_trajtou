@@ -1537,24 +1537,25 @@ END SUBROUTINE INTERACTION_AENV_HEXA
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu)
+SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu,errCode)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(CRP3D),TARGET,INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(:), INTENT(IN) :: X
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: dvdu
+   CLASS(CRP3D),TARGET,INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(:),INTENT(IN):: X
+   REAL(KIND=8),INTENT(OUT):: v
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
+   integer(kind=1),optional,intent(out):: errCode
    ! Local variables
-   INTEGER(KIND=4) :: nsites,npairpots
+   INTEGER(KIND=4):: nsites,npairpots
    CLASS(Fourier2d),ALLOCATABLE:: interpolxy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dvdz,dvdx,dvdy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: pot,dvdz,dvdx,dvdy
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: potarr
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f,derivarr ! arguments to the xy interpolation
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xy ! arguments to the xy interpolation
    INTEGER :: i ! counters
    ! Pointers
-	REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
+	REAL(KIND=8),POINTER:: zmax
+   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%z(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)

@@ -427,7 +427,7 @@ END SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D
 !> @date ! type a date
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
+SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu,errCode)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
@@ -435,6 +435,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
    REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
    REAL(KIND=8),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: dvdu
+   integer(kind=1),optional,intent(out):: errCode
    ! Local variables
    REAL(KIND=8) :: zcrp, zvac ! last CRP6D z value and Z infinity
    REAL(KIND=8) :: vzcrp, vzvac ! potentials at zcrp and zvac
@@ -446,13 +447,14 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
    ! Local Parameter
    REAL(KIND=8),PARAMETER :: zero=0.D0 ! what we will consider zero (a.u.)
    REAL(KIND=8),PARAMETER :: dz=0.5D0 ! 0.25 Angstroems approx
+   character(len=*),parameter:: routinename='GET_V_AND_DERIVS_CRP6D: '
    ! Run section
    zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
    zvac=this%zvacuum
    ! Check if we are in the pure CRP6D region
    SELECT CASE(x(3)<= zcrp) !easy
       CASE(.TRUE.)
-         CALL this%GET_V_AND_DERIVS_PURE(x,v,dvdu)
+         call this%get_v_and_derivs_pure(x,v,dvdu)
          RETURN
       CASE(.FALSE.)
          ! do nothing, next switch
@@ -525,19 +527,19 @@ SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu)
          ! do nothing
    END SELECT
    ! Check if we are in the Vacuum region
-    SELECT CASE(x(3)>=zvac) !easy
-       CASE(.TRUE.)
-          v=this%farpot%getpot(x(4))
-          dvdu(1:3)=0.D0
-          dvdu(4)=this%farpot%getderiv(x(4))
-          dvdu(5:6)=0.D0
-       CASE(.FALSE.) ! this's the last switch!
-          WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: unclassificable point. Where are we?"
-          WRITE(0,*) "Asking potential at Z: ", x(3)
-          WRITE(0,*) "Zvacuum: ",zvac
-          WRITE(0,*) "Zcrp: ",zcrp
-          CALL EXIT(1)
-    END SELECT
+   SELECT CASE(x(3)>=zvac) !easy
+      CASE(.TRUE.)
+         v=this%farpot%getpot(x(4))
+         dvdu(1:3)=0.D0
+         dvdu(4)=this%farpot%getderiv(x(4))
+         dvdu(5:6)=0.D0
+      CASE(.FALSE.) ! this's the last switch!
+#ifdef DEBUG
+         call debug_write(routinename,'Unclassificable point')
+         call debug_write(routinename,'Asking potential at Z: ',x(3))
+#endif
+          errCode=1_1
+   END SELECT
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CRP6D
 !###########################################################

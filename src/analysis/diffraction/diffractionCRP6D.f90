@@ -363,8 +363,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
                      case(.false.) ! generic case
                         WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),&
                                         nint(p(6))
-                  end select
-                     ! do nothing
+                     end select
                   end select
                   isAllowed=.true.
                   EXIT

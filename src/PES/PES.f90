@@ -37,10 +37,13 @@ PRIVATE
       PROCEDURE,NON_OVERRIDABLE,PUBLIC:: SET_ALIAS => SET_ALIAS_PES
       PROCEDURE,NON_OVERRIDABLE,PUBLIC:: SET_PESTYPE => SET_PESTYPE_PES
       PROCEDURE,NON_OVERRIDABLE,PUBLIC:: SET_DIMENSIONS => SET_DIMENSIONS_PES
+      procedure,non_overridable,public:: set_lastPot => set_lastPot_PES
+      procedure,non_overridable,public:: set_lastDeriv => set_lastDeriv_PES
       ! Get block
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getalias => getalias_PES
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getdimensions => getdimensions_PES
-      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getlastvalue => getlastvalue_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getAlias => getalias_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getDimensions => getdimensions_PES
+      PROCEDURE,NON_OVERRIDABLE,PUBLIC:: getLastPotValue => getLastPotValue_PES
+      procedure,non_overridable,public:: getLastDerivValue => getLastDerivValue_PES
       PROCEDURE(GET_V_AND_DERIVS_PES),DEFERRED:: GET_V_AND_DERIVS ! DEFERRED, see INTERFACE !!!!!!!!!!
       ! Enquire block
       PROCEDURE,NON_OVERRIDABLE,PUBLIC:: is_initialized => is_initialized_PES
@@ -60,12 +63,13 @@ ABSTRACT INTERFACE
    !# SUBROUTINE: GET_V_AND_DERIVS_PES 
    !###########################################################
    !-----------------------------------------------------------
-   SUBROUTINE GET_V_AND_DERIVS_PES(this,x,v,dvdu)
+   SUBROUTINE GET_V_AND_DERIVS_PES(this,x,v,dvdu,errCode)
       IMPORT PES
-      CLASS(PES),TARGET,INTENT(IN):: this
+      CLASS(PES),TARGET,INTENT(in):: this
       REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
       REAL(KIND=8),INTENT(OUT):: v
       REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
+      integer(kind=1),intent(out),optional:: errCode
    END SUBROUTINE GET_V_AND_DERIVS_PES
    !###########################################################
    !# FUNCTION: is_allowed_PES 
@@ -81,6 +85,46 @@ ABSTRACT INTERFACE
 END INTERFACE
 !////////////////////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###############################################################
+! SUBROUTINE: set_lastPot ######################################
+!###############################################################
+!> @brief
+!! Standard set subroutine. Sets v atribute
+!---------------------------------------------------------------
+subroutine set_lastPot_PES(this,lastPot)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Pes),intent(inout):: this
+   real(kind=8),intent(in):: lastPot
+   ! Run section
+   this%v=lastPot
+   return
+end subroutine set_lastPot_PES
+!###############################################################
+! SUBROUTINE: set_lastDeriv ####################################
+!###############################################################
+!> @brief
+!! Standard set subroutine. Sets dvdu atribute
+!---------------------------------------------------------------
+subroutine set_lastDeriv_PES(this,lastDeriv)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Pes),intent(inout):: this
+   real(kind=8),dimension(:),intent(in):: lastDeriv
+   ! Parameters
+   character(len=*),parameter:: routinename='SET_LASTDERIV_PES: '
+   ! Run section
+   select case( size(lastDeriv) /= size(this%dvdu) )
+   case(.true.)
+      this%dvdu(:)=lastDeriv(:)
+   case(.false.)
+      write(0,*) 'ERR: '//routinename//'mismatch between derivatives'
+      call exit(1)
+   end select
+   return
+end subroutine set_lastDeriv_PES
 !###############################################################
 ! SUBROUTINE: SET_ALIAS ########################################
 !###############################################################
@@ -176,7 +220,7 @@ END FUNCTION is_initialized_PES
 !> @brief
 !! Common get function. Gets alias from PES derived type
 !----------------------------------------------------------
-CHARACTER(LEN=30) FUNCTION getalias_PES(this)
+CHARACTER(LEN=30) FUNCTION getAlias_PES(this)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O VAriables
@@ -184,34 +228,55 @@ CHARACTER(LEN=30) FUNCTION getalias_PES(this)
    ! Run section
    getalias_PES=this%alias
    RETURN
-END FUNCTION getalias_PES
+END FUNCTION getAlias_PES
 !##########################################################
 ! FUNCTION: get_dimensions ################################
 !##########################################################
 !> @brief
 !! Common get function. Gets dimensions from PES derived type
 !----------------------------------------------------------
-INTEGER FUNCTION getdimensions_PES(this)
+pure function getDimensions_PES(this) result(dimension)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(PES), INTENT(IN) :: this
+   class(PES),intent(in) :: this
+   ! Dummy function variable
+   integer(kind=4):: dimension
    ! Run section
-   getdimensions_PES=this%dimensions
-   RETURN
-END FUNCTION getdimensions_PES
+   dimension=this%dimensions
+   return
+end function getDimensions_PES
 !##########################################################
-! FUNCTION: get_last_value ################################
+! FUNCTION: getLastPotValue ###############################
 !##########################################################
 !> @brief
 !! Common get function. Gets last value calculated of the PES
 !----------------------------------------------------------
-REAL(KIND=8) FUNCTION getlastvalue_PES(this)
+function getLastPotValue_PES(this) result(lastPot)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    CLASS(PES), INTENT(IN) :: this
+   ! Dummy funciton variable
+   real(kind=8):: lastPot
    ! Run part
-   getlastvalue_PES=this%v
-END FUNCTION getlastvalue_PES
+   lastPot=this%v
+end function getLastPotValue_PES
+!##########################################################
+! FUNCTION: getLastDerivValue #############################
+!##########################################################
+!> @brief
+!! Common get function. Gets last derivatives calculated of the PES
+!----------------------------------------------------------
+function getLastDerivValue_PES(this) result(lastDeriv)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(PES),INTENT(IN):: this
+   ! Dummy funciton variable
+   real(kind=8),dimension(:),allocatable:: lastDeriv
+   ! Run part
+   allocate(lastDeriv(this%dimensions))
+   lastDeriv=this%dvdu
+end function getLastDerivValue_PES
 END MODULE PES_MOD
