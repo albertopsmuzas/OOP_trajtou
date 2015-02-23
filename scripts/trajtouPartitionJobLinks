@@ -37,19 +37,20 @@ select control in yes no;do
 			echo Incorrect option;;
 	esac
 done
+# SEED management
 if [[ -f 'INseed.inp' ]]; then
 	echo There\'s a seed file INseed.inp. It will be used
 else
-	echo There isn\'t any seed file. Generating one based on systemclock.
-	trajtouNewSeed.x > 'INseed.inp'
+	echo There\'s not a seed file. Generating one.
+	trajtouNewSeed.x 
 fi
+# Partition input
 for i in $(seq 1 $nJobs);do
 	jobID='trajtou_'$i
 	mkdir $jobID
 	let initTraj=trajJobs*i-trajJobs+1
 	let endTraj=i*trajJobs
-	head -n $preLine $inputFile > $jobID/$inputFile
+	echo dofile\(\"../$inputFile\"\) > $jobID/$inputFile
 	echo 'initialConditions.trajList={from='$initTraj',to='$endTraj'}' >> $jobID/$inputFile
-	tail -n +$posLine $inputFile >> $jobID/$inputFile
 	ln -s ../INseed.inp $jobID/INseed.inp
 done
