@@ -319,9 +319,9 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ALLOCATE(xy(this%nsites,2))
    DO i = 1, this%nsites 
 #ifdef DEBUG
-      CALL VERBOSE_SEPARATOR1()
-      CALL VERBOSE_WRITE(routinename,"WYCKOFF SITE: ",i)
-      CALL VERBOSE_WRITE(routinename,"Letter: ",this%wyckoffsite(i)%id)
+      CALL DEBUG_SEPARATOR1()
+      CALL DEBUG_WRITE(routinename,"WYCKOFF SITE: ",i)
+      CALL DEBUG_WRITE(routinename,"Letter: ",this%wyckoffsite(i)%id)
 #endif
       CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
       xy(i,1)=this%wyckoffsite(i)%x
@@ -348,28 +348,28 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux1(5)   ! dvdphi
-   CALL VERBOSE_WRITE(routinename,"List of XY: ")
+   CALL DEBUG_WRITE(routinename,"List of XY: ")
    DO i = 1,this%nsites 
-     CALL VERBOSE_WRITE(routinename,xy(i,:))
+     CALL DEBUG_WRITE(routinename,xy(i,:))
    END DO
-   CALL VERBOSE_WRITE(routinename,"Smooth V at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(1,:))
-   CALL VERBOSE_WRITE(routinename,"Smooth dv/dz at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(2,:))
-   CALL VERBOSE_WRITE(routinename,"Smooth dv/dr at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(3,:))
-   CALL VERBOSE_WRITE(routinename,"Smooth dv/dtheta at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(4,:))
-   CALL VERBOSE_WRITE(routinename,"Smooth dv/dphi at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(5,:))
-   CALL VERBOSE_WRITE(routinename,"Smooth interpolated values:")
-   CALL VERBOSE_WRITE(routinename,"v: ",aux1(1))   ! v
-   CALL VERBOSE_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
-   CALL VERBOSE_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
-   CALL VERBOSE_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
-   CALL VERBOSE_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
-   CALL VERBOSE_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
-   CALL VERBOSE_WRITE(routinename,"dvdphi: ",aux1(5))   ! dvdphi
+   CALL DEBUG_WRITE(routinename,"Smooth V at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(1,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(2,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(3,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(4,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dphi at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(5,:))
+   CALL DEBUG_WRITE(routinename,"Smooth interpolated values:")
+   CALL DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
+   CALL DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
+   CALL DEBUG_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
+   CALL DEBUG_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
+   CALL DEBUG_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
+   CALL DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
+   CALL DEBUG_WRITE(routinename,"dvdphi: ",aux1(5))   ! dvdphi
 #endif
    !--------------------------------------
    ! Results for the real potential
@@ -378,13 +378,13 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    dvdu_atomicA=atomic_dvdu(1:3)
    dvdu_atomicB=atomic_dvdu(4:6)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Contributions of the atomic potential: ")
-   CALL VERBOSE_WRITE(routinename, "Position Atom A: ",atomicx(1:3))
-   CALL VERBOSE_WRITE(routinename,"Va: ",atomic_v(1))
-   CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVa/dya: ",dvdu_atomicA)
-   CALL VERBOSE_WRITE(routinename, "Position Atom B: ",atomicx(4:6))
-   CALL VERBOSE_WRITE(routinename,"Vb: ",atomic_v(2))
-   CALL VERBOSE_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
+   CALL DEBUG_WRITE(routinename,"Contributions of the atomic potential: ")
+   CALL DEBUG_WRITE(routinename, "Position Atom A: ",atomicx(1:3))
+   CALL DEBUG_WRITE(routinename,"Va: ",atomic_v(1))
+   CALL DEBUG_WRITE(routinename,"dVa/dxa; dVa/dya: ",dvdu_atomicA)
+   CALL DEBUG_WRITE(routinename, "Position Atom B: ",atomicx(4:6))
+   CALL DEBUG_WRITE(routinename,"Vb: ",atomic_v(2))
+   CALL DEBUG_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
 #endif
    v=aux1(1)+sum(atomic_v)
 

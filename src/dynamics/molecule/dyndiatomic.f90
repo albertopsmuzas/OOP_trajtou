@@ -413,7 +413,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       ! Initial values for the derivatives
       CALL this%TIME_DERIVS(molec_dofs,dfdt,switch)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Cycle: ",cycles)
+      CALL DEBUG_WRITE(routinename,"Cycle: ",cycles)
       CALL DEBUG_WRITE(routinename,"Molecular DOFS : ",molec_dofs)
       CALL DEBUG_WRITE(routinename,"Time derivatives: ",dfdt)
 #endif
@@ -454,7 +454,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
       CALL this%BSSTEP(molec_dofs,dfdt,t,dt,this%eps,s,dt_did,dt_next,switch)
       molec_dofs(:)=correctSphPoint(molec_dofs)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Atomic DOFs after integration: ",molec_dofs)
+      CALL DEBUG_WRITE(routinename,"Atomic DOFs after integration: ",molec_dofs)
 #endif
       SELECT CASE(switch)
          CASE(.TRUE.)
@@ -539,6 +539,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%Ecm = Ecm
             WRITE(this%wust,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This traj has Stopped status')
+#endif
             EXIT
         CASE(.FALSE.)
            ! do nothing, next switch
@@ -555,6 +558,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             WRITE(this%wusc,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
             WRITE(this%wutp,11) idtraj,molecule%turning_point(:)
+#ifdef DEBUG
+            call verbose_write(routinename,'This traj has Scattered status')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing next switch
@@ -569,6 +575,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%Ecm=Ecm
             WRITE(this%wure,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This traj has Reacted status')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing next switch
@@ -583,6 +592,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%Ecm =Ecm
             WRITE(this%wuab,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This traj has Absorbed status')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -597,6 +609,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%Ecm = Ecm
             WRITE(this%wuad,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This traj has Adsorbed status')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -611,6 +626,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%Ecm = Ecm
             WRITE(this%wutr,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This traj has Trapped status')
+#endif
             EXIT
          CASE(.FALSE.)
             ! do nothing, next switch
@@ -625,6 +643,9 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             molecule%Ecm = Ecm
             WRITE(this%wuto,10) idtraj,molecule%stat,molecule%ireb,molecule%ixyboun,&
                molecule%E,molecule%Eint,t,molecule%r,molecule%p
+#ifdef DEBUG
+            call verbose_write(routinename,'This traj has Time-out status')
+#endif
             EXIT
          CASE(.FALSE.)
             !do nothing next switch
