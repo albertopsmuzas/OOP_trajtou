@@ -398,13 +398,6 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    DO
       switch = .FALSE.
       cycles = cycles+1
-      ! We cannot go beyond maximum time defined
-      SELECT CASE(t+dt > this%max_t%getvalue())
-         CASE(.TRUE.)
-            dt=this%max_t%getvalue()-t
-         CASE(.FALSE.)
-            ! do nothing
-      END SELECT
       init_t = t
       ! Storing atomic DOF's in only one array
       molec_dofs(1:6)=molecule%r(1:6)
@@ -616,7 +609,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
          CASE(.FALSE.)
             ! do nothing, next switch
       END SELECT
-      SELECT CASE( molecule%ireb > this%maxZBounces .and. maxtime_reached ) ! Z bounces > bounces threshold, time-out
+      SELECT CASE( molecule%ireb >= this%maxZBounces .and. maxtime_reached ) ! Z bounces > bounces threshold, time-out
          CASE(.TRUE.)
             molecule%stat = "Trapped"
             molecule%r(1:6) = molec_dofs(1:6)
