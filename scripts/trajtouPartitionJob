@@ -50,8 +50,7 @@ for i in $(seq 1 $nJobs);do
 	mkdir $jobID
 	let initTraj=trajJobs*i-trajJobs+1
 	let endTraj=i*trajJobs
-	head -n $preLine $inputFile > $jobID/$inputFile
+	echo dofile\(\"../$inputFile\"\) > $jobID/$inputFile
 	echo 'initialConditions.trajList={from='$initTraj',to='$endTraj'}' >> $jobID/$inputFile
-	tail -n +$posLine $inputFile >> $jobID/$inputFile
 	ln -s ../INseed.inp $jobID/INseed.inp
 done
