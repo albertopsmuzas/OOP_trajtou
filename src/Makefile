@@ -16,14 +16,18 @@ objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
 
-default: libtrajtou.a
+default: all
+all: libaotus.a libtrajtou.a
 
 # Static library: trajtou ----------------------------------------------------------------
 libtrajtou.a: $(objectlist)
 	cd ../bin; ar rvs libtrajtou.a $(objectlist); mv libtrajtou.a ../lib/.
 # Static library: aotus --------------------------------------------------------------
-libaotus.a:
-	cd utils/haraldkl-aotus-707f4da5293b; ./waf configure build; mv build/*.a ../../../lib/.; mv build/*.mod ../../../mod/.;\
+libaotus.a: 
+	cd utils/haraldkl-aotus-707f4da5293b;\
+	./waf configure build --check-fortran-compiler=$(F);\
+	mv build/*.a ../../../lib/.;\
+	mv build/*.mod ../../../mod/.;\
 	mv build/lua ../../../bin/lua
 # System / Fundamental section ----------------------------------------------------------
 debug.o:

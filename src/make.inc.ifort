@@ -1,6 +1,6 @@
 # Compile options
 F = ifort
-CF = $(F) -cpp -I ../mod -module ../mod -gen-interfaces -c -O2 -traceback -CB -no-wrap-margin -warn truncated_source
+CF = $(F) -cpp -I ../mod -module ../mod -gen-interfaces -c -O2 -traceback -CB -warn truncated_source
 LF = $(F) -I ../mod -O2
 
 # Where to find compiled but not yet linked binaries

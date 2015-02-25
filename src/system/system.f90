@@ -7,6 +7,7 @@
 MODULE SYSTEM_MOD
 ! Initial declarations
 use UNITS_MOD
+use IFPORT, only:getPid
 use SURFACE_MOD
 use MATHS_MOD, only: INV_MTRX
 use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
