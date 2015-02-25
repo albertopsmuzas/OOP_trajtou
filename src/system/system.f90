@@ -7,13 +7,13 @@
 MODULE SYSTEM_MOD
 ! Initial declarations
 use UNITS_MOD
-use IFPORT, only:getPid
+use IFPORT, only:getPid ! for ifort compatibility
 use SURFACE_MOD
 use MATHS_MOD, only: INV_MTRX
 use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
 use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #ifdef DEBUG
- use DEBUG_MOD
+use DEBUG_MOD
 #endif
 IMPLICIT NONE
 ! Global variables
@@ -35,6 +35,11 @@ CONTAINS
 !########################################################################
 !> @brief
 !! Generates a good seed and stores it in system_iSeed
+!
+!> @details
+!! Taken from https://gcc.gnu.org/onlinedocs/gfortran/RANDOM_005fSEED.html
+!! Seems to be quite secure for this job. Feel free to implement a better seed
+!! generation algorithm.
 !
 !> @param[out] iStat - integer(kind=1),optional: if given, it'll store
 !!                     the status of the seed generation:
@@ -518,6 +523,55 @@ function normalDistRandom() result(rndReal)
    end select
    return
 end function normalDistRandom
-
+!############################################################################
+! SUBROUTINE: skipHeaderFromFile ############################################
+!############################################################################
+!> @brief
+!! Routine that skips all header lines that start with a hash '#' symbol.
+!! Useful to read typical OOPtrajtou output files
+!----------------------------------------------------------------------------
+subroutine skipHeaderFromFile(fileName)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   character(len=:),intent(in):: fileName
+   ! Local variables
+   integer(kind=4):: ru,counter,i
+   integer(kind=4),dimension(2):: iErr
+   logical:: ready
+   character(len=1):: hash
+   ! Run section -------------------------
+   inquire(file=fileName,number=ru,opened=ready)
+   select case(ready)
+   case(.true.)
+      ! go on
+   case(.false.)
+      write(0,*) 'SKIPHEADERFROMFILE: '//fileName//' was not opened'
+      call exit(1)
+   end select
+   iErr(:)=0
+   counter=0
+   do while( iErr(1)==0 .and. iErr(2)==0 )
+      read(ru,*,iostat=iErr(1)) hash
+      select case(hash)
+      case('#')
+         counter=counter+1
+      case default
+        iErr(2)=1
+      end select
+   enddo
+   select case( iErr(1) /= 0 )
+   case(.true.)
+      write(0,*) 'SKIPHEADERFILE: There was an error reading '//fileName
+      call exit(1)
+   case(.false.)
+      ! do nothing
+   end select
+   rewind(unit=ru)
+   do i=1,counter-1
+      read(ru,*)
+   enddo
+   return ! Now we've skipped all commented lines
+end subroutine skipHeaderFromFile
 
 END MODULE SYSTEM_MOD
