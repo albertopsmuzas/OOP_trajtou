@@ -5,6 +5,7 @@ LF = $(F) -cpp -I ../mod -Wall -Wtabs -O2
 
 # Where to find compiled but not yet linked binaries
 vpath %.o ../bin
+vpath %.a ../lib
 
 # General rules
 %.o : %.f90

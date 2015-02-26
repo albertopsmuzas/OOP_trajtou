@@ -7,7 +7,7 @@
 MODULE SYSTEM_MOD
 ! Initial declarations
 use UNITS_MOD
-use IFPORT, only:getPid ! for ifort compatibility
+!use IFPORT, only:getPid ! for ifort compatibility
 use SURFACE_MOD
 use MATHS_MOD, only: INV_MTRX
 use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
@@ -534,7 +534,7 @@ subroutine skipHeaderFromFile(fileName)
    ! initial declarations
    implicit none
    ! I/O variables
-   character(len=:),intent(in):: fileName
+   character(len=*),intent(in):: fileName
    ! Local variables
    integer(kind=4):: ru,counter,i
    integer(kind=4),dimension(2):: iErr

@@ -9,7 +9,7 @@ IMPLICIT NONE
 !======================================================
 ! Peak derived data
 !---------------------
-TYPE :: PeakCRP3D
+TYPE :: PeakAtomSurf
    PRIVATE
    INTEGER(KIND=4) :: id ! identification number
    INTEGER(KIND=4) :: order ! order of the peak
@@ -18,31 +18,31 @@ TYPE :: PeakCRP3D
 	REAL(KIND=8) :: Phi ! deflection angle respect to incidence plane
 	REAL(KIND=8) :: Theta_out ! deflection angle respect to surface plane
 	REAL(KIND=8) :: Prob ! probability
-END TYPE PeakCRP3D
+END TYPE PeakAtomSurf
 !======================================================
-! Allowed_peaksCRP3D derived data
+! Allowed_peaksAtomSurf derived data
 !----------------------------
-TYPE :: Allowed_peaksCRP3D
+TYPE :: Allowed_peaksAtomSurf
    PRIVATE
    TYPE(InitAtomSurf):: inicond
    TYPE(CRP3D):: thispes
    REAL(KIND=8):: E
    REAL(KIND=8),DIMENSION(6):: conic
-   TYPE(PeakCRP3D),DIMENSION(:),ALLOCATABLE:: peaks
+   TYPE(PeakAtomSurf),DIMENSION(:),ALLOCATABLE:: peaks
    CONTAINS
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP3D
-      PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP3D
-      PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D
-      PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D
-      PROCEDURE,PUBLIC:: evaluate_peak => evaluate_peak_ALLOWEDPEAKSCRP3D
-END TYPE Allowed_peaksCRP3D
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSATOMSURF
+      PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSATOMSURF
+      PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF
+      PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSATOMSURF
+      PROCEDURE,PUBLIC:: evaluate_peak => evaluate_peak_ALLOWEDPEAKSATOMSURF
+END TYPE Allowed_peaksAtomSurf
 !=======================================================
 CONTAINS
-SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP3D(this)
+SUBROUTINE INITIALIZE_ALLOWEDPEAKSATOMSURF(this)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Allowed_peaksCRP3D),INTENT(OUT):: this
+   CLASS(Allowed_peaksAtomSurf),INTENT(OUT):: this
    ! Local variables
    ! Run section
    CALL this%thispes%INITIALIZE()
@@ -51,14 +51,14 @@ SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP3D(this)
    RETURN
 END SUBROUTINE 
 !######################################################
-!# SUBROUTINE : SETUP_ALLOWEDPEAKSCRP3D #####################
+!# SUBROUTINE : SETUP_ALLOWEDPEAKSATOMSURF #####################
 !######################################################
 ! Just for a square primitive cell
 !------------------------------------------------------
-SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
+SUBROUTINE SETUP_ALLOWEDPEAKSATOMSURF(this)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Allowed_peaksCRP3D),INTENT(INOUT):: this
+   CLASS(Allowed_peaksAtomSurf),INTENT(INOUT):: this
    ! Local variables
 	REAL(KIND=8),DIMENSION(2):: kinit_par
 	REAL(KIND=8),DIMENSION(3):: p ! momentum
@@ -75,7 +75,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
    INTEGER(KIND=4):: order, realorder
    INTEGER(KIND=4):: count_peaks
    INTEGER(KIND=4),DIMENSION(2):: g ! (n,m) vector
-   CHARACTER(LEN=*),PARAMETER:: routinename = "SET_Allowed_peaksCRP3D: "
+   CHARACTER(LEN=*),PARAMETER:: routinename = "SET_Allowed_peaksAtomSurf: "
    REAL(KIND=8):: a, b ! axis longitude
    REAL(KIND=8):: beta ! angle of incident beam projected on unit cell surface
    REAL(KIND=8):: theta_in ! incidence angle measured from surface plane
@@ -244,17 +244,17 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D(this)
 	END DO
 	CLOSE(11)
 	RETURN
-END SUBROUTINE SETUP_ALLOWEDPEAKSCRP3D
+END SUBROUTINE SETUP_ALLOWEDPEAKSATOMSURF
 !####################################################################################
 ! SUBROUTINE: ASSIGN PEAKS TO TRAJS
 !####################################################################################
-! - GENERATE_TRAJS_ATOMS and SET_Allowed_peaksCRP3D should have been executed before
+! - GENERATE_TRAJS_ATOMS and SET_Allowed_peaksAtomSurf should have been executed before
 ! - At the moment only works with C4v cells
 !------------------------------------------------------------------------------------
-SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
+SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF(this)
 	IMPLICIT NONE
 	! I/O variables
-	CLASS(Allowed_peaksCRP3D),INTENT(INOUT):: this
+	CLASS(Allowed_peaksAtomSurf),INTENT(INOUT):: this
 	! Local variables
 	INTEGER(KIND=4) :: tottrajs ! total number of trajs
    INTEGER(KIND=4) :: totscatt ! total number of scattered trajs
@@ -263,7 +263,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
 	INTEGER(KIND=4) :: i,j ! counters
 	INTEGER(KIND=4), DIMENSION(2) :: g
 	REAL(KIND=8), DIMENSION(2,2) :: to_rec_space
-	REAL(KIND=8) :: dummy_real
+	REAL(KIND=8),dimension(8):: dummy_real
 	REAL(KIND=8) :: gamma ! angle between unit cell surface vectors
 	REAL(KIND=8), DIMENSION(2) :: p ! final momentum
 	REAL(KIND=8), DIMENSION(2) :: dp ! variation of momentum
@@ -297,8 +297,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
    i=0
    DO 
       i=i+1
-      READ(11,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy_real,&
-         dummy_real,dummy_real,dummy_real,dummy_real,p
+      READ(11,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy_real(:),p
       SELECT CASE(ioerr==0)
          CASE(.TRUE.)
             ! do nothing
@@ -349,44 +348,34 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D(this)
 	END DO
 	CLOSE(13)
 	RETURN
-END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP3D
+END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF
 !####################################################################################
 ! FUNCTION: EVALUATE_PEAK ###########################################################
 !####################################################################################
+!> @brief
 ! - TRUE if A*(n^2) + B*nm + C*(m^2) + D*n + E*m < -F
 ! - FALSE otherwise
 ! - in_n and in_m are integer numbers
 !------------------------------------------------------------------------------------
-LOGICAL FUNCTION evaluate_peak_ALLOWEDPEAKSCRP3D(this,in_n, in_m)
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(Allowed_peaksCRP3D),TARGET,INTENT(IN) :: this
-	INTEGER(KIND=4), INTENT(IN) :: in_n, in_m
-	! Local variables
-	REAL(KIND=8) :: left_term
-	REAL(KIND=8), POINTER :: A, B, C, D, E, F
-	REAL(KIND=8) :: n, m
-	! HEY, HO ! LET'S GO!
-	! Pointers & stuff
-	A => this%conic(1)
-	B => this%conic(2)
-	C => this%conic(3)
-	D => this%conic(4)
-	E => this%conic(5)
-	F => this%conic(6)
-	n = DFLOAT(in_n)
-	m = DFLOAT(in_m)
-	! left-term of the equation (A, B, C, D, E)
-	left_term = A*(n**2.D0) + B*n*m +C*(m**2.D0) + D*n + E*m 
-	! Check value
-   SELECT CASE(left_term<-F)
-      CASE(.TRUE.)
-         evaluate_peak_ALLOWEDPEAKSCRP3D = .TRUE.
-      CASE(.FALSE.)
-         evaluate_peak_ALLOWEDPEAKSCRP3D = .FALSE.
-   END SELECT
-	RETURN
-END FUNCTION evaluate_peak_ALLOWEDPEAKSCRP3D
+function evaluate_peak_ALLOWEDPEAKSATOMSURF(this,in_n, in_m) result(isAllowed)
+   implicit none
+   ! I/O variables
+   class(Allowed_peaksAtomSurf),intent(in):: this
+   integer(kind=4),intent(in):: in_n, in_m
+   ! Function dummy variable
+   logical:: isAllowed
+   ! Local variables
+   real(kind=8):: left_term
+   real(kind=8):: n, m
+   ! HEY, HO ! LET'S GO!
+   n = DFLOAT(in_n)
+   m = DFLOAT(in_m)
+   ! left-term of the equation (A, B, C, D, E)
+   left_term=this%conic(1)*(n**2.D0)+this%conic(2)*n*m+this%conic(3)*(m**2.D0)+this%conic(4)*n+this%conic(5)*m 
+   ! Check value
+   isAllowed=(left_term<this%conic(6))
+   return
+   end function evaluate_peak_ALLOWEDPEAKSATOMSURF
 !###########################################################################3########
 ! SUBROUTINE: PRINT_XY_EXIT_ANGLES 
 !###########################################################################3########
@@ -394,11 +383,11 @@ END FUNCTION evaluate_peak_ALLOWEDPEAKSCRP3D
 !   information about exit angles in XY plane (taken from momenta information)
 ! - Only trajectories with "Scattered" status will be taken into account
 !------------------------------------------------------------------------------------
-SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D(this)
+SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSATOMSURF(this)
    ! Initial declarations
    implicit none
    ! I/O Variables
-   class(Allowed_peaksCRP3D),intent(in):: this
+   class(Allowed_peaksAtomSurf),intent(in):: this
    ! Local variables
    integer(kind=4):: dummy_int
    real(kind=8),dimension(8):: dummy_real
@@ -438,8 +427,8 @@ SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D(this)
    enddo
    close(ru)
    close(wu)
-   RETURN
-END SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP3D
+   return
+END SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSATOMSURF
 !###########################################################
 !# SUBROUTINE: SET_REALORDER_CUAD
 !###########################################################

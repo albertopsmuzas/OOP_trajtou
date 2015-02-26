@@ -86,6 +86,7 @@ dyndiatomic.o: debug.o dynamics.o initdiatomic.o system.o
 # Analysis -------------------------------------------------------------------------------
 diffractionCRP3D.o: debug.o  initatom.o CRP3D.o system.o
 diffractionCRP6D.o: debug.o  initdiatomic.o CRP6D.o system.o
+diffractionAtomSurf-o: debug.o initAtomSurf.o CRP3D.o system.o
 # Integrator -------------------------------------------------------------------------------
 link_integrator.o: integrator_o1.o bulirsch_stoer.o
 integrator_o1.o:
