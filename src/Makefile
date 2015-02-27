@@ -11,7 +11,7 @@ objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier
 				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
 				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o xexponential.o\
-				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o
+				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o diffractionAtomSurf.o
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
@@ -86,7 +86,7 @@ dyndiatomic.o: debug.o dynamics.o initdiatomic.o system.o
 # Analysis -------------------------------------------------------------------------------
 diffractionCRP3D.o: debug.o  initatom.o CRP3D.o system.o
 diffractionCRP6D.o: debug.o  initdiatomic.o CRP6D.o system.o
-diffractionAtomSurf-o: debug.o initAtomSurf.o CRP3D.o system.o
+diffractionAtomSurf.o: debug.o initAtomSurf.o CRP3D.o system.o
 # Integrator -------------------------------------------------------------------------------
 link_integrator.o: integrator_o1.o bulirsch_stoer.o
 integrator_o1.o:
