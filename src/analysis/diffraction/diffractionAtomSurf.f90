@@ -104,7 +104,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSATOMSURF(this)
 	this%conic(6) = -((a*b*DSIN(gamma)/(2.D0*PI))**2.D0)*2.D0*mass*this%inicond%E_norm%getvalue()
 	! Debug messages:
 #ifdef DEBUG
-	CALL VERBOSE_WRITE(routinename,"Total energy: ", E)
+	CALL VERBOSE_WRITE(routinename,"Projectile energy: ", E)
 	CALL VERBOSE_WRITE(routinename, "Angle between surface main axis (deg): ", gamma*180.D0/PI)
 	CALL VERBOSE_WRITE(routinename, "Angle respect to surface main axis u1 (deg): ", beta*180.D0/PI)
 	CALL VERBOSE_WRITE(routinename, "Incidence angle respect to surface plane (deg): ", theta_in*180.D0/PI)
@@ -256,24 +256,27 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF(this)
 	! I/O variables
 	CLASS(Allowed_peaksAtomSurf),INTENT(INOUT):: this
 	! Local variables
-	INTEGER(KIND=4) :: tottrajs ! total number of trajs
-   INTEGER(KIND=4) :: totscatt ! total number of scattered trajs
-	INTEGER(KIND=4) :: id
-	INTEGER(KIND=4) :: dummy_int
-	INTEGER(KIND=4) :: i,j ! counters
-	INTEGER(KIND=4), DIMENSION(2) :: g
-	REAL(KIND=8), DIMENSION(2,2) :: to_rec_space
+	INTEGER(KIND=4):: tottrajs ! total number of trajs
+   INTEGER(KIND=4):: totscatt ! total number of scattered trajs
+	INTEGER(KIND=4):: id
+	INTEGER(KIND=4):: dummy_int
+	INTEGER(KIND=4):: i,j ! counters
+	INTEGER(KIND=4),DIMENSION(2):: g
+	REAL(KIND=8),DIMENSION(2,2):: to_rec_space
 	REAL(KIND=8),dimension(8):: dummy_real
-	REAL(KIND=8) :: gamma ! angle between unit cell surface vectors
-	REAL(KIND=8), DIMENSION(2) :: p ! final momentum
-	REAL(KIND=8), DIMENSION(2) :: dp ! variation of momentum
-	REAL(KIND=8), DIMENSION(2) :: dk ! variation of momentum in rec. space coord
-	CHARACTER(LEN=10) :: stat
-	CHARACTER(LEN=23), PARAMETER :: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
-   INTEGER(KIND=4) :: ioerr
-	! Pointer definitions
-	REAL(KIND=8) :: beta ! angle between incident parallel momentum respect to u1 (surface vector)
-	REAL(KIND=8) :: a, b ! length of surface main axis
+	REAL(KIND=8):: gamma ! angle between unit cell surface vectors
+	REAL(KIND=8),DIMENSION(2):: p ! final momentum
+	REAL(KIND=8),DIMENSION(2):: dp ! variation of momentum
+	REAL(KIND=8),DIMENSION(2):: dk ! variation of momentum in rec. space coord
+	CHARACTER(LEN=10):: stat
+   INTEGER(KIND=4):: ioerr
+	REAL(KIND=8):: beta ! angle between incident parallel momentum respect to u1 (surface vector)
+	REAL(KIND=8):: a,b ! length of surface main axis
+   ! PArameters
+   character(len=*),parameter:: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
+   integer(kind=4),parameter:: ruScatt=11
+   integer(kind=4),parameter:: rwuMap=12
+   integer(kind=4),parameter:: wuSeen=13
 	! Pointers assignation
 	beta=this%inicond%vpar_angle%getvalue()
 	a=system_surface%norm_s1
@@ -288,16 +291,16 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF(this)
 	to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)
 	to_rec_space(2,2) = b*DSIN(gamma)/(2.D0*PI)
 	!---------
-   OPEN(12,FILE="OUTANA3Dmappingpeaks.out",STATUS="replace")
-   WRITE(12,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
-   WRITE(12,*) "# Format: traj id/ ----> /peak id"
-   WRITE(12,*) "# ----------------------------------------------------------------"
-   OPEN(11,FILE="OUTDYN3Dscattered.out",STATUS="old")
-   call skipHeaderFromFile("OUTDYN3Dscattered.out")
+   OPEN(unit=rwuMap,file="OUTANA3Dmappingpeaks.out",status="replace",action='readwrite')
+   WRITE(rwuMap,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
+   WRITE(rwuMap,*) "# Format: traj id/ ----> /peak id"
+   WRITE(rwuMap,*) "# ----------------------------------------------------------------"
+   OPEN(unit=ruScatt,file="OUTDYN3Dscattered.out",status="old",action='read')
+   call skipHeaderFromFile(unit=ruScatt)
    i=0
    DO 
       i=i+1
-      READ(11,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy_real(:),p
+      READ(ruScatt,*,IOSTAT=ioerr) id,stat,dummy_int,dummy_int,dummy_real(:),p
       SELECT CASE(ioerr==0)
          CASE(.TRUE.)
             ! do nothing
@@ -305,19 +308,22 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF(this)
             IF(ioerr/=-1) WRITE(*,*) routinename//'Unexpected error in scattered trajs file. Err Code: ',ioerr
             EXIT
       END SELECT
-      IF (stat.EQ."Scattered") THEN
+      select case(stat)
+      case('Scattered')
          dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
          dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
          dk = MATMUL(to_rec_space,dp)
          g(1) = NINT(dk(1))
          g(2) = NINT(dk(2))
          DO j= 1,SIZE(this%peaks)
-            IF ((this%peaks(j)%g(1).EQ.g(1)).AND.(this%peaks(j)%g(2).EQ.g(2))) THEN
-               WRITE(12,*) id," ----> ",this%peaks(j)%id
+            IF ( this%peaks(j)%g(1)==g(1) .AND. this%peaks(j)%g(2)==g(2) ) THEN
+               WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id
                EXIT
             END IF
          END DO
-      END IF
+      case default
+         ! do nothing
+      end select
    END DO
    totscatt=i-1
    tottrajs=this%inicond%ntraj-this%inicond%nstart+1
@@ -326,27 +332,25 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF(this)
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: scattered trajs: ",totscatt
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",totscatt/tottrajs
    WRITE(*,*) "==========================================================="
-	REWIND(12)
-	READ(12,*) ! dummy line
-	READ(12,*) ! dummy line
-	READ(12,*) ! dummy line
+	REWIND(rwuMap)
+   call skipHeaderFromFile(unit=rwuMap)
 	DO i=1,totscatt
-		READ(12,*) dummy_int,stat,id
+		READ(rwuMap,*) dummy_int,stat,id
 		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/tottrajs
 	END DO
-	CLOSE(12)
-	CLOSE(11)
-	OPEN(13,FILE="OUTANA3Dseenpeaks.out",STATUS = "replace") ! re-write allowed peaks file with probabilities printed
-	WRITE(13,*) "# ***** ALLOWED PEAKS *****"
-	WRITE(13,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
-	WRITE(13,*) "# -----------------------------------------------------------"
+	CLOSE(unit=rwuMap)
+	CLOSE(unit=ruScatt)
+	OPEN(unit=wuSeen,file="OUTANA3Dseenpeaks.out",status="replace",action='write') 
+	WRITE(wuSeen,*) "# ***** ALLOWED PEAKS *****"
+	WRITE(wuSeen,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
+	WRITE(wuSeen,*) "# -----------------------------------------------------------"
 	DO i=1, SIZE(this%peaks)
-		IF (this%peaks(i)%prob.NE.0.D0) THEN
-			WRITE(13,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2),&
+		IF (this%peaks(i)%prob/=0.D0) THEN
+			WRITE(wuSeen,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(1),this%peaks(i)%g(2),&
 				    this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
 		END IF
 	END DO
-	CLOSE(13)
+	CLOSE(unit=wuSeen)
 	RETURN
 END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSATOMSURF
 !####################################################################################
@@ -373,7 +377,7 @@ function evaluate_peak_ALLOWEDPEAKSATOMSURF(this,in_n, in_m) result(isAllowed)
    ! left-term of the equation (A, B, C, D, E)
    left_term=this%conic(1)*(n**2.D0)+this%conic(2)*n*m+this%conic(3)*(m**2.D0)+this%conic(4)*n+this%conic(5)*m 
    ! Check value
-   isAllowed=(left_term<this%conic(6))
+   isAllowed=(left_term<-this%conic(6))
    return
    end function evaluate_peak_ALLOWEDPEAKSATOMSURF
 !###########################################################################3########
@@ -408,8 +412,8 @@ SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSATOMSURF(this)
    write(wu,*) "# ***** FINAL MOMENTA AND EXIT ANGLES *****"
    write(wu,*) "# Format: id/Ppara,Pperp,Pnormal(a.u.)/Azimuthal,Polar,Deflection(rad)"
    write(wu,*) "# ---------------------------------------------------------------------"
-   open(ru,file="OUTDYN3Dscattered.out",status="old",action='read')
-   call skipHeaderFromFile("OUTDYN3Dscattered.out")
+   open(unit=ru,file="OUTDYN3Dscattered.out",status="old",action='read')
+   call skipHeaderFromFile(unit=ru)
    ioErr=0
    do while(ioErr==0)
       read(ru,*,iostat=ioerr) traj_id,stat,dummy_int,dummy_int,dummy_real(:),p(:)

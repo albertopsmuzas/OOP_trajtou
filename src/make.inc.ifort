@@ -10,13 +10,13 @@ vpath %.a ../lib
 # General rules
 %.o : %.f90
 ifeq ($(debugmode),on)
-	$(CF) -DDEBUG $< -o ../bin/$@
+	$(CF) -DDEBUG -DINTEL $< -o ../bin/$@
 else
-	$(CF) $< -o ../bin/$@
+	$(CF) -DINTEL $< -o ../bin/$@
 endif
 %.o : %.f
 ifeq ($(debugmode),on)
-	$(CF) -DDEBUG $< -o ../bin/$@
+	$(CF) -DDEBUG -DINTEL $< -o ../bin/$@
 else
-	$(CF) $< -o ../bin/$@
+	$(CF) -DINTEL $< -o ../bin/$@
 endif

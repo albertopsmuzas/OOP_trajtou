@@ -7,13 +7,15 @@
 MODULE SYSTEM_MOD
 ! Initial declarations
 use UNITS_MOD
-!use IFPORT, only:getPid ! for ifort compatibility
 use SURFACE_MOD
 use MATHS_MOD, only: INV_MTRX
 use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
 use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #ifdef DEBUG
-use DEBUG_MOD
+   use DEBUG_MOD
+#endif
+#ifdef INTEL
+   use IFPORT, only:getPid ! for ifort compatibility
 #endif
 IMPLICIT NONE
 ! Global variables
@@ -163,7 +165,6 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: subtable
    CHARACTER(LEN=*),PARAMETER:: routinename="INITIALIZE_SYSTEM: "
    TYPE(Mass):: masa
-   type(Temperature):: temp
    REAL(KIND=8):: numero
    CHARACTER(LEN=10):: units
    INTEGER(KIND=4):: i ! counters
@@ -530,23 +531,42 @@ end function normalDistRandom
 !! Routine that skips all header lines that start with a hash '#' symbol.
 !! Useful to read typical OOPtrajtou output files
 !----------------------------------------------------------------------------
-subroutine skipHeaderFromFile(fileName)
+subroutine skipHeaderFromFile(fileName,unit,skippedRows)
    ! initial declarations
    implicit none
    ! I/O variables
-   character(len=*),intent(in):: fileName
+   character(len=*),optional,intent(in):: fileName
+   integer(kind=4),optional,intent(in):: unit
+   integer(kind=4),optional,intent(out):: skippedRows
    ! Local variables
    integer(kind=4):: ru,counter,i
    integer(kind=4),dimension(2):: iErr
    logical:: ready
+   character(len=1024):: auxString
    character(len=1):: hash
    ! Run section -------------------------
-   inquire(file=fileName,number=ru,opened=ready)
+   select case( present(fileName) .and. .not.present(unit) )
+   case(.true.)
+      inquire(file=fileName,number=ru,opened=ready)
+      auxString=fileName
+   case(.false.)
+      ! do nothing
+   end select
+
+   select case( present(unit) .and. .not.present(fileName) )
+   case(.true.)
+      inquire(unit=unit,opened=ready,name=auxString)
+      ru=unit
+   case(.false.)
+      write(0,*) "ERR SKIPHEADERFROMFIME: set unit or filename. Don't set both or neither of them"
+      call exit(1)
+   end select
+
    select case(ready)
    case(.true.)
       ! go on
    case(.false.)
-      write(0,*) 'SKIPHEADERFROMFILE: '//fileName//' was not opened'
+      write(0,*) 'SKIPHEADERFROMFILE: '//trim(auxString)//' was not opened'
       call exit(1)
    end select
    iErr(:)=0
@@ -562,13 +582,14 @@ subroutine skipHeaderFromFile(fileName)
    enddo
    select case( iErr(1) /= 0 )
    case(.true.)
-      write(0,*) 'SKIPHEADERFILE: There was an error reading '//fileName
+      write(0,*) 'SKIPHEADERFILE: There was an error reading '//trim(auxString)
       call exit(1)
    case(.false.)
       ! do nothing
    end select
    rewind(unit=ru)
-   do i=1,counter-1
+   if ( present(skippedRows) ) skippedRows=counter
+   do i=1,counter
       read(ru,*)
    enddo
    return ! Now we've skipped all commented lines
