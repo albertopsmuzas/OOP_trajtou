@@ -1,0 +1,36 @@
+#!/bin/bash
+# Control of arguments
+if [[ $# != 2 ]]; then
+	echo Arguments expected: 2
+	echo Kind of arguments expected: filename, integer
+	echo Arguments given: $#
+	exit 0
+fi
+ioFile=$1
+countLimit=$2
+# Script's corpus
+if [[ -f $ioFile ]]; then
+	echo Previous i/o file exists. Erasing it.
+	rm $ioFile
+fi
+let counter=0
+let whosFirst=0
+while [[ $counter -le $countLimit ]];do
+	let counter=counter+1
+	folder='trajtou_'$counter
+	echo Inspecting folder $folder
+	if [[ -f $folder/$ioFile ]]; then
+		let whosFirst=whosFirst+1
+		if [[ $whosFirst == 1 ]]; then
+			echo Copying first job from $folder/$ioFile
+			cp  $folder/$ioFile $ioFile 	
+		else
+			echo Appending job from $folder/$ioFile
+			tail -n +4 $folder/$ioFile >> $ioFile	
+		fi
+	else
+		echo $folder/$ioFile does not exist. Cycling
+	fi
+done
+# Final activities
+echo Job done
