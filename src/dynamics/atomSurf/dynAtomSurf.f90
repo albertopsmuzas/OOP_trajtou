@@ -674,7 +674,7 @@ SUBROUTINE FILE_TRAJSTATUS_DYNATOMSURF(wunit,filename,title)
          OPEN(wunit,FILE=filename,STATUS="new")
          WRITE(wunit,*) "# ***** ",title," *****"
          WRITE(wunit,*) "# Format: id/status/ireb/ixyboun/Etot(au)/t(au)/X,Y,Z,Xs,Ys,Zs(au)/&
-                        &/Px,Py,Pz,Pxs,Pys,Pzs(au)"
+                        &Px,Py,Pz,Pxs,Pys,Pzs(au)"
          WRITE(wunit,*) "# -----------------------------------------------------------"
 #ifdef DEBUG
          CALL VERBOSE_WRITE(routinename,"New file created: ",filename)

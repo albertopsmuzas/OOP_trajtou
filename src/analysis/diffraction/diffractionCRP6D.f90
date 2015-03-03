@@ -59,34 +59,35 @@ END SUBROUTINE
 SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Allowed_peaksCRP6D),INTENT(INOUT) :: this
+   CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
    ! Local variables
-	REAL(KIND=8), DIMENSION(2) :: kinit_par
-	REAL(KIND=8), DIMENSION(3) :: p ! momentum
-	LOGICAL, DIMENSION(:), ALLOCATABLE :: allowed
-	LOGICAL :: need_cycle
-	REAL(KIND=8) :: pinit_par
-	REAL(KIND=8) :: E ! Total energy
-	REAL(KIND=8) :: gamma ! angle between surface main vectors.
-	REAL(KIND=8) :: Psi ! azimuthal exit angle
-	REAL(KIND=8) :: Phi ! deflection angle respect to incidence plane
-	REAL(KIND=8) :: Theta_out ! deflection angle respect to surface plane
-    REAL(KIND=8) :: mass
-	INTEGER(KIND=4) :: i, k ! Counters
-	INTEGER(KIND=4) :: order, realorder
-	INTEGER(KIND=4) :: count_peaks
-	INTEGER(KIND=4), DIMENSION(2) :: g ! (n,m) vector
-	CHARACTER(LEN=19), PARAMETER :: routinename = "SET_ALLOWED_PEAKS: "
-	! Pointer definitions
-	REAL(KIND=8) :: a, b ! axis longitude
-	REAL(KIND=8) :: beta ! angle of incident beam projected on unit cell surface
-	REAL(KIND=8) :: theta_in ! incidence angle measured from surface plane
-	! Pointer adjudication
+	REAL(KIND=8),DIMENSION(2):: kinit_par
+	REAL(KIND=8),DIMENSION(3):: p ! momentum
+	LOGICAL,DIMENSION(:),ALLOCATABLE:: allowed
+	LOGICAL:: need_cycle
+	REAL(KIND=8):: pinit_par
+	REAL(KIND=8):: E ! Total energy
+	REAL(KIND=8):: gamma ! angle between surface main vectors.
+	REAL(KIND=8):: Psi ! azimuthal exit angle
+	REAL(KIND=8):: Phi ! deflection angle respect to incidence plane
+	REAL(KIND=8):: Theta_out ! deflection angle respect to surface plane
+   REAL(KIND=8):: mass
+	INTEGER(KIND=4):: i,k ! Counters
+	INTEGER(KIND=4):: order,realorder
+	INTEGER(KIND=4):: count_peaks
+	INTEGER(KIND=4),DIMENSION(2):: g ! (n,m) vector
+   REAL(KIND=8):: a, b ! axis longitude
+   REAL(KIND=8):: beta ! angle of incident beam projected on unit cell surface
+   REAL(KIND=8):: theta_in ! incidence angle measured from surface plane
+   ! Parameters
+   character(len=*),parameter:: routinename = "SET_ALLOWED_PEAKS: "
+   integer(kind=4),parameter:: wuAllowed=11
+   character(len=*),parameter:: formatAllowed='(I5,1X,3(I5,1X),3(F10.5,1X))'
+	! FIRE IN THE HOLE>! ......................
 	a=system_surface%norm_s1
 	b=system_surface%norm_s2
 	beta=this%inicond%vpar_angle%getvalue()
 	theta_in=this%inicond%vz_angle%getvalue()
-	! FIRE IN THE HOLE>! ......................
 #ifdef DEBUG 
 	CALL VERBOSE_WRITE(routinename,"Starting job")
 #endif
@@ -120,10 +121,10 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	CALL VERBOSE_WRITE(routinename, "Conic F: ", this%conic(6))
 #endif
 	! operations
-	OPEN(11,FILE="OUTANA6Dallowedpeaks.out", STATUS="replace")
-	WRITE(11,*) "# ***** ALLOWED PEAKS *****"
-	WRITE(11,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)"
-	WRITE(11,*) "# -----------------------------------------------------------"
+	OPEN(unit=wuAllowed,file="OUTANA6Dallowedpeaks.out",status="replace",action='readwrite')
+	WRITE(wuAllowed,*) "# ***** ALLOWED PEAKS *****"
+	WRITE(wuAllowed,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)"
+	WRITE(wuAllowed,*) "# -----------------------------------------------------------"
 	order = 0
 	count_peaks = 0
 	ALLOCATE(allowed(1))
@@ -145,7 +146,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 		Phi = DATAN(p(2)/p(3))
 		Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
         CALL SET_REALORDER_CUAD(order,g,realorder)
-		WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
+		WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
 	END IF
 	DEALLOCATE(allowed)
 	DO
@@ -167,7 +168,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		!----------------------
@@ -185,7 +186,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		!----
@@ -203,7 +204,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		!----
@@ -221,7 +222,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				Phi = DATAN(p(2)/p(3))
 				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(11,*) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
 			END IF
 		END DO
 		DO i = 1, 8*order
@@ -234,17 +235,15 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 		DEALLOCATE(allowed)
 		IF (.NOT.need_cycle) EXIT
 	END DO
-	REWIND (11)
+	REWIND(wuAllowed)
 	ALLOCATE(this%peaks(1:count_peaks))
-	READ(11,*) ! dummy line
-	READ(11,*) ! dummy line
-	READ(11,*) ! dummy line
+   call skipHeaderFromFile(unit=wuAllowed)
 	DO i=1, count_peaks
-		READ(11,*) this%peaks(i)%id, this%peaks(i)%order, this%peaks(i)%g(1), this%peaks(i)%g(2), &
-			   this%peaks(i)%Psi, this%peaks(i)%Phi, this%peaks(i)%Theta_out
-		this%peaks(i)%prob = 0.D0
+      READ(wuAllowed,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:),&
+                        this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out
+      this%peaks(i)%prob = 0.D0
 	END DO
-	CLOSE(11)
+	CLOSE(unit=wuAllowed)
 	RETURN
 END SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D
 !####################################################################################
@@ -257,68 +256,70 @@ END SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D
 !> @param[in] A  - real(kind=8): Parameter of Morse potential fit
 !------------------------------------------------------------------------------------
 SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
-	integer(kind=4),intent(in):: dJ
-	real(kind=8),intent(in):: morseEd
-	real(kind=8),intent(in):: morseWidth
-	! Local variables
-	INTEGER(KIND=4) :: totscatt
-   INTEGER(KIND=4) :: tottrajs
-   INTEGER(KIND=4) :: allowedScatt
-	INTEGER(KIND=4) :: id
-	INTEGER(KIND=4) :: dummy_int
-	INTEGER(KIND=4) :: i,j ! counters
-	INTEGER(KIND=4), DIMENSION(2) :: g
-	REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: peaks_prob
-	REAL(KIND=8), DIMENSION(2,2) :: to_rec_space
-	REAL(KIND=8) :: dummy_real
-   REAL(KIND=8),DIMENSION(2) :: dummy
-	REAL(KIND=8) :: gamma ! angle between unit cell surface vectors
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
+   integer(kind=4),intent(in):: dJ
+   real(kind=8),intent(in):: morseEd
+   real(kind=8),intent(in):: morseWidth
+   ! Local variables
+   INTEGER(KIND=4):: totscatt
+   INTEGER(KIND=4):: tottrajs
+   INTEGER(KIND=4):: allowedScatt
+   INTEGER(KIND=4):: id
+   INTEGER(KIND=4):: dummy_int
+   INTEGER(KIND=4):: i,j ! counters
+   INTEGER(KIND=4),DIMENSION(2):: g
+	REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: peaks_prob
+	REAL(KIND=8),DIMENSION(2,2):: to_rec_space
+	REAL(KIND=8):: dummy_real
+   REAL(KIND=8),DIMENSION(2):: dummy
+	REAL(KIND=8):: gamma ! angle between unit cell surface vectors
 	REAL(KIND=8),DIMENSION(6):: p,r ! final momentum and position
 	REAL(KIND=8),DIMENSION(2):: dp ! variation of momentum
 	REAL(KIND=8),DIMENSION(2):: dk ! variation of momentum in rec. space coord
 	real(kind=8)::finalJ,finalV,L2,Etot,Ecm,Erot,Evibr,masa,mu
-	CHARACTER(LEN=10) :: stat
-   INTEGER(KIND=4) :: ioerr
+   CHARACTER(LEN=10):: stat
+   INTEGER(KIND=4):: ioerr
    LOGICAL:: isAllowed
-	CHARACTER(LEN=*), PARAMETER :: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
+	REAL(KIND=8):: beta ! angle between incident parallel momentum respect to u1 (surface vector)
+	REAL(KIND=8):: a,b ! length of surface main axis
+   ! Some parameters
+   character(len=*),parameter:: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
+   character(len=*),parameter:: formatMap='(I6," ---> ",I6,I5,I5,3(I4))' ! Id/--->/peak id/n/m/V/J/mJ
+   character(len=*),parameter:: formatSeen='(I6,I5,2(I5),4(F10.5))'      ! Id/order/n/m/psi/phi/theta/prob
+   character(len=*),parameter:: formatUnmap='(I6," ---> ",2(I5))'        ! Id/--->/n/m
    ! Read/write units
    INTEGER(KIND=4),PARAMETER:: rwuMap=12
    INTEGER(KIND=4),PARAMETER:: wuUnmap=13
    INTEGER(KIND=4),PARAMETER:: ruScatt=14
    INTEGER(KIND=4),PARAMETER:: wuSeen=15
-	! Pointer definitions
-	REAL(KIND=8) :: beta ! angle between incident parallel momentum respect to u1 (surface vector)
-	REAL(KIND=8) :: a, b ! length of surface main axis
-	! Pointers assignation
-	beta=this%inicond%vpar_angle%getvalue()
-	a=system_surface%norm_s1
-	b=system_surface%norm_s2
-	masa=sum(system_mass(:))
-	mu=product(system_mass(:))/masa
-	! RUN SECTION -------------------------
+   ! Pointers assignation
+   beta=this%inicond%vpar_angle%getvalue()
+   a=system_surface%norm_s1
+   b=system_surface%norm_s2
+   masa=sum(system_mass(:))
+   mu=product(system_mass(:))/masa
+   ! RUN SECTION -------------------------
 #ifdef DEBUG
-	CALL VERBOSE_WRITE(routinename, "Starting job")
+   CALL VERBOSE_WRITE(routinename, "Starting job")
 #endif
-	gamma = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
-	to_rec_space(1,1) = a/(2.D0*PI)
-	to_rec_space(1,2) = 0.D0
-	to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)
-	to_rec_space(2,2) = b*DSIN(gamma)/(2.D0*PI)
-	!---------
+   gamma = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
+   to_rec_space(1,1) = a/(2.D0*PI)
+   to_rec_space(1,2) = 0.D0
+   to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)
+   to_rec_space(2,2) = b*DSIN(gamma)/(2.D0*PI)
+   !---------
    OPEN(unit=rwuMap,file="OUTANA6Dmappingpeaks.out",status="replace",action='readwrite')
    WRITE(rwuMap,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
    WRITE(rwuMap,*) "# Format: traj id/ ----> /peak id/n,m/V,J,mJ"
    WRITE(rwuMap,*) "# ----------------------------------------------------------------"
    OPEN(unit=wuUnmap,file='OUTANA6Dunmappedtrajs.out',status='replace',action='write')
    WRITE(wuUnmap,*) '# ***** LIST OF UNMAPPED TRAJS *****'
-	WRITE(wuUnmap,*) "# Format: id/n,m/dkx,dky"
+   WRITE(wuUnmap,*) "# Format: id/n,m/dkx,dky"
+   WRITE(wuUnmap,*) "# ----------------------------------------------------------------"
    OPEN(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
-   READ(ruScatt,*) ! dummy line
-   READ(ruScatt,*) ! dummy line
-   READ(ruScatt,*) ! dummy line
+   call skipHeaderFromFile(unit=ruScatt)
    i=0
    allowedScatt=0
    DO 
@@ -354,15 +355,13 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
                   finalV=dsqrt(1.d0-Evibr/morseEd)+dsqrt(2.d0*morseEd/masa)/morseWidth-0.5d0
                   select case( discretizeJ(finalJ,dJ)==0 )
                   case(.true.)
-                     WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),0,0
+                     WRITE(rwuMap,formatMap) id,this%peaks(j)%id,g(:),nint(finalV),0,0
                   case(.false.)
                      select case( nint(dabs(p(6)))>abs(discretizeJ(finalJ,dJ)) )
                      case(.true.) ! aboid weird quantum states
-                        WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),&
-                                        sign(discretizeJ(finalJ,dJ),nint(p(6)))
+                        WRITE(rwuMap,formatMap) id,this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),sign(discretizeJ(finalJ,dJ),nint(p(6)))
                      case(.false.) ! generic case
-                        WRITE(rwuMap,*) id," ----> ",this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),&
-                                        nint(p(6))
+                        WRITE(rwuMap,formatMap) id,this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),nint(p(6))
                      end select
                   end select
                   isAllowed=.true.
@@ -378,7 +377,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
          CASE(.true.)
             allowedScatt=allowedScatt+1
          CASE(.false.)
-            WRITE(wuUnmap,*) id,g(:),dk(:)
+            WRITE(wuUnmap,formatUnmap) id,g(:)
       END SELECT
    END DO
    totscatt=i-1
@@ -387,33 +386,31 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: total trajs: ",tottrajs
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: scattered trajs: ",totscatt
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: allowed scattered trajs:",allowedScatt
-   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ", dfloat(allowedScatt)/dfloat(tottrajs)
+   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",dfloat(allowedScatt)/dfloat(tottrajs)
    WRITE(*,*) "==========================================================="
-	REWIND(unit=rwuMap)
-	READ(rwuMap,*) ! dummy line
-	READ(rwuMap,*) ! dummy line
-	READ(rwuMap,*) ! dummy line
-	DO i=1,allowedScatt
-		READ(rwuMap,*) dummy_int,stat,id
-		this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/dfloat(tottrajs)
-	END DO
-	CLOSE(unit=rwuMap)
-	CLOSE(unit=ruScatt)
-	CLOSE(unit=wuUnmap)
-	OPEN(unit=wuSeen,file="OUTANA6Dseenpeaks.out",status="replace",action='write') ! re-write allowed peaks file with probabilities printed
-	WRITE(wuSeen,*) "# ***** ALLOWED PEAKS *****"
-	WRITE(wuSeen,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
-	WRITE(wuSeen,*) "# -----------------------------------------------------------"
-	DO i=1, SIZE(this%peaks)
-		IF (this%peaks(i)%prob.NE.0.D0) THEN
-			WRITE(wuSeen,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:), &
-				    this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
-		END IF
-	END DO
-	CLOSE(unit=wuSeen)
-	RETURN
-	contains
-	! included function
+   REWIND(unit=rwuMap)
+   call skipHeaderFromFile(unit=rwuMap)
+   DO i=1,allowedScatt
+      READ(rwuMap,*) dummy_int,stat,id
+      this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/dfloat(tottrajs)
+   END DO
+   CLOSE(unit=rwuMap)
+   CLOSE(unit=ruScatt)
+   CLOSE(unit=wuUnmap)
+   OPEN(unit=wuSeen,file="OUTANA6Dseenpeaks.out",status="replace",action='write') ! re-write allowed peaks file with probabilities printed
+   WRITE(wuSeen,*) "# ***** ALLOWED PEAKS *****"
+   WRITE(wuSeen,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
+   WRITE(wuSeen,*) "# -----------------------------------------------------------"
+   DO i=1, SIZE(this%peaks)
+      IF ( this%peaks(i)%prob /= 0.D0 ) THEN
+         WRITE(wuSeen,formatSeen) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:), &
+                this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
+      END IF
+   END DO
+   CLOSE(unit=wuSeen)
+   RETURN
+   contains
+   ! included function
 	function discretizeJ(J,dJ) result(finalJ)
 	   implicit none
 	   ! I/O variables
@@ -449,34 +446,27 @@ END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
 ! - in_n and in_m are integer numbers
 !------------------------------------------------------------------------------------
 LOGICAL FUNCTION evaluate_peak_ALLOWEDPEAKSCRP6D(this,in_n, in_m)
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(Allowed_peaksCRP6D),TARGET,INTENT(IN) :: this
-	INTEGER(KIND=4), INTENT(IN) :: in_n, in_m
-	! Local variables
-	REAL(KIND=8) :: left_term
-	REAL(KIND=8), POINTER :: A, B, C, D, E, F
-	REAL(KIND=8) :: n, m
-	! HEY, HO ! LET'S GO!
-	! Pointers & stuff
-	A => this%conic(1)
-	B => this%conic(2)
-	C => this%conic(3)
-	D => this%conic(4)
-	E => this%conic(5)
-	F => this%conic(6)
-	n = DFLOAT(in_n)
-	m = DFLOAT(in_m)
-	! left-term of the equation (A, B, C, D, E)
-	left_term = A*(n**2.D0) + B*n*m +C*(m**2.D0) + D*n + E*m 
-	! Check value
-   SELECT CASE(left_term<-F)
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(Allowed_peaksCRP6D),INTENT(IN):: this
+   INTEGER(KIND=4),INTENT(IN):: in_n, in_m
+   ! Local variables
+   REAL(KIND=8):: left_term
+   REAL(KIND=8):: n,m
+   ! HEY, HO ! LET'S GO!
+   ! Pointers & stuff
+   n = DFLOAT(in_n)
+   m = DFLOAT(in_m)
+   ! left-term of the equation (A, B, C, D, E)
+   left_term = this%conic(1)*(n**2.D0)+this%conic(2)*n*m+this%conic(3)*(m**2.D0)+this%conic(4)*n+this%conic(5)*m 
+   ! Check value
+   SELECT CASE( left_term<-this%conic(6) )
       CASE(.TRUE.)
          evaluate_peak_ALLOWEDPEAKSCRP6D = .TRUE.
       CASE(.FALSE.)
          evaluate_peak_ALLOWEDPEAKSCRP6D = .FALSE.
    END SELECT
-	RETURN
+   RETURN
 END FUNCTION evaluate_peak_ALLOWEDPEAKSCRP6D
 !###########################################################################3########
 ! SUBROUTINE: PRINT_XY_EXIT_ANGLES 
@@ -485,54 +475,56 @@ END FUNCTION evaluate_peak_ALLOWEDPEAKSCRP6D
 !   information about exit angles in XY plane (taken from momenta information)
 ! - Only trajectories with "Scattered" status will be taken into account
 !------------------------------------------------------------------------------------
-SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
-	IMPLICIT NONE
+subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
+   implicit none
 	! I/O Variables
-   CLASS(Allowed_peaksCRP6D),INTENT(IN):: this
+   class(Allowed_peaksCRP6D),intent(in):: this
 	! Local variables
-	INTEGER(KIND=4) :: dummy_int
-	REAL(KIND=8),DIMENSION(9) :: dummy_real
-	INTEGER(KIND=4) :: i ! counters
-	INTEGER(KIND=4) :: traj_id
-	CHARACTER(LEN=10) :: stat
-	REAL(KIND=8),DIMENSION(3) :: p
-	REAL(KIND=8),DIMENSION(3) :: plab
-   INTEGER(KIND=4) :: ioerr
-   REAL(KIND=8) :: psi,Theta,thetaout,beta
-   REAL(KIND=8),DIMENSION(2,2) :: mtrx
-   ! RUN !! ------------------p--------
+	integer(kind=4):: dummy_int
+	real(kind=8),dimension(9):: dummy_real
+	integer(kind=4):: i ! counters
+	integer(kind=4):: traj_id
+	character(len=10):: stat
+	real(kind=8),dimension(3):: p
+	real(kind=8),dimension(3):: plab
+   integer(kind=4):: ioerr
+   real(kind=8):: psi,Theta,thetaout,beta
+   real(kind=8),dimension(2,2):: mtrx
+   ! Open units
+   integer(kind=4),parameter:: wuFinal=12
+   integer(kind=4),parameter:: ruScatt=11
+   character(len=*),parameter:: formatFinal='(I6,1X,3(F10.5,1X),3(F10.5,1X))'
+   ! RUN !! --------------------------
    beta=this%inicond%vpar_angle%getvalue()
    mtrx(1,:)=[dcos(beta),dsin(beta)]
    mtrx(2,:)=[-dsin(beta),dcos(beta)]
-   OPEN(12,FILE="OUTANA6Dfinalpandangles.out",STATUS="replace")
-   WRITE(12,*) "# ***** FINAL MOMENTA AND EXIT ANGLES *****"
-   WRITE(12,*) "# Format: id/Px,Py,Pz(a.u.)/Azimuthal,Polar,Deflection(rad)"
-   WRITE(12,*) "# -----------------------------------------------------------------------"
-   OPEN(11,FILE="OUTDYN6Dscattered.out",STATUS="old")
-   READ(11,*) ! Dummy line
-   READ(11,*) ! Dummy line
-   READ(11,*) ! Dummy line
-   DO 
-      READ(11,*,iostat=ioerr) traj_id,stat,dummy_int,dummy_int,dummy_real(:),p(:)
-      SELECT CASE (ioerr==0)
-         CASE(.TRUE.)
-            ! do nothing
-         CASE(.FALSE.)
-            EXIT ! break cycle
-         END SELECT
-      IF(stat.EQ."Scattered") THEN
+   open(unit=wuFinal,file="OUTANA6Dfinalpandangles.out",status="replace",action='write')
+   write(wuFinal,*) "# ***** FINAL MOMENTA AND EXIT ANGLES *****"
+   write(wuFinal,*) "# Format: id/Px,Py,Pz(a.u.)/Azimuthal,Polar,Deflection(rad)"
+   write(wuFinal,*) "# -----------------------------------------------------------------------"
+   open(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
+   call skipHeaderFromFile(unit=ruScatt)
+   ioErr=0
+   do while( ioErr==0 ) 
+      read(ruScatt,*,iostat=ioerr) traj_id,stat,dummy_int,dummy_int,dummy_real(:),p(:)
+      select case( stat=="Scattered" .and. ioErr==0 )
+      case(.true.)
          plab(1:2)=matmul(mtrx,p(1:2))
          plab(3)=p(3)
          psi = datan(plab(2)/plab(1))
          Theta = datan(plab(2)/plab(3))
          thetaout=datan(plab(3)/dsqrt(plab(1)**2.D0+plab(2)**2.D0))
-         WRITE(12,*) traj_id,plab(:),psi,Theta,thetaout
-      END IF
-   END DO
-   CLOSE(11)
-   CLOSE(12)
-   RETURN
-END SUBROUTINE PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
+         write(wuFinal,formatFinal) traj_id,plab(:),psi,Theta,thetaout
+
+      case(.false.)
+         ! do nothing
+
+      end select
+   enddo
+   close(unit=wuFinal)
+   close(unit=ruScatt)
+   return
+end subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
 !###########################################################
 !# SUBROUTINE: SET_REALORDER_CUAD
 !###########################################################

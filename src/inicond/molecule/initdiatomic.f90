@@ -451,12 +451,14 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    INTEGER(KIND=4),PARAMETER :: wunit=923
    ! Local variables
    INTEGER :: i ! counters
-   CHARACTER(LEN=22),PARAMETER:: routinename = "GENERATE_TRAJS_ATOMS: "
    REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint
    REAL(KIND=8),DIMENSION(9):: random_kernel
    REAL(KIND=8):: rnd_delta,rnd_phi,rnd_theta,rnd_eta,rnd_sign,rnd_mu
    REAL(KIND=8):: eta
    REAL(KIND=8):: L,L_theta
+   ! Parameters
+   character(len=*),parameter:: formatFile='("# Format: id/Etot,Eint/X,Y,Z,R(a.u.)/THETA,PHI(rad)/Px,Py,Pz,pr,ptheta,pphi(a.u.)")'
+   character(len=*),parameter:: routinename = "GENERATE_TRAJS_ATOMS: "
    ! YIPPIEE KI YAY !! -------------------
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,"New set of trajectories")
@@ -589,32 +591,32 @@ SUBROUTINE GENERATE_TRAJS_INITDIATOMIC(this,thispes)
    SELECT CASE(this%control_out)
       CASE(.TRUE.)
          OPEN(wunit,FILE=this%output_file,STATUS="replace")
-         WRITE(wunit,*) "# FILE CREATED BY : GENERATE_TRAJS_ATOMS ================================================================="
-         WRITE(wunit,*) "# Format: id/Etot,Eint/X,Y,Z,R(a.u.)/THETA,PHI(rad)/&
-            &Px,Py,Pz,pr,ptheta,pphi(a.u.)"
-         WRITE(wunit,*) "# Perpendicular Energy (a.u.) / (eV) : ",this%E_norm%getvalue()," / ", this%E_norm%getvalue()*au2ev
-         WRITE(wunit,*) "# Initial center of mass energy (a.u.) / (eV) : ",&
-            Enorm/(DSIN(alpha)**2.D0)," /  ",(Enorm/(DSIN(alpha)**2.D0))*au2ev
-         WRITE(wunit,*) "# Initial internal energy (a.u.) / (eV) : ",Eint," /  ",Eint*au2ev
-         WRITE(wunit,*) "# Initial Rovibrational state: ",this%init_qn(:)
-         WRITE(wunit,*) "# MASS (a.u.) / proton_mass : ", masa," / ",masa/pmass2au
-         WRITE(wunit,*) "# Reduced MASS (a.u.) / proton_mass : ",mu," / ",mu/pmass2au
-         WRITE(wunit,*) "# Incidence angle (deg): ", this%vz_angle%getvalue()*180.D0/PI
-         WRITE(wunit,*) "# Parallel velocity direction (deg): ",this%vpar_angle%getvalue()*180.D0/PI
+         WRITE(wunit,'("# FILE CREATED BY : GENERATE_TRAJS_ATOMS =================================================================")')
+         WRITE(wunit,formatFile) 
+         WRITE(wunit,'("# Perpendicular Energy (a.u.) / (eV): ",F10.5," / ",F10.5)') this%E_norm%getvalue(),&
+            this%E_norm%getvalue()*au2ev
+         WRITE(wunit,'("# Initial center of mass energy (a.u.) / (eV) : ",F10.5," / ",F10.5)') Enorm/(DSIN(alpha)**2.D0),&
+            (Enorm/(DSIN(alpha)**2.D0))*au2ev
+         WRITE(wunit,'("# Initial internal energy (a.u.) / (eV) : ",F10.5," / ",F10.5)') Eint,Eint*au2ev
+         WRITE(wunit,'("# Initial Rovibrational state: ",3(I5,1X))') this%init_qn(:)
+         WRITE(wunit,'("# MASS (a.u.) / proton_mass : ",F10.5," / ",F10.5)')  masa,masa/pmass2au
+         WRITE(wunit,'("# Reduced MASS (a.u.) / proton_mass : ",F10.5," / ",F10.5)') mu,mu/pmass2au
+         WRITE(wunit,'("# Incidence angle (deg): ",F10.5)')  this%vz_angle%getvalue()*180.D0/PI
+         WRITE(wunit,'("# Parallel velocity direction (deg): ",F10.5)') this%vpar_angle%getvalue()*180.D0/PI
          IF ((this%control_posX).AND.(.NOT.this%control_posY)) THEN
-            WRITE(wunit,*) "# Random X impact parameter"
+            WRITE(wunit,'("# Random X impact parameter")') 
             WRITE(wunit,*) "# Seed used: ",system_iSeed(:)
          ELSE IF ((.NOT.this%control_posX).AND.(this%control_posY)) THEN
-            WRITE(wunit,*) "# Random Y impact parameter"
+            WRITE(wunit,'("# Random Y impact parameter")') 
             WRITE(wunit,*) "# Seed used: ",system_iSeed(:)
          ELSE IF ((this%control_posX).AND.(this%control_posY)) THEN
-            WRITE(wunit,*) "# Random X and Y impact parameters"
+            WRITE(wunit,'("# Random X and Y impact parameters")') 
             WRITE(wunit,*) "# Seed used: ",system_iSeed(:)
          ELSE
-            WRITE(wunit,*) "# X, Y values are not random numbers"
+            WRITE(wunit,'("# X, Y values are not random numbers")') 
             WRITE(wunit,*) "# Seed used: ",system_iSeed(:)
          END IF
-         WRITE(wunit,*) "# ======================================================================================================="
+         WRITE(wunit,'("# =======================================================================================================")')
          DO i=this%nstart,this%ntraj
             WRITE(wunit,'(1X,I10,2(F16.7),2(6F16.7))') i,this%trajs(i)%E,this%trajs(i)%Eint,&
                this%trajs(i)%init_r,this%trajs(i)%init_p
