@@ -26,8 +26,11 @@ real(kind=8),dimension(3):: system_surfFreqs=[0.d0,0.d0,0.d0]
 CHARACTER(LEN=2),DIMENSION(:),ALLOCATABLE:: system_atomsymbols
 CHARACTER(LEN=:),ALLOCATABLE:: system_inputfile
 CHARACTER(LEN=:),ALLOCATABLE:: system_pespath
+character(len=:),allocatable:: system_binningScheme
+real(kind=8),dimension(:),allocatable:: system_binningParam
 INTEGER(KIND=4):: system_natoms
 integer(kind=4),dimension(:),allocatable:: system_iSeed
+
 ! Global parameters
 character(len=*),parameter:: system_seedFilename='INseed.inp'
 ! Contains section
@@ -161,7 +164,7 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    ! Local variables
    TYPE(flu_State):: conf ! Lua file
    INTEGER(KIND=4):: ierr
-   INTEGER(KIND=4):: sys_table,sym_table,magnitude_table,osciSurf_table
+   INTEGER(KIND=4):: sys_table,sym_table,magnitude_table,osciSurf_table,binning_table
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: subtable
    CHARACTER(LEN=*),PARAMETER:: routinename="INITIALIZE_SYSTEM: "
    TYPE(Mass):: masa
@@ -243,7 +246,25 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    system_surfMass=masa%getValue()
    call aot_table_close(L=conf,thandle=magnitude_table)
    call aot_table_close(L=conf,thandle=osciSurf_table)
+   ! get binning parameters
+   call aot_table_open(L=conf,parent=sys_table,thandle=binning_table,key='binning')
+   call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='type',val=auxString)
+   system_binningScheme=trim(auxString)
+   if( system_binningScheme=='Morse' ) then
+      allocate( system_binningParam(3) )
+      call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='dissociationEnergy',val=system_binningParam(1))
+      call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='equilibriumDistance',val=system_binningParam(2))
+      call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='width',val=system_binningParam(3))
+   else
+      write(0,*) 'INITIALIZE SYSTEM ERR: wrong binning scheme type: '//system_binningScheme
+      write(0,*) 'Implemented ones: Morse'
+      write(0,*) 'Case sensitive'
+      call exit(1)
+   endif
+   call aot_table_close(L=conf,thandle=binning_table)
+   ! CLOSE LUA FILE /////////
    CALL CLOSE_CONFIG(conf)
+   ! ////////////////////////
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'config file: ',system_inputfile)
    CALL VERBOSE_WRITE(routinename,'default surface input file: ',system_surface%getfilename())
@@ -594,5 +615,48 @@ subroutine skipHeaderFromFile(fileName,unit,skippedRows)
    enddo
    return ! Now we've skipped all commented lines
 end subroutine skipHeaderFromFile
-
+!##########################################################
+! FUNCTION: evaluateEnergyRovibrState
+!##########################################################
+!> @brief
+!! - Gives vibration energy and average rotational energy for
+!!   a given rovibrational state.
+!
+!> @details
+!! @b Implemented @b methods:
+!!    - Morse: vibrational energy is calculated with Morse corrections.
+!> @warnings
+!! - Rotational energy is always considered as : J(J+1)/2muReq
+function evaluateEnergyRovibrState(rovibrState,eVibr,eRot) result(energy)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   integer(kind=4),dimension(3),intent(in):: rovibrState
+   real(kind=8),optional,intent(out):: eVibr,eRot
+   ! function dummy variable
+   real(kind=8):: energy
+   real(kind=8):: vibr,rot,ed,width,req,omega
+   real(kind=8):: v,J,mu
+   ! Run section
+   if( system_binningScheme == 'Morse' ) then
+      mu=product(system_mass(:))/sum(system_mass(:))
+      ed=system_binningParam(1)
+      req=system_binningParam(2)
+      width=system_binningParam(3)
+      omega=width*dsqrt(2.d0*ed/mu)
+      v=dfloat(rovibrState(1))
+      J=dfloat(rovibrState(2))
+      vibr=omega*(v+0.5d0)-((omega**2.d0)/(4.d0*ed))*(v+0.5d0)**2.d0
+      rot=j*(j+1)/(2.d0*mu*req**2.d0)
+      energy=vibr+rot
+      if( present(eVibr) ) eVibr=vibr
+      if( present(eRot) ) eRot=rot
+   else
+      write(0,*) 'evaluateEnergyRovibrState ERR: wrong binning type: '//system_binningScheme
+      write(0,*) 'implemented ones: Morse'
+      write(0,*) 'case sensitive'
+      call exit(1)
+   endif
+   return
+end function
 END MODULE SYSTEM_MOD

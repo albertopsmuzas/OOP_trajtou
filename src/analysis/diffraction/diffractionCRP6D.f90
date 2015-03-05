@@ -12,25 +12,33 @@ IMPLICIT NONE
 !> @brief
 !! All information that defines a fiffraction peak
 !> @param id - integer(kind=4): Identification number
+!> @param nSubPeaks - integer(kind=4): number of subpeaks
 !> @param envOrder - integer(kind=4): environment order
 !> @param diffOrder - integer(kind=4): diffraction order based on momentum exchange
+!> @param dkxy - real(kind=8): momentum exchange (in XY plane)
 !> @param g - integer(kind=4),dimension(2): diffraction state
 !> @param psiOut - real(kind=8): azimuthal exit angle
 !> @param phiOut - real(kind=8): deflection angle respect to the perpendicular plane to the surface
-!> @param thetaOut - real(kind=8): deflection angle respect to surface plane 
-!> @param prob - real(kind=8): Probability
+!> @param thetaOut(:) - real(kind=8): deflection angle respect to surface plane
+!> @param prob(:) - real(kind=8): Probability
+!> @param dE(:) - real(kind=8): internal energy exchange after data binning
 !------------------------------------------------------
 TYPE :: PeakCRP6D
    PRIVATE
    INTEGER(KIND=4):: id
+   integer(kind=4):: nSubPeaks=0
    integer(kind=4):: envOrder
    integer(kind=4):: diffOrder
-   INTEGER(KIND=4):: order
+   real(kind=8):: dkx
+   real(kind=8):: dky
+   real(kind=8):: dkxy
    INTEGER(KIND=4),DIMENSION(2):: g
 	REAL(KIND=8):: psiOut
-	REAL(KIND=8):: phiOut
-	REAL(KIND=8):: thetaOut
-	REAL(KIND=8):: Prob
+	REAL(KIND=8),dimension(:),allocatable:: phiOut
+	REAL(KIND=8),dimension(:),allocatable:: thetaOut
+	real(kind=8),dimension(:),allocatable:: prob
+	integer(kind=4),dimension(:,:),allocatable:: rovibrState
+	real(kind=8),dimension(:),allocatable:: dE
 END TYPE PeakCRP6D
 !======================================================
 ! Allowed_peaksCRP6D derived data
@@ -43,7 +51,9 @@ TYPE :: Allowed_peaksCRP6D
    REAL(KIND=8),DIMENSION(6):: conic
    TYPE(PeakCRP6D),DIMENSION(:),ALLOCATABLE:: peaks
    CONTAINS
-      procedure,public:: locatePeak => locatePeak_ALLOWEDPEAKSCRP6D
+      procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSCRP6D
+      procedure,private:: createNewPeak => createNewPeak_ALLOWEDPEAKSCRP6D
+      procedure,private:: addProbToPeak => addProbToPeak_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
@@ -81,13 +91,13 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	LOGICAL:: need_cycle
 	REAL(KIND=8):: pinit_par
 	REAL(KIND=8):: E ! Total energy
-	REAL(KIND=8):: gamma ! angle between surface main vectors.
+	REAL(KIND=8):: gama ! angle between surface main vectors.
 	REAL(KIND=8):: psiOut ! azimuthal exit angle
 	REAL(KIND=8):: phiOut ! deflection angle respect to incidence plane
 	REAL(KIND=8):: thetaOut ! deflection angle respect to surface plane
    REAL(KIND=8):: mass
 	INTEGER(KIND=4):: i,k ! Counters
-	INTEGER(KIND=4):: order,realorder
+	INTEGER(KIND=4):: order,diffOrder
 	INTEGER(KIND=4):: count_peaks
 	INTEGER(KIND=4),DIMENSION(2):: g ! (n,m) vector
    REAL(KIND=8):: a, b ! axis longitude
@@ -96,7 +106,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
    ! Parameters
    character(len=*),parameter:: routinename = "SET_ALLOWED_PEAKS: "
    integer(kind=4),parameter:: wuAllowed=11
-   character(len=*),parameter:: formatAllowed='(I5,1X,3(I5,1X),3(F10.5,1X))'
+   character(len=*),parameter:: formatAllowed='(I5,1X,4(I5,1X),2(F10.5,1X))'
 	! FIRE IN THE HOLE>! ......................
 	a=system_surface%norm_s1
 	b=system_surface%norm_s2
@@ -107,22 +117,22 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 #endif
 	E = (this%inicond%E_norm%getvalue())/(dsin(theta_in))**2.D0
 	this%E = E
-	gamma = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
+	gama = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
    mass=sum(system_mass(1:2))
 	pinit_par = DSQRT(2.D0*mass*(E - this%inicond%E_norm%getvalue()))
 	kinit_par(1) = pinit_par*a*DCOS(beta)/(2.D0*PI)
-	Kinit_par(2) = pinit_par*b*DCOS(gamma-beta)/(2.D0*PI)
+	Kinit_par(2) = pinit_par*b*DCOS(gama-beta)/(2.D0*PI)
 	! Setting conic equation
 	this%conic(1) = b**2.D0
-	this%conic(2) = -2.D0*a*b*DCOS(gamma)
+	this%conic(2) = -2.D0*a*b*DCOS(gama)
 	this%conic(3) = a**2.D0
-	this%conic(4) = 2.D0*b*(b*kinit_par(1)-a*kinit_par(2)*DCOS(gamma))
-	this%conic(5) = 2.D0*a*(a*kinit_par(2)-b*kinit_par(1)*DCOS(gamma))
-	this%conic(6) = -((a*b*DSIN(gamma)/(2.D0*PI))**2.D0)*2.D0*mass*this%inicond%E_norm%getvalue()
+	this%conic(4) = 2.D0*b*(b*kinit_par(1)-a*kinit_par(2)*DCOS(gama))
+	this%conic(5) = 2.D0*a*(a*kinit_par(2)-b*kinit_par(1)*DCOS(gama))
+	this%conic(6) = -((a*b*DSIN(gama)/(2.D0*PI))**2.D0)*2.D0*mass*this%inicond%E_norm%getvalue()
 	! Debug messages:
 #ifdef DEBUG
 	CALL VERBOSE_WRITE(routinename,"Total energy: ", E)
-	CALL VERBOSE_WRITE(routinename, "Angle between surface main axis (deg): ", gamma*180.D0/PI)
+	CALL VERBOSE_WRITE(routinename, "Angle between surface main axis (deg): ", gama*180.D0/PI)
 	CALL VERBOSE_WRITE(routinename, "Angle respect to surface main axis u1 (deg): ", beta*180.D0/PI)
 	CALL VERBOSE_WRITE(routinename, "Incidence angle respect to surface plane (deg): ", theta_in*180.D0/PI)
 	CALL VERBOSE_WRITE(routinename, "kinit_par 1: ", kinit_par(1))
@@ -135,10 +145,6 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	CALL VERBOSE_WRITE(routinename, "Conic F: ", this%conic(6))
 #endif
 	! operations
-	OPEN(unit=wuAllowed,file="OUTANA6Dallowedpeaks.out",status="replace",action='readwrite')
-	WRITE(wuAllowed,*) "# ***** ALLOWED PEAKS *****"
-	WRITE(wuAllowed,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)"
-	WRITE(wuAllowed,*) "# -----------------------------------------------------------"
 	order = 0
 	count_peaks = 0
 	ALLOCATE(allowed(1))
@@ -147,20 +153,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	allowed(1) = this%evaluate_peak(g(1),g(2))
 	IF(allowed(1)) THEN
 		count_peaks = count_peaks + 1
-		p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
-		p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)+DFLOAT(g(1))*b*DCOS(beta+gamma))
-		p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-      ! Determine Azimuthal angle. Avoid indetermination
-      SELECT CASE(g(1)==0 .AND. g(2)==0)
-         CASE(.TRUE.)
-            psiOut = 0.D0
-         CASE(.FALSE.)
-            psiOut = DATAN(p(2)/p(1))
-      END SELECT
-		phiOut = DATAN(p(2)/p(3))
-		thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-        CALL SET_REALORDER_CUAD(order,g,realorder)
-		WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
+		call this%createNewPeak(order,g)
 	END IF
 	DEALLOCATE(allowed)
 	DO
@@ -175,14 +168,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
-				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
-				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				psiOut = DATAN(p(2)/p(1))
-				phiOut = DATAN(p(2)/p(3))
-				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-                CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
+				call this%createNewPeak(order,g)
 			END IF
 		END DO
 		!----------------------
@@ -193,14 +179,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
-				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
-				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				psiOut = DATAN(p(2)/p(1))
-				phiOut = DATAN(p(2)/p(3))
-				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-                CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
+				call this%createNewPeak(order,g)
 			END IF
 		END DO
 		!----
@@ -211,14 +190,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
-				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
-				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				psiOut = DATAN(p(2)/p(1))
-				phiOut = DATAN(p(2)/p(3))
-				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-                CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
+				call this%createNewPeak(order,g)
 			END IF
 		END DO
 		!----
@@ -229,14 +201,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
-				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
-				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				psiOut = DATAN(p(2)/p(1))
-				phiOut = DATAN(p(2)/p(3))
-				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
-                CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
+				call this%createNewPeak(order,g)
 			END IF
 		END DO
 		DO i = 1, 8*order
@@ -249,15 +214,6 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 		DEALLOCATE(allowed)
 		IF (.NOT.need_cycle) EXIT
 	END DO
-	REWIND(wuAllowed)
-	ALLOCATE(this%peaks(1:count_peaks))
-   call skipHeaderFromFile(unit=wuAllowed)
-	DO i=1, count_peaks
-      READ(wuAllowed,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:),&
-                        this%peaks(i)%psiOut,this%peaks(i)%phiOut,this%peaks(i)%thetaOut
-      this%peaks(i)%prob = 0.D0
-	END DO
-	CLOSE(unit=wuAllowed)
 	RETURN
 END SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D
 !####################################################################################
@@ -288,7 +244,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
 	REAL(KIND=8),DIMENSION(2,2):: to_rec_space
 	REAL(KIND=8):: dummy_real
    REAL(KIND=8),DIMENSION(2):: dummy
-	REAL(KIND=8):: gamma ! angle between unit cell surface vectors
+	REAL(KIND=8):: gama ! angle between unit cell surface vectors
 	REAL(KIND=8),DIMENSION(6):: p,r ! final momentum and position
 	REAL(KIND=8),DIMENSION(2):: dp ! variation of momentum
 	REAL(KIND=8),DIMENSION(2):: dk ! variation of momentum in rec. space coord
@@ -318,11 +274,11 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename, "Starting job")
 #endif
-   gamma = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
+   gama = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
    to_rec_space(1,1) = a/(2.D0*PI)
    to_rec_space(1,2) = 0.D0
-   to_rec_space(2,1) = b*DCOS(gamma)/(2.D0*PI)
-   to_rec_space(2,2) = b*DSIN(gamma)/(2.D0*PI)
+   to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
+   to_rec_space(2,2) = b*DSIN(gama)/(2.D0*PI)
    !---------
    OPEN(unit=rwuMap,file="OUTANA6Dmappingpeaks.out",status="replace",action='readwrite')
    WRITE(rwuMap,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
@@ -366,7 +322,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
                   Erot=0.5d0*L2/(mu*r(4)**2.d0)
                   Evibr=Etot-Ecm-Erot
                   finalJ=(-1.d0+dsqrt(1.d0+4.d0*L2))*0.5d0
-                  finalV=dsqrt(1.d0-Evibr/morseEd)+dsqrt(2.d0*morseEd/masa)/morseWidth-0.5d0
+                  finalV=dsqrt(1.d0-Evibr/morseEd)+dsqrt(2.d0*morseEd*masa)/morseWidth-0.5d0
                   select case( discretizeJ(finalJ,dJ)==0 )
                   case(.true.)
                      WRITE(rwuMap,formatMap) id,this%peaks(j)%id,g(:),nint(finalV),0,0
@@ -416,7 +372,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
    WRITE(wuSeen,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
    WRITE(wuSeen,*) "# -----------------------------------------------------------"
    DO i=1, SIZE(this%peaks)
-      IF ( this%peaks(i)%prob /= 0.D0 ) THEN
+      IF ( this%peaks(i)%prob /= 0.0 ) THEN
          WRITE(wuSeen,formatSeen) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:), &
                 this%peaks(i)%psiOut,this%peaks(i)%phiOut,this%peaks(i)%thetaOut,this%peaks(i)%prob
       END IF
@@ -540,7 +496,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
    return
 end subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
 !###########################################################
-!# SUBROUTINE: SET_REALORDER_CUAD
+!# FUNCTION: getDiffOrderC4
 !###########################################################
 !> @brief
 !! Given environment order and peak labels, sets real diffraction
@@ -550,50 +506,184 @@ end subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
 !> @date Nov/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SET_REALORDER_CUAD(order,g,realorder)
+function getDiffOrderC4(envOrder,g) result(diffOrder)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: order
+   INTEGER(KIND=4),INTENT(IN) :: envOrder
    INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: g
-   INTEGER(KIND=4),INTENT(OUT) :: realorder
+   ! Function dummy variable
+   INTEGER(KIND=4):: diffOrder
    ! Run section
    SELECT CASE(g(1)==0 .AND. g(2)==0)
       CASE(.TRUE.)
-         realorder=order
+         diffOrder=envOrder
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    SELECT CASE(g(1)==0 .OR. g(2)==0)
       CASE(.TRUE.)
-         realorder=order*(order+1)/2
+         diffOrder=envOrder*(envOrder+1)/2
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    SELECT CASE(abs(g(1))==abs(g(2)))
       CASE(.TRUE.)
-         realorder=((order+1)*(order+2)/2)-1
+         diffOrder=((envOrder+1)*(envOrder+2)/2)-1
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-   SELECT CASE(abs(g(1))==order)
+   SELECT CASE(abs(g(1))==envOrder)
       CASE(.TRUE.)
-         realorder=(order*(order+1)/2)+abs(g(2))
+         diffOrder=(envOrder*(envOrder+1)/2)+abs(g(2))
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
-   SELECT CASE(abs(g(2))==order)
+   SELECT CASE(abs(g(2))==envOrder)
       CASE(.TRUE.)
-         realorder=(order*(order+1)/2)+abs(g(1))
+         diffOrder=(envOrder*(envOrder+1)/2)+abs(g(1))
          RETURN
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    RETURN
-END SUBROUTINE SET_REALORDER_CUAD
+end function getDiffOrderC4
+!######################################################
+! FUNCTION: getPeakId_ALLOWEDPEAKSCRP6D
+!######################################################
+!> @brief
+!! - Gets allowed peak ID number given its diffraction numbers.
+!! - If there is not an allowed peak with diffraction number g(:),
+!!   this function exits with a negative integer
+!------------------------------------------------------
+function getPeakId_ALLOWEDPEAKSCRP6D(this,g) result(peakId)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_peaksCRP6D),intent(in):: this
+   integer(kind=4),dimension(2):: g
+   ! Function dummy variable
+   integer(kind=4):: peakId
+   ! Local variables
+   integer(kind=4):: i ! counter
+   ! Run section
+   select case( .not.allocated(this%peaks) )
+   case(.true.) ! stop! badness!
+      write(0,*) 'getPeakId_ALLOWEDPEAKSCRP6D ERR: Peaks are not allocated'
+      call exit(1)
+   case(.false.) ! Initialize values
+      peakId = -1
+      i=1
+   end select
+   do while( peakId < 0 .and. i <= size(this%peaks) )
+      if( this%peaks(i)%g(1) == g(1) .and. this%peaks(i)%g(2) == g(2) ) peakId=this%peaks(i)%id
+      i=i+1
+   enddo
+   return
+end function getPeakId_ALLOWEDPEAKSCRP6D
+!############################################################
+! SUBROUTINE: createNewPeak_PEAKCRP6D
+!############################################################
+!------------------------------------------------------------
+subroutine createNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_peaksCRP6D),intent(inout):: this
+   integer(kind=4),dimension(2),intent(in):: g
+   integer(kind=4),intent(in):: envOrder
+   ! Local variables
+   type(PeakCRP6D),dimension(:),allocatable:: auxListPeaks
+   integer(kind=4):: oldN
+   integer(kind=4):: idNew
+   real(kind=8):: pinit_par,beta,theta_in,gama,mass,a,b
+   ! Run section ----------------------------------------------
+   select case( .not.allocated(this%peaks) )
+   case(.true.)  ! this is the first allocation
+      allocate( this%peaks(1) )
+      idNew=1
+
+   case(.false.) ! add new peak to the list
+      oldN=size( this%peaks )
+      idNew=oldN+1
+      auxListPeaks(:)=this%peaks(:)
+      deallocate( this%peaks )
+      allocate( this%peaks(idNew) )
+      this%peaks(1:oldN)=auxListPeaks(1:oldN)
+
+   end select
+   ! Some parameters
+	a=system_surface%norm_s1
+	b=system_surface%norm_s2
+   mass=sum(system_mass(:))
+	beta=this%inicond%vpar_angle%getvalue()
+	theta_in=this%inicond%vz_angle%getvalue()
+	gama = dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
+	pinit_par = this%inicond%Enorm%getvalue()/(dtan(theta_in)**2.d0)
+   this%peaks(idNew)%id=idNew
+   this%peaks(idNew)%g(:)=g(:)
+   this%peaks(idNew)%envOrder=envOrder
+   this%peaks(idNew)%diffOrder=getDiffOrderC4(envOrder,g)
+   ! Change in momentum in laboratory coordinates (by definition both components are orthogonal)
+   this%peaks(idNew)%dkx=(2.d0*pi/(a*b*DSIN(gama)))*(DFLOAT(g(1))*b*DSIN(gama-beta)+DFLOAT(g(2))*a*DSIN(beta))
+   this%peaks(idNew)%dky=(2.d0*pi/(a*b*DSIN(gama)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gama-beta))
+   this%peaks(idNew)%dkxy=norm2([this%peaks(idNew)%dkx,this%peaks(idNew)%dky])
+   ! Get angles
+   select case( g(1)==0 .and. g(2)==0 )
+   case(.true.)
+      this%peaks(idNew)%psiOut=0.d0
+   case(.false.)
+      this%peaks(idNew)%psiOut=datan(this%peaks(idNew)%dky/(pinit_par+this%peaks(idNew)%dkx))
+   end select
+   return
+end subroutine createNewPeak_ALLOWEDPEAKSCRP6D
+!############################################################
+! SUBROUTINE: addProbToPeak_ALLOWEDPEAKSCRP6D
+!############################################################
+!> @brief
+!! Adds probability to a given subpeak. If it does not exist, this
+!! routine will initialize it. Subpeaks are classified by their quantum
+!! state.
+!------------------------------------------------------------
+subroutine addProbToPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_peaksCRP6D),intent(inout):: this
+   integer(kind=4):: peakId
+   integer(kind=4),dimension(3):: rovibrState
+   ! Local variables
+   real(kind=8):: initE,kz
+   integer(kind=4):: N
+   ! Run section
+   initE=this%inicond%evirot%getValue()
+	theta_in=this%inicond%vz_angle%getvalue()
+   N=size( this%inicond%trajs(:) )
+	pinit_par = this%inicond%Enorm%getvalue()/(dtan(theta_in)**2.d0)
+   select case( this%peaks(peakId)%nSubPeaks==0 )
+   case(.true.)
+      allocate( this%peaks(peakId)%rovibrState(1,3) )
+      this%peaks(peakId)%rovibrState(1,:)=rovibrState(:)
+      allocate( this%peaks(peakId)%dE(1) )
+      this%peaks(peakId)%dE=initE-evaluateEnergyRovibrState(rovibrState)
+      allocate( this%peaks(peakId)%prob(1) )
+      this%peaks(peakId)%prob=1.d0/N
+      kz=dsqrt(pinit_par**2.d0+)
+      allocate( this%peaks(peakId)%phiOut(1) )
+      allocate( this%peaks(peakId)%thetaOut(1) )
+
+
+
+   case(.false.)
+      ! do nothing
+
+   end select
+
+
+end subroutine addProbToPeak_ALLOWEDPEAKSCRP6D
 !
 END MODULE DIFFRACTIONCRP6D_MOD

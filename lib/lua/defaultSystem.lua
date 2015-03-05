@@ -16,6 +16,7 @@ local SYSTEM={
     wx=0.0,wy=0.0,wz=0.0,
     mass={0.0,'au'},
   },
+  binning={type='Morse',dissociationEnergy=0.0,equilibriumDistance=0.0,width=0.0}, -- Morse is the only one implemented
 	pesPath=os.getenv('OOPTRAJTOUPES')..'/'	-- Path to search for data input files
 }
 return SYSTEM

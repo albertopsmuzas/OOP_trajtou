@@ -64,15 +64,14 @@ END INTERFACE
 !> @param output_file - Output file
 !> @param ntraj - Final trajectory id
 !> @param nstart - Initial trajectory id
-!> @param seed - Allocatable integer array to feed random functions
 !-------------------------------------------------------------
 TYPE,ABSTRACT:: Inicond
    CHARACTER(LEN=:),ALLOCATABLE:: alias
    CHARACTER(LEN=:),ALLOCATABLE:: kind
    CHARACTER(LEN=:),ALLOCATABLE:: input_file
    CHARACTER(LEN=:),ALLOCATABLE:: output_file
-   INTEGER:: ntraj ! number of trajectories
-   INTEGER:: nstart ! initial trajectory
+   INTEGER:: ntraj
+   INTEGER:: nstart
    CLASS(Dynobject),DIMENSION(:),ALLOCATABLE:: trajs
    CONTAINS
       PROCEDURE(INITIALIZE_INICOND),DEFERRED,PUBLIC:: INITIALIZE
