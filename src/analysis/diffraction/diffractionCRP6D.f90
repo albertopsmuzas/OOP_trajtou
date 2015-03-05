@@ -7,17 +7,30 @@ use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
 IMPLICIT NONE
 !======================================================
-! Peak derived data
-!---------------------
+! TYPE: PeakCRP6D
+!------------------------------------------------------
+!> @brief
+!! All information that defines a fiffraction peak
+!> @param id - integer(kind=4): Identification number
+!> @param envOrder - integer(kind=4): environment order
+!> @param diffOrder - integer(kind=4): diffraction order based on momentum exchange
+!> @param g - integer(kind=4),dimension(2): diffraction state
+!> @param psiOut - real(kind=8): azimuthal exit angle
+!> @param phiOut - real(kind=8): deflection angle respect to the perpendicular plane to the surface
+!> @param thetaOut - real(kind=8): deflection angle respect to surface plane 
+!> @param prob - real(kind=8): Probability
+!------------------------------------------------------
 TYPE :: PeakCRP6D
    PRIVATE
-   INTEGER(KIND=4):: id ! identification number
-   INTEGER(KIND=4):: order ! order of the peak
-   INTEGER(KIND=4),DIMENSION(2):: g ! coordinates in the reciprocal space lattice
-	REAL(KIND=8):: Psi ! azimuthal exit angle
-	REAL(KIND=8):: Phi ! deflection angle respect to incidence plane
-	REAL(KIND=8):: Theta_out ! deflection angle respect to surface plane
-	REAL(KIND=8):: Prob ! probability
+   INTEGER(KIND=4):: id
+   integer(kind=4):: envOrder
+   integer(kind=4):: diffOrder
+   INTEGER(KIND=4):: order
+   INTEGER(KIND=4),DIMENSION(2):: g
+	REAL(KIND=8):: psiOut
+	REAL(KIND=8):: phiOut
+	REAL(KIND=8):: thetaOut
+	REAL(KIND=8):: Prob
 END TYPE PeakCRP6D
 !======================================================
 ! Allowed_peaksCRP6D derived data
@@ -30,6 +43,7 @@ TYPE :: Allowed_peaksCRP6D
    REAL(KIND=8),DIMENSION(6):: conic
    TYPE(PeakCRP6D),DIMENSION(:),ALLOCATABLE:: peaks
    CONTAINS
+      procedure,public:: locatePeak => locatePeak_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
@@ -68,9 +82,9 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	REAL(KIND=8):: pinit_par
 	REAL(KIND=8):: E ! Total energy
 	REAL(KIND=8):: gamma ! angle between surface main vectors.
-	REAL(KIND=8):: Psi ! azimuthal exit angle
-	REAL(KIND=8):: Phi ! deflection angle respect to incidence plane
-	REAL(KIND=8):: Theta_out ! deflection angle respect to surface plane
+	REAL(KIND=8):: psiOut ! azimuthal exit angle
+	REAL(KIND=8):: phiOut ! deflection angle respect to incidence plane
+	REAL(KIND=8):: thetaOut ! deflection angle respect to surface plane
    REAL(KIND=8):: mass
 	INTEGER(KIND=4):: i,k ! Counters
 	INTEGER(KIND=4):: order,realorder
@@ -139,14 +153,14 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
       ! Determine Azimuthal angle. Avoid indetermination
       SELECT CASE(g(1)==0 .AND. g(2)==0)
          CASE(.TRUE.)
-            Psi = 0.D0
+            psiOut = 0.D0
          CASE(.FALSE.)
-            Psi = DATAN(p(2)/p(1))
+            psiOut = DATAN(p(2)/p(1))
       END SELECT
-		Phi = DATAN(p(2)/p(3))
-		Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
+		phiOut = DATAN(p(2)/p(3))
+		thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
         CALL SET_REALORDER_CUAD(order,g,realorder)
-		WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
+		WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
 	END IF
 	DEALLOCATE(allowed)
 	DO
@@ -164,11 +178,11 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
 				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
 				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				Psi = DATAN(p(2)/p(1))
-				Phi = DATAN(p(2)/p(3))
-				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
+				psiOut = DATAN(p(2)/p(1))
+				phiOut = DATAN(p(2)/p(3))
+				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
 			END IF
 		END DO
 		!----------------------
@@ -182,11 +196,11 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
 				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
 				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				Psi = DATAN(p(2)/p(1))
-				Phi = DATAN(p(2)/p(3))
-				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
+				psiOut = DATAN(p(2)/p(1))
+				phiOut = DATAN(p(2)/p(3))
+				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
 			END IF
 		END DO
 		!----
@@ -200,11 +214,11 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
 				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
 				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				Psi = DATAN(p(2)/p(1))
-				Phi = DATAN(p(2)/p(3))
-				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
+				psiOut = DATAN(p(2)/p(1))
+				phiOut = DATAN(p(2)/p(3))
+				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
 			END IF
 		END DO
 		!----
@@ -218,11 +232,11 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 				p(1) = pinit_par+(2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(1))*b*DSIN(gamma-beta)+DFLOAT(g(2))*a*DSIN(beta))
 				p(2) = (2.D0*PI/(a*b*DSIN(gamma)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gamma-beta))
 				p(3) = DSQRT(2.D0*mass*E-p(1)**2.D0-p(2)**2.D0)
-				Psi = DATAN(p(2)/p(1))
-				Phi = DATAN(p(2)/p(3))
-				Theta_out = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
+				psiOut = DATAN(p(2)/p(1))
+				phiOut = DATAN(p(2)/p(3))
+				thetaOut = DATAN(p(3)/(DSQRT(p(1)**2.D0+p(2)**2.D0)))
                 CALL SET_REALORDER_CUAD(order,g,realorder)
-				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, Psi, Phi, Theta_out
+				WRITE(wuAllowed,formatAllowed) count_peaks, realorder, g, psiOut, phiOut, thetaOut
 			END IF
 		END DO
 		DO i = 1, 8*order
@@ -240,7 +254,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
    call skipHeaderFromFile(unit=wuAllowed)
 	DO i=1, count_peaks
       READ(wuAllowed,*) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:),&
-                        this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out
+                        this%peaks(i)%psiOut,this%peaks(i)%phiOut,this%peaks(i)%thetaOut
       this%peaks(i)%prob = 0.D0
 	END DO
 	CLOSE(unit=wuAllowed)
@@ -404,7 +418,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
    DO i=1, SIZE(this%peaks)
       IF ( this%peaks(i)%prob /= 0.D0 ) THEN
          WRITE(wuSeen,formatSeen) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:), &
-                this%peaks(i)%Psi,this%peaks(i)%Phi,this%peaks(i)%Theta_out,this%peaks(i)%prob
+                this%peaks(i)%psiOut,this%peaks(i)%phiOut,this%peaks(i)%thetaOut,this%peaks(i)%prob
       END IF
    END DO
    CLOSE(unit=wuSeen)

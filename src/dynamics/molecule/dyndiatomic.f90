@@ -44,16 +44,16 @@ TYPE,EXTENDS(Dynamics) :: DynDiatomic
    character(len=19):: fileReact="OUTDYN6Dreacted.out"
    character(len=19):: fileTurn="OUTDYN6Dturning.out"
    ! Units
-   INTEGER(KIND=4),PRIVATE:: wusc=900 ! write unit for scattered trajs
-   INTEGER(KIND=4),PRIVATE:: wupa=901 ! write unit for pathologic trajs
-   INTEGER(KIND=4),PRIVATE:: wuto=902 ! write unit for timed out trajs
-   INTEGER(KIND=4),PRIVATE:: wutr=903 ! write unit for trapped trajs
-   INTEGER(KIND=4),PRIVATE:: wuad=904 ! write unit for adsorbed trajs
-   INTEGER(KIND=4),PRIVATE:: wuab=905 ! write unit for absorbed trajs
-   INTEGER(KIND=4),PRIVATE:: wust=906 ! write unit for stopped trajs
-   INTEGER(KIND=4),PRIVATE:: wutp=907 ! write unit for turning points
-   INTEGER(KIND=4),PRIVATE:: wufo=908 ! write unit for trajectory step by step
-   INTEGER(KIND=4),PRIVATE:: wure=909 ! write unit for reacted trajs
+   integer(kind=4),private:: wusc=900 ! write unit for scattered trajs
+   integer(kind=4),private:: wupa=901 ! write unit for pathologic trajs
+   integer(kind=4),private:: wuto=902 ! write unit for timed out trajs
+   integer(kind=4),private:: wutr=903 ! write unit for trapped trajs
+   integer(kind=4),private:: wuad=904 ! write unit for adsorbed trajs
+   integer(kind=4),private:: wuab=905 ! write unit for absorbed trajs
+   integer(kind=4),private:: wust=906 ! write unit for stopped trajs
+   integer(kind=4),private:: wutp=907 ! write unit for turning points
+   integer(kind=4),private:: wufo=908 ! write unit for trajectory step by step
+   integer(kind=4),private:: wure=909 ! write unit for reacted trajs
    CONTAINS
      ! Initialization block
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_DYNDIATOMIC
