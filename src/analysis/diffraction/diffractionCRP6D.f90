@@ -6,27 +6,38 @@ use CRP6D_MOD, only: CRP6D
 use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
 IMPLICIT NONE
+!////////////////////////////////////////////////////////
+! TYPE: SubPeakCRP6D
+!////////////////////////////////////////////////////////
+!> @param robivrState(:) - integer(kind=4): V,J,mJ state
+!> @param phiOut - real(kind=8): deflection angle respect to the perpendicular plane to the surface
+!> @param thetaOut - real(kind=8): deflection angle respect to surface plane
+!> @param prob - real(kind=8): Probability
+!> @param dE - real(kind=8): internal energy exchange after data binning
+!------------------------------------------------------
+type:: SubPeakCRP6D
+   private
+	real(kind=8):: phiOut
+	real(kind=8):: thetaOut
+	integer(kind=4),dimension(3):: rovibrState
+	real(kind=8):: prob
+	real(kind=8):: dE
+end type SubPeakCRP6D
 !======================================================
 ! TYPE: PeakCRP6D
 !------------------------------------------------------
 !> @brief
 !! All information that defines a fiffraction peak
 !> @param id - integer(kind=4): Identification number
-!> @param nSubPeaks - integer(kind=4): number of subpeaks
 !> @param envOrder - integer(kind=4): environment order
 !> @param diffOrder - integer(kind=4): diffraction order based on momentum exchange
 !> @param dkxy - real(kind=8): momentum exchange (in XY plane)
 !> @param g - integer(kind=4),dimension(2): diffraction state
 !> @param psiOut - real(kind=8): azimuthal exit angle
-!> @param phiOut - real(kind=8): deflection angle respect to the perpendicular plane to the surface
-!> @param thetaOut(:) - real(kind=8): deflection angle respect to surface plane
-!> @param prob(:) - real(kind=8): Probability
-!> @param dE(:) - real(kind=8): internal energy exchange after data binning
 !------------------------------------------------------
 TYPE :: PeakCRP6D
    PRIVATE
    INTEGER(KIND=4):: id
-   integer(kind=4):: nSubPeaks=0
    integer(kind=4):: envOrder
    integer(kind=4):: diffOrder
    real(kind=8):: dkx
@@ -34,11 +45,7 @@ TYPE :: PeakCRP6D
    real(kind=8):: dkxy
    INTEGER(KIND=4),DIMENSION(2):: g
 	REAL(KIND=8):: psiOut
-	REAL(KIND=8),dimension(:),allocatable:: phiOut
-	REAL(KIND=8),dimension(:),allocatable:: thetaOut
-	real(kind=8),dimension(:),allocatable:: prob
-	integer(kind=4),dimension(:,:),allocatable:: rovibrState
-	real(kind=8),dimension(:),allocatable:: dE
+	type(SubPeakCRP6D),dimension(:),allocatable:: subPeaks
 END TYPE PeakCRP6D
 !======================================================
 ! Allowed_peaksCRP6D derived data
@@ -50,12 +57,19 @@ TYPE :: Allowed_peaksCRP6D
    REAL(KIND=8):: E
    REAL(KIND=8),DIMENSION(6):: conic
    TYPE(PeakCRP6D),DIMENSION(:),ALLOCATABLE:: peaks
+   character(len=24):: fileNameAllowed='OUTANA6DallowedPeaks.out'
+   character(len=21):: fileNameSeen='OUTANA6DseenPeaks.out'
    CONTAINS
+      ! private tools section
       procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSCRP6D
       procedure,private:: createNewPeak => createNewPeak_ALLOWEDPEAKSCRP6D
-      procedure,private:: addProbToPeak => addProbToPeak_ALLOWEDPEAKSCRP6D
+      procedure,private:: addProbToSubPeak => addProbToSubPeak_ALLOWEDPEAKSCRP6D
+      ! public tools section
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP6D
+      procedure,public:: printAllowedPeaks => printAllowedPeaks_ALLOWEDPEAKSCRP6D
+      procedure,public:: printSeenPeaks => printSeenPeaks_ALLOWEDPEAKSCRP6D
+      procedure,public:: sortByDiffOrder => sortByDiffOrder_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: evaluate_peak => evaluate_peak_ALLOWEDPEAKSCRP6D
@@ -225,13 +239,10 @@ END SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D
 !> @param[in] Ed - real(kind=8): Dissociation energy from Morse potential fit of vacuum potential
 !> @param[in] A  - real(kind=8): Parameter of Morse potential fit
 !------------------------------------------------------------------------------------
-SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
+SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
-   integer(kind=4),intent(in):: dJ
-   real(kind=8),intent(in):: morseEd
-   real(kind=8),intent(in):: morseWidth
    ! Local variables
    INTEGER(KIND=4):: totscatt
    INTEGER(KIND=4):: tottrajs
@@ -249,21 +260,23 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
 	REAL(KIND=8),DIMENSION(2):: dp ! variation of momentum
 	REAL(KIND=8),DIMENSION(2):: dk ! variation of momentum in rec. space coord
 	real(kind=8)::finalJ,finalV,L2,Etot,Ecm,Erot,Evibr,masa,mu
+   real(kind=8):: morseEd,morseWidth
+   integer(kind=4):: dJ
    CHARACTER(LEN=10):: stat
    INTEGER(KIND=4):: ioerr
    LOGICAL:: isAllowed
+   integer(kind=4),dimension(3):: rovibrState
+   integer(kind=4):: peakId
 	REAL(KIND=8):: beta ! angle between incident parallel momentum respect to u1 (surface vector)
 	REAL(KIND=8):: a,b ! length of surface main axis
    ! Some parameters
    character(len=*),parameter:: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
    character(len=*),parameter:: formatMap='(I6," ---> ",I6,I5,I5,3(I4))' ! Id/--->/peak id/n/m/V/J/mJ
-   character(len=*),parameter:: formatSeen='(I6,I5,2(I5),4(F10.5))'      ! Id/order/n/m/psi/phi/theta/prob
    character(len=*),parameter:: formatUnmap='(I6," ---> ",2(I5))'        ! Id/--->/n/m
    ! Read/write units
    INTEGER(KIND=4),PARAMETER:: rwuMap=12
    INTEGER(KIND=4),PARAMETER:: wuUnmap=13
    INTEGER(KIND=4),PARAMETER:: ruScatt=14
-   INTEGER(KIND=4),PARAMETER:: wuSeen=15
    ! Pointers assignation
    beta=this%inicond%vpar_angle%getvalue()
    a=system_surface%norm_s1
@@ -279,6 +292,10 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
    to_rec_space(1,2) = 0.D0
    to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
    to_rec_space(2,2) = b*DSIN(gama)/(2.D0*PI)
+   ! binning parameters (only Morse implemented)
+   morseEd=system_binningParam(1)
+   morseWidth=system_binningParam(3)
+   dJ=system_binningdJ
    !---------
    OPEN(unit=rwuMap,file="OUTANA6Dmappingpeaks.out",status="replace",action='readwrite')
    WRITE(rwuMap,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
@@ -310,7 +327,7 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
             g(1) = NINT(dk(1))
             g(2) = NINT(dk(2))
             DO j= 1,SIZE(this%peaks)
-               SELECT CASE((this%peaks(j)%g(1).EQ.g(1)).AND.(this%peaks(j)%g(2).EQ.g(2)))
+               SELECT CASE( this%peaks(j)%g(1)==g(1) .and. this%peaks(j)%g(2)==g(2) )
                CASE(.true.)
                   select case( dsin(r(5))==0.d0 )
                   case(.true.)
@@ -322,22 +339,29 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
                   Erot=0.5d0*L2/(mu*r(4)**2.d0)
                   Evibr=Etot-Ecm-Erot
                   finalJ=(-1.d0+dsqrt(1.d0+4.d0*L2))*0.5d0
-                  finalV=dsqrt(1.d0-Evibr/morseEd)+dsqrt(2.d0*morseEd*masa)/morseWidth-0.5d0
+                  finalV=dsqrt(1.d0-Evibr/morseEd)+dsqrt(2.d0*morseEd/masa)/morseWidth-0.5d0
                   select case( discretizeJ(finalJ,dJ)==0 )
                   case(.true.)
-                     WRITE(rwuMap,formatMap) id,this%peaks(j)%id,g(:),nint(finalV),0,0
+                     rovibrState=[ nint(finalV),0,0 ]
+
                   case(.false.)
                      select case( nint(dabs(p(6)))>abs(discretizeJ(finalJ,dJ)) )
                      case(.true.) ! aboid weird quantum states
-                        WRITE(rwuMap,formatMap) id,this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),sign(discretizeJ(finalJ,dJ),nint(p(6)))
+                        rovibrState=[ nint(finalV),discretizeJ(finalJ,dJ),sign(discretizeJ(finalJ,dJ),nint(p(6))) ]
+
                      case(.false.) ! generic case
-                        WRITE(rwuMap,formatMap) id,this%peaks(j)%id,g(:),nint(finalV),discretizeJ(finalJ,dJ),nint(p(6))
+                        rovibrState=[ nint(finalV),discretizeJ(finalJ,dJ),nint(p(6)) ]
+
                      end select
+
                   end select
+                  call this%addProbToSubPeak(peakId=j, rovibrState=rovibrState)
                   isAllowed=.true.
                   EXIT
+
                CASE(.false.)
                   isAllowed=.false.
+
                END SELECT
          END DO
       CASE DEFAULT
@@ -358,26 +382,9 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this,dJ,morseEd,morseWidth)
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: allowed scattered trajs:",allowedScatt
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",dfloat(allowedScatt)/dfloat(tottrajs)
    WRITE(*,*) "==========================================================="
-   REWIND(unit=rwuMap)
-   call skipHeaderFromFile(unit=rwuMap)
-   DO i=1,allowedScatt
-      READ(rwuMap,*) dummy_int,stat,id
-      this%peaks(id)%prob = this%peaks(id)%prob + 1.D0/dfloat(tottrajs)
-   END DO
    CLOSE(unit=rwuMap)
    CLOSE(unit=ruScatt)
    CLOSE(unit=wuUnmap)
-   OPEN(unit=wuSeen,file="OUTANA6Dseenpeaks.out",status="replace",action='write') ! re-write allowed peaks file with probabilities printed
-   WRITE(wuSeen,*) "# ***** ALLOWED PEAKS *****"
-   WRITE(wuSeen,*) "# Format: id/order,n,m/Azimuthal,Polar,Deflection(rad)/Prob"
-   WRITE(wuSeen,*) "# -----------------------------------------------------------"
-   DO i=1, SIZE(this%peaks)
-      IF ( this%peaks(i)%prob /= 0.0 ) THEN
-         WRITE(wuSeen,formatSeen) this%peaks(i)%id,this%peaks(i)%order,this%peaks(i)%g(:), &
-                this%peaks(i)%psiOut,this%peaks(i)%phiOut,this%peaks(i)%thetaOut,this%peaks(i)%prob
-      END IF
-   END DO
-   CLOSE(unit=wuSeen)
    RETURN
    contains
    ! included function
@@ -610,8 +617,7 @@ subroutine createNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
    case(.false.) ! add new peak to the list
       oldN=size( this%peaks )
       idNew=oldN+1
-      auxListPeaks(:)=this%peaks(:)
-      deallocate( this%peaks )
+      call move_alloc( from=this%peaks,to=auxListPeaks )
       allocate( this%peaks(idNew) )
       this%peaks(1:oldN)=auxListPeaks(1:oldN)
 
@@ -623,7 +629,7 @@ subroutine createNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
 	beta=this%inicond%vpar_angle%getvalue()
 	theta_in=this%inicond%vz_angle%getvalue()
 	gama = dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
-	pinit_par = this%inicond%Enorm%getvalue()/(dtan(theta_in)**2.d0)
+	pinit_par = this%inicond%E_norm%getvalue()/(dtan(theta_in)**2.d0)
    this%peaks(idNew)%id=idNew
    this%peaks(idNew)%g(:)=g(:)
    this%peaks(idNew)%envOrder=envOrder
@@ -649,7 +655,7 @@ end subroutine createNewPeak_ALLOWEDPEAKSCRP6D
 !! routine will initialize it. Subpeaks are classified by their quantum
 !! state.
 !------------------------------------------------------------
-subroutine addProbToPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
+subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    ! Initial declarations
    implicit none
    ! I/O variables
@@ -657,33 +663,174 @@ subroutine addProbToPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    integer(kind=4):: peakId
    integer(kind=4),dimension(3):: rovibrState
    ! Local variables
-   real(kind=8):: initE,kz
-   integer(kind=4):: N
+   real(kind=8):: initE,kz,masa,theta_in,pinit_par
+   integer(kind=4):: N,newCol,oldCol
+   type(subPeakCRP6D),dimension(:),allocatable:: auxListSubPeaks
+   logical:: isNew
+   integer(kind=4):: i ! counter
    ! Run section
+   ! Some
+   masa=sum(system_mass(:))
    initE=this%inicond%evirot%getValue()
 	theta_in=this%inicond%vz_angle%getvalue()
    N=size( this%inicond%trajs(:) )
-	pinit_par = this%inicond%Enorm%getvalue()/(dtan(theta_in)**2.d0)
-   select case( this%peaks(peakId)%nSubPeaks==0 )
+	pinit_par = this%inicond%E_norm%getvalue()/(dtan(theta_in)**2.d0)
+   isNew=.true.
+   i=1
+   select case( .not.allocated(this%peaks(peakId)%subPeaks) )
    case(.true.)
-      allocate( this%peaks(peakId)%rovibrState(1,3) )
-      this%peaks(peakId)%rovibrState(1,:)=rovibrState(:)
-      allocate( this%peaks(peakId)%dE(1) )
-      this%peaks(peakId)%dE=initE-evaluateEnergyRovibrState(rovibrState)
-      allocate( this%peaks(peakId)%prob(1) )
-      this%peaks(peakId)%prob=1.d0/N
-      kz=dsqrt(pinit_par**2.d0+)
-      allocate( this%peaks(peakId)%phiOut(1) )
-      allocate( this%peaks(peakId)%thetaOut(1) )
+      oldCol=0
+      newCol=oldCol+1
 
-
+      allocate( this%peaks(peakId)%subPeaks(newCol) )
 
    case(.false.)
-      ! do nothing
+      oldCol=size( this%peaks(peakId)%subPeaks )
+      newCol=oldCol+1
+      do while( i<= oldCol .and. isNew )
+         if( all( this%peaks(peakId)%subPeaks(i)%rovibrState == rovibrState ) ) isNew=.false.
+         i=i+1
+      enddo
+      select case( isNew )
+      case(.true.)
+         call move_alloc( from=this%peaks(peakId)%subPeaks, to=auxListSubPeaks )
+         allocate( this%peaks(peakId)%subPeaks(neWcol) )
+         this%peaks(peakId)%subPeaks(1:oldCol) = auxListSubPeaks(1:oldCol)
+
+      case(.false.)
+         ! do nothing
+
+      end select
 
    end select
 
+   select case( isNew )
+   case(.true.)
+      this%peaks(peakId)%subPeaks(newCol)%rovibrState(:)=rovibrState(:)
+      this%peaks(peakId)%subPeaks(newCol)%dE=initE-evaluateEnergyRovibrState(rovibrState)
+      kz=dsqrt( 2.d0*masa*this%inicond%E_norm%getValue()-2.d0*pinit_par*this%peaks(peakId)%dkx &
+                -this%peaks(peakId)%dkxy**2.d0-2.d0*masa*this%peaks(peakId)%subPeaks(newCol)%dE )
+      this%peaks(peakId)%subPeaks(newCol)%prob=1.d0/N
+      this%peaks(peakId)%subPeaks(newCol)%phiOut=datan(this%peaks(peakId)%dky/kz)
+      this%peaks(peakId)%subPeaks(newCol)%thetaOut=datan( kz/norm2([this%peaks(peakId)%dkx+pinit_par,this%peaks(peakId)%dky]) )
 
-end subroutine addProbToPeak_ALLOWEDPEAKSCRP6D
-!
+   case(.false.)
+      this%peaks(peakId)%subPeaks(i-1)%prob=this%peaks(peakId)%subPeaks(i-1)%prob+1.d0/N
+
+   end select
+
+   return
+end subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D
+!#######################################################
+! SUBROUTINE: printAllowedPeaks_ALLOWEDPEAKSCRP6D
+!#######################################################
+!> @brief
+!! Prints all allowed peaks.
+!-------------------------------------------------------
+subroutine printAllowedPeaks_ALLOWEDPEAKSCRP6D(this)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_PeaksCRP6D),intent(in):: this
+   ! Local variables
+   integer(kind=4),parameter:: wuAllowed=20
+   integer(kind=4):: i ! counter
+   character(len=*),parameter:: formatAllowed='(3(I10,1X),4(F10.5,1X))'
+   ! Run section ---------------------------------------
+   open(unit=wuAllowed,file=this%fileNameAllowed,status='replace',action='write')
+   write(wuAllowed,*) '# ------ ALLOWED PEAKS ---------------------------------------------'
+   write(wuAllowed,*) '# Format: diffOrder/n,m/dkx,dky,dkxy(au)/psiOut'
+   write(wuAllowed,*) '# ------------------------------------------------------------------'
+   do i=1,size( this%peaks(:) )
+      write(wuAllowed,formatAllowed) this%peaks(i)%diffOrder,this%peaks(i)%g(:),this%peaks(i)%dkx,this%peaks(i)%dky,&
+                                     this%peaks(i)%dkxy,this%peaks(i)%psiOut
+   enddo
+   close(unit=wuAllowed)
+   return
+end subroutine printAllowedPeaks_ALLOWEDPEAKSCRP6D
+!########################################################
+! SUBROUTINE: sortByDiffOrder_ALLOWEDCRP6D
+!########################################################
+! @brief
+!! sort peaks by diffraction order and not by peak id
+!--------------------------------------------------------
+subroutine sortByDiffOrder_ALLOWEDPEAKSCRP6D(this)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_PeaksCRP6D),intent(inout):: this
+   ! Local variables
+   integer(kind=4),dimension(:),allocatable:: intList
+   integer(kind=4):: N
+   integer(kind=4):: diffOrder
+   integer(kind=4):: i,j,init_i ! counters
+   logical:: stopLoop
+   type(peakCRP6D),dimension(:),allocatable:: auxPeaksList
+   ! Run section -----------------------------------------
+   N=size( this%peaks )
+   allocate( intList(N) )
+   i=1
+   diffOrder=0
+   stopLoop=.false.
+   do while( .not.stopLoop .and. i<=N )
+      init_i=i
+      do j=1,N
+         select case( this%peaks(j)%diffOrder==diffOrder )
+         case(.true.)
+            intList(i)=j
+            i=i+1
+         case(.false.)
+            ! do nothing
+         end select
+      enddo
+      select case( init_i==i )
+      case(.true.)
+         stopLoop=.true.
+         if( init_i/=N ) write(0,*) 'sortByDiffOrder WARNING: cycling stopped before final intList'
+      case(.false.)
+         diffOrder=diffOrder+1
+      end select
+   enddo
+   allocate( auxPeaksList(N) )
+   auxPeaksList(:)=this%peaks(:)
+   do i=1,N
+      this%peaks(i)=auxPeaksList(intList(i))
+   enddo
+   return
+end subroutine sortByDiffOrder_ALLOWEDPEAKSCRP6D
+!###########################################################
+! SUBROUTINE: printSeenPeaks_ALLOWEDPEAKSCRP6D
+!###########################################################
+!> @brief
+!! Prints Seen peaks file
+!-----------------------------------------------------------
+subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D(this)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_PeaksCRP6D),intent(in):: this
+   ! Local variables
+   integer(kind=4),parameter:: wuSeen=123
+   character(len=*),parameter:: formatSeen='(6(I10,1X),5(F10.5,1X))'
+   integer(kind=4):: i,j ! counters
+   ! Run section --------------------------------------------
+   open(unit=wuSeen,file=this%fileNameSeen,status='replace',action='write')
+   write(wuSeen,*) '# --------------------------------------- SEEN PEAKS --------------------------------------------------------'
+   write(wuSeen,*) '# Format: diffOrder/n,m,V,J,mJ/Azimuthal angle/Deflection from perp. surf./Deflection from surf./dE(au)/prob'
+   write(wuSeen,*) '# -----------------------------------------------------------------------------------------------------------'
+   do i=1,size( this%peaks )
+      select case( allocated(this%peaks(i)%subPeaks) )
+      case(.true.)
+         do j =1,size( this%peaks(i)%subPeaks )
+            write(wuSeen,formatSeen) this%peaks(i)%diffOrder,this%peaks(i)%g(:),this%peaks(i)%subPeaks(j)%rovibrState(:),&
+                                     this%peaks(i)%psiOut,this%peaks(i)%subPeaks(j)%PhiOut,this%peaks(i)%subPeaks(j)%thetaOut,&
+                                     this%peaks(i)%subPeaks(j)%dE,this%peaks(i)%subPeaks(j)%prob
+         enddo
+      case(.false.)
+         ! do nothing. do not print anything
+      end select
+   enddo
+   close(unit=wuSeen)
+   return
+end subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D
 END MODULE DIFFRACTIONCRP6D_MOD

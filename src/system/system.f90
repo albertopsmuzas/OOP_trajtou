@@ -28,6 +28,7 @@ CHARACTER(LEN=:),ALLOCATABLE:: system_inputfile
 CHARACTER(LEN=:),ALLOCATABLE:: system_pespath
 character(len=:),allocatable:: system_binningScheme
 real(kind=8),dimension(:),allocatable:: system_binningParam
+integer(kind=4):: system_binningdJ
 INTEGER(KIND=4):: system_natoms
 integer(kind=4),dimension(:),allocatable:: system_iSeed
 
@@ -248,13 +249,21 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    call aot_table_close(L=conf,thandle=osciSurf_table)
    ! get binning parameters
    call aot_table_open(L=conf,parent=sys_table,thandle=binning_table,key='binning')
-   call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='type',val=auxString)
+   call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='kind',val=auxString)
    system_binningScheme=trim(auxString)
    if( system_binningScheme=='Morse' ) then
       allocate( system_binningParam(3) )
       call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='dissociationEnergy',val=system_binningParam(1))
       call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='equilibriumDistance',val=system_binningParam(2))
       call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='width',val=system_binningParam(3))
+      call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='dJ',val=system_binningdJ)
+#ifdef DEBUG
+      call verbose_write( routinename,'Kind of data binning: '//system_binningScheme )
+      call verbose_write( routinename,'Dissociation energy(au): ',system_binningParam(1) )
+      call verbose_write( routinename,'Equilibrium Distance(au): ',system_binningParam(2) )
+      call verbose_write( routinename,'Morse width parameter(au): ',system_binningParam(3) )
+      call verbose_write( routinename,'dJ: ',system_binningdJ )
+#endif
    else
       write(0,*) 'INITIALIZE SYSTEM ERR: wrong binning scheme type: '//system_binningScheme
       write(0,*) 'Implemented ones: Morse'
