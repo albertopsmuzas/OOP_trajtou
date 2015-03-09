@@ -133,7 +133,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	this%E = E
 	gama = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
    mass=sum(system_mass(1:2))
-	pinit_par = DSQRT(2.D0*mass*(E - this%inicond%E_norm%getvalue()))
+	pinit_par = this%inicond%E_norm%getvalue()/(dtan(theta_in)**2.d0)
 	kinit_par(1) = pinit_par*a*DCOS(beta)/(2.D0*PI)
 	Kinit_par(2) = pinit_par*b*DCOS(gama-beta)/(2.D0*PI)
 	! Setting conic equation
@@ -271,12 +271,10 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
 	REAL(KIND=8):: a,b ! length of surface main axis
    ! Some parameters
    character(len=*),parameter:: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
-   character(len=*),parameter:: formatMap='(I6," ---> ",I6,I5,I5,3(I4))' ! Id/--->/peak id/n/m/V/J/mJ
    character(len=*),parameter:: formatUnmap='(I6," ---> ",2(I5))'        ! Id/--->/n/m
    ! Read/write units
-   INTEGER(KIND=4),PARAMETER:: rwuMap=12
-   INTEGER(KIND=4),PARAMETER:: wuUnmap=13
-   INTEGER(KIND=4),PARAMETER:: ruScatt=14
+   integer(kind=4),parameter:: wuUnmap=13
+   integer(kind=4),parameter:: ruScatt=14
    ! Pointers assignation
    beta=this%inicond%vpar_angle%getvalue()
    a=system_surface%norm_s1
@@ -297,10 +295,6 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
    morseWidth=system_binningParam(3)
    dJ=system_binningdJ
    !---------
-   OPEN(unit=rwuMap,file="OUTANA6Dmappingpeaks.out",status="replace",action='readwrite')
-   WRITE(rwuMap,*) "# ***** MAPPING TRAJECTORIES WITH DIFFRACTION PEAKS *****"
-   WRITE(rwuMap,*) "# Format: traj id/ ----> /peak id/n,m/V,J,mJ"
-   WRITE(rwuMap,*) "# ----------------------------------------------------------------"
    OPEN(unit=wuUnmap,file='OUTANA6Dunmappedtrajs.out',status='replace',action='write')
    WRITE(wuUnmap,*) '# ***** LIST OF UNMAPPED TRAJS *****'
    WRITE(wuUnmap,*) "# Format: id/n,m/dkx,dky"
@@ -382,7 +376,6 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: allowed scattered trajs:",allowedScatt
    WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",dfloat(allowedScatt)/dfloat(tottrajs)
    WRITE(*,*) "==========================================================="
-   CLOSE(unit=rwuMap)
    CLOSE(unit=ruScatt)
    CLOSE(unit=wuUnmap)
    RETURN
@@ -674,7 +667,7 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    initE=this%inicond%evirot%getValue()
 	theta_in=this%inicond%vz_angle%getvalue()
    N=size( this%inicond%trajs(:) )
-	pinit_par = this%inicond%E_norm%getvalue()/(dtan(theta_in)**2.d0)
+	pinit_par = this%inicond%E_norm%getvalue()/((dtan(theta_in))**2.d0)
    isNew=.true.
    i=1
    select case( .not.allocated(this%peaks(peakId)%subPeaks) )
@@ -707,11 +700,13 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    select case( isNew )
    case(.true.)
       this%peaks(peakId)%subPeaks(newCol)%rovibrState(:)=rovibrState(:)
-      this%peaks(peakId)%subPeaks(newCol)%dE=initE-evaluateEnergyRovibrState(rovibrState)
+      this%peaks(peakId)%subPeaks(newCol)%dE=evaluateEnergyRovibrState(rovibrState)-initE
       kz=dsqrt( 2.d0*masa*this%inicond%E_norm%getValue()-2.d0*pinit_par*this%peaks(peakId)%dkx &
                 -this%peaks(peakId)%dkxy**2.d0-2.d0*masa*this%peaks(peakId)%subPeaks(newCol)%dE )
+      write(*,'(F20.10)') 2.d0*masa*this%inicond%E_norm%getValue()-2.d0*pinit_par*this%peaks(peakId)%dkx &
+                -this%peaks(peakId)%dkxy**2.d0-2.d0*masa*this%peaks(peakId)%subPeaks(newCol)%dE 
       this%peaks(peakId)%subPeaks(newCol)%prob=1.d0/N
-      this%peaks(peakId)%subPeaks(newCol)%phiOut=datan(this%peaks(peakId)%dky/kz)
+      this%peaks(peakId)%subPeaks(newCol)%phiOut=datan( this%peaks(peakId)%dky/kz )
       this%peaks(peakId)%subPeaks(newCol)%thetaOut=datan( kz/norm2([this%peaks(peakId)%dkx+pinit_par,this%peaks(peakId)%dky]) )
 
    case(.false.)
@@ -738,9 +733,9 @@ subroutine printAllowedPeaks_ALLOWEDPEAKSCRP6D(this)
    character(len=*),parameter:: formatAllowed='(3(I10,1X),4(F10.5,1X))'
    ! Run section ---------------------------------------
    open(unit=wuAllowed,file=this%fileNameAllowed,status='replace',action='write')
-   write(wuAllowed,*) '# ------ ALLOWED PEAKS ---------------------------------------------'
-   write(wuAllowed,*) '# Format: diffOrder/n,m/dkx,dky,dkxy(au)/psiOut'
-   write(wuAllowed,*) '# ------------------------------------------------------------------'
+   write(wuAllowed,'("# ------ ALLOWED PEAKS ---------------------------------------------")')
+   write(wuAllowed,'("# Format: diffOrder/n,m/dkx,dky,dkxy(au)/psiOut")')
+   write(wuAllowed,'("# ------------------------------------------------------------------")')
    do i=1,size( this%peaks(:) )
       write(wuAllowed,formatAllowed) this%peaks(i)%diffOrder,this%peaks(i)%g(:),this%peaks(i)%dkx,this%peaks(i)%dky,&
                                      this%peaks(i)%dkxy,this%peaks(i)%psiOut
@@ -762,18 +757,14 @@ subroutine sortByDiffOrder_ALLOWEDPEAKSCRP6D(this)
    ! Local variables
    integer(kind=4),dimension(:),allocatable:: intList
    integer(kind=4):: N
-   integer(kind=4):: diffOrder
-   integer(kind=4):: i,j,init_i ! counters
-   logical:: stopLoop
+   integer(kind=4):: i,j,diffOrder ! counters
    type(peakCRP6D),dimension(:),allocatable:: auxPeaksList
    ! Run section -----------------------------------------
    N=size( this%peaks )
    allocate( intList(N) )
    i=1
    diffOrder=0
-   stopLoop=.false.
-   do while( .not.stopLoop .and. i<=N )
-      init_i=i
+   do while( i<=N )
       do j=1,N
          select case( this%peaks(j)%diffOrder==diffOrder )
          case(.true.)
@@ -783,13 +774,7 @@ subroutine sortByDiffOrder_ALLOWEDPEAKSCRP6D(this)
             ! do nothing
          end select
       enddo
-      select case( init_i==i )
-      case(.true.)
-         stopLoop=.true.
-         if( init_i/=N ) write(0,*) 'sortByDiffOrder WARNING: cycling stopped before final intList'
-      case(.false.)
-         diffOrder=diffOrder+1
-      end select
+      diffOrder=diffOrder+1
    enddo
    allocate( auxPeaksList(N) )
    auxPeaksList(:)=this%peaks(:)
@@ -811,20 +796,20 @@ subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D(this)
    class(Allowed_PeaksCRP6D),intent(in):: this
    ! Local variables
    integer(kind=4),parameter:: wuSeen=123
-   character(len=*),parameter:: formatSeen='(6(I10,1X),5(F10.5,1X))'
+   character(len=*),parameter:: formatSeen='(6(I10,1X),6(F10.5,1X))'
    integer(kind=4):: i,j ! counters
    ! Run section --------------------------------------------
    open(unit=wuSeen,file=this%fileNameSeen,status='replace',action='write')
-   write(wuSeen,*) '# --------------------------------------- SEEN PEAKS --------------------------------------------------------'
-   write(wuSeen,*) '# Format: diffOrder/n,m,V,J,mJ/Azimuthal angle/Deflection from perp. surf./Deflection from surf./dE(au)/prob'
-   write(wuSeen,*) '# -----------------------------------------------------------------------------------------------------------'
+   write(wuSeen,'("# --------------------------------------- SEEN PEAKS ----------------------------------------------------------------")')
+   write(wuSeen,'("# Format: diffOrder/n,m,V,J,mJ/Azimuthal angle/Deflection from perp. surf./Deflection from surf./dKxy(au)/dE(au)/prob")')
+   write(wuSeen,'("# -------------------------------------------------------------------------------------------------------------------")')
    do i=1,size( this%peaks )
       select case( allocated(this%peaks(i)%subPeaks) )
       case(.true.)
          do j =1,size( this%peaks(i)%subPeaks )
             write(wuSeen,formatSeen) this%peaks(i)%diffOrder,this%peaks(i)%g(:),this%peaks(i)%subPeaks(j)%rovibrState(:),&
                                      this%peaks(i)%psiOut,this%peaks(i)%subPeaks(j)%PhiOut,this%peaks(i)%subPeaks(j)%thetaOut,&
-                                     this%peaks(i)%subPeaks(j)%dE,this%peaks(i)%subPeaks(j)%prob
+                                     this%peaks(i)%dkxy,this%peaks(i)%subPeaks(j)%dE,this%peaks(i)%subPeaks(j)%prob
          enddo
       case(.false.)
          ! do nothing. do not print anything
