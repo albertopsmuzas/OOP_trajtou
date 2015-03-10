@@ -1,7 +1,7 @@
 !#########################################################
 ! MODULE: DRAWTRAJ_MOD
 !> @brief
-!! Module to analyze OUTtrajxxxxx.out files in order to obtain
+!! Module to analyze OUTDYNXDtrajxxxxx.out files in order to obtain
 !! graphic representations
 !
 !> @todo
@@ -104,11 +104,7 @@ SUBROUTINE DRAW_DRAWTRAJ (this,order,dynamicsfilename,outputfilename)
    ! Deal with dynamics file
    OPEN (runit,FILE=dynamicsfilename,STATUS="old",ACTION="read")
    OPEN (wunit,FILE=outputfilename,STATUS="replace",ACTION="write")
-   READ(runit,*) ! dummy line
-   READ(runit,*) ! dummy line
-   READ(runit,*) ! dummy line
-   READ(runit,*) ! dummy line
-   READ(runit,*) ! dummy line
+   call skipHeaderFromFile(unit=runit)
    i=0
    READ(runit,*) dummy(1:7),init_xcm,dummy(7:15),xa,xb
    WRITE(wunit,*) npattern+2

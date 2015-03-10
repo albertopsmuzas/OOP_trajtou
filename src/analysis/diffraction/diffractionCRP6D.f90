@@ -17,11 +17,11 @@ IMPLICIT NONE
 !------------------------------------------------------
 type:: SubPeakCRP6D
    private
-	real(kind=8):: phiOut
-	real(kind=8):: thetaOut
-	integer(kind=4),dimension(3):: rovibrState
-	real(kind=8):: prob
-	real(kind=8):: dE
+   real(kind=8):: phiOut
+   real(kind=8):: thetaOut
+   integer(kind=4),dimension(3):: rovibrState
+   real(kind=8):: prob
+   real(kind=8):: dE
 end type SubPeakCRP6D
 !======================================================
 ! TYPE: PeakCRP6D
@@ -62,7 +62,7 @@ TYPE :: Allowed_peaksCRP6D
    CONTAINS
       ! private tools section
       procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSCRP6D
-      procedure,private:: createNewPeak => createNewPeak_ALLOWEDPEAKSCRP6D
+      procedure,private:: addNewPeak => addNewPeak_ALLOWEDPEAKSCRP6D
       procedure,private:: addProbToSubPeak => addProbToSubPeak_ALLOWEDPEAKSCRP6D
       ! public tools section
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
@@ -162,7 +162,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 	allowed(1) = this%evaluate_peak(g(1),g(2))
 	IF(allowed(1)) THEN
 		count_peaks = count_peaks + 1
-		call this%createNewPeak(order,g)
+		call this%addNewPeak(order,g)
 	END IF
 	DEALLOCATE(allowed)
 	DO
@@ -177,7 +177,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				call this%createNewPeak(order,g)
+				call this%addNewPeak(order,g)
 			END IF
 		END DO
 		!----------------------
@@ -188,7 +188,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				call this%createNewPeak(order,g)
+				call this%addNewPeak(order,g)
 			END IF
 		END DO
 		!----
@@ -199,7 +199,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				call this%createNewPeak(order,g)
+				call this%addNewPeak(order,g)
 			END IF
 		END DO
 		!----
@@ -210,7 +210,7 @@ SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
 			allowed(i) = this%evaluate_peak(g(1),g(2))
 			IF(allowed(i)) THEN
 				count_peaks = count_peaks + 1
-				call this%createNewPeak(order,g)
+				call this%addNewPeak(order,g)
 			END IF
 		END DO
 		DO i = 1, 8*order
@@ -296,19 +296,20 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
    allowedScatt=0
    exitLoop=.false.
    ioErr=0
-   do while ( ioErr == 0 )
+   do while( ioErr == 0 )
       ! read from scattered file
       read(ruScatt,*,ioStat=ioErr) id,stat,dummy_int,dummy_int,Etot,dummy(:),r(:),p(:)
       select case( ioErr==0 .and. stat=='Scattered' )
       case(.true.) ! secure to operate
          dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
          dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
-         dk = MATMUL(to_rec_space,dp)
-         g(1) = NINT(dk(1))
-         g(2) = NINT(dk(2))
+         dk = matmul(to_rec_space,dp)
+         g(1) = nint(dk(1))
+         g(2) = nint(dk(2))
          rovibrState=this%quantizeRovibrState( position=r(:),momenta=p(:) )
          select case( this%isAllowed(diffState=g(:),rovibrState=rovibrState,diffEnergy=dE) )
          case(.true.) ! add peak to list
+            call this%addNewPeak
             call this%addProbToSubPeak( diffState=g(:),rovibrState=rovibrState )
 
 
@@ -560,10 +561,10 @@ function getPeakId_ALLOWEDPEAKSCRP6D(this,g) result(peakId)
    return
 end function getPeakId_ALLOWEDPEAKSCRP6D
 !############################################################
-! SUBROUTINE: createNewPeak_PEAKCRP6D
+! SUBROUTINE: addNewPeak_PEAKCRP6D
 !############################################################
 !------------------------------------------------------------
-subroutine createNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
+subroutine addNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
    ! Initial declarations
    implicit none
    ! I/O variables
@@ -613,7 +614,7 @@ subroutine createNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
       this%peaks(idNew)%psiOut=datan(this%peaks(idNew)%dky/(pinit_par+this%peaks(idNew)%dkx))
    end select
    return
-end subroutine createNewPeak_ALLOWEDPEAKSCRP6D
+end subroutine addNewPeak_ALLOWEDPEAKSCRP6D
 !############################################################
 ! SUBROUTINE: addProbToPeak_ALLOWEDPEAKSCRP6D
 !############################################################
