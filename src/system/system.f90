@@ -561,13 +561,14 @@ end function normalDistRandom
 !! Routine that skips all header lines that start with a hash '#' symbol.
 !! Useful to read typical OOPtrajtou output files
 !----------------------------------------------------------------------------
-subroutine skipHeaderFromFile(fileName,unit,skippedRows)
+subroutine skipHeaderFromFile(fileName,unit,skippedRows,errCode)
    ! initial declarations
    implicit none
    ! I/O variables
    character(len=*),optional,intent(in):: fileName
    integer(kind=4),optional,intent(in):: unit
    integer(kind=4),optional,intent(out):: skippedRows
+   integer(kind=4),optional,intent(out):: errCode
    ! Local variables
    integer(kind=4):: ru,counter,i
    integer(kind=4),dimension(2):: iErr
@@ -588,7 +589,7 @@ subroutine skipHeaderFromFile(fileName,unit,skippedRows)
       inquire(unit=unit,opened=ready,name=auxString)
       ru=unit
    case(.false.)
-      write(0,*) "ERR SKIPHEADERFROMFIME: set unit or filename. Don't set both or neither of them"
+      write(0,*) "ERR SKIPHEADERFROMFILE: set unit or filename. Don't set both or neither of them"
       call exit(1)
    end select
 
@@ -611,9 +612,9 @@ subroutine skipHeaderFromFile(fileName,unit,skippedRows)
       end select
    enddo
    select case( iErr(1) /= 0 )
-   case(.true.)
-      write(0,*) 'SKIPHEADERFILE: There was an error reading '//trim(auxString)
-      call exit(1)
+   case(.true.) ! exit with error code stored at errCode
+      if( present(errCode) ) errCode=iErr(1)
+      return
    case(.false.)
       ! do nothing
    end select
@@ -624,6 +625,45 @@ subroutine skipHeaderFromFile(fileName,unit,skippedRows)
    enddo
    return ! Now we've skipped all commented lines
 end subroutine skipHeaderFromFile
+!###########################################################
+! SUBROUTINE: DELETEEMPTYFILE
+!###########################################################
+!> @brief
+!! Deletes a file if it is empty or if it only has a header: lines
+!! started by a hash symbol '#'
+!-----------------------------------------------------------
+subroutine deleteIfEmptyFile(fileName,errCode)
+   ! initial declaration
+   implicit none
+   ! I/O variables
+   character(len=*),intent(in):: fileName
+   integer(kind=4),optional,intent(out):: errCode
+   ! Local variables
+   integer(kind=4):: iErr
+   logical:: isOpened,exists
+   ! Parameters
+   integer(kind=4),parameter:: ru=623
+
+   ! Run section -------------------------
+   inquire(file=fileName,opened=isOpened,exist=exists)
+   select case( .not.isOpened .and. exists )
+   case(.true.)
+      ! go on
+   case(.false.)
+      write(0,*) 'ERR DELETEEMPTYFILE '//fileName//' is still opened or does not exist'
+      call exit(1)
+   end select
+   open(unit=ru,file=fileName,status='old',action='read')
+   call skipHeaderFromFile(unit=ru,errCode=iErr)
+   select case( iErr )
+   case(-1)
+      close(unit=ru,status='delete')
+   case default
+      close(unit=ru)
+   end select
+   if( present(errCode) ) errCode=iErr
+   return
+end subroutine deleteIfEmptyfile
 !##########################################################
 ! FUNCTION: evaluateEnergyRovibrState
 !##########################################################

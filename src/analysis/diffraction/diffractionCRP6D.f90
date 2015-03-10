@@ -59,6 +59,7 @@ TYPE :: Allowed_peaksCRP6D
    TYPE(PeakCRP6D),DIMENSION(:),ALLOCATABLE:: peaks
    character(len=24):: fileNameAllowed='OUTANA6DallowedPeaks.out'
    character(len=21):: fileNameSeen='OUTANA6DseenPeaks.out'
+   character(len=25):: fileNameUnmapped='OUTANA6DunmappedTrajs.out'
    CONTAINS
       ! private tools section
       procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSCRP6D
@@ -66,11 +67,11 @@ TYPE :: Allowed_peaksCRP6D
       procedure,private:: addProbToSubPeak => addProbToSubPeak_ALLOWEDPEAKSCRP6D
       ! public tools section
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
-      PROCEDURE,PUBLIC:: SETUP => SETUP_ALLOWEDPEAKSCRP6D
+      PROCEDURE,PUBLIC:: getEnvOrder => getEnvOrder_ALLOWEDPEAKSCRP6D
       procedure,public:: printAllowedPeaks => printAllowedPeaks_ALLOWEDPEAKSCRP6D
       procedure,public:: printSeenPeaks => printSeenPeaks_ALLOWEDPEAKSCRP6D
       procedure,public:: sortByDiffOrder => sortByDiffOrder_ALLOWEDPEAKSCRP6D
-      PROCEDURE,PUBLIC:: ASSIGN_PEAKS => ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
+      PROCEDURE,PUBLIC:: assignTrajsToPeaks => AssignTrajsToPeaks_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: isAllowed => isAllowed_ALLOWEDPEAKSCRP6D
       procedure,public:: quantizeRovibrState => quantizeRovibrState_ALLOWEDPEAKSCRP6D
@@ -90,215 +91,143 @@ SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP6D(this)
    CALL this%inicond%GENERATE_TRAJS(this%thispes)
    RETURN
 END SUBROUTINE 
-!######################################################
-!# SUBROUTINE : SETUP_ALLOWEDPEAKSCRP6D #####################
-!######################################################
-! Just for a square primitive cell
-!------------------------------------------------------
-SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D(this)
-   IMPLICIT NONE
+!######################################################################
+!# FUNCTION: getEnvOrder_ALLOWEDPEAKSCRP6D ############################
+!######################################################################
+!> @brief
+!! - Search for the environmental order of a given diffraction state.
+!! - Environmental orders are general for all cells
+!----------------------------------------------------------------------
+function getEnvOrder_ALLOWEDPEAKSCRP6D(this,diffState) result(envOrder)
+   implicit none
    ! I/O variables
-   CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
+   class(Allowed_peaksCRP6D),intent(inout):: this
+   integer(kind=4),dimension(2),intent(in):: diffState
+   ! Function dummy variable
+   integer(kind=4):: envOrder
    ! Local variables
-	REAL(KIND=8),DIMENSION(2):: kinit_par
-	REAL(KIND=8),DIMENSION(3):: p ! momentum
-	LOGICAL,DIMENSION(:),ALLOCATABLE:: allowed
-	LOGICAL:: need_cycle
-	REAL(KIND=8):: pinit_par
-	REAL(KIND=8):: E ! Total energy
-	REAL(KIND=8):: gama ! angle between surface main vectors.
-	REAL(KIND=8):: psiOut ! azimuthal exit angle
-	REAL(KIND=8):: phiOut ! deflection angle respect to incidence plane
-	REAL(KIND=8):: thetaOut ! deflection angle respect to surface plane
-   REAL(KIND=8):: mass
 	INTEGER(KIND=4):: i,k ! Counters
-	INTEGER(KIND=4):: order,diffOrder
-	INTEGER(KIND=4):: count_peaks
+	INTEGER(KIND=4):: order
 	INTEGER(KIND=4),DIMENSION(2):: g ! (n,m) vector
-   REAL(KIND=8):: a, b ! axis longitude
-   REAL(KIND=8):: beta ! angle of incident beam projected on unit cell surface
-   REAL(KIND=8):: theta_in ! incidence angle measured from surface plane
    ! Parameters
-   character(len=*),parameter:: routinename = "SET_ALLOWED_PEAKS: "
-   integer(kind=4),parameter:: wuAllowed=11
-   character(len=*),parameter:: formatAllowed='(I5,1X,4(I5,1X),2(F10.5,1X))'
-	! FIRE IN THE HOLE>! ......................
-	a=system_surface%norm_s1
-	b=system_surface%norm_s2
-	beta=this%inicond%vpar_angle%getvalue()
-	theta_in=this%inicond%vz_angle%getvalue()
-#ifdef DEBUG 
-	CALL VERBOSE_WRITE(routinename,"Starting job")
-#endif
-	E = (this%inicond%E_norm%getvalue())/(dsin(theta_in))**2.D0
-	this%E = E
-	gama = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
-   mass=sum(system_mass(1:2))
-	pinit_par = this%inicond%E_norm%getvalue()/(dtan(theta_in)**2.d0)
-	kinit_par(1) = pinit_par*a*DCOS(beta)/(2.D0*PI)
-	Kinit_par(2) = pinit_par*b*DCOS(gama-beta)/(2.D0*PI)
-	! Setting conic equation
-	! Debug messages:
-#ifdef DEBUG
-	CALL VERBOSE_WRITE(routinename,"Total energy: ", E)
-	CALL VERBOSE_WRITE(routinename, "Angle between surface main axis (deg): ", gama*180.D0/PI)
-	CALL VERBOSE_WRITE(routinename, "Angle respect to surface main axis u1 (deg): ", beta*180.D0/PI)
-	CALL VERBOSE_WRITE(routinename, "Incidence angle respect to surface plane (deg): ", theta_in*180.D0/PI)
-	CALL VERBOSE_WRITE(routinename, "kinit_par 1: ", kinit_par(1))
-	CALL VERBOSE_WRITE(routinename, "kinit_par 2: ", kinit_par(2))
-	CALL VERBOSE_WRITE(routinename, "Conic A: ", this%conic(1))
-	CALL VERBOSE_WRITE(routinename, "Conic B: ", this%conic(2))
-	CALL VERBOSE_WRITE(routinename, "Conic C: ", this%conic(3))
-	CALL VERBOSE_WRITE(routinename, "Conic D: ", this%conic(4))
-	CALL VERBOSE_WRITE(routinename, "Conic E: ", this%conic(5))
-	CALL VERBOSE_WRITE(routinename, "Conic F: ", this%conic(6))
-#endif
-	! operations
+   character(len=*),parameter:: routinename="SET_ALLOWED_PEAKS: "
+	! FIRE IN THE HOLE ! -----------------------------------------------
 	order = 0
-	count_peaks = 0
-	ALLOCATE(allowed(1))
-	g(1) = 0
-	g(2) = 0
-	allowed(1) = this%evaluate_peak(g(1),g(2))
-	IF(allowed(1)) THEN
-		count_peaks = count_peaks + 1
-		call this%addNewPeak(order,g)
-	END IF
-	DEALLOCATE(allowed)
-	DO
+	g(:) = 0
+	select case( all(diffState(:)==g(:)) ) ! order zero
+	case(.true.) ! I found you!
+	   envOrder=order
+	   return
+	case(.false.) ! continue searching
+	end select
+	do
 		order = order + 1
 		i = 0
-		ALLOCATE(allowed(8*order))
 		!-----
 		g(1) = order
-		DO k = -order, order
+		do k = -order, order
 			g(2) = k
 			i = i + 1
-			allowed(i) = this%evaluate_peak(g(1),g(2))
-			IF(allowed(i)) THEN
-				count_peaks = count_peaks + 1
-				call this%addNewPeak(order,g)
-			END IF
-		END DO
+      	select case( all(diffState(:)==g(:)) )
+	      case(.true.) ! I found you!
+	         envOrder=order
+	         return
+	      case(.false.) ! continue searching
+	      end select
+		enddo
 		!----------------------
 		g(1) = -order
-		DO k = -order, order
+		do k = -order, order
 			g(2) = k
 			i = i + 1
-			allowed(i) = this%evaluate_peak(g(1),g(2))
-			IF(allowed(i)) THEN
-				count_peaks = count_peaks + 1
-				call this%addNewPeak(order,g)
-			END IF
-		END DO
+      	select case( all(diffState(:)==g(:)) )
+	      case(.true.) ! I found you!
+	         envOrder=order
+	         return
+	      case(.false.) ! continue searching
+	      end select
+		enddo
 		!----
 		g(2) = order
-		DO k = -order +1, order-1
+		do k = -order +1, order-1
 			g(1) = k
 			i = i + 1
-			allowed(i) = this%evaluate_peak(g(1),g(2))
-			IF(allowed(i)) THEN
-				count_peaks = count_peaks + 1
-				call this%addNewPeak(order,g)
-			END IF
-		END DO
+      	select case( all(diffState(:)==g(:)) )
+	      case(.true.) ! I found you!
+	         envOrder=order
+	         return
+	      case(.false.) ! continue searching
+	      end select
+		enddo
 		!----
 		g(2) = -order
-		DO k = -order +1, order-1
+		do k = -order +1, order-1
 			g(1) = k
 			i = i + 1
-			allowed(i) = this%evaluate_peak(g(1),g(2))
-			IF(allowed(i)) THEN
-				count_peaks = count_peaks + 1
-				call this%addNewPeak(order,g)
-			END IF
-		END DO
-		DO i = 1, 8*order
-			IF (allowed(i)) THEN
-				need_cycle = .TRUE.
-				EXIT
-			END IF
-			need_cycle = .FALSE.
-		END DO
-		DEALLOCATE(allowed)
-		IF (.NOT.need_cycle) EXIT
-	END DO
-	RETURN
-END SUBROUTINE SETUP_ALLOWEDPEAKSCRP6D
+      	select case( all(diffState(:)==g(:)) )
+	      case(.true.) ! I found you!
+	         envOrder=order
+	         return
+	      case(.false.) ! continue searching
+	      end select
+		enddo
+	enddo
+end function getEnvOrder_ALLOWEDPEAKSCRP6D
 !####################################################################################
-! SUBROUTINE: ASSIGN PEAKS TO TRAJS
+! SUBROUTINE: assignTrajsToPeaks_ALLOWEDPEAKSCRP6D
 !####################################################################################
-! - GENERATE_TRAJS_ATOMS and SET_Allowed_peaksCRP6D should have been executed before
-! - At the moment only works with C4v cells
-!> @param[in] dJ - integer(kind=2): Variation of J
-!> @param[in] Ed - real(kind=8): Dissociation energy from Morse potential fit of vacuum potential
-!> @param[in] A  - real(kind=8): Parameter of Morse potential fit
+! - At the moment only works with rectancular cells
 !------------------------------------------------------------------------------------
-SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
-   IMPLICIT NONE
+subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
+   implicit none
    ! I/O variables
-   CLASS(Allowed_peaksCRP6D),INTENT(INOUT):: this
+   class(Allowed_peaksCRP6D),intent(inout):: this
    ! Local variables
-   INTEGER(KIND=4):: totscatt
-   INTEGER(KIND=4):: tottrajs
-   INTEGER(KIND=4):: allowedScatt
-   INTEGER(KIND=4):: id
-   INTEGER(KIND=4):: dummy_int
-   INTEGER(KIND=4):: i,j ! counters
-   INTEGER(KIND=4),DIMENSION(2):: g
-	REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: peaks_prob
-	REAL(KIND=8),DIMENSION(2,2):: to_rec_space
-	REAL(KIND=8):: dummy_real
-   REAL(KIND=8),DIMENSION(2):: dummy
-	REAL(KIND=8):: gama ! angle between unit cell surface vectors
-	REAL(KIND=8),DIMENSION(6):: p,r ! final momentum and position
-	REAL(KIND=8),DIMENSION(2):: dp ! variation of momentum
-	REAL(KIND=8),DIMENSION(2):: dk ! variation of momentum in rec. space coord
-	real(kind=8)::finalJ,finalV,L2,Etot,Ecm,Erot,Evibr,masa,mu
-   CHARACTER(LEN=10):: stat
-   INTEGER(KIND=4):: ioerr
-   LOGICAL:: isAllowed
-   logical:: exitLoop
+   integer(kind=4):: totScatt,totTrajs,allowedScatt
+   integer(kind=4),dimension(2):: g
+	real(kind=8),dimension(2,2):: to_rec_space
+	real(kind=8),dimension(6):: p,r ! final momentum and position
+	real(kind=8),dimension(2):: dp ! variation of momentum
+	real(kind=8),dimension(2):: dk ! variation of momentum in rec. space coord
+	real(kind=8):: gama,a,b,Etot,dE
+   character(len=10):: stat
+   integer(kind=4):: ioErr
    integer(kind=4),dimension(3):: rovibrState
    integer(kind=4):: peakId
-	REAL(KIND=8):: beta ! angle between incident parallel momentum respect to u1 (surface vector)
-	REAL(KIND=8):: a,b ! length of surface main axis
+   integer(kind=4):: i ! counters
+   integer(kind=4):: id
+   ! Auxiliar variables
+	real(kind=8),dimension(2):: auxReal
+	integer(kind=4),dimension(2):: auxInt
    ! Some parameters
-   character(len=*),parameter:: routinename = "ASSIGN_PEAKS_TO_TRAJS: "
+   character(len=*),parameter:: routinename = "assigtTrajsToPeaks_ALLOWEDPEAKSCVRP6D: "
    character(len=*),parameter:: formatUnmap='(I6," ---> ",2(I5))'        ! Id/--->/n/m
    ! Read/write units
    integer(kind=4),parameter:: wuUnmap=13
    integer(kind=4),parameter:: ruScatt=14
-   ! Pointers assignation
-   beta=this%inicond%vpar_angle%getvalue()
-   a=system_surface%norm_s1
-   b=system_surface%norm_s2
-   masa=sum(system_mass(:))
-   mu=product(system_mass(:))/masa
    ! RUN SECTION -------------------------
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename, "Starting job")
-#endif
-   gama = DACOS(DOT_PRODUCT(system_surface%s1,system_surface%s2)/(a*b))
+	a=system_surface%norm_s1
+	b=system_surface%norm_s2
+   gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
    to_rec_space(1,1) = a/(2.D0*PI)
    to_rec_space(1,2) = 0.D0
    to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
    to_rec_space(2,2) = b*DSIN(gama)/(2.D0*PI)
    ! binning parameters (only Morse implemented)
    !---------
-   open(unit=wuUnmap,file='OUTANA6Dunmappedtrajs.out',status='replace',action='write')
-   write(wuUnmap,*) '# ***** LIST OF UNMAPPED TRAJS *****'
-   write(wuUnmap,*) "# Format: id/n,m/dkx,dky"
-   write(wuUnmap,*) "# ----------------------------------------------------------------"
+   open(unit=wuUnmap,file=this%fileNameUnmapped,status='replace',action='write')
+   write(wuUnmap,'("# *************** LIST OF UNMAPPED TRAJS ***************")')
+   write(wuUnmap,'("# Format: id/n,m")')
+   write(wuUnmap,'("# ----------------------------------------------------------------")')
    open(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
    call skipHeaderFromFile(unit=ruScatt)
    i=0
+   totScatt=0
    allowedScatt=0
-   exitLoop=.false.
    ioErr=0
    do while( ioErr == 0 )
       ! read from scattered file
-      read(ruScatt,*,ioStat=ioErr) id,stat,dummy_int,dummy_int,Etot,dummy(:),r(:),p(:)
+      read(ruScatt,*,ioStat=ioErr) id,stat,auxInt(:),Etot,auxReal(:),r(:),p(:)
       select case( ioErr==0 .and. stat=='Scattered' )
       case(.true.) ! secure to operate
          dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
@@ -306,75 +235,38 @@ SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D(this)
          dk = matmul(to_rec_space,dp)
          g(1) = nint(dk(1))
          g(2) = nint(dk(2))
-         rovibrState=this%quantizeRovibrState( position=r(:),momenta=p(:) )
+         rovibrState=this%quantizeRovibrState( Etot=Etot,position=r(:),momenta=p(:) )
+         totScatt=totScatt+1
          select case( this%isAllowed(diffState=g(:),rovibrState=rovibrState,diffEnergy=dE) )
-         case(.true.) ! add peak to list
-            call this%addNewPeak
-            call this%addProbToSubPeak( diffState=g(:),rovibrState=rovibrState )
-
-
-         case(.false.)
-
-         end select
-
-      case(.false.) ! not secure to operate, next switch
-      end select
-
-
-   enddo
-
-
-
-
-
-
-
-
-
-   DO 
-      i=i+1
-      SELECT CASE(ioerr==0)
-         CASE(.TRUE.)
-            ! do nothing
-         CASE(.FALSE.)
-            IF(ioerr/=-1) WRITE(*,*) routinename//'Unexpected error in scattered trajs file. Err Code: ',ioerr
-            EXIT
-      END SELECT
-      SELECT CASE(stat)
-         CASE('Scattered')
-            DO j= 1,SIZE(this%peaks)
-               SELECT CASE( this%peaks(j)%g(1)==g(1) .and. this%peaks(j)%g(2)==g(2) )
-               CASE(.true.)
-                  isAllowed=.true.
-                  EXIT
-
-               CASE(.false.)
-                  isAllowed=.false.
-
-               END SELECT
-         END DO
-      CASE DEFAULT
-            ! do nothing
-      END SELECT
-      SELECT CASE(isAllowed)
-         CASE(.true.)
+         case(.true.) ! Allowed peak: add to list
+            call this%addNewPeak(g, peakId=peakId)
+            call this%addProbToSubPeak( peakId=peakId,rovibrState=rovibrState )
             allowedScatt=allowedScatt+1
-         CASE(.false.)
-            WRITE(wuUnmap,formatUnmap) id,g(:)
-      END SELECT
-   END DO
-   totscatt=i-1
-   tottrajs=this%inicond%ntraj-this%inicond%nstart+1
-   WRITE(*,*) "==========================================================="
-   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: total trajs: ",tottrajs
-   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: scattered trajs: ",totscatt
-   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: allowed scattered trajs:",allowedScatt
-   WRITE(*,*) "ASSIGN PEAKS TO TRAJS: probability: ",dfloat(allowedScatt)/dfloat(tottrajs)
-   WRITE(*,*) "==========================================================="
-   CLOSE(unit=ruScatt)
-   CLOSE(unit=wuUnmap)
-   RETURN
-END SUBROUTINE ASSIGN_PEAKS_TO_TRAJS_ALLOWEDPEAKSCRP6D
+         case(.false.)
+            write(wuUnmap,formatUnmap) id,g(:)
+         end select
+      case(.false.) ! not secure to operate, next switch
+         select case( ioErr )
+         case(-1)
+            ! do nothing, EOF reached, let it break the cycle
+         case default
+            write(0,*) routinename//'ERR: unexpected error encountered. Error Code: ',ioErr
+            call exit(1)
+         end select
+      end select
+   enddo
+   totTrajs=this%inicond%ntraj-this%inicond%nstart+1
+   write(*,'("===========================================================")')
+   write(*,'("ASSIGN PEAKS TO TRAJS: total trajs: ",I10)')             totTrajs
+   write(*,'("ASSIGN PEAKS TO TRAJS: scattered trajs: ",I10)')         totScatt
+   write(*,'("ASSIGN PEAKS TO TRAJS: allowed scattered trajs: ",I10)') allowedScatt
+   write(*,'("ASSIGN PEAKS TO TRAJS: probability: ",F10.5)')           dfloat(allowedScatt)/dfloat(totTrajs)
+   write(*,'("===========================================================")')
+   close(unit=ruScatt)
+   close(unit=wuUnmap)
+   call deleteIfEmptyFile( this%fileNameUnmapped )
+   return
+end subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D
 !####################################################################################
 ! FUNCTION: EVALUATE_PEAK ###########################################################
 !####################################################################################
@@ -390,24 +282,30 @@ function isAllowed_ALLOWEDPEAKSCRP6D(this,diffState,rovibrState,diffEnergy) resu
    ! Function dummy variable
    logical:: isAllowed
    ! Local variables
-   real(kind=8):: n,m,a,b,dE
+   real(kind=8):: n,m,a,b,dE,beta,theta_in,masa,gama,pinit_par
+   real(kind=8),dimension(2):: kinit_par
    real(kind=8),dimension(6):: C ! conic coefficients
    ! HEY, HO ! LET'S GO! ---------------------------------------
    ! Some parameters
 	a=system_surface%norm_s1
 	b=system_surface%norm_s2
+	masa=sum( system_mass(:) )
+   gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
 	beta=this%inicond%vpar_angle%getvalue()
 	theta_in=this%inicond%vz_angle%getvalue()
+	pinit_par = (1.d0/dtan(theta_in))*dsqrt(2.d0*masa*this%inicond%E_norm%getvalue())
+	kinit_par(1)=pinit_par*a*dcos(beta)/(2.d0*pi)
+	kinit_par(2)=pinit_par*b*dcos(gama-beta)/(2.d0*pi)
    n=dfloat(diffState(1))
    m=dfloat(diffState(2))
    dE=evaluateEnergyRovibrState(rovibrState)-this%inicond%evirot%getValue()
    ! Set conic coefficients
 	C(1) =  b**2.D0
-	C(2) = -2.D0*a*b*DCOS(gama)
+	C(2) = -2.D0*a*b*dcos(gama)
 	C(3) =  a**2.D0
-	C(4) =  2.D0*b*(b*kinit_par(1)-a*kinit_par(2)*DCOS(gama))
-	C(5) =  2.D0*a*(a*kinit_par(2)-b*kinit_par(1)*DCOS(gama))
-	C(6) = -((a*b*DSIN(gama)/(2.D0*PI))**2.D0)*2.D0*mass*(this%inicond%E_norm%getvalue()-dE)
+	C(4) =  2.D0*b*(b*kinit_par(1)-a*kinit_par(2)*dcos(gama))
+	C(5) =  2.D0*a*(a*kinit_par(2)-b*kinit_par(1)*dcos(gama))
+	C(6) = -((a*b*dsin(gama)/(2.D0*pi))**2.D0)*2.D0*masa*(this%inicond%E_norm%getvalue()-dE)
 	! Allowed condition
    isAllowed=( C(1)*(n**2.D0)+C(2)*n*m+C(3)*(m**2.D0)+C(4)*n+C(5)*m+C(6) < 0.d0 )
 	if( present(diffEnergy) ) diffEnergy=dE
@@ -564,19 +462,22 @@ end function getPeakId_ALLOWEDPEAKSCRP6D
 ! SUBROUTINE: addNewPeak_PEAKCRP6D
 !############################################################
 !------------------------------------------------------------
-subroutine addNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
+subroutine addNewPeak_ALLOWEDPEAKSCRP6D(this,g,peakId)
    ! Initial declarations
    implicit none
    ! I/O variables
    class(Allowed_peaksCRP6D),intent(inout):: this
    integer(kind=4),dimension(2),intent(in):: g
-   integer(kind=4),intent(in):: envOrder
+   integer(kind=4),optional,intent(out):: peakId
    ! Local variables
    type(PeakCRP6D),dimension(:),allocatable:: auxListPeaks
    integer(kind=4):: oldN
    integer(kind=4):: idNew
-   real(kind=8):: pinit_par,beta,theta_in,gama,mass,a,b
+   integer(kind=4):: i ! counters
+   real(kind=8):: pinit_par,beta,theta_in,gama,masa,a,b
+   logical:: alreadyExists
    ! Run section ----------------------------------------------
+   alreadyExists=.false.
    select case( .not.allocated(this%peaks) )
    case(.true.)  ! this is the first allocation
       allocate( this%peaks(1) )
@@ -584,35 +485,44 @@ subroutine addNewPeak_ALLOWEDPEAKSCRP6D(this,envOrder,g)
 
    case(.false.) ! add new peak to the list
       oldN=size( this%peaks )
+      do i=1,oldN
+         select case( all(this%peaks(i)%g(:)==g(:)) )
+         case(.true.)
+            if( present(peakId) ) peakId=i
+            return
+         case(.false.)
+            ! do nothing
+         end select
+      enddo
       idNew=oldN+1
       call move_alloc( from=this%peaks,to=auxListPeaks )
       allocate( this%peaks(idNew) )
       this%peaks(1:oldN)=auxListPeaks(1:oldN)
-
    end select
    ! Some parameters
 	a=system_surface%norm_s1
 	b=system_surface%norm_s2
-   mass=sum( system_mass(:) )
+   masa=sum( system_mass(:) )
 	beta=this%inicond%vpar_angle%getvalue()
 	theta_in=this%inicond%vz_angle%getvalue()
 	gama = dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
-	pinit_par = this%inicond%E_norm%getvalue()/(dtan(theta_in)**2.d0)
+	pinit_par = (1.d0/dtan(theta_in))*dsqrt(2.d0*masa*this%inicond%E_norm%getvalue())
    this%peaks(idNew)%id=idNew
    this%peaks(idNew)%g(:)=g(:)
-   this%peaks(idNew)%envOrder=envOrder
-   this%peaks(idNew)%diffOrder=getDiffOrderC4(envOrder,g)
+   this%peaks(idNew)%envOrder=this%getEnvOrder( diffState=g(:) )
+   this%peaks(idNew)%diffOrder=getDiffOrderC4( this%peaks(idNew)%envOrder,g(:) )
    ! Change in momentum in laboratory coordinates (by definition both components are orthogonal)
    this%peaks(idNew)%dkx=(2.d0*pi/(a*b*DSIN(gama)))*(DFLOAT(g(1))*b*DSIN(gama-beta)+DFLOAT(g(2))*a*DSIN(beta))
    this%peaks(idNew)%dky=(2.d0*pi/(a*b*DSIN(gama)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gama-beta))
    this%peaks(idNew)%dkxy=norm2([this%peaks(idNew)%dkx,this%peaks(idNew)%dky])
    ! Get angles
-   select case( g(1)==0 .and. g(2)==0 )
+   select case( all( g(:)==[0,0] ) )
    case(.true.)
       this%peaks(idNew)%psiOut=0.d0
    case(.false.)
       this%peaks(idNew)%psiOut=datan(this%peaks(idNew)%dky/(pinit_par+this%peaks(idNew)%dkx))
    end select
+   if( present(peakId) ) peakId=idNew
    return
 end subroutine addNewPeak_ALLOWEDPEAKSCRP6D
 !############################################################
@@ -623,44 +533,28 @@ end subroutine addNewPeak_ALLOWEDPEAKSCRP6D
 !! routine will initialize it. Subpeaks are classified by their quantum
 !! state.
 !------------------------------------------------------------
-subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,diffState,rovibrState)
+subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    ! Initial declarations
    implicit none
    ! I/O variables
    class(Allowed_peaksCRP6D),intent(inout):: this
-   integer(kind=4),dimension(2),intent(in):: diffState
+   integer(kind=4),intent(in):: peakId
    integer(kind=4),dimension(3),intent(in):: rovibrState
    ! Local variables
-   integer(kind=4):: peakId
    real(kind=8):: initE,kz,masa,theta_in,pinit_par
    integer(kind=4):: N,newCol,oldCol
    type(subPeakCRP6D),dimension(:),allocatable:: auxListSubPeaks
    logical:: isNew
    integer(kind=4):: i ! counter
-   logical:: endLoop
    ! Run section
    ! Some
    masa=sum(system_mass(:))
    initE=this%inicond%evirot%getValue()
 	theta_in=this%inicond%vz_angle%getvalue()
    N=size( this%inicond%trajs(:) )
-	pinit_par = this%inicond%E_norm%getvalue()/((dtan(theta_in))**2.d0)
+	pinit_par = (1.d0/dtan(theta_in))*dsqrt(2.d0*masa*this%inicond%E_norm%getvalue())
    i=1
-   endLoop=.false.
    isNew=.true.
-   ! Search for this peak
-   do while( i<=size( this%peaks ) .and. .not.endLoop )
-      select case( all(diffState(:)==this%peaks(i)%g(:)) )
-      case(.true.)
-         peakId=i
-         endLoop=.true.
-      case(.false.)
-         ! do nothing
-      end select
-      i=i+1
-   enddo
-   ! Reboot counter
-   i=1
    select case( .not.allocated(this%peaks(peakId)%subPeaks) )
    case(.true.)
       oldCol=0
@@ -694,8 +588,6 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,diffState,rovibrState)
       this%peaks(peakId)%subPeaks(newCol)%dE=evaluateEnergyRovibrState(rovibrState)-initE
       kz=dsqrt( 2.d0*masa*this%inicond%E_norm%getValue()-2.d0*pinit_par*this%peaks(peakId)%dkx &
                 -this%peaks(peakId)%dkxy**2.d0-2.d0*masa*this%peaks(peakId)%subPeaks(newCol)%dE )
-      write(*,'(F20.10)') 2.d0*masa*this%inicond%E_norm%getValue()-2.d0*pinit_par*this%peaks(peakId)%dkx &
-                -this%peaks(peakId)%dkxy**2.d0-2.d0*masa*this%peaks(peakId)%subPeaks(newCol)%dE 
       this%peaks(peakId)%subPeaks(newCol)%prob=1.d0/N
       this%peaks(peakId)%subPeaks(newCol)%phiOut=datan( this%peaks(peakId)%dky/kz )
       this%peaks(peakId)%subPeaks(newCol)%thetaOut=datan( kz/norm2([this%peaks(peakId)%dkx+pinit_par,this%peaks(peakId)%dky]) )
@@ -813,17 +705,18 @@ end subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D
 ! FUNCTION: quantizeRovibrState_ALLOWEDPEAKSCRP6D
 !###########################################################
 !-----------------------------------------------------------
-function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,position,momenta) result(rovibrState)
+function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,Etot,position,momenta) result(rovibrState)
    ! initial declarations
    implicit none
    ! I/O variables
    class(Allowed_peaksCRP6D),intent(in):: this
+   real(kind=8),intent(in):: Etot
    real(kind=8),dimension(6),intent(in):: position
    real(kind=8),dimension(6),intent(in):: momenta
    ! Dummy function variable
    integer(kind=4),dimension(3):: rovibrState
    ! Local variables
-   real(kind=8):: L2,mu,masa,Ecm,Evibr,Erot
+   real(kind=8):: L2,mu,masa,Ecm,Evibr,Erot,finalJ,finalV
    ! Parameters
    character(len=*),parameter:: routinename='quantizeRovibrState_ALLOWEDPEAKSCRP6D: '
    ! Run section ------------------------------------------
@@ -836,7 +729,7 @@ function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,position,momenta) result(rov
       L2=momenta(5)**2.d0+(momenta(6)/dsin(position(5)))**2.d0
    end select
    Ecm=0.5d0*dot_product( momenta(1:3),momenta(1:3))/masa
-   Erot=0.5d0*L2/(mu*r(4)**2.d0)
+   Erot=0.5d0*L2/(mu*position(4)**2.d0)
    Evibr=Etot-Ecm-Erot
    select case( system_binningScheme)
    case('Morse')
@@ -849,12 +742,12 @@ function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,position,momenta) result(rov
       call exit(1)
    end select
 
-   if( discretizeJ(finalJ,dJ)==0 ) then
+   if( discretizeJ(finalJ)==0 ) then
       rovibrState=[ nint(finalV),0,0 ]
-   else if( nint(dabs(p(6)))>abs(discretizeJ(finalJ,dJ)) ) then
-      rovibrState=[ nint(finalV),discretizeJ(finalJ,dJ),sign(discretizeJ(finalJ,dJ),nint(p(6))) ]
+   else if( nint(dabs(momenta(6)))>abs(discretizeJ(finalJ)) ) then
+      rovibrState=[ nint(finalV),discretizeJ(finalJ),sign(discretizeJ(finalJ),nint(momenta(6))) ]
    else
-      rovibrState=[ nint(finalV),discretizeJ(finalJ,dJ),nint(p(6)) ]
+      rovibrState=[ nint(finalV),discretizeJ(finalJ),nint(momenta(6)) ]
    endif
    return ! ACTUAL END OF THIS FUNCTION
 
@@ -870,11 +763,10 @@ function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,position,momenta) result(rov
       !! simple function to discretize J quantum number taking
       !! into account the selection rule dJ
       !---------------------------------------------
-	   function discretizeJ(J,dJ) result(finalJ)
+	   function discretizeJ(J) result(finalJ)
 	      implicit none
 	      ! I/O variables
 	      real(kind=8),intent(in):: J
-	      integer(kind=4),intent(in):: dJ
 	      ! function dummy variable
 	      integer(kind=4):: finalJ
 	      ! Local variables
@@ -882,9 +774,9 @@ function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,position,momenta) result(rov
 	      integer(kind=4):: i ! counter
 	      integer(kind=4):: firstI
 	      ! Run section
-	      deltaJ=dfloat(dJ)*0.5d0
+	      deltaJ=dfloat(system_binningdJ)*0.5d0
 	      firstI=mod(this%inicond%init_qn(2),2)
-         do i=firstI,1000,dJ ! almost infinite loop
+         do i=firstI,1000,system_binningdJ ! almost infinite loop
    	      diff=J-dfloat(i)
    	      select case( dabs(diff)<=deltaJ )
    	      case(.true.)

@@ -306,7 +306,7 @@ SUBROUTINE RUN_DYNDIATOMIC(this)
    ! I/O variables 
    CLASS(DynDiatomic),INTENT(INOUT):: this
    ! Local variables 
-   INTEGER:: i ! counters
+   integer(kind=4):: i ! counters
    CHARACTER(LEN=*),PARAMETER:: routinename = "RUN_DYNDIATOMIC: "
    ! HEY HO! LET'S GO !!! ------
    CALL FILE_TRAJSTATUS_DYNDIATOMIC(this%wusc,this%fileScatt,"SCATTERED TRAJS")
@@ -333,6 +333,15 @@ SUBROUTINE RUN_DYNDIATOMIC(this)
    CLOSE(this%wust)
    CLOSE(this%wutp)
    CLOSE(this%wure)
+   call deleteIfEmptyFile(this%fileScatt)
+   call deleteIfEmptyFile(this%filePatho)
+   call deleteIfEmptyFile(this%fileTimeOut)
+   call deleteIfEmptyFile(this%fileTrapped)
+   call deleteIfEmptyFile(this%fileAds)
+   call deleteIfEmptyFile(this%fileAbs)
+   call deleteIfEmptyFile(this%fileStop)
+   call deleteIfEmptyFile(this%fileReact)
+   call deleteIfEmptyFile(this%fileTurn)
    RETURN
 END SUBROUTINE RUN_DYNDIATOMIC
 !##############################################################
