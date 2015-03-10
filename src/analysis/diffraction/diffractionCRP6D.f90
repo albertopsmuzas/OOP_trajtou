@@ -201,7 +201,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
 	integer(kind=4),dimension(2):: auxInt
    ! Some parameters
    character(len=*),parameter:: routinename = "assigtTrajsToPeaks_ALLOWEDPEAKSCVRP6D: "
-   character(len=*),parameter:: formatUnmap='(I6," ---> ",2(I5))'        ! Id/--->/n/m
+   character(len=*),parameter:: formatUnmap='(I6," ---> ",5(I5))'        ! Id/--->/n/m/v,J,mJ
    ! Read/write units
    integer(kind=4),parameter:: wuUnmap=13
    integer(kind=4),parameter:: ruScatt=14
@@ -217,7 +217,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
    !---------
    open(unit=wuUnmap,file=this%fileNameUnmapped,status='replace',action='write')
    write(wuUnmap,'("# *************** LIST OF UNMAPPED TRAJS ***************")')
-   write(wuUnmap,'("# Format: id/n,m")')
+   write(wuUnmap,'("# Format: id/n,m/v,J,mJ")')
    write(wuUnmap,'("# ----------------------------------------------------------------")')
    open(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
    call skipHeaderFromFile(unit=ruScatt)
@@ -243,7 +243,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
             call this%addProbToSubPeak( peakId=peakId,rovibrState=rovibrState )
             allowedScatt=allowedScatt+1
          case(.false.)
-            write(wuUnmap,formatUnmap) id,g(:)
+            write(wuUnmap,formatUnmap) id,g(:),rovibrState(:)
          end select
       case(.false.) ! not secure to operate, next switch
          select case( ioErr )
@@ -305,7 +305,8 @@ function isAllowed_ALLOWEDPEAKSCRP6D(this,diffState,rovibrState,diffEnergy) resu
 	C(3) =  a**2.D0
 	C(4) =  2.D0*b*(b*kinit_par(1)-a*kinit_par(2)*dcos(gama))
 	C(5) =  2.D0*a*(a*kinit_par(2)-b*kinit_par(1)*dcos(gama))
-	C(6) = -((a*b*dsin(gama)/(2.D0*pi))**2.D0)*2.D0*masa*(this%inicond%E_norm%getvalue()-dE)
+   C(6) = -((a*b*dsin(gama)/(2.D0*pi))**2.D0)*2.D0*masa*(this%inicond%E_norm%getvalue()-dE)
+	!C(6) = -((a*b*dsin(gama)/(2.D0*pi))**2.D0)*2.D0*masa*(this%inicond%E_norm%getvalue())
 	! Allowed condition
    isAllowed=( C(1)*(n**2.D0)+C(2)*n*m+C(3)*(m**2.D0)+C(4)*n+C(5)*m+C(6) < 0.d0 )
 	if( present(diffEnergy) ) diffEnergy=dE
