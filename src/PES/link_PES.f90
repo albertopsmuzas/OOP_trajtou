@@ -3,8 +3,9 @@
 !> @brief
 !! Module to include all possible PES defined here 
 !##########################################################
-MODULE LINK_PES_MOD
-   USE PES_MOD
-   USE CRP3D_MOD
-   USE CRP6D_MOD
-END MODULE LINK_PES_MOD
+module LINK_PES_MOD
+   use PES_MOD
+   use CRP3D_MOD
+   use CRP6D_MOD
+   use PES_HLiF001_MOD
+end module LINK_PES_MOD

@@ -56,25 +56,24 @@ END TYPE
 !
 !> @see atom_list
 !-------------------------------------------------------------------------------------
-TYPE Surface
-PRIVATE
-   CHARACTER(LEN=30):: alias
-   CHARACTER(LEN=:),ALLOCATABLE:: filename
-	LOGICAL:: initialized=.FALSE.
-   REAL(KIND=8),PUBLIC,DIMENSION(2) :: s1,s2
-	REAL(KIND=8),DIMENSION(2,2):: surf2cart_mtrx
-	REAL(KIND=8),DIMENSION(2,2):: cart2surf_mtrx
-	REAL(KIND=8),DIMENSION(2,2):: surfunit2cart_mtrx
-	REAL(KIND=8),DIMENSION(2,2):: cart2surfunit_mtrx
-	REAL(KIND=8),DIMENSION(2,2):: recip2cart_mtrx
-	REAL(KIND=8),DIMENSION(2,2):: cart2recip_mtrx
-   INTEGER(KIND=4):: diff_atoms
-   TYPE(Atom_list),DIMENSION(:),ALLOCATABLE,PUBLIC:: atomtype
-	REAL(KIND=8),DIMENSION(2,2),PUBLIC:: metricsurf_mtrx
-   CHARACTER(LEN=10),PUBLIC:: units
-	REAL(KIND=8),PUBLIC:: norm_s1, norm_s2
-   CHARACTER(LEN=4):: symmlabel
-CONTAINS
+Type Surface
+   character(len=30):: alias
+   character(len=:),allocatable:: filename
+	logical:: initialized=.false.
+   real(kind=8),public,dimension(2) :: s1,s2
+	real(kind=8),dimension(2,2):: surf2cart_mtrx
+	real(kind=8),dimension(2,2):: cart2surf_mtrx
+	real(kind=8),dimension(2,2):: surfunit2cart_mtrx
+	real(kind=8),dimension(2,2):: cart2surfunit_mtrx
+	real(kind=8),dimension(2,2):: recip2cart_mtrx
+	real(kind=8),dimension(2,2):: cart2recip_mtrx
+   integer(kind=4):: diff_atoms
+   type(atom_list),dimension(:),allocatable,public:: atomType
+	real(kind=8),dimension(2,2),public:: metricSurf_mtrx
+   character(len=10),public:: units
+	real(kind=8),public:: norm_s1, norm_s2
+   character(len=4):: symmLabel
+contains
    ! Initiallize
    PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_SURFACE
    ! Operations block
@@ -94,9 +93,9 @@ CONTAINS
    PROCEDURE,PUBLIC:: MOVE_PATTERN => MOVE_PATTERN_SURFACE
    ! Enquire block
    PROCEDURE,PUBLIC:: is_initialized => is_initialized_SURFACE
-END TYPE
+end type
 ! MODULE CONTAINS
-CONTAINS
+contains
 !###########################################################
 !# SUBROUTINE: MOVE_PATTERN_SURFACE
 !###########################################################

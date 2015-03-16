@@ -3,16 +3,16 @@
 !> @brief
 !! CRP3D specific implementation for H/LiF001
 !##########################################################
-module PES_LIF001_MOD
+module PES_HLIF001_MOD
 ! Initial declarations
-use SYSTEM_MOD
-use LiF001SURF_MOD
-use PES_MOD
-use CUBICSPLINES_MOD
-use LINK_FOURIER2D_MOD
-use LINK_FUNCTION1D_MOD
-use MATHS_MOD, only: order_vect,order,symmetrize
+use LiF001SURF_MOD, only: LiF001Surf,pi
+use PES_MOD, only: PES
+use CUBICSPLINES_MOD, only: Csplines
+use FOURIER_P4MM_MOD, only: Fourierp4mm
+use LOGISTIC_FUNCTION_MOD, only: Logistic_func
 implicit none
+! Local module variable, used to simulate SYSTEM_MOD
+type(LiF001Surf):: sysLiF001Surf
 !///////////////////////////////////////////////////////////////////////////////
 ! TYPE & SUBTYPES: Symmetric point
 !------------------------------------------------------------------------------
@@ -41,84 +41,53 @@ type,extends(Symmpoint) :: Pair_pot
    real(kind=8):: vasint
 	real(kind=8):: rumpling
    contains
-      procedure,public:: read => read_standard_PAIRPOT
       procedure,public:: get_v_and_derivs => get_v_and_derivs_PAIRPOT
 end type Pair_pot
 
 type,extends(Symmpoint) :: Sitio
    private
 	real(kind=8),dimension(:),allocatable:: dvdx,dvdy,dvdz
-   contains
-      procedure,public:: read => READ_STANDARD_SITIO
 end type Sitio
 !////////////////////////////////////////////////////////////////////////////////
-! TYPE: PES_LIF001
+! TYPE: PES_HLIF001
 !------------------------------------------------------------------------------
-type,extends(PES) :: PES_LIF001
+type,extends(PES) :: PES_HLiF001
    integer(kind=4):: max_order
    type(Pair_pot),dimension(:),allocatable:: all_pairpots
    type(Sitio),dimension(:),allocatable:: all_sites
    integer(kind=4),dimension(:,:),allocatable:: klist
-   class(Function1d),allocatable:: dampfunc
+   type(Logistic_func),allocatable:: dampFunc
    contains
       ! Initialization block
-      procedure,public:: READ => READ_PES_LIF001
-      procedure,public:: INITIALIZE => INITIALIZE_PES_LIF001
+      procedure,public:: initialize => initialize_PES_HLIF001
       ! Get block 
-      procedure,public:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_PES_LIF001
-      procedure,public:: GET_V_AND_DERIVS_CORRECTION => GET_V_AND_DERIVS_CORRECTION_PES_LIF001
-      procedure,public:: GET_REPUL_CORRECTIONS => GET_REPUL_CORRECTIONS_PES_LIF001
+      procedure,public:: get_v_and_derivs => GET_V_AND_DERIVS_PES_HLIF001
+      procedure,public:: get_v_and_derivs_correction => GET_V_AND_DERIVS_CORRECTION_PES_HLIF001
+      procedure,public:: get_repul_corrections => GET_REPUL_CORRECTIONS_PES_HLIF001
       procedure,public:: getpot => getpot_crp3d
       ! Enquire block
-      procedure,public:: is_allowed => is_allowed_PES_LIF001
+      procedure,public:: is_allowed => is_allowed_PES_HLIF001
       ! Tools block
-      procedure,public:: EXTRACT_VASINT => EXTRACT_VASINT_PES_LIF001
-      procedure,public:: SMOOTH => SMOOTH_PES_LIF001
-      procedure,public:: INTERPOL => INTERPOL_Z_PES_LIF001
+      procedure,public:: extract_vasint => EXTRACT_VASINT_PES_HLIF001
+      procedure,public:: smooth => SMOOTH_PES_HLIF001
+      procedure,public:: interpol => INTERPOL_Z_PES_HLIF001
       ! Plot tools
-      procedure,public:: PLOT_XYMAP => PLOT_XYMAP_PES_LIF001
-      procedure,public:: PLOT_DIRECTION1D => PLOT_DIRECTION1D_PES_LIF001
-      procedure,public:: PLOT_SITIOS => PLOT_SITIOS_PES_LIF001
-      procedure,public:: PLOT_PAIRPOTS => PLOT_PAIRPOTS_PES_LIF001
-      procedure,public:: PLOT_Z => PLOT_Z_PES_LIF001
-end type PES_LIF001
+      procedure,public:: plot_xymap => PLOT_XYMAP_PES_HLIF001
+      procedure,public:: plot_direction1d => PLOT_DIRECTION1D_PES_HLIF001
+      procedure,public:: plot_sitios => PLOT_SITIOS_PES_HLIF001
+      procedure,public:: plot_pairpots => PLOT_PAIRPOTS_PES_HLIF001
+      procedure,public:: plot_z => PLOT_Z_PES_HLIF001
+end type PES_HLiF001
 !///////////////////////////////////////////////////////////////////////////
 contains
 !###########################################################
-!# SUBROUTINE: INITIALIZE_PES_LIF001
+!# SUBROUTINE: GET_REPUL_CORRECTIONS_PES_HLIF001
 !###########################################################
-SUBROUTINE INITIALIZE_PES_LIF001(this,filename,tablename)
+SUBROUTINE GET_REPUL_CORRECTIONS_PES_HLIF001(this,P,v,dvdz,dvdx,dvdy)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),INTENT(OUT):: this
-   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename,tablename
-   ! Local variables
-   CHARACTER(LEN=:),ALLOCATABLE:: auxstring
-   ! Run section
-   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
-      CASE(.TRUE.)
-         auxstring=trim(system_inputfile)
-      CASE(.FALSE.)
-         auxstring=trim(filename)
-   END SELECT
-   SELECT CASE(present(tablename))
-      CASE(.TRUE.) ! present tablename
-         CALL this%READ(filename=trim(auxstring),tablename=trim(tablename))
-      CASE(.FALSE.) ! not present tablename
-         CALL this%READ(filename=trim(auxstring),tablename='pes')
-   END SELECT
-   CALL this%INTERPOL()
-   RETURN
-END SUBROUTINE INITIALIZE_PES_LIF001
-!###########################################################
-!# SUBROUTINE: GET_REPUL_CORRECTIONS_PES_LIF001
-!###########################################################
-SUBROUTINE GET_REPUL_CORRECTIONS_PES_LIF001(this,P,v,dvdz,dvdx,dvdy)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(PES_LIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001),INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: P
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdx,dvdy,dvdz ! corrections to the derivatives
@@ -144,7 +113,7 @@ SUBROUTINE GET_REPUL_CORRECTIONS_PES_LIF001(this,P,v,dvdz,dvdx,dvdy)
       END DO
    END DO
    RETURN
-END SUBROUTINE GET_REPUL_CORRECTIONS_PES_LIF001
+END SUBROUTINE GET_REPUL_CORRECTIONS_PES_HLIF001
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_PAIRPOT 
 !###########################################################
@@ -166,296 +135,470 @@ SUBROUTINE GET_V_AND_DERIVS_PAIRPOT(this,x,v,dvdu)
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_PAIRPOT
 !###########################################################
-!# SUBROUTINE: READ_STANDARD_PAIRPOT #######################
+!# SUBROUTINE: INITIALIZE_PES_HLIF001
 !###########################################################
-SUBROUTINE READ_STANDARD_PAIRPOT(pairpot,filename)
-      ! Initial declarations
-   IMPLICIT NONE
-   ! I/O variables ------------------------------
-   CLASS(Pair_pot),INTENT(INOUT) :: pairpot
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   ! Local variables ----------------------------
-   INTEGER :: i
-   CHARACTER(LEN=14), PARAMETER :: routinename = "READ_PAIRPOT: "
-   ! Run section ---------------------------------
-   pairpot%filename=filename
-   OPEN(10,FILE=pairpot%filename,STATUS='OLD')
-   READ(10,*) ! dummy line
-   READ(10,*) ! dummy line
-   READ(10,*) pairpot%alias
-   READ(10,*) pairpot%vasint
-   READ(10,*) pairpot%dz1
-   READ(10,*) pairpot%dz2
-   READ(10,*) pairpot%id,pairpot%rumpling
-   READ(10,*) pairpot%n
-   ALLOCATE(pairpot%z(1:pairpot%n))
-   ALLOCATE(pairpot%v(1:pairpot%n))
-   DO i=1, pairpot%n
-      READ(10,*) pairpot%z(i), pairpot%v(i)
-   END DO
-   CLOSE(10)
-   CALL pairpot%interz%READ(pairpot%z,pairpot%v)
-#ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,pairpot%filename,pairpot%alias)
-#endif
-   RETURN
-END SUBROUTINE READ_STANDARD_PAIRPOT
-!###########################################################
-!# SUBROUTINE: READ_STANDARD_SITIO #########################
-!###########################################################
-SUBROUTINE READ_STANDARD_SITIO(site,filename)
-   IMPLICIT NONE
+subroutine initialize_PES_HLIF001(this,filename,tablename)
+   implicit none
    ! I/O variables
-   CLASS(Sitio),INTENT(INOUT):: site
-   CHARACTER(LEN=*),INTENT(IN):: filename
+   class(PES_HLIF001),intent(out):: this
+   character(len=*),optional,intent(in):: filename
+   character(len=*),optional,intent(in):: tablename
    ! Local variables
-   INTEGER:: i ! counter
-   CHARACTER(LEN=*),PARAMETER:: routinename = "READ_SITIO: "
-   !
-   site%filename=filename
-   OPEN (10,file=site%filename,status="old")
-   READ(10,*) ! dummy line
-   READ(10,*) ! dummy line
-   READ(10,*) site%alias
-   READ(10,*) site%x, site%y
-   READ(10,*) site%n
-   READ(10,*) site%dz1
-   READ(10,*) site%dz2
-   ALLOCATE(site%z(1:site%n))
-   ALLOCATE(site%v(1:site%n))
-   DO i=1, site%n
-      READ(10,*) site%z(i), site%v(i)
-   END DO
-   CLOSE(10)
-   CALL site%interz%READ(site%z,site%v)
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,site%filename,site%alias)
-#endif
-   RETURN
-END SUBROUTINE READ_STANDARD_SITIO
-!###########################################################
-!# SUBROUTINE: READ_PES_LIF001
-!###########################################################
-SUBROUTINE READ_PES_LIF001(this,filename,tablename)
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(PES_LIF001),INTENT(OUT) :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   CHARACTER(LEN=*),INTENT(IN):: tablename
-   ! Local variables
-   INTEGER(KIND=4) :: n_pairpots,n_sites
-   CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: files_pairpots,files_sites
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param
-   INTEGER(KIND=4):: ierr
-   INTEGER(KIND=4) :: i ! counter
-   ! Lua-related variables
-   TYPE(flu_State):: conf ! Lua state
-   INTEGER(KIND=4):: pes_table,pairpot_table,sitio_table,dampfunc_table,param_table,fourier_table ! tables
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: subtables
-   ! Auxiliar (dummy) variables
-   INTEGER(KIND=4):: auxint
-   CHARACTER(LEN=1024):: auxstring
-   ! Parameters
-   CHARACTER(LEN=*),PARAMETER :: routinename="READ_PES_LIF001: "
+   real(kind=8),dimension(129):: commonGrid
    ! HEY HO!, LET'S GO!! ------------------
-   ! Open Lua file
-   CALL OPEN_CONFIG_FILE(L=conf,filename=filename,ErrCode=ierr)
-   SELECT CASE(ierr)
-      CASE(0)
-         ! do nothing
-      CASE DEFAULT
-         WRITE(0,*) "READ_PES_LIF001 ERR: error reading Lua config file: ",filename
-         CALL EXIT(1)
-   END SELECT
-   ! Open PES table
-   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
-   ! Set pestype (kind)
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
-   CALL this%SET_PESTYPE(trim(auxstring))
-   SELECT CASE(trim(auxstring))
-      CASE('PES_LIF001')
-         ! do nothing
-      CASE DEFAULT
-         WRITE(0,*) "READ_PES_LIF001 ERR: wrong type of PES. Expected: PES_LIF001. Encountered: "//trim(auxstring)
-         CALL EXIT(1)
-   END SELECT
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'Type of PES: '//trim(auxstring))
-#endif
-   ! Set alias (name)
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
-   CALL this%SET_ALIAS(trim(auxstring))
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'PES Name: '//trim(auxstring))
-#endif
-   ! Set dimensions
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
-   CALL this%SET_DIMENSIONS(auxint)
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
-#endif
-   ! Set max environment
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='maxEnvironment',val=auxint)
-   this%max_order=auxint
-   ! Set pair potentials
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=pairpot_table,key='pairPotentials')
-   n_pairpots=aot_table_length(L=conf,thandle=pairpot_table)
-   ALLOCATE(files_pairpots(n_pairpots))
-   ALLOCATE(this%all_pairpots(n_pairpots))
-   DO i = 1, n_pairpots
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pairpot_table,pos=i,val=files_pairpots(i))
-      CALL this%all_pairpots(i)%READ(trim(files_pairpots(i)))
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=pairpot_table)
-   ! Set damping function
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=dampfunc_table,key='dampFunction')
-   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=dampfunc_table,key='kind',val=auxstring)
-   SELECT CASE(trim(auxstring))
-      CASE("Logistic")
-         ALLOCATE(Logistic_func::this%dampfunc)
-         ALLOCATE(param(2))
-         ! open param table
-         CALL AOT_TABLE_OPEN(L=conf,parent=dampfunc_table,thandle=param_table,key='param')
-         auxint=aot_table_length(L=conf,thandle=param_table)
-         SELECT CASE(auxint/=2) 
-            CASE(.TRUE.)
-               WRITE(0,*) "READ_PES_LIF001 ERR: wrong number of parameters in pes.dampFunc.param table"
-               CALL EXIT(1)
-            CASE(.FALSE.)
-               ! do nothing
-         END SELECT
-         DO i = 1, 2
-            CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=i,val=param(i))
-         END DO
-         CALL this%dampfunc%READ(param)
-         CALL AOT_TABLE_CLOSE(L=conf,thandle=param_table)
-      CASE("None")
-         ALLOCATE(One_func::this%dampfunc)
-      CASE DEFAULT
-         WRITE(0,*) "READ_PES_LIF001 ERR: dampfunction keyword is not implemented"
-         WRITE(0,*) "Implemented ones: Logistic, None"
-         WRITE(0,*) "Case sensitive"
-         CALL EXIT(1)
-   END SELECT
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'Damping function used: '//trim(auxstring))
-   SELECT CASE(allocated(param))
-      CASE(.TRUE.)
-         CALL VERBOSE_WRITE(routinename,'Damping function parameters: ',param(:))
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-#endif
+   call this%set_pesType('CRP3D')
+   call this%set_alias('H_on_LiF001')
+   call this%set_dimensions(3)
+   this%max_order=2
+   allocate( this%all_pairpots(2) )
+   ! Create surface
+   call sysLiF001Surf%initialize('dummyString')
+   ! Pair potential for Li
+   this%all_pairpots(1)%alias='Pairpot_Li'
+   this%all_pairpots(1)%vasint=-7.1343585831139720d0
+   this%all_pairpots(1)%dz1=-7.74124547149313003d-005
+   this%all_pairpots(1)%dz2=0.d0
+   this%all_pairpots(1)%id=1
+   this%all_pairpots(1)%rumpling=-0.12359375826911972d0
+   this%all_pairpots(1)%n=89
+   allocate(this%all_pairpots(1)%z(89))
+   allocate(this%all_pairpots(1)%v(89))
+   this%all_pairpots(1)%z(:)=[ -0.12359375826911972451d0,-0.11338356797313858815d0,-0.10469649694026329778d0,-0.09448630664428216142d0,&
+                               -0.08579923561140685717d0,-0.07558904531542573468d0,-0.06690197428255041656d0,-0.05669178398656929407d0,&
+                               -0.04800471295369398983d0,-0.03779452265771286734d0,-0.02910745162483756310d0,-0.01889726132885643367d0,&
+                               -0.01021019029598112943d0, 0.00000000000000000000d0, 0.01021019029598112943d0, 0.01889726132885643367d0,&
+                                0.02910745162483756310d0, 0.03779452265771286734d0, 0.04800471295369398983d0, 0.05669178398656929407d0,&
+                                0.06690197428255041656d0, 0.07558904531542573468d0, 0.08579923561140685717d0, 0.09448630664428216142d0,&
+                                0.10469649694026329778d0, 0.11338356797313858815d0, 0.12359375826911972451d0, 0.13228082930199502876d0,&
+                                0.14249101959797616512d0, 0.15117809063085146937d0, 0.16138828092683260573d0, 0.17007535195970788222d0,&
+                                0.18028554225568901859d0, 0.18897261328856432283d0, 0.19918280358454545920d0, 0.20786987461742076344d0,&
+                                0.21808006491340189981d0, 0.22676713594627717629d0, 0.23697732624225828491d0, 0.24566439727513364466d0,&
+                                0.25587458757111475327d0, 0.26456165860399005751d0, 0.27477184889997119388d0, 0.28345891993284649812d0,&
+                                0.29366911022882763449d0, 0.30235618126170293873d0, 0.31256637155768401959d0, 0.37794522657712864566d0,&
+                                0.50153898484624837018d0, 0.56691783986569299625d0, 0.69051159813481266525d0, 0.75589045315425729132d0,&
+                                0.87948421142337707135d0, 0.94486306644282158640d0, 1.06845682471194125540d0, 1.13383567973138599250d0,&
+                                1.25742943800050555048d0, 1.32280829301995028757d0, 1.44640205128906984555d0, 1.51178090630851458265d0,&
+                                1.63537466457763436267d0, 1.70075351959707887772d0, 1.82434727786619865775d0, 1.88972613288564317280d0,&
+                                2.01331989115476295282d0, 2.07869874617420791196d0, 2.20153094481177458164d0, 2.36215766610705424355d0,&
+                                2.83458919932846509226d0, 3.30702073254987549689d0, 3.40150703919415775545d0, 3.77945226577128634560d0,&
+                                4.15739749234841582393d0, 4.53534271892554396999d0, 5.29123317207980115029d0, 5.66917839865693018453d0,&
+                                6.04712362523405833059d0, 6.42506885181118647665d0, 6.80301407838831551089d0, 7.18095930496544365695d0,&
+                                7.55890453154257269119d0, 7.93684975811970172543d0, 8.31479498469683164785d0, 8.69274021127395890574d0,&
+                                9.07068543785108793998d0, 9.44863066442821697422d0, 9.82657589100534600846d0,10.01554850429390874922d0,&
+                               10.48798003751531915384d0 ]
+
+   this%all_pairpots(1)%v(:)=[  9.13637967606230283479d0, 9.06832750843688373266d0, 8.90326498259120313605d0, 8.58331075848343161283d0,&
+                                8.20392411180231384549d0, 7.63206806126462566908d0, 7.03835748948212014398d0, 6.21459984256694042415d0,&
+                                5.40656554141708056704d0, 4.33090652817683974263d0, 3.33211761650003612800d0, 2.22360275064672885392d0,&
+                                1.46479057654297051272d0, 0.75474225051959265009d0, 0.15214536709775466905d0,-0.30267699281657389765d0,&
+                               -0.77687704211649644126d0,-1.13507419544155974123d0,-1.51043841948065837855d0,-1.79707707081678691452d0,&
+                               -2.10214263141106361132d0,-2.33735240742591665608d0,-2.58787101157876797686d0,-2.78112055534153856939d0,&
+                               -2.98755173052881151108d0,-3.14774025503347854027d0,-3.32054352873101787935d0,-3.45657024697155890181d0,&
+                               -3.60620495923014505735d0,-3.72661132147541795945d0,-3.86067137452116160290d0,-3.96863141541037478532d0,&
+                               -4.08865106449428239443d0,-4.18516561218743277095d0,-4.29232116241032368720d0,-4.37839104506740905975d0,&
+                               -4.47385880153010173643d0,-4.55048484731111813062d0,-4.63544111511443102103d0,-4.70362415217937623879d0,&
+                               -4.77924523642412868440d0,-4.83998609293299963952d0,-4.90744829872001098181d0,-4.96174780283280369986d0,&
+                               -5.02222743526289239213d0,-5.07108641513960467506d0,-5.12575977931359005879d0,-5.42664945665589293355d0,&
+                               -5.85159330426782098300d0,-6.01950817493016820947d0,-6.26631361840675893404d0,-6.36922072891826651642d0,&
+                               -6.52670514611862007115d0,-6.59596737715163872195d0,-6.70590532582269460704d0,-6.75459931987306472223d0,&
+                               -6.83205122595604752433d0,-6.86637019022921268885d0,-6.92105443619809967970d0,-6.94536416651140164902d0,&
+                               -6.98400120097157106613d0,-7.00114267339517137856d0,-7.02835930911559181311d0,-7.04042393089925422345d0,&
+                               -7.05965099682119578972d0,-7.06817858395823339634d0,-7.08167042202009078267d0,-7.09526035231560658900d0,&
+                               -7.11804121391004507302d0,-7.12743723234768022934d0,-7.12851292897997534936d0,-7.13136969960303535032d0,&
+                               -7.13284730060497107473d0,-7.13364775057311284456d0,-7.13434548200933971174d0,-7.13448321515789185554d0,&
+                               -7.13456043013040375200d0,-7.13459651023333218944d0,-7.13454700870452107608d0,-7.13457967492788203145d0,&
+                               -7.13456476333787215083d0,-7.13453759184147884298d0,-7.13450463614975838311d0,-7.13447005570740167002d0,&
+                               -7.13443648744154756969d0,-7.13438097583484864828d0,-7.13438475550669082281d0,-7.13436622608774762000d0,&
+                               -7.13435858311397197440d0 ]
+   call this%all_pairpots(1)%interZ%read( this%all_pairpots(1)%z(:),this%all_pairpots(1)%v(:) )
+   ! Pair potential for F
+   this%all_pairpots(2)%alias='Pairpot_F'
+   this%all_pairpots(2)%vasint=-7.1343585831139720d0
+   this%all_pairpots(2)%dz1=-6.94879417153515533E-005
+   this%all_pairpots(2)%dz2=0.d0
+   this%all_pairpots(2)%id=2
+   this%all_pairpots(2)%rumpling=0.d0
+   this%all_pairpots(2)%n=76
+   allocate(this%all_pairpots(2)%z(76))
+   allocate(this%all_pairpots(2)%v(76))
+   this%all_pairpots(2)%z(:)=[ 0.00000000000000000000d0, 0.01021019029598112943d0, 0.01889726132885643367d0, 0.02910745162483756310d0,&
+                               0.03779452265771286734d0, 0.04800471295369398983d0, 0.05669178398656929407d0, 0.06690197428255041656d0,&
+                               0.07558904531542573468d0, 0.08579923561140685717d0, 0.09448630664428216142d0, 0.10469649694026329778d0,&
+                               0.11338356797313858815d0, 0.12359375826911972451d0, 0.13228082930199502876d0, 0.14249101959797616512d0,&
+                               0.15117809063085146937d0, 0.16138828092683260573d0, 0.17007535195970788222d0, 0.18028554225568901859d0,&
+                               0.18897261328856432283d0, 0.19918280358454545920d0, 0.20786987461742076344d0, 0.21808006491340189981d0,&
+                               0.22676713594627717629d0, 0.23697732624225828491d0, 0.24566439727513364466d0, 0.25587458757111475327d0,&
+                               0.26456165860399005751d0, 0.27477184889997119388d0, 0.28345891993284649812d0, 0.29366911022882763449d0,&
+                               0.30235618126170293873d0, 0.31256637155768401959d0, 0.37794522657712864566d0, 0.50153898484624837018d0,&
+                               0.56691783986569299625d0, 0.69051159813481266525d0, 0.75589045315425729132d0, 0.87948421142337707135d0,&
+                               0.94486306644282158640d0, 1.06845682471194125540d0, 1.13383567973138599250d0, 1.25742943800050555048d0,&
+                               1.32280829301995028757d0, 1.44640205128906984555d0, 1.51178090630851458265d0, 1.63537466457763436267d0,&
+                               1.70075351959707887772d0, 1.82434727786619865775d0, 1.88972613288564317280d0, 2.01331989115476295282d0,&
+                               2.07869874617420791196d0, 2.20153094481177458164d0, 2.36215766610705424355d0, 2.83458919932846509226d0,&
+                               3.30702073254987549689d0, 3.40150703919415775545d0, 3.77945226577128634560d0, 4.15739749234841582393d0,&
+                               4.53534271892554396999d0, 5.29123317207980115029d0, 5.66917839865693018453d0, 6.04712362523405833059d0,&
+                               6.42506885181118647665d0, 6.80301407838831551089d0, 7.18095930496544365695d0, 7.55890453154257269119d0,&
+                               7.93684975811970172543d0, 8.31479498469683164785d0, 8.69274021127395890574d0, 9.07068543785108793998d0,&
+                               9.44863066442821697422d0, 9.82657589100534600846d0,10.01554850429390874922d0,10.48798003751531915384d0 ]
+
+   this%all_pairpots(2)%v(:)=[35.94183402487214351595d0,35.89857817326345923448d0,35.79366014961507147518d0,35.59028904596869580246d0,&
+                              35.34914120263270831401d0,34.98565488951776103477d0,34.60827726271296000959d0,34.08467578269853959227d0,&
+                              33.57106840864373964450d0,32.88735180429894455756d0,32.23751471921294609047d0,31.39368303310690322405d0,&
+                              30.60761627320849243006d0,29.60366954791030735805d0,28.68137314941830595671d0,27.51731142749706293671d0,&
+                              26.45878542663025001502d0,25.13460875065507593717d0,23.93985318363227321470d0,22.45556159617226654746d0,&
+                              21.12457649921226021661d0,19.49007498664534310251d0,18.07575364028142672623d0,16.43792379626155053529d0,&
+                              15.10737562624412788637d0,13.66979033954163469389d0,12.58416142588480468589d0,11.45376974357187371822d0,&
+                              10.59321451689409343544d0, 9.67263148687921692215d0, 8.94402288586876714760d0, 8.12914701145938423110d0,&
+                               7.46794715791469609911d0, 6.72871379453375784152d0, 2.96265525418775155231d0,-1.22114850507602268337d0,&
+                              -2.63138763162365441062d0,-4.41765828174076613521d0,-5.04604892046661923644d0,-5.84557849100102178141d0,&
+                              -6.13938317512004960719d0,-6.52646072102204932719d0,-6.66451051723715881536d0,-6.84111663060843788742d0,&
+                              -6.90141040276800232789d0,-6.97758158903419101193d0,-7.00438098661579378046d0,-7.03814683143213049021d0,&
+                              -7.05034999134869000414d0,-7.06674205602035154783d0,-7.07314495695511791240d0,-7.08312610202180614749d0,&
+                              -7.08757267028558413102d0,-7.09488257990142123788d0,-7.10291428450212425361d0,-7.11880084201481722062d0,&
+                              -7.12665054842541234592d0,-7.12763481242552998651d0,-7.13044848486165694368d0,-7.13212299841474983708d0,&
+                              -7.13315234284039600965d0,-7.13416050067259011058d0,-7.13437958950106043687d0,-7.13449736358108133061d0,&
+                              -7.13456153972916773398d0,-7.13455976722084450614d0,-7.13458681154711271688d0,-7.13451967913154927459d0,&
+                              -7.13453963638738120068d0,-7.13450543479165677496d0,-7.13447613339670905219d0,-7.13442351954518816370d0,&
+                              -7.13439290160601746749d0,-7.13438831769229597768d0,-7.13437595607961760891d0,-7.13435858311397197440d0 ]
+   call this%all_pairpots(2)%interZ%read( this%all_pairpots(2)%z(:),this%all_pairpots(2)%v(:) )
    ! Set sitios
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=sitio_table,key='sitios')
-   n_sites=aot_table_length(L=conf,thandle=sitio_table)
-   ALLOCATE(files_sites(n_sites))
-   ALLOCATE(this%all_sites(n_sites))
-   DO i = 1, n_sites
-      CALl AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=sitio_table,pos=i,val=files_sites(i))
-      CALL this%all_sites(i)%READ(trim(files_sites(i))) 
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=sitio_table)
-   ! Read fourier Kpoints
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=fourier_table,key='fourierKpoints')
-   auxint=aot_table_length(L=conf,thandle=fourier_table)
-   SELECT CASE(auxint/=n_sites)
-      CASE(.TRUE.)
-         WRITE(0,*) "READ_PES_LIF001 ERR: dimension mismatch between fourierKpoints and number of sitios"
-         WRITE(0,*) 'Number of Fourier Kpoints: ',auxint
-         WRITE(0,*) 'Number of sitios: ',n_sites
-         CALL EXIT(1)
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   ALLOCATE(this%klist(n_sites,2))
-   ALLOCATE(subtables(n_sites))
-   DO i = 1, n_sites
-      CALL AOT_TABLE_OPEN(L=conf,parent=fourier_table,thandle=subtables(i),pos=i)
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=1,val=auxint)
-      this%klist(i,1)=auxint
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=2,val=auxint)
-      this%klist(i,2)=auxint
-      CALL AOT_TABLE_CLOSE(L=conf,thandle=subtables(i))
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=fourier_table)
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=pes_table)
-   CALL CLOSE_CONFIG(conf)
-   ! VERBOSE PRINT 
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Maximum environmental order: ",this%max_order)
-   CALL VERBOSE_WRITE(routinename,"Number of pair potentials: ",n_pairpots)
-   CALL VERBOSE_WRITE(routinename,"Pair potentials input files:")
-   DO i = 1, n_pairpots
-      CALL VERBOSE_WRITE(routinename,trim(files_pairpots(i)))
-   END DO
-   CALL VERBOSE_WRITE(routinename,"Number of sitios: ",n_sites)
-   CALL VERBOSE_WRITE(routinename,"Sitios input files:")
-   DO i = 1, n_sites
-      CALL VERBOSE_WRITE(routinename,trim(files_sites(i)))
-   END DO
-   CALL VERBOSE_WRITE(routinename,"List of Kpoints for Fourier interpolation: ")
-   DO i = 1, n_sites
-      CALL VERBOSE_WRITE(routinename,this%klist(i,:))
-   END DO
-#endif
-   RETURN
-END SUBROUTINE READ_PES_LIF001
+   ! initialize common numbers
+   allocate( this%all_sites(6) )
+   this%all_sites(:)%n=129
+   this%all_sites(:)%dz2=0.d0
+   commonGrid(:)=[-2.20153094481177458164d0,-2.07869874617420791196d0,-2.01331989115476295282d0,-1.88972613288564317280d0,&
+                   1.82434727786619865775d0,-1.70075351959707887772d0,-1.63537466457763436267d0,-1.51178090630851458265d0,&
+                   1.44640205128906984555d0,-1.32280829301995028757d0,-1.25742943800050555048d0,-1.13383567973138599250d0,&
+                   1.06845682471194125540d0,-0.94486306644282158640d0,-0.87948421142337707135d0,-0.75589045315425729132d0,&
+                   0.69051159813481266525d0,-0.56691783986569299625d0,-0.50153898484624837018d0,-0.37794522657712864566d0,&
+                   0.31256637155768401959d0,-0.30235618126170293873d0,-0.29366911022882763449d0,-0.28345891993284649812d0,&
+                   0.27477184889997119388d0,-0.26456165860399005751d0,-0.25587458757111475327d0,-0.24566439727513364466d0,&
+                   0.23697732624225828491d0,-0.22676713594627717629d0,-0.21808006491340189981d0,-0.20786987461742076344d0,&
+                   0.19918280358454545920d0,-0.18897261328856432283d0,-0.18028554225568901859d0,-0.17007535195970788222d0,&
+                   0.16138828092683260573d0,-0.15117809063085146937d0,-0.14249101959797616512d0,-0.13228082930199502876d0,&
+                   0.12359375826911972451d0,-0.11338356797313858815d0,-0.10469649694026329778d0,-0.09448630664428216142d0,&
+                   0.08579923561140685717d0,-0.07558904531542573468d0,-0.06690197428255041656d0,-0.05669178398656929407d0,&
+                   0.04800471295369398983d0,-0.03779452265771286734d0,-0.02910745162483756310d0,-0.01889726132885643367d0,&
+                   0.01021019029598112943d0, 0.00000000000000000000d0, 0.01021019029598112943d0, 0.01889726132885643367d0,&
+                   0.02910745162483756310d0, 0.03779452265771286734d0, 0.04800471295369398983d0, 0.05669178398656929407d0,&
+                   0.06690197428255041656d0, 0.07558904531542573468d0, 0.08579923561140685717d0, 0.09448630664428216142d0,&
+                   0.10469649694026329778d0, 0.11338356797313858815d0, 0.12359375826911972451d0, 0.13228082930199502876d0,&
+                   0.14249101959797616512d0, 0.15117809063085146937d0, 0.16138828092683260573d0, 0.17007535195970788222d0,&
+                   0.18028554225568901859d0, 0.18897261328856432283d0, 0.19918280358454545920d0, 0.20786987461742076344d0,&
+                   0.21808006491340189981d0, 0.22676713594627717629d0, 0.23697732624225828491d0, 0.24566439727513364466d0,&
+                   0.25587458757111475327d0, 0.26456165860399005751d0, 0.27477184889997119388d0, 0.28345891993284649812d0,&
+                   0.29366911022882763449d0, 0.30235618126170293873d0, 0.31256637155768401959d0, 0.37794522657712864566d0,&
+                   0.50153898484624837018d0, 0.56691783986569299625d0, 0.69051159813481266525d0, 0.75589045315425729132d0,&
+                   0.87948421142337707135d0, 0.94486306644282158640d0, 1.06845682471194125540d0, 1.13383567973138599250d0,&
+                   1.25742943800050555048d0, 1.32280829301995028757d0, 1.44640205128906984555d0, 1.51178090630851458265d0,&
+                   1.63537466457763436267d0, 1.70075351959707887772d0, 1.82434727786619865775d0, 1.88972613288564317280d0,&
+                   2.01331989115476295282d0, 2.07869874617420791196d0, 2.20153094481177458164d0, 2.36215766610705424355d0,&
+                   2.83458919932846509226d0, 3.30702073254987549689d0, 3.40150703919415775545d0, 3.77945226577128634560d0,&
+                   4.15739749234841582393d0, 4.53534271892554396999d0, 5.29123317207980115029d0, 5.66917839865693018453d0,&
+                   6.04712362523405833059d0, 6.42506885181118647665d0, 6.80301407838831551089d0, 7.18095930496544365695d0,&
+                   7.55890453154257269119d0, 7.93684975811970172543d0, 8.31479498469683164785d0, 8.69274021127395890574d0,&
+                   9.07068543785108793998d0, 9.44863066442821697422d0, 9.82657589100534600846d0,10.01554850429390874922d0,&
+                  10.48798003751531915384d0 ]
+   allocate( this%all_sites(1)%z(129),source=commonGrid )
+   allocate( this%all_sites(2)%z(129),source=commonGrid )
+   allocate( this%all_sites(3)%z(129),source=commonGrid )
+   allocate( this%all_sites(4)%z(129),source=commonGrid )
+   allocate( this%all_sites(5)%z(129),source=commonGrid )
+   allocate( this%all_sites(6)%z(129),source=commonGrid )
+   allocate( this%all_sites(1)%v(129) )
+   allocate( this%all_sites(2)%v(129) )
+   allocate( this%all_sites(3)%v(129) )
+   allocate( this%all_sites(4)%v(129) )
+   allocate( this%all_sites(5)%v(129) )
+   allocate( this%all_sites(6)%v(129) )
+   ! initiallize one by one
+   ! ** SITIO 1 ******************************************************************************************************************
+   this%all_sites(1)%alias='topLi'
+   this%all_sites(1)%x=0.d0
+   this%all_sites(1)%y=0.d0
+   this%all_sites(1)%dz1=8.15821691383332159d-002
+   this%all_sites(1)%v(:)=[-6.89842276915349739141d0,-6.89161937084925568797d0,-6.88872153608881632181d0,-6.87622416636372957299d0,&
+                           -6.86407350011311390148d0,-6.83245899564393699421d0,-6.81072705934956523777d0,-6.75863145794980368919d0,&
+                           -6.72446446780923867692d0,-6.64509003831201372492d0,-6.59362504356348644308d0,-6.47422553351983776082d0,&
+                           -6.39731081628031539310d0,-6.22024157177208092406d0,-6.10671890208879553086d0,-5.82123720039279124450d0,&
+                           -5.61981863977230933216d0,-5.17486061313926448690d0,-4.78564416523587965457d0,-3.43262358816163848374d0,&
+                           -2.05846885231100440450d0,-1.74876595967715209312d0,-1.45738648295269945798d0,-1.07517894177084372132d0,&
+                           -0.71010027663856134517d0,-0.22659542356497541782d0, 0.23715634365227189484d0, 0.85189653991610558847d0,&
+                            1.46479838533047912463d0, 2.37621681672069540170d0, 3.33211527427179188265d0, 4.50000714669734058759d0,&
+                            5.40656816103944315444d0, 6.34612651986772924317d0, 7.03836243470419287149d0, 7.72601781684040567200d0,&
+                            8.20392882790527089298d0, 8.63968146340184262044d0, 8.90326776642915085347d0, 9.08711788533851283489d0,&
+                            9.13637967606230283479d0, 9.06832750843688373266d0, 8.90326498259120313605d0, 8.58331075848343161283d0,&
+                            8.20392411180231384549d0, 7.63206806126462566908d0, 7.03835748948212014398d0, 6.21459984256694042415d0,&
+                            5.40656554141708056704d0, 4.33090652817683974263d0, 3.33211761650003612800d0, 2.22360275064672885392d0,&
+                            1.46479057654297051272d0, 0.75474225051959265009d0, 0.15214536709775466905d0,-0.30267699281657389765d0,&
+                           -0.77687704211649644126d0,-1.13507419544155974123d0,-1.51043841948065837855d0,-1.79707707081678691452d0,&
+                           -2.10214263141106361132d0,-2.33735240742591665608d0,-2.58787101157876797686d0,-2.78112055534153856939d0,&
+                           -2.98755173052881151108d0,-3.14774025503347854027d0,-3.32054352873101787935d0,-3.45657024697155890181d0,&
+                           -3.60620495923014505735d0,-3.72661132147541795945d0,-3.86067137452116160290d0,-3.96863141541037478532d0,&
+                           -4.08865106449428239443d0,-4.18516561218743277095d0,-4.29232116241032368720d0,-4.37839104506740905975d0,&
+                           -4.47385880153010173643d0,-4.55048484731111813062d0,-4.63544111511443102103d0,-4.70362415217937623879d0,&
+                           -4.77924523642412868440d0,-4.83998609293299963952d0,-4.90744829872001098181d0,-4.96174780283280369986d0,&
+                           -5.02222743526289239213d0,-5.07108641513960467506d0,-5.12575977931359005879d0,-5.42664945665589293355d0,&
+                           -5.85159330426782098300d0,-6.01950817493016820947d0,-6.26631361840675893404d0,-6.36922072891826651642d0,&
+                           -6.52670514611862007115d0,-6.59596737715163872195d0,-6.70590532582269460704d0,-6.75459931987306472223d0,&
+                           -6.83205122595604752433d0,-6.86637019022921268885d0,-6.92105443619809967970d0,-6.94536416651140164902d0,&
+                           -6.98400120097157106613d0,-7.00114267339517137856d0,-7.02835930911559181311d0,-7.04042393089925422345d0,&
+                           -7.05965099682119578972d0,-7.06817858395823339634d0,-7.08167042202009078267d0,-7.09526035231560658900d0,&
+                           -7.11804121391004507302d0,-7.12743723234768022934d0,-7.12851292897997534936d0,-7.13136969960303535032d0,&
+                           -7.13284730060497107473d0,-7.13364775057311284456d0,-7.13434548200933971174d0,-7.13448321515789185554d0,&
+                           -7.13456043013040375200d0,-7.13459651023333218944d0,-7.13454700870452107608d0,-7.13457967492788203145d0,&
+                           -7.13456476333787215083d0,-7.13453759184147884298d0,-7.13450463614975838311d0,-7.13447005570740167002d0,&
+                           -7.13443648744154756969d0,-7.13438097583484864828d0,-7.13438475550669082281d0,-7.13436622608774762000d0,&
+                           -7.13435858311397197440d0 ]
+   ! ** SITIO 2 ******************************************************************************************************************
+   this%all_sites(2)%alias='topF'
+   this%all_sites(2)%x=2.7216780628885480d0
+   this%all_sites(2)%y=2.7216780628885480d0
+   this%all_sites(2)%dz1=-0.15738884744871576d0
+   this%all_sites(2)%v=[-6.87907498431797836957d0,-6.90118218389560222903d0,-6.91357281358908082325d0,-6.93083748959737988571d0,&
+                        -6.93516974660099094763d0,-6.93620262739340098790d0,-6.93254567100649055078d0,-6.91271774527259896814d0,&
+                        -6.89236865850650648468d0,-6.82601138191416811907d0,-6.76901355295993312211d0,-6.60134779107096303363d0,&
+                        -6.46838559924402023427d0,-6.08818074569892431214d0,-5.79753398418044074702d0,-4.98020683906518435435d0,&
+                        -4.35181126919280814036d0,-2.62888018365377318375d0,-1.22625825492317463983d0, 2.96302449612861984463d0,&
+                         6.72861752598492746102d0, 7.46788420798443475235d0, 8.12911587850032901770d0, 8.94402288586876537124d0,&
+                         9.67264601750633801203d0,10.59323358356773425726d0,11.45378545245022117172d0,12.58416898952393481181d0,&
+                        13.66979085473309929455d0,15.10737121412130079534d0,16.43791805939430261674d0,18.07574875543115311416d0,&
+                        19.49007210096592856985d0,21.12457649921226732204d0,22.45556384681248829338d0,23.93985767454301338830d0,&
+                        25.13461482069859087574d0,26.45879299026938724637d0,27.51731997119913586403d0,28.68138252517930908425d0,&
+                        29.60367937710202212998d0,30.60762635806067777366d0,31.39369311719515565073d0,32.23752456770139929176d0,&
+                        32.88736127026645306159d0,33.57107723288939382655d0,34.08468391510380968157d0,34.60828443241255314433d0,&
+                        34.98566113049513859323d0,35.34914624505879032768d0,35.59029299522835287917d0,35.79366274961602556459d0,&
+                        35.89857958809135141109d0,35.94183402487214351595d0,35.89857817326345923448d0,35.79366014961507147518d0,&
+                        35.59028904596869580246d0,35.34914120263270831401d0,34.98565488951776103477d0,34.60827726271296000959d0,&
+                        34.08467578269853959227d0,33.57106840864373964450d0,32.88735180429894455756d0,32.23751471921294609047d0,&
+                        31.39368303310690322405d0,30.60761627320849243006d0,29.60366954791030735805d0,28.68137314941830595671d0,&
+                        27.51731142749706293671d0,26.45878542663025001502d0,25.13460875065507593717d0,23.93985318363227321470d0,&
+                        22.45556159617226654746d0,21.12457649921226021661d0,19.49007498664534310251d0,18.07575364028142672623d0,&
+                        16.43792379626155053529d0,15.10737562624412788637d0,13.66979033954163469389d0,12.58416142588480468589d0,&
+                        11.45376974357187371822d0,10.59321451689409343544d0, 9.67263148687921692215d0, 8.94402288586876714760d0,&
+                         8.12914701145938423110d0, 7.46794715791469609911d0, 6.72871379453375784152d0, 2.96265525418775155231d0,&
+                        -1.22114850507602268337d0,-2.63138763162365441062d0,-4.41765828174076613521d0,-5.04604892046661923644d0,&
+                        -5.84557849100102178141d0,-6.13938317512004960719d0,-6.52646072102204932719d0,-6.66451051723715881536d0,&
+                        -6.84111663060843788742d0,-6.90141040276800232789d0,-6.97758158903419101193d0,-7.00438098661579378046d0,&
+                        -7.03814683143213049021d0,-7.05034999134869000414d0,-7.06674205602035154783d0,-7.07314495695511791240d0,&
+                        -7.08312610202180614749d0,-7.08757267028558413102d0,-7.09488257990142123788d0,-7.10291428450212425361d0,&
+                        -7.11880084201481722062d0,-7.12665054842541234592d0,-7.12763481242552998651d0,-7.13044848486165694368d0,&
+                        -7.13212299841474983708d0,-7.13315234284039600965d0,-7.13416050067259011058d0,-7.13437958950106043687d0,&
+                        -7.13449736358108133061d0,-7.13456153972916773398d0,-7.13455976722084450614d0,-7.13458681154711271688d0,&
+                        -7.13451967913154927459d0,-7.13453963638738120068d0,-7.13450543479165677496d0,-7.13447613339670905219d0,&
+                        -7.13442351954518816370d0,-7.13439290160601746749d0,-7.13438831769229597768d0,-7.13437595607961760891d0,&
+                        -7.13435858311397197440d0 ]
+   ! ** SITIO 3 ******************************************************************************************************************
+   this%all_sites(3)%alias='Hollow'
+   this%all_sites(3)%x=2.7216780628885480d0
+   this%all_sites(3)%y=0.d0
+   this%all_sites(3)%dz1=-4.69246625508239895d-003
+   this%all_sites(3)%v=[-7.06087793948749187223d0,-7.06169928158901782922d0,-7.06219152067239797077d0,-7.06254771731697594817d0,&
+                        -7.06230569380749084729d0,-7.06130296037807880793d0,-7.06048918499986566388d0,-7.05844921961311921876d0,&
+                        -7.05712441466509954324d0,-7.05420750104602145569d0,-7.05247785656989378822d0,-7.04893341285345265135d0,&
+                        -7.04695256663319824497d0,-7.04311920223866660962d0,-7.04109375051585306693d0,-7.03739760572271233485d0,&
+                        -7.03557201745042970487d0,-7.03250261019674116625d0,-7.03113752572527861417d0,-7.02917545358314743709d0,&
+                        -7.02851303679548156111d0,-7.02843474557034308958d0,-7.02837362338697158037d0,-7.02830829317233440889d0,&
+                        -7.02825829172660654365d0,-7.02820614161327394953d0,-7.02816744731282039282d0,-7.02812869639159831792d0,&
+                        -7.02810149564404884615d0,-7.02807636300574323229d0,-7.02806084221872939821d0,-7.02804954695414352273d0,&
+                        -7.02804589253529687909d0,-7.02804865373523579564d0,-7.02805705209218789520d0,-7.02807408884745665745d0,&
+                        -7.02809472638783727660d0,-7.02812624659455220666d0,-7.02815924176018924641d0,-7.02820526380243304487d0,&
+                        -7.02825056717226370750d0,-7.02831101981917161226d0,-7.02836857078330545789d0,-7.02844338279815072923d0,&
+                        -7.02851312074669909435d0,-7.02860222089275499258d0,-7.02868408521582743731d0,-7.02878740225636722272d0,&
+                        -7.02888133234407597172d0,-7.02899879504237201644d0,-7.02910473028482662983d0,-7.02923626740415308234d0,&
+                        -7.02935414719146312024d0,-7.02949968749509324084d0,-7.02965276407674188874d0,-7.02978892346857708873d0,&
+                        -7.02995589350859884092d0,-7.03010384347798833460d0,-7.03028463573965645139d0,-7.03044431567670979888d0,&
+                        -7.03063885892329754057d0,-7.03081020821812696653d0,-7.03101843121290759342d0,-7.03120138925562176979d0,&
+                        -7.03142321131777325860d0,-7.03161766706620916523d0,-7.03185287691142857369d0,-7.03205861042142554851d0,&
+                        -7.03230694270577050276d0,-7.03252372821643678691d0,-7.03278491759596757760d0,-7.03301252934641052406d0,&
+                        -7.03328631047718388913d0,-7.03352452270651262722d0,-7.03381063024458796917d0,-7.03405921719190896368d0,&
+                        -7.03435738579334479681d0,-7.03461612169776806525d0,-7.03492608601862290385d0,-7.03519474511925491100d0,&
+                        -7.03551623981558726939d0,-7.03579459635153625641d0,-7.03612735607940464888d0,-7.03641518428977974509d0,&
+                        -7.03675894370524268595d0,-7.03705601782915124431d0,-7.03741051158826635969d0,-7.03981189318787325959d0,&
+                        -7.04490278290859262000d0,-7.04783667739777364147d0,-7.05372072931313365274d0,-7.05696307030613301237d0,&
+                        -7.06322640526540901362d0,-7.06656469565906686370d0,-7.07283420489514291774d0,-7.07609244097356171466d0,&
+                        -7.08207098930207035181d0,-7.08511606054587517178d0,-7.09060273906750815343d0,-7.09334866629683524764d0,&
+                        -7.09822272454889890980d0,-7.10062582835543842918d0,-7.10483581515609596835d0,-7.10688803045187977858d0,&
+                        -7.11044455233813277317d0,-7.11216182168590460577d0,-7.11509771302703875051d0,-7.11840651508443755802d0,&
+                        -7.12530839366201007579d0,-7.12932443281130900914d0,-7.12989992693555585390d0,-7.13167484418369568289d0,&
+                        -7.13282403546793641880d0,-7.13355536697153524983d0,-7.13428594963942863671d0,-7.13444636726879277688d0,&
+                        -7.13452684829341698958d0,-7.13455128719486975086d0,-7.13455026786885415646d0,-7.13453102855387655268d0,&
+                        -7.13450641151416320440d0,-7.13447261401719412532d0,-7.13450772409165523413d0,-7.13446951359362380174d0,&
+                        -7.13443884441551734454d0,-7.13440949647940936273d0,-7.13438305676662221089d0,-7.13436315578209434562d0,&
+                        -7.13435858311397197440d0 ]
+   ! ** SITIO 4 ******************************************************************************************************************
+   this%all_sites(4)%alias='Bridge'
+   this%all_sites(4)%x=1.3608390314442740d0
+   this%all_sites(4)%y=1.3608390314442740d0
+   this%all_sites(4)%dz1=-9.34171716476418432d-003
+   this%all_sites(4)%v=[-7.01734542360757362900d0,-7.01910913898698396451d0,-7.02018644062349839174d0,-7.02077900195917692372d0,&
+                        -7.02000975784999248219d0,-7.01718135589118396922d0,-7.01496951631789844583d0,-7.00950107625823015667d0,&
+                        -7.00596464216334169350d0,-6.99817010132702410630d0,-6.99353725531451431152d0,-6.98401109877033920981d0,&
+                        -6.97866848849064069782d0,-6.96829902813987800414d0,-6.96280583302785593958d0,-6.95275170578670298482d0,&
+                        -6.94776609507806952593d0,-6.93934010648358601259d0,-6.93557474808632790086d0,-6.93014506921935424799d0,&
+                        -6.92829533924338214490d0,-6.92807363699524980660d0,-6.92789952433594979908d0,-6.92771203948999847455d0,&
+                        -6.92756719420705380230d0,-6.92741428971156558703d0,-6.92729902060994806590d0,-6.92718105941320683172d0,&
+                        -6.92709567529788738938d0,-6.92701302034817611997d0,-6.92695783002412657225d0,-6.92691084426973002763d0,&
+                        -6.92688615654192041404d0,-6.92687520293112157788d0,-6.92688132660452460243d0,-6.92690676808560557021d0,&
+                        -6.92694401196519216057d0,-6.92700619249363924723d0,-6.92707475007426243252d0,-6.92717369208129962743d0,&
+                        -6.92727347206327959128d0,-6.92740904594029061059d0,-6.92753993804109313714d0,-6.92771201416951321050d0,&
+                        -6.92787390810660408391d0,-6.92808235686787199370d0,-6.92827514235871610992d0,-6.92851983413426886216d0,&
+                        -6.92874340089633289352d0,-6.92902420606760660604d0,-6.92927844381835633669d0,-6.92959523276678979187d0,&
+                        -6.92988003122369011777d0,-6.93023267433071943344d0,-6.93060463550379335373d0,-6.93093629085830009728d0,&
+                        -6.93134390653849763453d0,-6.93170584244843368538d0,-6.93214898301719273377d0,-6.93254108920002298788d0,&
+                        -6.93301962503878144162d0,-6.93344179121197168314d0,-6.93395559270216566006d0,-6.93440770858318256131d0,&
+                        -6.93495660989368989391d0,-6.93543837182184219614d0,-6.93602170633388492860d0,-6.93653239307327051932d0,&
+                        -6.93714928688110177291d0,-6.93768815489207302249d0,-6.93833773408994503029d0,-6.93890403983285342093d0,&
+                        -6.93958543051501930421d0,-6.94017843045021631809d0,-6.94089075871092830994d0,-6.94150970929876631743d0,&
+                        -6.94225210123227576275d0,-6.94289625893310624605d0,-6.94366784063366804247d0,-6.94433646190784248375d0,&
+                        -6.94513635946970797619d0,-6.94582870077757696947d0,-6.94665604029500016736d0,-6.94737135809691608301d0,&
+                        -6.94822526566414921945d0,-6.94896281642046353966d0,-6.94984241813175884772d0,-6.95578404806645522740d0,&
+                        -6.96825362467727149607d0,-6.97534315145011341031d0,-6.98930870757213540401d0,-6.99685482902732314159d0,&
+                        -7.01111953834615064807d0,-7.01854500732761099613d0,-7.03214963133864934264d0,-7.03903653854122612898d0,&
+                        -7.05132794945392404884d0,-7.05741256654557247430d0,-7.06805970783239256860d0,-7.07323010665734486224d0,&
+                        -7.08214003401021496842d0,-7.08640261928132897395d0,-7.09365139856436055510d0,-7.09707958319132803382d0,&
+                        -7.10284741693550714103d0,-7.10554885788336765273d0,-7.11003367320138313090d0,-7.11487183210872853323d0,&
+                        -7.12413886648707173066d0,-7.12891881720788500587d0,-7.12956415865976378399d0,-7.13150387492979742632d0,&
+                        -7.13273050712688938546d0,-7.13350451343692704143d0,-7.13427180968791940785d0,-7.13444012401582039473d0,&
+                        -7.13453257670234997079d0,-7.13455678795222070221d0,-7.13456465454598465215d0,-7.13458469408834439207d0,&
+                        -7.13456375501156703223d0,-7.13453593656660700617d0,-7.13450362781379521238d0,-7.13447059314077058900d0,&
+                        -7.13443747606051292820d0,-7.13438360160353823858d0,-7.13438656093252809853d0,-7.13436967307073999223d0,&
+                        -7.13435858311397197440d0 ]
+   ! ** SITIO 5 ******************************************************************************************************************
+   this%all_sites(5)%alias='halfHollowF'
+   this%all_sites(5)%x=2.7216780628885480d0
+   this%all_sites(5)%y=1.3608390314442740d0
+   this%all_sites(5)%dz1=-3.73455010716034277E-002
+   this%all_sites(5)%v=[-7.00416123562780068568d0,-7.00955367691972863753d0,-7.01260489108868245722d0,-7.01641734487907431372d0,&
+                        -7.01700440152958559992d0,-7.01651325928337765703d0,-7.01548043652173447526d0,-7.01222306308404519370d0,&
+                        -7.00987367523607929343d0,-7.00435546791209873163d0,-7.00085351035068281789d0,-6.99306728938978938714d0,&
+                        -6.98825097231746283910d0,-6.97745570154741390212d0,-6.97069193538925802045d0,-6.95594980396307782655d0,&
+                        -6.94725006023632829510d0,-6.92955211827853467810d0,-6.91998249318655922480d0,-6.90273203430610848841d0,&
+                        -6.89463036209347368555d0,-6.89346159578449402261d0,-6.89249072252290151397d0,-6.89137851896055053658d0,&
+                        -6.89045780299273502578d0,-6.88940693960230454707d0,-6.88854044567453360770d0,-6.88755569988131544079d0,&
+                        -6.88674749273985220555d0,-6.88583364196914082811d0,-6.88508778636025020603d0,-6.88424960803733654302d0,&
+                        -6.88357016870728521951d0,-6.88281244025746197224d0,-6.88220348195251307999d0,-6.88153098080107294976d0,&
+                        -6.88099656826749228600d0,-6.88041391210070507611d0,-6.87995714026848759204d0,-6.87946624259136463309d0,&
+                        -6.87908781112477196729d0,-6.87868930671053036008d0,-6.87838975561844190310d0,-6.87808427915665632213d0,&
+                        -6.87786414844795324086d0,-6.87765233462819836063d0,-6.87751216431176004562d0,-6.87739464782361142881d0,&
+                        -6.87733497790831727059d0,-6.87731239344135136804d0,-6.87733376393608164534d0,-6.87740674617987313155d0,&
+                        -6.87750969709350812309d0,-6.87767888073763167256d0,-6.87790030610033209513d0,-6.87812997181308283245d0,&
+                        -6.87844857618846905467d0,-6.87876119410468245263d0,-6.87917761218232914899d0,-6.87957372231088370995d0,&
+                        -6.88008858878036821949d0,-6.88056873113014422216d0,-6.88118268068103944302d0,-6.88174739526091805430d0,&
+                        -6.88246083864992641566d0,-6.88310946964814718285d0,-6.88391972083849257302d0,-6.88464903022272256550d0,&
+                        -6.88555212134704142102d0,-6.88635873316202129502d0,-6.88735069635295005241d0,-6.88823123464341957600d0,&
+                        -6.88930810203359555999d0,-6.89025919084429627759d0,-6.89141699456635503651d0,-6.89243525794202582802d0,&
+                        -6.89367003012860557476d0,-6.89475209211398798459d0,-6.89605986489772515569d0,-6.89720234953755895191d0,&
+                        -6.89857915505108998389d0,-6.89977868639011493457d0,-6.90122055676607804031d0,-6.90247375884903391352d0,&
+                        -6.90397672622006552956d0,-6.90528022309169386972d0,-6.90684031959042954441d0,-6.91747259100995393055d0,&
+                        -6.93968723618298444222d0,-6.95191528833970462387d0,-6.97452606792964413529d0,-6.98587351099715814229d0,&
+                        -7.00567168343398094521d0,-7.01511470328137054508d0,-7.03109323158619670124d0,-7.03863076138616872157d0,&
+                        -7.05134496708400249076d0,-7.05735395370780960178d0,-7.06757698356927654970d0,-7.07245862109246115068d0,&
+                        -7.08083719822429724644d0,-7.08487585467741887157d0,-7.09183152137041084018d0,-7.09517106726483071100d0,&
+                        -7.10088438295883417339d0,-7.10360576328006843028d0,-7.10819313166986521679d0,-7.11324455869295046995d0,&
+                        -7.12317186210545827407d0,-7.12835846524138982971d0,-7.12905884224952579586d0,-7.13116780839535913117d0,&
+                        -7.13251175715024032797d0,-7.13336800341086707533d0,-7.13422453218720509227d0,-7.13441279188392218913d0,&
+                        -7.13451349791033795356d0,-7.13454958681170925416d0,-7.13455374752996007715d0,-7.13454102811457069322d0,&
+                        -7.13452485239696976294d0,-7.13453792143908316348d0,-7.13450400840355491994d0,-7.13447078765003528389d0,&
+                        -7.13443782297732287390d0,-7.13438402962089579518d0,-7.13438660653671785639d0,-7.13437005762999731928d0,&
+                        -7.13435858311397197440d0 ]
+   ! ** SITIO 6 ******************************************************************************************************************
+   this%all_sites(6)%alias='halfHollowLi'
+   this%all_sites(6)%x=1.3608390314442740d0
+   this%all_sites(6)%y=0.d0
+   this%all_sites(6)%dz1=1.09526892073127137d-002
+   this%all_sites(6)%v=[-7.00415315077621336570d0,-7.00373007401976011010d0,-7.00371222750970101600d0,-7.00158156764360217750d0,&
+                        -6.99884809597901380585d0,-6.99144284982398733774d0,-6.98630178762169151696d0,-6.97424980496590851686d0,&
+                        -6.96664818123409190775d0,-6.95001169752298153526d0,-6.94008330528329153708d0,-6.91937461892249938700d0,&
+                        -6.90753245408903726599d0,-6.88398200796059622775d0,-6.87114413139800817021d0,-6.84691136678328504672d0,&
+                        -6.83449730208988448510d0,-6.81271747551268447296d0,-6.80253598931567982078d0,-6.78688887092610571017d0,&
+                        -6.78091823401417048700d0,-6.78014447738610659400d0,-6.77952109958926651956d0,-6.77882999250059015139d0,&
+                        -6.77827774306756669631d0,-6.77767118528644463282d0,-6.77719168058485887940d0,-6.77667157187945701224d0,&
+                        -6.77626642827693181914d0,-6.77583466841541781633d0,-6.77550550227957337768d0,-6.77516399103011313088d0,&
+                        -6.77491241872857319350d0,-6.77466305585933348254d0,-6.77449069375971824059d0,-6.77433537903886584530d0,&
+                        -6.77424384350879815742d0,-6.77418436661899470153d0,-6.77417460566897844387d0,-6.77421089268341081180d0,&
+                        -6.77428220360623178919d0,-6.77441329934921032674d0,-6.77456486940979107914d0,-6.77478981864798601720d0,&
+                        -6.77502083511124908455d0,-6.77533868261132887767d0,-6.77564833274219768811d0,-6.77605812327083167901d0,&
+                        -6.77644559433422966066d0,-6.77694637265808630389d0,-6.77741085191893599671d0,-6.77800166280468552316d0,&
+                        -6.77854233752791035528d0,-6.77922222574222210767d0,-6.77994984495306063366d0,-6.78060629350228616374d0,&
+                        -6.78142151869578757584d0,-6.78215209811647223859d0,-6.78305397405930499133d0,-6.78385787161637043852d0,&
+                        -6.78484544307520476281d0,-6.78572184603357442256d0,-6.78679415777507966112d0,-6.78774225339967607340d0,&
+                        -6.78889825158255533211d0,-6.78991670056336005246d0,-6.79115396768542023409d0,-6.79224029364168302436d0,&
+                        -6.79355584775164356159d0,-6.79470751356879265614d0,-6.79609837271537475800d0,-6.79731284127883750301d0,&
+                        -6.79877602351076326670d0,-6.80005075770596789653d0,-6.80158328107195586654d0,-6.80291574378433150372d0,&
+                        -6.80451462633310377726d0,-6.80590228044807687979d0,-6.80756454022835288953d0,-6.80900484863135346814d0,&
+                        -6.81072750369185442310d0,-6.81221792926830982395d0,-6.81399799765775604499d0,-6.81553600329309450245d0,&
+                        -6.81737050306020631041d0,-6.81895355163985605884d0,-6.82083950083335377457d0,-6.83350817178206337843d0,&
+                        -6.85963235225001088935d0,-6.87418257984575831188d0,-6.90212676042115180763d0,-6.91682497194263046225d0,&
+                        -6.94382795159492527404d0,-6.95746312331058813783d0,-6.98173161042099543749d0,-6.99367754865614532633d0,&
+                        -7.01444370813055684266d0,-7.02446678463968154915d0,-7.04160795308638132184d0,-7.04974944331464303815d0,&
+                        -7.06349800580577191766d0,-7.06995074865808703635d0,-7.08073054425141457102d0,-7.08574141145314584378d0,&
+                        -7.09404216565429646124d0,-7.09786991400715461253d0,-7.10413636116513114160d0,-7.11076011700106569435d0,&
+                        -7.12292967161225032413d0,-7.12876940568110395446d0,-7.12951179286446734551d0,-7.13163480918870185121d0,&
+                        -7.13287472732416283350d0,-7.13361380054054006195d0,-7.13431574784245281506d0,-7.13446842325632335502d0,&
+                        -7.13453236080935759844d0,-7.13459074106095947343d0,-7.13456562046095488228d0,-7.13454334766708697657d0,&
+                        -7.13457008178702434265d0,-7.13453431001571392045d0,-7.13450272014070474569d0,-7.13446947796920216689d0,&
+                        -7.13443632521088844101d0,-7.13438203038740947903d0,-7.13438533987800926894d0,-7.13436779344102589562d0,&
+                        -7.13435858311397197440d0 ]
+   ! Set switch function
+   write(*,*) 'patata'
+   call this%dampFunc%read([5.d0,5.d0])
+   write(*,*) 'patata'
+   ! Set Fourier Coefficients
+   allocate( this%klist(6,2) )
+   this%klist(:,1)=[0,1,1,2,2,2]
+   this%klist(:,2)=[0,0,1,0,1,2]
+   call this%interpol()
+   return
+end subroutine initialize_PES_HLIF001
 !#######################################################################
-!# SUBROUTINE: EXTRACT_VASINT_PES_LIF001 ######################################
+!# SUBROUTINE: EXTRACT_VASINT_PES_HLIF001 ######################################
 !#######################################################################
-SUBROUTINE EXTRACT_VASINT_PES_LIF001(this)
+SUBROUTINE EXTRACT_VASINT_PES_HLIF001(this)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),INTENT(INOUT) :: this
+   CLASS(PES_HLIF001),INTENT(INOUT) :: this
    ! Local variables
    INTEGER(KIND=4) :: npairpots, nsites
    INTEGER(KIND=4) :: i,j ! counters
    REAL(KIND=8) :: control_vasint
-   CHARACTER(LEN=22) :: routinename="EXTRACT_VASINT_PES_LIF001: "
+   CHARACTER(LEN=22) :: routinename="EXTRACT_VASINT_PES_HLIF001: "
    ! Run section ------------------------
    npairpots=size(this%all_pairpots)
    control_vasint=this%all_pairpots(1)%vasint
    DO i = 1, npairpots
       IF (this%all_pairpots(1)%vasint/=control_vasint) THEN
-         WRITE(0,*) "EXTRACT_VASINT_PES_LIF001 ERR: Incoherences in vasint values found"
-         WRITE(0,*) "EXTRACT_VASINT_PES_LIF001 ERR: vasint's value at pairpot",1,control_vasint
-         WRITE(0,*) "EXTRACT_VASINT_PES_LIF001 ERR: vasint's value at pairpot",i,control_vasint
+         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001 ERR: Incoherences in vasint values found"
+         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001 ERR: vasint's value at pairpot",1,control_vasint
+         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001 ERR: vasint's value at pairpot",i,control_vasint
          CALL EXIT(1)
       END IF
       DO j = 1, this%all_pairpots(i)%n
          this%all_pairpots(i)%interz%f(j)=this%all_pairpots(i)%interz%f(j)-this%all_pairpots(i)%vasint
       END DO
-#ifdef DEBUG
-      CALL DEBUG_WRITE(routinename,"Vasint extracted from pair potential ",i)
-#endif
    END DO
    nsites=size(this%all_sites)
    DO i = 1, nsites
       DO j = 1, this%all_sites(i)%n
          this%all_sites(i)%interz%f(j)=this%all_sites(i)%interz%f(j)-this%all_pairpots(1)%vasint
       END DO
-#ifdef DEBUG
-      CALL DEBUG_WRITE(routinename,"Vasint extracted from pair site ",i)
-#endif
    END DO
    RETURN
-END SUBROUTINE EXTRACT_VASINT_PES_LIF001
+END SUBROUTINE EXTRACT_VASINT_PES_HLIF001
 !############################################################
-!# SUBROUTINE: SMOOTH_PES_LIF001 ############################
+!# SUBROUTINE: SMOOTH_PES_HLIF001 ############################
 !############################################################
-SUBROUTINE SMOOTH_PES_LIF001(this)
+SUBROUTINE SMOOTH_PES_HLIF001(this)
    ! Initial declaraitons
    IMPLICIT NONE
-   CLASS(PES_LIF001),INTENT(INOUT):: this
+   CLASS(PES_HLIF001),INTENT(INOUT):: this
    ! Local variables
    REAL(KIND=8),DIMENSION(3):: A
    INTEGER(KIND=4):: i,j ! counters
    INTEGER(KIND=4):: npairpots,nsites
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: v,dvdzr,dummy
-   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_PES_LIF001: "
+   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_PES_HLIF001: "
    ! Run section ----------
    nsites = size(this%all_sites)
    npairpots = size(this%all_pairpots)
@@ -477,15 +620,15 @@ SUBROUTINE SMOOTH_PES_LIF001(this)
       END DO
    END DO
    RETURN
-END SUBROUTINE SMOOTH_PES_LIF001
+END SUBROUTINE SMOOTH_PES_HLIF001
 !############################################################
-!# SUBROUTINE: INTERPOL_Z_PES_LIF001 ########################
+!# SUBROUTINE: INTERPOL_Z_PES_HLIF001 ########################
 !############################################################
-SUBROUTINE INTERPOL_Z_PES_LIF001(this)
+SUBROUTINE INTERPOL_Z_PES_HLIF001(this)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),INTENT(INOUT) :: this
+   CLASS(PES_HLIF001),INTENT(INOUT) :: this
    ! Local variables
    INTEGER(KIND=4) :: nsites,npairpots
    REAL(KIND=8) :: dz1,dz2
@@ -506,7 +649,7 @@ SUBROUTINE INTERPOL_Z_PES_LIF001(this)
       CALL this%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
    END DO
    RETURN
-END SUBROUTINE INTERPOL_Z_PES_LIF001
+END SUBROUTINE INTERPOL_Z_PES_HLIF001
 !##################################################################
 !# SUBROUTINE: INTERACTION_AP #####################################
 !##################################################################
@@ -515,7 +658,7 @@ SUBROUTINE INTERACTION_AP(A,P,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_
    ! I/O VAriables --------------------------------------------
    REAL(KIND=8),DIMENSION(3),INTENT(IN):: A, P
    TYPE(Pair_pot),INTENT(IN):: pairpot
-   CLASS(Function1d),INTENT(IN):: dampfunc
+   type(Logistic_func),INTENT(IN):: dampfunc
    REAL(KIND=8),INTENT(OUT):: interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! Local variables ------------------------------------------
    REAL(KIND=8):: r ! distance
@@ -542,7 +685,7 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
    INTEGER,INTENT(IN) :: n
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN) :: pairpot
-   CLASS(Function1d),INTENT(IN) :: dampfunc
+   type(Logistic_func),INTENT(IN) :: dampfunc
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P
@@ -561,13 +704,13 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
    dvdx_term=0.D0
    dvdy_term=0.D0
    ! ghost A definition
-   ghost_A(1:2)=system_surface%project_unitcell(A(1:2))
+   ghost_A(1:2)=sysLiF001Surf%project_unitcell(A(1:2))
    ghost_A(3)=A(3)
 
    SELECT CASE(n)
       CASE(0)
-         DO i=1, system_surface%atomtype(pairid)%n
-            P(:)=system_surface%atomtype(pairid)%atom(i,:)
+         DO i=1, sysLiF001Surf%atomtype(pairid)%n
+            P(:)=sysLiF001Surf%atomtype(pairid)%atom(i,:)
             CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac=interac+dummy1
             dvdz_term=dvdz_term+dummy2
@@ -577,14 +720,14 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
          RETURN
 
       CASE(1 :)
-         DO i=1, system_surface%atomtype(pairid)%n
-            atomx=system_surface%atomtype(pairid)%atom(i,1)
-            atomy=system_surface%atomtype(pairid)%atom(i,2)
-            P(3)=system_surface%atomtype(pairid)%atom(i,3)
+         DO i=1, sysLiF001Surf%atomtype(pairid)%n
+            atomx=sysLiF001Surf%atomtype(pairid)%atom(i,1)
+            atomy=sysLiF001Surf%atomtype(pairid)%atom(i,2)
+            P(3)=sysLiF001Surf%atomtype(pairid)%atom(i,3)
             DO k= -n,n
                aux(1)=dfloat(n)
                aux(2)=dfloat(k)
-               aux=system_surface%surf2cart(aux)
+               aux=sysLiF001Surf%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
                CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
@@ -595,7 +738,7 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
                !
                aux(1)=dfloat(-n)
                aux(2)=dfloat(k)
-               aux=system_surface%surf2cart(aux)
+               aux=sysLiF001Surf%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
                CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
@@ -607,7 +750,7 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
             DO k= -n+1, n-1
                aux(1)=dfloat(k)
                aux(2)=dfloat(n)
-               aux=system_surface%surf2cart(aux)
+               aux=sysLiF001Surf%surf2cart(aux)
                P(1) =atomx+aux(1)
                P(2) =atomy+aux(2)
                CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
@@ -618,7 +761,7 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
                !
                aux(1)=dfloat(k)
                aux(2)=dfloat(-n)
-               aux=system_surface%surf2cart(aux)
+               aux=sysLiF001Surf%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
                CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
@@ -636,13 +779,13 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
    END SELECT
 END SUBROUTINE INTERACTION_AENV
 !############################################################
-!# SUBROUTINE: GET_V_AND_DERIVS_PES_LIF001 ##################
+!# SUBROUTINE: GET_V_AND_DERIVS_PES_HLIF001 ##################
 !############################################################
 !> @brief
 !! Subroutine that calculates the 3D potential for a point A and
 !! its derivatives in cartesian coordinates.
 !
-!> @param[in] this - PES_LIF001 PES
+!> @param[in] this - PES_HLIF001 PES
 !> @param[in] X - Point in space to calculate the potential and it's derivatives. Cartesian's
 !> @param[out] v - Value of the potential at X
 !> @param[out] dvdu - derivatives, cartesian coordinates 
@@ -656,17 +799,17 @@ END SUBROUTINE INTERACTION_AENV
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_PES_LIF001(this,X,v,dvdu,errCode)
+SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001(this,X,v,dvdu,errCode)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),TARGET,INTENT(IN):: this
+   CLASS(PES_HLIF001),TARGET,INTENT(IN):: this
    REAL(KIND=8),DIMENSION(:),INTENT(IN):: X
    REAL(KIND=8),INTENT(OUT):: v
    REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
    integer(kind=1),optional,intent(out):: errCode
    ! Local variables
    INTEGER(KIND=4):: nsites,npairpots
-   CLASS(Fourier2d),ALLOCATABLE:: interpolxy
+   CLASS(Fourierp4mm),ALLOCATABLE:: interpolxy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: pot,dvdz,dvdx,dvdy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f,derivarr ! arguments to the xy interpolation
@@ -674,7 +817,7 @@ SUBROUTINE GET_V_AND_DERIVS_PES_LIF001(this,X,v,dvdu,errCode)
    INTEGER :: i ! counters
    ! Pointers
 	REAL(KIND=8),POINTER:: zmax
-   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_PES_LIF001: "
+   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_PES_HLIF001: "
    zmax => this%all_sites(1)%z(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
@@ -715,25 +858,24 @@ SUBROUTINE GET_V_AND_DERIVS_PES_LIF001(this,X,v,dvdu,errCode)
       xy(i,2)=this%all_sites(i)%y
       CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
    END DO
-   CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ(xy,f,this%klist)
-   CALL interpolxy%INTERPOL(system_surface)
-   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
+   CALL interpolxy%INTERPOL(sysLiF001Surf)
+   CALL interpolxy%GET_F_AND_DERIVS(sysLiF001Surf,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    v = v + potarr(1)
    dvdu(1)=dvdu(1)+derivarr(1,1)
    dvdu(2)=dvdu(2)+derivarr(1,2)
    dvdu(3)=dvdu(3)+potarr(2)
    RETURN
-END SUBROUTINE GET_V_AND_DERIVS_PES_LIF001
+END SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001
 !############################################################
-!# SUBROUTINE: GET_V_AND_DERIVS_CORRECTION_PES_LIF001 ############
+!# SUBROUTINE: GET_V_AND_DERIVS_CORRECTION_PES_HLIF001 ############
 !############################################################
 !> @brief
 !! Subroutine that calculates the correction to the 3D PES for a point A and
 !! its derivatives in cartesian coordinates.
 !
-!> @param[in] this - PES_LIF001 PES
+!> @param[in] this - PES_HLIF001 PES
 !> @param[in] X - Point in space to calculate the potential and it's derivatives. Cartesian's
 !> @param[out] v - Value of the potential at X
 !> @param[out] dvdu - derivatives, cartesian coordinates 
@@ -747,10 +889,10 @@ END SUBROUTINE GET_V_AND_DERIVS_PES_LIF001
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_LIF001(this,X,v,dvdu)
+SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001(this,X,v,dvdu)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),TARGET,INTENT(IN) :: this
+   CLASS(PES_HLIF001),TARGET,INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
@@ -760,14 +902,14 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_LIF001(this,X,v,dvdu)
    INTEGER :: i ! counters
    ! Pointers
 	REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_LIF001: "
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_HLIF001: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    SELECT CASE(size(v)==npairpots+1)
       CASE(.TRUE.)
          ! do nothing
       CASE(.FALSE.)
-         WRITE(*,*) "GET_V_AND_DERIVS_CORRECTION_PES_LIF001 ERR: wrong number of dimensions array v"
+         WRITE(*,*) "GET_V_AND_DERIVS_CORRECTION_PES_HLIF001 ERR: wrong number of dimensions array v"
          CALL EXIT(1)
    END SELECT
    ! GABBA, GABBA HEY! ----------------------
@@ -793,14 +935,14 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_LIF001(this,X,v,dvdu)
    dvdu(2)=sum(dvdy)
    dvdu(3)=sum(dvdz)
    RETURN
-END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_LIF001
+END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001
 !############################################################
 !# FUNCTION: getpot_crp3d ###################################
 !############################################################
 !> @brief
 !! Subroutine that calculates the 3D potential for a point A
 !
-!> @param[in] this - PES_LIF001 PES
+!> @param[in] this - PES_HLIF001 PES
 !> @param[in] X - Point in space to calculate the potential. Cartesian's
 !
 !> @warning
@@ -815,10 +957,10 @@ END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_LIF001
 REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),TARGET,INTENT(IN) :: this
+   CLASS(PES_HLIF001),TARGET,INTENT(IN) :: this
 	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
    ! Local variables
-   CLASS(Fourier2d),ALLOCATABLE:: interpolxy
+   CLASS(Fourierp4mm),ALLOCATABLE:: interpolxy
    REAL(KIND=8):: v
    INTEGER(KIND=4) :: nsites,npairpots
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dummy
@@ -828,7 +970,7 @@ REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
    INTEGER :: i ! counters
    ! Pointers
    REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_LIF001: "
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_HLIF001: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
@@ -857,10 +999,9 @@ REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
       xy(i,2)=this%all_sites(i)%y
       CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
    END DO
-   CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ(xy,f,this%klist)
-   CALL interpolxy%INTERPOL(system_surface)
-   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
+   CALL interpolxy%INTERPOL(sysLiF001Surf)
+   CALL interpolxy%GET_F_AND_DERIVS(sysLiF001Surf,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    getpot_crp3d=v+potarr(1)
    RETURN
@@ -884,11 +1025,11 @@ SUBROUTINE PLOT_DATA_SYMMPOINT(this,filename)
    WRITE(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
 END SUBROUTINE PLOT_DATA_SYMMPOINT
 !#######################################################################
-! SUBROUTINE: PLOT_XYMAP_PES_LIF001
+! SUBROUTINE: PLOT_XYMAP_PES_HLIF001
 !#######################################################################
-SUBROUTINE PLOT_XYMAP_PES_LIF001(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+SUBROUTINE PLOT_XYMAP_PES_HLIF001(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
    IMPLICIT NONE
-   CLASS(PES_LIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001),INTENT(IN) :: this
    REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
    INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
    CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
@@ -964,15 +1105,15 @@ SUBROUTINE PLOT_XYMAP_PES_LIF001(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
    WRITE(11,*) r(1), r(2), v
    CLOSE(11)
    RETURN
-END SUBROUTINE PLOT_XYMAP_PES_LIF001
+END SUBROUTINE PLOT_XYMAP_PES_HLIF001
 !#######################################################################
-! SUBROUTINE: PLOT_DIRECTION1D_PES_LIF001 ###################################
+! SUBROUTINE: PLOT_DIRECTION1D_PES_HLIF001 ###################################
 !#######################################################################
 !> @brief
 !! Creates a file with name "filename" with a 1D cut of the PES. To define 
 !! the direction, the angle alpha is given. 
 !
-!> @param[in] this - PES_LIF001 PES used
+!> @param[in] this - PES_HLIF001 PES used
 !> @param[in] filename - Name of the output file
 !> @param[in] npoints - Number of points in the graphic. npoints>=2
 !> @param[in] angle - Angle between the surface vector S1 and the direction of the
@@ -987,10 +1128,10 @@ END SUBROUTINE PLOT_XYMAP_PES_LIF001
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_DIRECTION1D_PES_LIF001(this,filename,npoints,angle,z,L)
+SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001(this,filename,npoints,angle,z,L)
    IMPLICIT NONE
    ! I/O variables -------------------------------
-   CLASS(PES_LIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001),INTENT(IN) :: this
    INTEGER, INTENT(IN) :: npoints
    CHARACTER(LEN=*), INTENT(IN) :: filename
    REAL*8, INTENT(IN) :: z, angle
@@ -1000,10 +1141,10 @@ SUBROUTINE PLOT_DIRECTION1D_PES_LIF001(this,filename,npoints,angle,z,L)
    REAL*8 :: xmax, xmin, ymax, ymin 
    REAL*8, DIMENSION(3) :: r, dvdu
    INTEGER :: i ! Counter
-   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_PES_LIF001: "
+   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_PES_HLIF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_DIRECTION1D_PES_LIF001 ERR: Less than 2 points"
+      WRITE(0,*) "PLOT_DIRECTION1D_PES_HLIF001 ERR: Less than 2 points"
       CALL EXIT(1)
    END IF
    ! Change alpha to radians
@@ -1042,14 +1183,14 @@ SUBROUTINE PLOT_DIRECTION1D_PES_LIF001(this,filename,npoints,angle,z,L)
    WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
-END SUBROUTINE PLOT_DIRECTION1D_PES_LIF001
+END SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001
 !#######################################################################
-!# SUBROUTINE: PLOT_Z_PES_LIF001 #######################################
+!# SUBROUTINE: PLOT_Z_PES_HLIF001 #######################################
 !#######################################################################
-SUBROUTINE PLOT_Z_PES_LIF001(this,npoints,xyz,L,filename)
+SUBROUTINE PLOT_Z_PES_HLIF001(this,npoints,xyz,L,filename)
    IMPLICIT NONE
    ! I/O variables -------------------------------
-   CLASS(PES_LIF001),INTENT(IN):: this
+   CLASS(PES_HLIF001),INTENT(IN):: this
    INTEGER,INTENT(IN):: npoints
    CHARACTER(LEN=*),INTENT(IN):: filename
    REAL(KIND=8),DIMENSION(3),INTENT(IN):: xyz
@@ -1060,10 +1201,10 @@ SUBROUTINE PLOT_Z_PES_LIF001(this,npoints,xyz,L,filename)
    REAL(KIND=8),DIMENSION(3):: r, dvdu
    REAL(KIND=8):: v
    INTEGER:: i ! Counter
-   CHARACTER(LEN=*),PARAMETER:: routinename = "PLOT_DIRECTION1D_PES_LIF001: "
+   CHARACTER(LEN=*),PARAMETER:: routinename = "PLOT_DIRECTION1D_PES_HLIF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_Z_PES_LIF001 ERR: Less than 2 points"
+      WRITE(0,*) "PLOT_Z_PES_HLIF001 ERR: Less than 2 points"
       CALL EXIT(1)
    END IF
    !
@@ -1093,7 +1234,7 @@ SUBROUTINE PLOT_Z_PES_LIF001(this,npoints,xyz,L,filename)
    WRITE(11,*) r(3),v,dvdu(:)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
-END SUBROUTINE PLOT_Z_PES_LIF001
+END SUBROUTINE PLOT_Z_PES_HLIF001
 !###########################################################
 !# SUBROUTINE: PLOT_INTERPOL_SYMMPOINT 
 !###########################################################
@@ -1109,13 +1250,13 @@ SUBROUTINE PLOT_INTERPOL_SYMMPOINT(this,npoints,filename)
    RETURN
 END SUBROUTINE PLOT_INTERPOL_SYMMPOINT
 !###########################################################
-!# SUBROUTINE: PLOT_PAIRPOTS_PES_LIF001
+!# SUBROUTINE: PLOT_PAIRPOTS_PES_HLIF001
 !###########################################################
-SUBROUTINE PLOT_PAIRPOTS_PES_LIF001(this,npoints)
+SUBROUTINE PLOT_PAIRPOTS_PES_HLIF001(this,npoints)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),INTENT(IN)::this
+   CLASS(PES_HLIF001),INTENT(IN)::this
    INTEGER(KIND=4),INTENT(IN) :: npoints
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
@@ -1130,15 +1271,15 @@ SUBROUTINE PLOT_PAIRPOTS_PES_LIF001(this,npoints)
       CALL this%all_pairpots(i)%PLOT(npoints,filename)
    END DO
    RETURN
-END SUBROUTINE PLOT_PAIRPOTS_PES_LIF001
+END SUBROUTINE PLOT_PAIRPOTS_PES_HLIF001
 !###########################################################
-!# SUBROUTINE: PLOT_SITIOS_PES_LIF001
+!# SUBROUTINE: PLOT_SITIOS_PES_HLIF001
 !###########################################################
-SUBROUTINE PLOT_SITIOS_PES_LIF001(this,npoints)
+SUBROUTINE PLOT_SITIOS_PES_HLIF001(this,npoints)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),INTENT(IN)::this
+   CLASS(PES_HLIF001),INTENT(IN)::this
    INTEGER(KIND=4),INTENT(IN) :: npoints
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
@@ -1153,15 +1294,15 @@ SUBROUTINE PLOT_SITIOS_PES_LIF001(this,npoints)
       CALL this%all_sites(i)%PLOT(npoints,filename)
    END DO
    RETURN
-END SUBROUTINE PLOT_SITIOS_PES_LIF001
+END SUBROUTINE PLOT_SITIOS_PES_HLIF001
 !###########################################################
-!# FUNCTION: is_allowed_PES_LIF001
+!# FUNCTION: is_allowed_PES_HLIF001
 !###########################################################
-LOGICAL FUNCTION is_allowed_PES_LIF001(this,x)
+LOGICAL FUNCTION is_allowed_PES_HLIF001(this,x)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_LIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001),INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
    ! Local variables
    REAL(KIND=8) :: xmin,xmax
@@ -1170,17 +1311,17 @@ LOGICAL FUNCTION is_allowed_PES_LIF001(this,x)
    xmax=this%all_sites(1)%z(this%all_sites(1)%n)
    SELECT CASE(size(x)/=3)
       CASE(.TRUE.)
-         WRITE(0,*) "is_allowed_PES_LIF001 ERR: array doesn't have 3 dimensions: 3"
+         WRITE(0,*) "is_allowed_PES_HLIF001 ERR: array doesn't have 3 dimensions: 3"
          CALL EXIT(1)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    SELECT CASE( x(3)<xmin )
       CASE(.TRUE.)
-         is_allowed_PES_LIF001=.FALSE.
+         is_allowed_PES_HLIF001=.FALSE.
       CASE(.FALSE.)
-         is_allowed_PES_LIF001=.TRUE.
+         is_allowed_PES_HLIF001=.TRUE.
    END SELECT
    RETURN
-END FUNCTION is_allowed_PES_LIF001
-END MODULE PES_LIF001_MOD
+END FUNCTION is_allowed_PES_HLIF001
+END MODULE PES_HLIF001_MOD

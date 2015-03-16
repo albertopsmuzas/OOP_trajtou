@@ -12,17 +12,8 @@ implicit none
 !! Specific implementation for LiF001 extending Surface Type
 !-------------------------------------------------------------------------------------
 type,extends(Surface):: LiF001Surf
-   character(len=8),private:: alias='LiF(001)'
-   integer(kind=4),private:: diff_atoms=2
-   character(len=4),private:: symmlabel='p4mm'
-	real(kind=8),dimension(2),public:: s1=[5.4433561257770959d0,0.d0]
-	real(kind=8),dimension(2),public:: s2=[0.d0,5.4433561257770959d0]
-   type(Atom_list),dimension(2),public:: atomtype
-   character(len=2),public:: units='au'
-	real(kind=8),public:: norm_s1=5.4433561257770959d0
-	real(kind=8),public:: norm_s2=5.4433561257770959d0
 	contains
-	   initialize => initialize_LiF001
+	   procedure,public:: initialize => initialize_LiF001
 end type LiF001Surf
 
 contains
@@ -38,6 +29,15 @@ subroutine initialize_LiF001(surf,filename)
    class(LiF001Surf),intent(inout):: surf
    character(len=*),intent(in):: filename
    ! Run section --------------------------------------------
+   surf%alias='LiF001'
+   surf%diff_atoms=2
+   surf%symmLabel='p4mm'
+   surf%s1=[5.4433561257770959d0,0.d0]
+   surf%s2=[0.d0,5.4433561257770959d0]
+   allocate( surf%atomType(2) )
+   surf%units='au'
+   surf%norm_s1=5.4433561257770959d0
+   surf%norm_s2=5.4433561257770959d0
    ! Set basis vectors
    surf%surf2cart_mtrx(:,1)=surf%s1(:)
    surf%surf2cart_mtrx(:,2)=surf%s2(:)
@@ -56,9 +56,9 @@ subroutine initialize_LiF001(surf,filename)
    call inv_mtrx(2,surf%surf2cart_mtrx,surf%cart2surf_mtrx)
    surf%surfunit2cart_mtrx(:,1)=surf%surf2cart_mtrx(:,1)/surf%norm_s1
    surf%surfunit2cart_mtrx(:,2)=surf%surf2cart_mtrx(:,2)/surf%norm_s2
-   call inv_mtrc(2,surf%surfunit2cart_mtrx,surf%cart2surfunit_mtrx)
+   call inv_mtrx(2,surf%surfunit2cart_mtrx,surf%cart2surfunit_mtrx)
    surf%recip2cart_mtrx=transpose(surf%cart2surf_mtrx)
-   surf%recip2cart_mtrx=2.D0*PI*surf%recip2cart_mtrx
+   surf%recip2cart_mtrx=2.D0*pi*surf%recip2cart_mtrx
    call inv_mtrx(2,surf%recip2cart_mtrx,surf%cart2recip_mtrx)
    surf%initialized=.true.
    return

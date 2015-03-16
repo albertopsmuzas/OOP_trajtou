@@ -20,7 +20,7 @@ use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, A
 IMPLICIT NONE
 ! Global variables
 REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: system_mass
-TYPE(Surface):: system_surface
+type(Surface):: system_surface
 real(kind=8):: system_surfMass=0.d0
 real(kind=8),dimension(3):: system_surfFreqs=[0.d0,0.d0,0.d0]
 CHARACTER(LEN=2),DIMENSION(:),ALLOCATABLE:: system_atomsymbols

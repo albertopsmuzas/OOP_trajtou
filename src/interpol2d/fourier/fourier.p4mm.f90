@@ -34,7 +34,7 @@ REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r)
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: id
-   TYPE(Surface),INTENT(IN) :: surf
+   class(Surface),INTENT(IN) :: surf
    INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: k
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
@@ -79,7 +79,7 @@ REAL(KIND=8) FUNCTION termfoup4mm_dx(id,surf,k,r)
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: id
-   TYPE(Surface),INTENT(IN) :: surf
+   class(Surface),INTENT(IN) :: surf
    INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: k
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
@@ -125,7 +125,7 @@ REAL(KIND=8) FUNCTION termfoup4mm_dy(id,surf,k,r)
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: id
-   TYPE(Surface),INTENT(IN) :: surf
+   class(Surface),INTENT(IN) :: surf
    INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: k
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    ! Local variables
@@ -172,7 +172,7 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourierp4mm),INTENT(INOUT) :: this
-   TYPE(Surface),INTENT(IN) :: surf
+   class(Surface),INTENT(IN) :: surf
    CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
    ! Local variables
    INTEGER(KIND=4) :: i,j !counters
@@ -286,8 +286,8 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Fourierp4mm),INTENT(IN):: this
-   TYPE(Surface),INTENT(IN):: surf
+   class(Fourierp4mm),INTENT(IN):: this
+   class(Surface),INTENT(IN):: surf
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: dvdu

@@ -3,7 +3,8 @@ include make.inc
 # Add here all folder names in src
 folderlist= debug units surface PES interpol1d interpol1d/cubicsplines maths PES/CRP3D interpol2d interpol2d/fourier \
 				inicond inicond/atom inicond/molecule dynamics dynamics/atom interpol2d/bicsplines PES/CRP6D interpol1d/fourier functions\
-				dynamics/molecule utils analysis analysis/diffraction integrator system inicond/atomSurf dynamics/atomSurf
+				dynamics/molecule utils analysis analysis/diffraction integrator system inicond/atomSurf dynamics/atomSurf PES/Specific\
+				PES/Specific/HLiF001 
 
 # Object list. There should be a rule for each object in this list
 objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier2d.o fourier.p4mm.o cubicsplines.o \
@@ -11,7 +12,9 @@ objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier
 				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
 				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o xexponential.o\
-				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o diffractionAtomSurf.o
+				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o\
+				diffractionAtomSurf.o LiF001Surf.o HLiF001_WS.o
+				
 
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
@@ -33,12 +36,15 @@ libaotus.a:
 debug.o:
 maths.o:
 units.o: debug.o 
-surface.o: debug.o units.o maths.o
 system.o: debug.o units.o surface.o maths.o
+# Surface section
+surface.o: debug.o units.o maths.o
+LiF001Surf.o: surface.o
 # Potential energy surfaces section -----------------------------------------------------
-link_PES.o: PES.o CRP3D.o CRP6D.o
+link_PES.o: PES.o CRP3D.o CRP6D.o HLiF001_WS.o
 PES.o: surface.o
 CRP3D.o: debug.o units.o maths.o PES.o cubicsplines.o link_fourier2d.o link_function1d.o system.o
+HLiF001_WS.o: PES.o LiF001Surf.o cubicsplines.o link_fourier2d.o link_function1d.o
 CRP6D.o: debug.o units.o maths.o PES.o CRP3D.o wyckoff.p4mm.o extrapol.o link_function1d.o
 # Example of new PES implementation:
 # newPES.o: PES.o +list of needed modules. Don't forget to add this routine to objectlist.

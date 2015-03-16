@@ -3,9 +3,9 @@
 !> @brief
 !! Provides tools to perform 2D interpolations with fourier series
 !##################################################################################
-MODULE FOURIER2D_MOD
+module FOURIER2D_MOD
 use SURFACE_MOD, only: Surface
-IMPLICIT NONE
+implicit none
 !////////////////////////////////////////////////////////////////
 ! TYPE: Interpol2d
 !
@@ -24,44 +24,44 @@ IMPLICIT NONE
 !> @date Feb/2014, Jul/2014
 !> @version 2.0 
 !---------------------------------------------------------------
-TYPE,ABSTRACT :: Fourier2d
-   INTEGER(KIND=4) :: n
-   INTEGER(KIND=4) :: nfunc
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE :: klist
-CONTAINS
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE :: READ => READ_FOURIER2D
-   PROCEDURE(INTERPOL_FOURIER2D),PUBLIC,DEFERRED :: INTERPOL  ! DEFERRED !!!! take a look to interface
-   PROCEDURE(GET_F_AND_DERIVS_FOURIER2D),PUBLIC,DEFERRED :: GET_F_AND_DERIVS ! DEFERRED !!!! take a look to interface
-END TYPE Fourier2d
+type,abstract :: Fourier2d
+   integer(kind=4) :: n
+   integer(kind=4) :: nfunc
+   real(kind=8),dimension(:,:),allocatable :: xy
+   real(kind=8),dimension(:,:),allocatable :: f
+   integer(kind=4),dimension(:,:),allocatable :: klist
+contains
+   procedure,public,non_overridable :: read => read_FOURIER2D
+   procedure(interpol_FOURIER2D),public,deferred :: interpol  ! deferred !!!! take a look to interface
+   procedure(get_f_and_derivs_FOURIER2D),public,deferred :: get_f_and_derivs ! deferred !!!! take a look to interface
+end type Fourier2d
 
-ABSTRACT INTERFACE
+abstract interface
    !###########################################################
    !# SUBROUTINE: INTERPOL_FOURIER2D 
    !###########################################################
    !-----------------------------------------------------------
-   SUBROUTINE INTERPOL_FOURIER2D(this,surf,filename)
-      IMPORT Fourier2d
-      IMPORT Surface
-      CLASS(Fourier2d),INTENT(INOUT) :: this
-      TYPE(Surface),INTENT(IN) :: surf
-      CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
-   END SUBROUTINE INTERPOL_FOURIER2D
+   subroutine interpol_FOURIER2D(this,surf,filename)
+      import fourier2d
+      import surface
+      class(fourier2d),intent(inout) :: this
+      class(surface),intent(in) :: surf
+      character(len=*),intent(in),optional :: filename
+   end subroutine interpol_FOURIER2D
    !###########################################################
    !# SUBROUTINE: GET_F_AND_DERIVS 
    !###########################################################
    !-----------------------------------------------------------
-   SUBROUTINE GET_F_AND_DERIVS_FOURIER2D(this,surf,r,v,dvdu)
-      IMPORT Fourier2d
-      IMPORT Surface
-      CLASS(Fourier2d),INTENT(IN):: this
-      TYPE(Surface),INTENT(IN):: surf
-      REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
-      REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
-      REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: dvdu
-   END SUBROUTINE GET_F_AND_DERIVS_FOURIER2D
-END INTERFACE
+   subroutine get_f_and_derivs_FOURIER2D(this,surf,r,v,dvdu)
+      import fourier2d
+      import surface
+      class(fourier2d),intent(in):: this
+      class(surface),intent(in):: surf
+      real(kind=8),dimension(2),intent(in) :: r
+      real(kind=8),dimension(:),intent(out) :: v
+      real(kind=8),dimension(:,:),intent(out) :: dvdu
+   end subroutine get_f_and_derivs_FOURIER2D
+end interface
 !////////////////////////////////////////////////////////////////
 CONTAINS
 !###########################################################
@@ -83,34 +83,34 @@ CONTAINS
 !> @date Mar/2014
 !> @version 1.0 
 !-----------------------------------------------------------
-SUBROUTINE READ_FOURIER2D(this,xy,f,klist)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier2d),INTENT(INOUT) :: this
-   REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: xy
-   REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: f
-   INTEGER(KIND=4),DIMENSION(:,:),INTENT(IN) :: klist
-   ! Local variables
-   INTEGER(KIND=4) :: ndata,nfunc
-   ! Run section
+subroutine read_FOURIER2D(this,xy,f,klist)
+   ! initial declarations
+   implicit none
+   ! i/o variables
+   class(fourier2d),intent(inout) :: this
+   real(kind=8),dimension(:,:),intent(in) :: xy
+   real(kind=8),dimension(:,:),intent(in) :: f
+   integer(kind=4),dimension(:,:),intent(in) :: klist
+   ! local variables
+   integer(kind=4) :: ndata,nfunc
+   ! run section
    ndata=size(f(1,:))
    nfunc=size(f(:,1))
-   SELECT CASE(size(xy(:,1)) == ndata .AND. size(xy(1,:))==2)
-      CASE(.FALSE.)
-         WRITE(0,*) "READ_FOURIER2D ERR: dimensions mismatch in arrays xy or f"
-         CALL EXIT(1)
-      CASE(.TRUE.)
+   select case(size(xy(:,1)) == ndata .and. size(xy(1,:))==2)
+      case(.false.)
+         write(0,*) "READ_FOURIER2D ERR: dimensions mismatch in arrays xy or f"
+         call exit(1)
+      case(.true.)
          ! do nothing
-   END SELECT
+   end select
    this%n=ndata
-   ALLOCATE(this%xy(ndata,2))
-   ALLOCATE(this%f(nfunc,ndata))
-   ALLOCATE(this%klist(ndata,2))
+   allocate(this%xy(ndata,2))
+   allocate(this%f(nfunc,ndata))
+   allocate(this%klist(ndata,2))
    this%f = f
    this%nfunc = nfunc
    this%xy = xy
    this%klist=klist
-   RETURN
-END SUBROUTINE READ_FOURIER2D  
-END MODULE FOURIER2D_MOD
+   return
+end subroutine read_fourier2d
+end module FOURIER2D_MOD

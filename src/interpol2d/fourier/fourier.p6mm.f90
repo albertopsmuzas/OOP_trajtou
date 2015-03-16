@@ -159,7 +159,7 @@ SUBROUTINE INTERPOL_FOURIERP6MM(this,surf,filename)
    IMPLICIT NONE
    ! I/O variables
    CLASS(FourierP6MM),INTENT(INOUT) :: this
-   TYPE(Surface),INTENT(IN) :: surf
+   Class(Surface),INTENT(IN) :: surf
    CHARACTER(LEN=*),INTENT(IN),OPTIONAL :: filename
    ! Local variables
    INTEGER(KIND=4) :: i,j !counters
@@ -263,7 +263,7 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP6MM(this,surf,r,v,dvdu)
    IMPLICIT NONE
    ! I/O variables
    CLASS(FourierP6MM),INTENT(IN):: this
-   TYPE(Surface),INTENT(IN):: surf
+   class(Surface),INTENT(IN):: surf
    REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(:,:),INTENT(OUT) :: dvdu
