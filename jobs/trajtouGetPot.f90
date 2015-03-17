@@ -62,6 +62,12 @@ case('Crp6d')
       read(auxstring,*) x(2)
       call get_command_argument(5,auxstring)
       read(auxstring,*) x(3)
+      call get_command_argument(6,auxstring)
+      read(auxstring,*) x(4)
+      call get_command_argument(7,auxstring)
+      read(auxstring,*) x(5)
+      call get_command_argument(8,auxstring)
+      read(auxstring,*) x(6)
    case default
       write(0,*) "ERR: bad number of arguments: ",command_argument_count()
       write(0,*) "Expected number of arguments: 8: Pestype, Lua file, x, y, z, r, theta, phi"

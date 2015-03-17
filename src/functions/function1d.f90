@@ -69,7 +69,6 @@ SUBROUTINE READ_FUNCTION1D(this,param)
    ! Run section
    SELECT CASE(allocated(this%param))
    CASE(.TRUE.)
-      write(*,*) 'Allocated',size(param)
       SELECT CASE(size(param)/=size(this%param))
       CASE(.TRUE.)
          WRITE(0,*) "READ_FUNCTION1D ERR: wrong dimension of parameters"
@@ -78,7 +77,6 @@ SUBROUTINE READ_FUNCTION1D(this,param)
                ! do nothing
       END SELECT
    CASE(.FALSE.)
-      write(*,*) 'Not allocated',size(param)
       ALLOCATE(this%param(size(param)))
    END SELECT
    this%param=param

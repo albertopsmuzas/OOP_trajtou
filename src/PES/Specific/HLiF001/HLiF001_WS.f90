@@ -23,12 +23,10 @@ private
    integer(kind=4):: n
    real(kind=8):: x
    real(kind=8):: y
-   character(len=10):: units_z
-   character(len=10):: units_v
    real(kind=8),dimension(:),allocatable:: z
    real(kind=8),dimension(:),allocatable:: v
-   real(KIND=8):: dz1
-   real(KIND=8):: dz2
+   real(kind=8):: dz1
+   real(kind=8):: dz2
    type(Csplines),public:: interz
    contains
       procedure,public:: PLOT_DATA => PLOT_DATA_SYMMPOINT
@@ -52,7 +50,7 @@ end type Sitio
 ! TYPE: PES_HLIF001
 !------------------------------------------------------------------------------
 type,extends(PES) :: PES_HLiF001
-   integer(kind=4):: max_order
+   integer(kind=4):: max_order=2
    type(Pair_pot),dimension(:),allocatable:: all_pairpots
    type(Sitio),dimension(:),allocatable:: all_sites
    integer(kind=4),dimension(:,:),allocatable:: klist
@@ -145,11 +143,11 @@ subroutine initialize_PES_HLIF001(this,filename,tablename)
    character(len=*),optional,intent(in):: tablename
    ! Local variables
    real(kind=8),dimension(129):: commonGrid
+   integer(kind=4):: i ! counter
    ! HEY HO!, LET'S GO!! ------------------
    call this%set_pesType('CRP3D')
    call this%set_alias('H_on_LiF001')
    call this%set_dimensions(3)
-   this%max_order=2
    allocate( this%all_pairpots(2) )
    ! Create surface
    call sysLiF001Surf%initialize('dummyString')
@@ -214,7 +212,7 @@ subroutine initialize_PES_HLIF001(this,filename,tablename)
    ! Pair potential for F
    this%all_pairpots(2)%alias='Pairpot_F'
    this%all_pairpots(2)%vasint=-7.1343585831139720d0
-   this%all_pairpots(2)%dz1=-6.94879417153515533E-005
+   this%all_pairpots(2)%dz1=-6.94879417153515533d-5
    this%all_pairpots(2)%dz2=0.d0
    this%all_pairpots(2)%id=2
    this%all_pairpots(2)%rumpling=0.d0
@@ -540,10 +538,12 @@ subroutine initialize_PES_HLIF001(this,filename,tablename)
                         -7.13457008178702434265d0,-7.13453431001571392045d0,-7.13450272014070474569d0,-7.13446947796920216689d0,&
                         -7.13443632521088844101d0,-7.13438203038740947903d0,-7.13438533987800926894d0,-7.13436779344102589562d0,&
                         -7.13435858311397197440d0 ]
+   ! read interZ
+   do i=1,6
+      call this%all_sites(i)%interZ%read( this%all_sites(i)%z(:),this%all_sites(i)%v(:) )
+   enddo
    ! Set switch function
-   write(*,*) 'patata'
    call this%dampFunc%read([5.d0,5.d0])
-   write(*,*) 'patata'
    ! Set Fourier Coefficients
    allocate( this%klist(6,2) )
    this%klist(:,1)=[0,1,1,2,2,2]
@@ -558,12 +558,12 @@ SUBROUTINE EXTRACT_VASINT_PES_HLIF001(this)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),INTENT(INOUT) :: this
+   CLASS(PES_HLIF001),INTENT(INOUT):: this
    ! Local variables
-   INTEGER(KIND=4) :: npairpots, nsites
-   INTEGER(KIND=4) :: i,j ! counters
-   REAL(KIND=8) :: control_vasint
-   CHARACTER(LEN=22) :: routinename="EXTRACT_VASINT_PES_HLIF001: "
+   INTEGER(KIND=4):: npairpots, nsites
+   INTEGER(KIND=4):: i,j ! counters
+   REAL(KIND=8):: control_vasint
+   character(len=*),parameter:: routinename="EXTRACT_VASINT_PES_HLIF001: "
    ! Run section ------------------------
    npairpots=size(this%all_pairpots)
    control_vasint=this%all_pairpots(1)%vasint
@@ -809,7 +809,7 @@ SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001(this,X,v,dvdu,errCode)
    integer(kind=1),optional,intent(out):: errCode
    ! Local variables
    INTEGER(KIND=4):: nsites,npairpots
-   CLASS(Fourierp4mm),ALLOCATABLE:: interpolxy
+   type(Fourierp4mm):: interpolxy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: pot,dvdz,dvdx,dvdy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: potarr
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f,derivarr ! arguments to the xy interpolation
