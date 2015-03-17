@@ -56,7 +56,7 @@ type,extends(PES) :: PES_HLiF001
    type(Pair_pot),dimension(:),allocatable:: all_pairpots
    type(Sitio),dimension(:),allocatable:: all_sites
    integer(kind=4),dimension(:,:),allocatable:: klist
-   type(Logistic_func),allocatable:: dampFunc
+   type(Logistic_func) dampFunc
    contains
       ! Initialization block
       procedure,public:: initialize => initialize_PES_HLIF001

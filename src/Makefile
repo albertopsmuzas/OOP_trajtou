@@ -44,7 +44,7 @@ LiF001Surf.o: surface.o
 link_PES.o: PES.o CRP3D.o CRP6D.o HLiF001_WS.o
 PES.o: surface.o
 CRP3D.o: debug.o units.o maths.o PES.o cubicsplines.o link_fourier2d.o link_function1d.o system.o
-HLiF001_WS.o: PES.o LiF001Surf.o cubicsplines.o link_fourier2d.o link_function1d.o
+HLiF001_WS.o: PES.o LiF001Surf.o cubicsplines.o fourier.p4mm.o logistic.o
 CRP6D.o: debug.o units.o maths.o PES.o CRP3D.o wyckoff.p4mm.o extrapol.o link_function1d.o
 # Example of new PES implementation:
 # newPES.o: PES.o +list of needed modules. Don't forget to add this routine to objectlist.
