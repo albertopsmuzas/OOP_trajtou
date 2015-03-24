@@ -13,7 +13,7 @@ objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
 				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o xexponential.o\
 				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o\
-				diffractionAtomSurf.o LiF001Surf.o HLiF001_WS.o
+				diffractionAtomSurf.o LiF001Surf.o HLiF001_WS.o HLiF001_NS.o
 				
 
 # Where to find fortran files:
@@ -41,11 +41,12 @@ system.o: debug.o units.o surface.o maths.o
 surface.o: debug.o units.o maths.o
 LiF001Surf.o: surface.o
 # Potential energy surfaces section -----------------------------------------------------
-link_PES.o: PES.o CRP3D.o CRP6D.o HLiF001_WS.o
+link_PES.o: PES.o CRP3D.o CRP6D.o HLiF001_WS.o HLiF001_NS.o
 PES.o: surface.o
 CRP3D.o: debug.o units.o maths.o PES.o cubicsplines.o link_fourier2d.o link_function1d.o system.o
-HLiF001_WS.o: PES.o LiF001Surf.o cubicsplines.o fourier.p4mm.o logistic.o
 CRP6D.o: debug.o units.o maths.o PES.o CRP3D.o wyckoff.p4mm.o extrapol.o link_function1d.o
+HLiF001_WS.o: PES.o LiF001Surf.o cubicsplines.o fourier.p4mm.o logistic.o
+HLiF001_NS.o: PES.o LiF001Surf.o cubicsplines.o fourier.p4mm.o one.o
 # Example of new PES implementation:
 # newPES.o: PES.o +list of needed modules. Don't forget to add this routine to objectlist.
  
