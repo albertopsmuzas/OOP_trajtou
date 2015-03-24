@@ -1,9 +1,9 @@
 !#########################################################
-! MODULE: HLiF001_WS_MOD
+! MODULE: HLIF001_WS_WS_MOD
 !> @brief
 !! CRP3D specific implementation for H/LiF001
 !##########################################################
-module PES_HLIF001_MOD
+module PES_HLIF001_WS_MOD
 ! Initial declarations
 use LiF001SURF_MOD, only: LiF001Surf,pi
 use PES_MOD, only: PES
@@ -47,9 +47,9 @@ type,extends(Symmpoint) :: Sitio
 	real(kind=8),dimension(:),allocatable:: dvdx,dvdy,dvdz
 end type Sitio
 !////////////////////////////////////////////////////////////////////////////////
-! TYPE: PES_HLIF001
+! TYPE: PES_HLIF001_WS
 !------------------------------------------------------------------------------
-type,extends(PES) :: PES_HLiF001
+type,extends(PES) :: PES_HLIF001_WS
    integer(kind=4):: max_order=2
    type(Pair_pot),dimension(:),allocatable:: all_pairpots
    type(Sitio),dimension(:),allocatable:: all_sites
@@ -57,35 +57,35 @@ type,extends(PES) :: PES_HLiF001
    type(Logistic_func) dampFunc
    contains
       ! Initialization block
-      procedure,public:: initialize => initialize_PES_HLIF001
+      procedure,public:: initialize => initialize_PES_HLIF001_WS
       ! Get block 
-      procedure,public:: get_v_and_derivs => GET_V_AND_DERIVS_PES_HLIF001
-      procedure,public:: get_v_and_derivs_correction => GET_V_AND_DERIVS_CORRECTION_PES_HLIF001
-      procedure,public:: get_repul_corrections => GET_REPUL_CORRECTIONS_PES_HLIF001
+      procedure,public:: get_v_and_derivs => GET_V_AND_DERIVS_PES_HLIF001_WS
+      procedure,public:: get_v_and_derivs_correction => GET_V_AND_DERIVS_CORRECTION_PES_HLIF001_WS
+      procedure,public:: get_repul_corrections => GET_REPUL_CORRECTIONS_PES_HLIF001_WS
       procedure,public:: getpot => getpot_crp3d
       ! Enquire block
-      procedure,public:: is_allowed => is_allowed_PES_HLIF001
+      procedure,public:: is_allowed => is_allowed_PES_HLIF001_WS
       ! Tools block
-      procedure,public:: extract_vasint => EXTRACT_VASINT_PES_HLIF001
-      procedure,public:: smooth => SMOOTH_PES_HLIF001
-      procedure,public:: interpol => INTERPOL_Z_PES_HLIF001
+      procedure,public:: extract_vasint => EXTRACT_VASINT_PES_HLIF001_WS
+      procedure,public:: smooth => SMOOTH_PES_HLIF001_WS
+      procedure,public:: interpol => INTERPOL_Z_PES_HLIF001_WS
       ! Plot tools
-      procedure,public:: plot_xymap => PLOT_XYMAP_PES_HLIF001
-      procedure,public:: plot_direction1d => PLOT_DIRECTION1D_PES_HLIF001
-      procedure,public:: plot_sitios => PLOT_SITIOS_PES_HLIF001
-      procedure,public:: plot_pairpots => PLOT_PAIRPOTS_PES_HLIF001
-      procedure,public:: plot_z => PLOT_Z_PES_HLIF001
-end type PES_HLiF001
+      procedure,public:: plot_xymap => PLOT_XYMAP_PES_HLIF001_WS
+      procedure,public:: plot_direction1d => PLOT_DIRECTION1D_PES_HLIF001_WS
+      procedure,public:: plot_sitios => PLOT_SITIOS_PES_HLIF001_WS
+      procedure,public:: plot_pairpots => PLOT_PAIRPOTS_PES_HLIF001_WS
+      procedure,public:: plot_z => PLOT_Z_PES_HLIF001_WS
+end type PES_HLIF001_WS
 !///////////////////////////////////////////////////////////////////////////
 contains
 !###########################################################
-!# SUBROUTINE: GET_REPUL_CORRECTIONS_PES_HLIF001
+!# SUBROUTINE: GET_REPUL_CORRECTIONS_PES_HLIF001_WS
 !###########################################################
-SUBROUTINE GET_REPUL_CORRECTIONS_PES_HLIF001(this,P,v,dvdz,dvdx,dvdy)
+SUBROUTINE GET_REPUL_CORRECTIONS_PES_HLIF001_WS(this,P,v,dvdz,dvdx,dvdy)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001_WS),INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: P
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdx,dvdy,dvdz ! corrections to the derivatives
@@ -111,7 +111,7 @@ SUBROUTINE GET_REPUL_CORRECTIONS_PES_HLIF001(this,P,v,dvdz,dvdx,dvdy)
       END DO
    END DO
    RETURN
-END SUBROUTINE GET_REPUL_CORRECTIONS_PES_HLIF001
+END SUBROUTINE GET_REPUL_CORRECTIONS_PES_HLIF001_WS
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_PAIRPOT 
 !###########################################################
@@ -133,12 +133,12 @@ SUBROUTINE GET_V_AND_DERIVS_PAIRPOT(this,x,v,dvdu)
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_PAIRPOT
 !###########################################################
-!# SUBROUTINE: INITIALIZE_PES_HLIF001
+!# SUBROUTINE: INITIALIZE_PES_HLIF001_WS
 !###########################################################
-subroutine initialize_PES_HLIF001(this,filename,tablename)
+subroutine initialize_PES_HLIF001_WS(this,filename,tablename)
    implicit none
    ! I/O variables
-   class(PES_HLIF001),intent(out):: this
+   class(PES_HLIF001_WS),intent(out):: this
    character(len=*),optional,intent(in):: filename
    character(len=*),optional,intent(in):: tablename
    ! Local variables
@@ -550,28 +550,28 @@ subroutine initialize_PES_HLIF001(this,filename,tablename)
    this%klist(:,2)=[0,0,1,0,1,2]
    call this%interpol()
    return
-end subroutine initialize_PES_HLIF001
+end subroutine initialize_PES_HLIF001_WS
 !#######################################################################
-!# SUBROUTINE: EXTRACT_VASINT_PES_HLIF001 ######################################
+!# SUBROUTINE: EXTRACT_VASINT_PES_HLIF001_WS ######################################
 !#######################################################################
-SUBROUTINE EXTRACT_VASINT_PES_HLIF001(this)
+SUBROUTINE EXTRACT_VASINT_PES_HLIF001_WS(this)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),INTENT(INOUT):: this
+   CLASS(PES_HLIF001_WS),INTENT(INOUT):: this
    ! Local variables
    INTEGER(KIND=4):: npairpots, nsites
    INTEGER(KIND=4):: i,j ! counters
    REAL(KIND=8):: control_vasint
-   character(len=*),parameter:: routinename="EXTRACT_VASINT_PES_HLIF001: "
+   character(len=*),parameter:: routinename="EXTRACT_VASINT_PES_HLIF001_WS: "
    ! Run section ------------------------
    npairpots=size(this%all_pairpots)
    control_vasint=this%all_pairpots(1)%vasint
    DO i = 1, npairpots
       IF (this%all_pairpots(1)%vasint/=control_vasint) THEN
-         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001 ERR: Incoherences in vasint values found"
-         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001 ERR: vasint's value at pairpot",1,control_vasint
-         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001 ERR: vasint's value at pairpot",i,control_vasint
+         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001_WS ERR: Incoherences in vasint values found"
+         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001_WS ERR: vasint's value at pairpot",1,control_vasint
+         WRITE(0,*) "EXTRACT_VASINT_PES_HLIF001_WS ERR: vasint's value at pairpot",i,control_vasint
          CALL EXIT(1)
       END IF
       DO j = 1, this%all_pairpots(i)%n
@@ -585,20 +585,20 @@ SUBROUTINE EXTRACT_VASINT_PES_HLIF001(this)
       END DO
    END DO
    RETURN
-END SUBROUTINE EXTRACT_VASINT_PES_HLIF001
+END SUBROUTINE EXTRACT_VASINT_PES_HLIF001_WS
 !############################################################
-!# SUBROUTINE: SMOOTH_PES_HLIF001 ############################
+!# SUBROUTINE: SMOOTH_PES_HLIF001_WS ############################
 !############################################################
-SUBROUTINE SMOOTH_PES_HLIF001(this)
+SUBROUTINE SMOOTH_PES_HLIF001_WS(this)
    ! Initial declaraitons
    IMPLICIT NONE
-   CLASS(PES_HLIF001),INTENT(INOUT):: this
+   CLASS(PES_HLIF001_WS),INTENT(INOUT):: this
    ! Local variables
    REAL(KIND=8),DIMENSION(3):: A
    INTEGER(KIND=4):: i,j ! counters
    INTEGER(KIND=4):: npairpots,nsites
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: v,dvdzr,dummy
-   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_PES_HLIF001: "
+   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_PES_HLIF001_WS: "
    ! Run section ----------
    nsites = size(this%all_sites)
    npairpots = size(this%all_pairpots)
@@ -620,15 +620,15 @@ SUBROUTINE SMOOTH_PES_HLIF001(this)
       END DO
    END DO
    RETURN
-END SUBROUTINE SMOOTH_PES_HLIF001
+END SUBROUTINE SMOOTH_PES_HLIF001_WS
 !############################################################
-!# SUBROUTINE: INTERPOL_Z_PES_HLIF001 ########################
+!# SUBROUTINE: INTERPOL_Z_PES_HLIF001_WS ########################
 !############################################################
-SUBROUTINE INTERPOL_Z_PES_HLIF001(this)
+SUBROUTINE INTERPOL_Z_PES_HLIF001_WS(this)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),INTENT(INOUT) :: this
+   CLASS(PES_HLIF001_WS),INTENT(INOUT) :: this
    ! Local variables
    INTEGER(KIND=4) :: nsites,npairpots
    REAL(KIND=8) :: dz1,dz2
@@ -649,7 +649,7 @@ SUBROUTINE INTERPOL_Z_PES_HLIF001(this)
       CALL this%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
    END DO
    RETURN
-END SUBROUTINE INTERPOL_Z_PES_HLIF001
+END SUBROUTINE INTERPOL_Z_PES_HLIF001_WS
 !##################################################################
 !# SUBROUTINE: INTERACTION_AP #####################################
 !##################################################################
@@ -779,13 +779,13 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
    END SELECT
 END SUBROUTINE INTERACTION_AENV
 !############################################################
-!# SUBROUTINE: GET_V_AND_DERIVS_PES_HLIF001 ##################
+!# SUBROUTINE: GET_V_AND_DERIVS_PES_HLIF001_WS ##################
 !############################################################
 !> @brief
 !! Subroutine that calculates the 3D potential for a point A and
 !! its derivatives in cartesian coordinates.
 !
-!> @param[in] this - PES_HLIF001 PES
+!> @param[in] this - PES_HLIF001_WS PES
 !> @param[in] X - Point in space to calculate the potential and it's derivatives. Cartesian's
 !> @param[out] v - Value of the potential at X
 !> @param[out] dvdu - derivatives, cartesian coordinates 
@@ -799,10 +799,10 @@ END SUBROUTINE INTERACTION_AENV
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001(this,X,v,dvdu,errCode)
+SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001_WS(this,X,v,dvdu,errCode)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),TARGET,INTENT(IN):: this
+   CLASS(PES_HLIF001_WS),TARGET,INTENT(IN):: this
    REAL(KIND=8),DIMENSION(:),INTENT(IN):: X
    REAL(KIND=8),INTENT(OUT):: v
    REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
@@ -817,7 +817,7 @@ SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001(this,X,v,dvdu,errCode)
    INTEGER :: i ! counters
    ! Pointers
 	REAL(KIND=8),POINTER:: zmax
-   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_PES_HLIF001: "
+   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_PES_HLIF001_WS: "
    zmax => this%all_sites(1)%z(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
@@ -867,15 +867,15 @@ SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001(this,X,v,dvdu,errCode)
    dvdu(2)=dvdu(2)+derivarr(1,2)
    dvdu(3)=dvdu(3)+potarr(2)
    RETURN
-END SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001
+END SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001_WS
 !############################################################
-!# SUBROUTINE: GET_V_AND_DERIVS_CORRECTION_PES_HLIF001 ############
+!# SUBROUTINE: GET_V_AND_DERIVS_CORRECTION_PES_HLIF001_WS ############
 !############################################################
 !> @brief
 !! Subroutine that calculates the correction to the 3D PES for a point A and
 !! its derivatives in cartesian coordinates.
 !
-!> @param[in] this - PES_HLIF001 PES
+!> @param[in] this - PES_HLIF001_WS PES
 !> @param[in] X - Point in space to calculate the potential and it's derivatives. Cartesian's
 !> @param[out] v - Value of the potential at X
 !> @param[out] dvdu - derivatives, cartesian coordinates 
@@ -889,10 +889,10 @@ END SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001(this,X,v,dvdu)
+SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001_WS(this,X,v,dvdu)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),TARGET,INTENT(IN) :: this
+   CLASS(PES_HLIF001_WS),TARGET,INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
    REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
    REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
@@ -902,14 +902,14 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001(this,X,v,dvdu)
    INTEGER :: i ! counters
    ! Pointers
 	REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_HLIF001: "
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_HLIF001_WS: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    SELECT CASE(size(v)==npairpots+1)
       CASE(.TRUE.)
          ! do nothing
       CASE(.FALSE.)
-         WRITE(*,*) "GET_V_AND_DERIVS_CORRECTION_PES_HLIF001 ERR: wrong number of dimensions array v"
+         WRITE(*,*) "GET_V_AND_DERIVS_CORRECTION_PES_HLIF001_WS ERR: wrong number of dimensions array v"
          CALL EXIT(1)
    END SELECT
    ! GABBA, GABBA HEY! ----------------------
@@ -935,14 +935,14 @@ SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001(this,X,v,dvdu)
    dvdu(2)=sum(dvdy)
    dvdu(3)=sum(dvdz)
    RETURN
-END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001
+END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001_WS
 !############################################################
 !# FUNCTION: getpot_crp3d ###################################
 !############################################################
 !> @brief
 !! Subroutine that calculates the 3D potential for a point A
 !
-!> @param[in] this - PES_HLIF001 PES
+!> @param[in] this - PES_HLIF001_WS PES
 !> @param[in] X - Point in space to calculate the potential. Cartesian's
 !
 !> @warning
@@ -957,7 +957,7 @@ END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001
 REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),TARGET,INTENT(IN) :: this
+   CLASS(PES_HLIF001_WS),TARGET,INTENT(IN) :: this
 	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
    ! Local variables
    CLASS(Fourierp4mm),ALLOCATABLE:: interpolxy
@@ -970,7 +970,7 @@ REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
    INTEGER :: i ! counters
    ! Pointers
    REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_HLIF001: "
+   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_HLIF001_WS: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
@@ -1025,11 +1025,11 @@ SUBROUTINE PLOT_DATA_SYMMPOINT(this,filename)
    WRITE(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
 END SUBROUTINE PLOT_DATA_SYMMPOINT
 !#######################################################################
-! SUBROUTINE: PLOT_XYMAP_PES_HLIF001
+! SUBROUTINE: PLOT_XYMAP_PES_HLIF001_WS
 !#######################################################################
-SUBROUTINE PLOT_XYMAP_PES_HLIF001(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+SUBROUTINE PLOT_XYMAP_PES_HLIF001_WS(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
    IMPLICIT NONE
-   CLASS(PES_HLIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001_WS),INTENT(IN) :: this
    REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
    INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
    CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
@@ -1105,15 +1105,15 @@ SUBROUTINE PLOT_XYMAP_PES_HLIF001(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly
    WRITE(11,*) r(1), r(2), v
    CLOSE(11)
    RETURN
-END SUBROUTINE PLOT_XYMAP_PES_HLIF001
+END SUBROUTINE PLOT_XYMAP_PES_HLIF001_WS
 !#######################################################################
-! SUBROUTINE: PLOT_DIRECTION1D_PES_HLIF001 ###################################
+! SUBROUTINE: PLOT_DIRECTION1D_PES_HLIF001_WS ###################################
 !#######################################################################
 !> @brief
 !! Creates a file with name "filename" with a 1D cut of the PES. To define 
 !! the direction, the angle alpha is given. 
 !
-!> @param[in] this - PES_HLIF001 PES used
+!> @param[in] this - PES_HLIF001_WS PES used
 !> @param[in] filename - Name of the output file
 !> @param[in] npoints - Number of points in the graphic. npoints>=2
 !> @param[in] angle - Angle between the surface vector S1 and the direction of the
@@ -1128,10 +1128,10 @@ END SUBROUTINE PLOT_XYMAP_PES_HLIF001
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001(this,filename,npoints,angle,z,L)
+SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001_WS(this,filename,npoints,angle,z,L)
    IMPLICIT NONE
    ! I/O variables -------------------------------
-   CLASS(PES_HLIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001_WS),INTENT(IN) :: this
    INTEGER, INTENT(IN) :: npoints
    CHARACTER(LEN=*), INTENT(IN) :: filename
    REAL*8, INTENT(IN) :: z, angle
@@ -1141,10 +1141,10 @@ SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001(this,filename,npoints,angle,z,L)
    REAL*8 :: xmax, xmin, ymax, ymin 
    REAL*8, DIMENSION(3) :: r, dvdu
    INTEGER :: i ! Counter
-   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_PES_HLIF001: "
+   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_PES_HLIF001_WS: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_DIRECTION1D_PES_HLIF001 ERR: Less than 2 points"
+      WRITE(0,*) "PLOT_DIRECTION1D_PES_HLIF001_WS ERR: Less than 2 points"
       CALL EXIT(1)
    END IF
    ! Change alpha to radians
@@ -1183,14 +1183,14 @@ SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001(this,filename,npoints,angle,z,L)
    WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
-END SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001
+END SUBROUTINE PLOT_DIRECTION1D_PES_HLIF001_WS
 !#######################################################################
-!# SUBROUTINE: PLOT_Z_PES_HLIF001 #######################################
+!# SUBROUTINE: PLOT_Z_PES_HLIF001_WS #######################################
 !#######################################################################
-SUBROUTINE PLOT_Z_PES_HLIF001(this,npoints,xyz,L,filename)
+SUBROUTINE PLOT_Z_PES_HLIF001_WS(this,npoints,xyz,L,filename)
    IMPLICIT NONE
    ! I/O variables -------------------------------
-   CLASS(PES_HLIF001),INTENT(IN):: this
+   CLASS(PES_HLIF001_WS),INTENT(IN):: this
    INTEGER,INTENT(IN):: npoints
    CHARACTER(LEN=*),INTENT(IN):: filename
    REAL(KIND=8),DIMENSION(3),INTENT(IN):: xyz
@@ -1201,10 +1201,10 @@ SUBROUTINE PLOT_Z_PES_HLIF001(this,npoints,xyz,L,filename)
    REAL(KIND=8),DIMENSION(3):: r, dvdu
    REAL(KIND=8):: v
    INTEGER:: i ! Counter
-   CHARACTER(LEN=*),PARAMETER:: routinename = "PLOT_DIRECTION1D_PES_HLIF001: "
+   CHARACTER(LEN=*),PARAMETER:: routinename = "PLOT_DIRECTION1D_PES_HLIF001_WS: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_Z_PES_HLIF001 ERR: Less than 2 points"
+      WRITE(0,*) "PLOT_Z_PES_HLIF001_WS ERR: Less than 2 points"
       CALL EXIT(1)
    END IF
    !
@@ -1234,7 +1234,7 @@ SUBROUTINE PLOT_Z_PES_HLIF001(this,npoints,xyz,L,filename)
    WRITE(11,*) r(3),v,dvdu(:)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
-END SUBROUTINE PLOT_Z_PES_HLIF001
+END SUBROUTINE PLOT_Z_PES_HLIF001_WS
 !###########################################################
 !# SUBROUTINE: PLOT_INTERPOL_SYMMPOINT 
 !###########################################################
@@ -1250,13 +1250,13 @@ SUBROUTINE PLOT_INTERPOL_SYMMPOINT(this,npoints,filename)
    RETURN
 END SUBROUTINE PLOT_INTERPOL_SYMMPOINT
 !###########################################################
-!# SUBROUTINE: PLOT_PAIRPOTS_PES_HLIF001
+!# SUBROUTINE: PLOT_PAIRPOTS_PES_HLIF001_WS
 !###########################################################
-SUBROUTINE PLOT_PAIRPOTS_PES_HLIF001(this,npoints)
+SUBROUTINE PLOT_PAIRPOTS_PES_HLIF001_WS(this,npoints)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),INTENT(IN)::this
+   CLASS(PES_HLIF001_WS),INTENT(IN)::this
    INTEGER(KIND=4),INTENT(IN) :: npoints
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
@@ -1271,15 +1271,15 @@ SUBROUTINE PLOT_PAIRPOTS_PES_HLIF001(this,npoints)
       CALL this%all_pairpots(i)%PLOT(npoints,filename)
    END DO
    RETURN
-END SUBROUTINE PLOT_PAIRPOTS_PES_HLIF001
+END SUBROUTINE PLOT_PAIRPOTS_PES_HLIF001_WS
 !###########################################################
-!# SUBROUTINE: PLOT_SITIOS_PES_HLIF001
+!# SUBROUTINE: PLOT_SITIOS_PES_HLIF001_WS
 !###########################################################
-SUBROUTINE PLOT_SITIOS_PES_HLIF001(this,npoints)
+SUBROUTINE PLOT_SITIOS_PES_HLIF001_WS(this,npoints)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),INTENT(IN)::this
+   CLASS(PES_HLIF001_WS),INTENT(IN)::this
    INTEGER(KIND=4),INTENT(IN) :: npoints
    ! Local variables
    INTEGER(KIND=4) :: i ! counters
@@ -1294,15 +1294,15 @@ SUBROUTINE PLOT_SITIOS_PES_HLIF001(this,npoints)
       CALL this%all_sites(i)%PLOT(npoints,filename)
    END DO
    RETURN
-END SUBROUTINE PLOT_SITIOS_PES_HLIF001
+END SUBROUTINE PLOT_SITIOS_PES_HLIF001_WS
 !###########################################################
-!# FUNCTION: is_allowed_PES_HLIF001
+!# FUNCTION: is_allowed_PES_HLIF001_WS
 !###########################################################
-LOGICAL FUNCTION is_allowed_PES_HLIF001(this,x)
+LOGICAL FUNCTION is_allowed_PES_HLIF001_WS(this,x)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_HLIF001),INTENT(IN) :: this
+   CLASS(PES_HLIF001_WS),INTENT(IN) :: this
    REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
    ! Local variables
    REAL(KIND=8) :: xmin,xmax
@@ -1311,17 +1311,17 @@ LOGICAL FUNCTION is_allowed_PES_HLIF001(this,x)
    xmax=this%all_sites(1)%z(this%all_sites(1)%n)
    SELECT CASE(size(x)/=3)
       CASE(.TRUE.)
-         WRITE(0,*) "is_allowed_PES_HLIF001 ERR: array doesn't have 3 dimensions: 3"
+         WRITE(0,*) "is_allowed_PES_HLIF001_WS ERR: array doesn't have 3 dimensions: 3"
          CALL EXIT(1)
       CASE(.FALSE.)
          ! do nothing
    END SELECT
    SELECT CASE( x(3)<xmin )
       CASE(.TRUE.)
-         is_allowed_PES_HLIF001=.FALSE.
+         is_allowed_PES_HLIF001_WS=.FALSE.
       CASE(.FALSE.)
-         is_allowed_PES_HLIF001=.TRUE.
+         is_allowed_PES_HLIF001_WS=.TRUE.
    END SELECT
    RETURN
-END FUNCTION is_allowed_PES_HLIF001
-END MODULE PES_HLIF001_MOD
+END FUNCTION is_allowed_PES_HLIF001_WS
+END MODULE PES_HLIF001_WS_MOD

@@ -1,15 +1,15 @@
-!#########################################################
+!#################################################################################
 ! MODULE: HLiF001_WS_MOD
 !> @brief
-!! CRP3D specific implementation for H/LiF001
-!##########################################################
+!! CRP3D specific implementation for H/LiF001 without switch function smoothing
+!#################################################################################
 module PES_HLIF001_NS_MOD
 ! Initial declarations
 use LiF001SURF_MOD, only: LiF001Surf,pi
 use PES_MOD, only: PES
 use CUBICSPLINES_MOD, only: Csplines
 use FOURIER_P4MM_MOD, only: Fourierp4mm
-use LOGISTIC_FUNCTION_MOD, only: Logistic_func
+use ONE_FUNCTION_MOD, only: One_func
 implicit none
 ! Local module variable, used to simulate SYSTEM_MOD
 type(LiF001Surf):: sysLiF001Surf
@@ -656,7 +656,7 @@ SUBROUTINE INTERACTION_AP(A,P,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_
    ! I/O VAriables --------------------------------------------
    REAL(KIND=8),DIMENSION(3),INTENT(IN):: A, P
    TYPE(Pair_pot),INTENT(IN):: pairpot
-   type(Logistic_func),INTENT(IN):: dampfunc
+   type(One_func),INTENT(IN):: dampfunc
    REAL(KIND=8),INTENT(OUT):: interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! Local variables ------------------------------------------
    REAL(KIND=8):: r ! distance
@@ -683,7 +683,7 @@ SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvd
    INTEGER,INTENT(IN) :: n
    REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
    TYPE(Pair_pot),INTENT(IN) :: pairpot
-   type(Logistic_func),INTENT(IN) :: dampfunc
+   type(One_func),INTENT(IN) :: dampfunc
    REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
    REAL(KIND=8),DIMENSION(3) :: P

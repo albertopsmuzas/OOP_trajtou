@@ -76,7 +76,6 @@ END TYPE Cut2d
 !> 
 !---------------------------------------------------------------------------------------------------
 TYPE,ABSTRACT:: Wyckoffsitio
-   !PRIVATE
    CHARACTER:: id
    INTEGER(KIND=4):: mynumber
    LOGICAL:: is_homonucl=.FALSE.

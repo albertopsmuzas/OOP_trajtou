@@ -77,7 +77,26 @@ case('Crp6d')
 case('HLiF001_WS')
    select case( command_argument_count() )
    case(4)
-      allocate( PES_HLiF001:: thisPes )
+      allocate( PES_HLiF001_WS:: thisPes )
+      call thisPes%initialize()
+      allocate( x(3) )
+      allocate( dvdx(3) )
+      call get_command_argument(2,auxstring)
+      read(auxstring,*) x(1)
+      call get_command_argument(3,auxstring)
+      read(auxstring,*) x(2)
+      call get_command_argument(4,auxstring)
+      read(auxstring,*) x(3)
+   case default
+      write(0,*) "ERR: bad number of arguments: ",command_argument_count()
+      write(0,*) "Expected number of arguments: 4: Pestype, x, y, z"
+      call exit(1)
+   end select
+
+case('HLiF001_NS')
+   select case( command_argument_count() )
+   case(4)
+      allocate( PES_HLiF001_NS:: thisPes )
       call thisPes%initialize()
       allocate( x(3) )
       allocate( dvdx(3) )
@@ -95,7 +114,7 @@ case('HLiF001_WS')
 
 case default
    write(0,*) 'ERR: wrong specified PES: '//trim(auxString)
-   write(0,*) 'Implemented ones: Crp3d, Crp6d, HLiF001_WS'
+   write(0,*) 'Implemented ones: Crp3d, Crp6d, HLiF001_WS, HLiF001_NS'
    write(0,*) 'Warning: Case-sensitive'
    call exit(1)
 end select
