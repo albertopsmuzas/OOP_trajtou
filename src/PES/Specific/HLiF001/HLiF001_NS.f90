@@ -12,7 +12,7 @@ use FOURIER_P4MM_MOD, only: Fourierp4mm
 use ONE_FUNCTION_MOD, only: One_func
 implicit none
 ! Local module variable, used to simulate SYSTEM_MOD
-type(LiF001Surf):: sysLiF001Surf
+type(LiF001Surf),private:: sysLiF001Surf
 !///////////////////////////////////////////////////////////////////////////////
 ! TYPE & SUBTYPES: Symmetric point
 !------------------------------------------------------------------------------
@@ -57,25 +57,32 @@ type,extends(PES) :: PES_HLIF001_NS
    type(One_func) dampFunc
    contains
       ! Initialization block
-      procedure,public:: initialize => initialize_PES_HLIF001_NS
+      procedure,public:: initialize                  => initialize_PES_HLIF001_NS
       ! Get block 
-      procedure,public:: get_v_and_derivs => GET_V_AND_DERIVS_PES_HLIF001_NS
+      procedure,public:: get_v_and_derivs            => GET_V_AND_DERIVS_PES_HLIF001_NS
       procedure,public:: get_v_and_derivs_correction => GET_V_AND_DERIVS_CORRECTION_PES_HLIF001_NS
-      procedure,public:: get_repul_corrections => GET_REPUL_CORRECTIONS_PES_HLIF001_NS
-      procedure,public:: getpot => getpot_crp3d
+      procedure,public:: get_repul_corrections       => GET_REPUL_CORRECTIONS_PES_HLIF001_NS
+      procedure,public:: getPot                      => getpot_PES_HLIF001_NS
       ! Enquire block
-      procedure,public:: is_allowed => is_allowed_PES_HLIF001_NS
+      procedure,public:: is_allowed                  => is_allowed_PES_HLIF001_NS
       ! Tools block
-      procedure,public:: extract_vasint => EXTRACT_VASINT_PES_HLIF001_NS
-      procedure,public:: smooth => SMOOTH_PES_HLIF001_NS
-      procedure,public:: interpol => INTERPOL_Z_PES_HLIF001_NS
+      procedure,public:: extract_vasint              => EXTRACT_VASINT_PES_HLIF001_NS
+      procedure,public:: smooth                      => SMOOTH_PES_HLIF001_NS
+      procedure,public:: interpol                    => INTERPOL_Z_PES_HLIF001_NS
       ! Plot tools
-      procedure,public:: plot_xymap => PLOT_XYMAP_PES_HLIF001_NS
-      procedure,public:: plot_direction1d => PLOT_DIRECTION1D_PES_HLIF001_NS
-      procedure,public:: plot_sitios => PLOT_SITIOS_PES_HLIF001_NS
-      procedure,public:: plot_pairpots => PLOT_PAIRPOTS_PES_HLIF001_NS
-      procedure,public:: plot_z => PLOT_Z_PES_HLIF001_NS
+      procedure,public:: plot_xymap                  => PLOT_XYMAP_PES_HLIF001_NS
+      procedure,public:: plot_direction1d            => PLOT_DIRECTION1D_PES_HLIF001_NS
+      procedure,public:: plot_sitios                 => PLOT_SITIOS_PES_HLIF001_NS
+      procedure,public:: plot_pairpots               => PLOT_PAIRPOTS_PES_HLIF001_NS
+      procedure,public:: plot_z                      => PLOT_Z_PES_HLIF001_NS
 end type PES_HLIF001_NS
+
+private initialize_PES_HLiF001_NS,get_v_and_derivs_PES_HLiF001_NS,get_v_and_derivs_correction_PES_HLiF001_NS,&
+        get_repul_corrections_PES_HLiF001_NS,is_allowed_PES_HLiF001_NS,extract_vasint_PES_HLiF001_NS,&
+        smooth_PES_HLiF001_NS,interpol_Z_PES_HLiF001_NS,plot_XYmap_PES_HLiF001_NS,plot_direction1d_PES_HLiF001_NS,&
+        plot_sitios_PES_HLiF001_NS,plot_pairpots_PES_HLiF001_NS,plot_Z_PES_HLiF001_NS,interaction_aenv,&
+        interaction_AP,get_v_and_derivs_PAIRPOT,plot_data_SYMMPOINT,plot_interpol_SYMMPOINT
+
 !///////////////////////////////////////////////////////////////////////////
 contains
 !###########################################################
@@ -952,58 +959,60 @@ END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_PES_HLIF001_NS
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
-   IMPLICIT NONE
+function getpot_PES_HLIF001_NS(this,X) result(finalPot)
+   implicit none
    ! I/O variables
-   CLASS(PES_HLIF001_NS),TARGET,INTENT(IN) :: this
-	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
+   class(PES_HLIF001_NS),target,intent(in) :: this
+	real(kind=8),dimension(3), intent(in) :: X
+	! Function dummy variable
+	real(kind=8):: finalPot
    ! Local variables
-   CLASS(Fourierp4mm),ALLOCATABLE:: interpolxy
-   REAL(KIND=8):: v
-   INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dummy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
+   class(Fourierp4mm),allocatable:: interpolxy
+   real(kind=8):: v
+   integer(kind=4) :: nsites,npairpots
+   real(kind=8),dimension(:),allocatable :: pot,dummy
+   real(kind=8),dimension(:),allocatable :: potarr
+   real(kind=8),dimension(:,:),allocatable :: f,derivarr ! arguments to the xy interpolation
+   real(kind=8),dimension(:,:),allocatable :: xy ! arguments to the xy interpolation
    INTEGER :: i ! counters
    ! Pointers
-   REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_PES_HLIF001_NS: "
+   real(kind=8), pointer :: zmax
+   character(len=24),parameter :: routinename="GET_V_AND_DERIVS_PES_HLIF001_NS: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
    ! GABBA, GABBA HEY! ----------------------
-   ALLOCATE(pot(npairpots))
-   ALLOCATE(dummy(npairpots))
-   SELECT CASE(X(3)>zmax)
-      CASE(.TRUE.)
-         getpot_crp3d=0.D0
-         RETURN
-      CASE(.FALSE.)
+   allocate(pot(npairpots))
+   allocate(dummy(npairpots))
+   select case(x(3)>zmax)
+      case(.true.)
+         finalPot=0.D0
+         return
+      case(.false.)
          ! do nothing
-   END SELECT
+   end select
    !
-   CALL this%GET_REPUL_CORRECTIONS(X,pot,dummy,dummy,dummy)
+   call this%GET_REPUL_CORRECTIONS(X,pot,dummy,dummy,dummy)
    v=sum(pot)
-   ! Now, we have all the repulsive interaction and corrections to the derivarives
+   ! now, we have all the repulsive interaction and corrections to the derivarives
    ! stored in v(:) and dvdu(:) respectively.
-   ! Let's get v and derivatives from xy interpolation of the corrugationless function
-   ALLOCATE(f(2,nsites))
-   ALLOCATE(xy(nsites,2))
-   ALLOCATE(potarr(2))
-   ALLOCATE(derivarr(2,2))
-   DO i=1,nsites
+   ! let's get v and derivatives from xy interpolation of the corrugationless function
+   allocate(f(2,nsites))
+   allocate(xy(nsites,2))
+   allocate(potarr(2))
+   allocate(derivarr(2,2))
+   do i=1,nsites
       xy(i,1)=this%all_sites(i)%x
       xy(i,2)=this%all_sites(i)%y
-      CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
-   END DO
-   CALL interpolxy%READ(xy,f,this%klist)
-   CALL interpolxy%INTERPOL(sysLiF001Surf)
-   CALL interpolxy%GET_F_AND_DERIVS(sysLiF001Surf,X,potarr,derivarr)
-   ! Corrections from the smoothing procedure
-   getpot_crp3d=v+potarr(1)
-   RETURN
-END FUNCTION getpot_crp3d
+      call this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
+   end do
+   call interpolxy%READ(xy,f,this%klist)
+   call interpolxy%INTERPOL(sysLiF001Surf)
+   call interpolxy%GET_F_AND_DERIVS(sysLiF001Surf,X,potarr,derivarr)
+   ! corrections from the smoothing procedure
+   finalPot=v+potarr(1)
+   return
+End function getpot_PES_HLIF001_NS
 !######################################################################
 ! SUBROUTINE: PLOT_DATA_SYMMPOINT #####################################
 !######################################################################

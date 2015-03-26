@@ -175,14 +175,14 @@ END FUNCTION is_allowed_VACUUMPOT
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,shift)
+SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,surfaceEnergy)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Vacuumpot),INTENT(OUT):: this
    REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
    REAL(KIND=8),DIMENSION(:),INTENT(IN) :: f
-   REAL(KIND=8),INTENT(IN):: shift
+   REAL(KIND=8),INTENT(IN):: surfaceEnergy
    ! Local variables
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux1,aux2
    CHARACTER(LEN=29),PARAMETER :: routinename="INITIALIZE_DIRECT_VACUUMPOT: "
@@ -192,8 +192,8 @@ SUBROUTINE INITIALIZE_DIRECT_VACUUMPLOT(this,x,f,shift)
    ALLOCATE(aux2(size(f)))
    aux1=x
    aux2=f
+   this%surfEn=surfaceEnergy
    CALL ORDER(aux1,aux2)
-   aux2=aux2-shift
    CALL this%rpot%READ(aux1,aux2)
    CALL this%rpot%INTERPOL(0.D0,0,0.D0,0)
    CALL this%rpot%SET_MINIMUM()

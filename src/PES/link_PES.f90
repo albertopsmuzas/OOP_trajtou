@@ -9,4 +9,5 @@ module LINK_PES_MOD
    use CRP6D_MOD
    use PES_HLiF001_WS_MOD
    use PES_HLiF001_NS_MOD
+   use PES_H2LiF001_MOD
 end module LINK_PES_MOD

@@ -28,11 +28,10 @@ END TYPE
 !! fixed
 !-------------------------------------------------
 TYPE Cut2d
-   PRIVATE
    CHARACTER(LEN=:),ALLOCATABLE:: alias
    CHARACTER(LEN=:),ALLOCATABLE:: filename
-   REAL(KIND=8),PUBLIC:: x,y,phi,theta
-   TYPE(Bicsplines),PUBLIC:: interrz
+   REAL(KIND=8):: x,y,phi,theta
+   TYPE(Bicsplines):: interrz
    CONTAINS
       ! Initialize block
       PROCEDURE,PUBLIC:: READ => READ_CUT2D

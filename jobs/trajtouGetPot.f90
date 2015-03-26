@@ -74,6 +74,31 @@ case('Crp6d')
       call exit(1)
    end select
 
+case('H2LiF001')
+   select case( command_argument_count() )
+   case(7)
+      allocate( PES_H2LiF001:: thisPes )
+      call thisPes%initialize()
+      allocate( x(6) )
+      allocate( dvdx(6) )
+      call get_command_argument(2,auxstring)
+      read(auxstring,*) x(1)
+      call get_command_argument(3,auxstring)
+      read(auxstring,*) x(2)
+      call get_command_argument(4,auxstring)
+      read(auxstring,*) x(3)
+      call get_command_argument(5,auxstring)
+      read(auxstring,*) x(4)
+      call get_command_argument(6,auxstring)
+      read(auxstring,*) x(5)
+      call get_command_argument(7,auxstring)
+      read(auxstring,*) x(6)
+   case default
+      write(0,*) "ERR: bad number of arguments: ",command_argument_count()
+      write(0,*) "Expected number of arguments: 7: Pestype, x, y, z, r, theta, phi"
+      call exit(1)
+   end select
+
 case('HLiF001_WS')
    select case( command_argument_count() )
    case(4)

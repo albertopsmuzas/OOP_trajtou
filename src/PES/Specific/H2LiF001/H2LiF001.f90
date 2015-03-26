@@ -5,17 +5,18 @@
 !! CRP6D PES explicit implementation
 !#######################################################
 module PES_H2LiF001_MOD
-! Massive name spaces
-use SYSTEM_MOD
-use LOGISTIC_MOD, only: Logistic_func
-! Selective name spaces
-use UNITS_MOD, only: Length, pi
+! Initial declarations
 use PES_MOD, only: PES
-use HLIF001_NS_MOD, only: HLi001_NS
+use LiF001SURF_MOD, only: LiF001Surf,pi
+use LOGISTIC_FUNCTION_MOD, only: Logistic_func
+use XEXPONENTIAL_FUNCTION_MOD, only: Xexponential_func
+use PES_HLIF001_NS_MOD, only: Pes_HLiF001_NS
 use EXTRAPOL_TO_VACUUM_MOD, only: Vacuumpot
 use FOURIER_P4MM_MOD, only: Fourierp4mm
 use WYCKOFF_P4MM_MOD, only: WyckoffSitio, Wyckoffp4mm
 implicit none
+! Local module variable, used to simulate SYSTEM_MOD
+type(LiF001Surf),private:: sysLiF001Surf
 !/////////////////////////////////////////////////
 ! TYPE: PES_H2LiF001
 !-------------------------------------------------
@@ -29,81 +30,49 @@ type,extends(PES):: PES_H2LiF001
    logical:: is_resized=.false.
    real(kind=8):: zvacuum
    integer(kind=4),dimension(2):: grid=[25,50]
-   type(Wyckoffp4mm),dimension(4):: wyckoffsite
-   type(HLiF001_NS),dimension(1):: atomiccrp
+   type(Wyckoffp4mm),dimension(:),allocatable:: wyckoffSite
+   type(Pes_HLiF001_NS),dimension(:),allocatable:: atomicCrp
    type(VacuumPot):: farpot
    type(Logistic_func):: dumpfunc
    character(len=30):: extrapol2vac_flag='Xexponential'
-   integer(kind=4),dimension(4,2):: xyklist
+   integer(kind=4),dimension(:,:),allocatable:: xyklist
    contains
       ! Initialization block
-      procedure,public:: READ => READ_PES_H2LiF001
-      procedure,public:: INITIALIZE => INITIALIZE_PES_H2LiF001
+      procedure,public:: initialize                  => INITIALIZE_PES_H2LiF001
       ! Set block
-      procedure,public:: SET_SMOOTH => SET_SMOOTH_PES_H2LiF001
+      procedure,public:: set_smooth                  => SET_SMOOTH_PES_H2LiF001
       ! Get block
-      procedure,public:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_PES_H2LiF001
-      procedure,public:: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_PES_H2LiF001
-      procedure,public:: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_PES_H2LiF001
+      procedure,public:: get_v_and_derivs            => GET_V_AND_DERIVS_PES_H2LiF001
+      procedure,public:: get_v_and_derivs_pure       => GET_V_AND_DERIVS_PURE_PES_H2LiF001
+      procedure,public:: get_atomicpot_and_derivs    => GET_ATOMICPOT_AND_DERIVS_PES_H2LiF001
       ! Tools block
-      procedure,public:: SMOOTH => SMOOTH_PES_H2LiF001
-      procedure,public:: SMOOTH_EXTRA => SMOOTH_EXTRA_PES_H2LiF001
-      procedure,public:: INTERPOL => INTERPOL_PES_H2LiF001
-      procedure,public:: RAWINTERPOL => RAWINTERPOL_PES_H2LiF001
-      procedure,public:: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_PES_H2LiF001
-      procedure,public:: ADD_VACUUMSURF => ADD_VACUUMSURF_PES_H2LiF001
-      procedure,public:: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_PES_H2LiF001
+      procedure,public:: smooth                      => SMOOTH_PES_H2LiF001
+      procedure,public:: interpol                    => INTERPOL_PES_H2LiF001
+      procedure,public:: extract_vacuumsurf          => EXTRACT_VACUUMSURF_PES_H2LiF001
+      procedure,public:: add_vacuumsurf              => ADD_VACUUMSURF_PES_H2LiF001
+      procedure,public:: interpol_new_rzgrid         => INTERPOL_NEW_RZGRID_PES_H2LiF001
       ! Plot toolk
-      procedure,public:: PLOT1D_THETA => PLOT1D_THETA_PES_H2LiF001
-      procedure,public:: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_PES_H2LiF001
-      procedure,public:: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_PES_H2LiF001
-      procedure,public:: PLOT1D_PHI => PLOT1D_PHI_PES_H2LiF001
-      procedure,public:: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_PES_H2LiF001
-      procedure,public:: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_PES_H2LiF001
-      procedure,public:: PLOT1D_R => PLOT1D_R_PES_H2LiF001
-      procedure,public:: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_PES_H2LiF001
-      procedure,public:: PLOT1D_Z => PLOT1D_Z_PES_H2LiF001
-      procedure,public:: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_PES_H2LiF001
-      procedure,public:: PLOT_XYMAP => PLOT_XYMAP_PES_H2LiF001
-      procedure,public:: PLOT_RZMAP => PLOT_RZMAP_PES_H2LiF001
-      procedure,public:: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_PES_H2LiF001
+      procedure,public:: plot1d_theta                => PLOT1D_THETA_PES_H2LiF001
+      procedure,public:: plot1d_atomic_interac_theta => PLOT1D_ATOMIC_INTERAC_THETA_PES_H2LiF001
+      procedure,public:: plot1d_phi                  => PLOT1D_PHI_PES_H2LiF001
+      procedure,public:: plot1d_atomic_interac_phi   => PLOT1D_ATOMIC_INTERAC_PHI_PES_H2LiF001
+      procedure,public:: plot1d_r                    => PLOT1D_R_PES_H2LiF001
+      procedure,public:: plot1d_z                    => PLOT1D_Z_PES_H2LiF001
+      procedure,public:: plot_xymap                  => PLOT_XYMAP_PES_H2LiF001
+      procedure,public:: plot_rzmap                  => PLOT_RZMAP_PES_H2LiF001
+      procedure,public:: plot_atomic_interac_rz      => PLOT_ATOMIC_INTERAC_RZ_PES_H2LiF001
       ! Enquire block
-      procedure,public:: is_allowed => is_allowed_PES_H2LiF001
+      procedure,public:: is_allowed                  => is_allowed_PES_H2LiF001
 end type PES_H2LiF001
+
+private initialize_PES_H2LiF001,set_smooth_PES_H2LiF001,get_v_and_derivs_PES_H2LiF001,get_v_and_derivs_pure_PES_H2LiF001,&
+        get_atomicPot_and_derivs_PES_H2LiF001,smooth_PES_H2LiF001,interpol_PES_H2LiF001,extract_vacuumSurf_PES_H2LiF001,&
+        add_vacuumSurf_PES_H2LiF001,interpol_new_RZgrid_PES_H2LiF001,plot1d_theta_PES_H2LiF001,&
+        plot1d_atomic_interac_theta_PES_H2LiF001,plot1d_phi_PES_H2LiF001,plot1d_atomic_interac_phi_PES_H2LiF001,&
+        plot1d_R_PES_H2LiF001,plot1d_Z_PES_H2LiF001,plot_XYmap_PES_H2LiF001,plot_RZmap_PES_H2LiF001,&
+        plot_atomic_interac_RZ_PES_H2LiF001,is_allowed_PES_H2LiF001,from_molecular_to_atomic
+
 contains
-!###########################################################
-!# SUBROUTINE: INITIALIZE_PES_H2LiF001
-!###########################################################
-SUBROUTINE INITIALIZE_PES_H2LiF001(this,filename,tablename)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(PES_H2LiF001),INTENT(OUT)::this
-   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename,tablename
-   ! Local variables
-   CHARACTER(LEN=:),ALLOCATABLE:: auxstring
-   ! Run section
-   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
-      CASE(.TRUE.)
-         auxstring=system_inputfile
-      CASE(.FALSE.)
-         auxstring=filename
-   END SELECT
-   SELECT CASE(present(tablename))
-      CASE(.TRUE.)
-         CALL this%READ(filename=auxstring,tablename=tablename)
-      CASE(.FALSE.)
-         CALL this%READ(filename=auxstring,tablename='pes')
-   END SELECT
-   CALL this%INTERPOL()
-   SELECT CASE(this%is_resized)
-      CASE(.TRUE.)
-         CALL this%INTERPOL_NEW_RZGRID(this%grid(1),this%grid(2))
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   RETURN
-END SUBROUTINE INITIALIZE_PES_H2LiF001
 !###########################################################
 !# SUBROUTINE: GET_ATOMICPOT_AND_DERIVS_PES_H2LiF001
 !###########################################################
@@ -220,10 +189,10 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_PES_H2LiF001(this,x,v,dvdu)
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
    CALL xyinterpol%READ(xy,f,this%xyklist)
-   CALL xyinterpol%INTERPOL(system_surface)
+   CALL xyinterpol%INTERPOL(sysLiF001Surf)
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,x(1:2),aux1,aux2)
+   CALL xyinterpol%GET_F_AND_DERIVS(sysLiF001Surf,x(1:2),aux1,aux2)
    !--------------------------------------
    ! Results for the real potential
    !-------------------------------------
@@ -231,9 +200,11 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_PES_H2LiF001(this,x,v,dvdu)
    dvdu_atomicA=atomic_dvdu(1:3)
    dvdu_atomicB=atomic_dvdu(4:6)
    v=aux1(1)+sum(atomic_v)
-
-   ma=system_mass(1)
-   mb=system_mass(2)
+   ! It does not matter ma and mb values inside this subroutine as long ma=mb for D2 and H2. I let
+   ! equations to depend on explicit values of Ma and Mb just in case someone want to
+   ! implement an explicit HD PES in the future
+   ma=1.d0
+   mb=1.d0
    dvdu(1)=aux2(1,1)+dvdu_atomicA(1)+dvdu_atomicB(1)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
    dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
@@ -261,117 +232,84 @@ END SUBROUTINE GET_V_AND_DERIVS_PURE_PES_H2LiF001
 !###########################################################
 !# SUBROUTINE: GET_V AND DERIVS_PES_H2LiF001
 !###########################################################
-SUBROUTINE GET_V_AND_DERIVS_PES_H2LiF001(this,X,v,dvdu,errCode)
+subroutine get_v_and_derivs_PES_H2LiF001(this,X,v,dvdu,errCode)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(PES_H2LiF001),TARGET,INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: dvdu
+   class(PES_H2LiF001),target,intent(in):: this
+   real(kind=8),dimension(:),intent(in) :: x
+   real(kind=8),intent(out) :: v
+   real(kind=8),dimension(:),intent(out) :: dvdu
    integer(kind=1),optional,intent(out):: errCode
    ! Local variables
-   REAL(KIND=8) :: zcrp, zvac ! last PES_H2LiF001 z value and Z infinity
-   REAL(KIND=8) :: vzcrp, vzvac ! potentials at zcrp and zvac
-   REAL(KIND=8),DIMENSION(6) :: dvducrp ! derivatives at zcrp
-   REAL(KIND=8),DIMENSION(6) :: dvduvac ! derivatives at vacuum
-   REAL(KIND=8) :: alpha,beta,gama ! parameters
-   CLASS(Function1d),ALLOCATABLE:: extrapolfunc
-   INTEGER(KIND=4) :: i !counter
-   ! Local Parameter
-   REAL(KIND=8),PARAMETER :: zero=0.D0 ! what we will consider zero (a.u.)
-   REAL(KIND=8),PARAMETER :: dz=0.5D0 ! 0.25 Angstroems approx
+   real(kind=8) :: zcrp, zvac ! last PES_H2LiF001 z value and Z infinity
+   real(kind=8) :: vzcrp, vzvac ! potentials at zcrp and zvac
+   real(kind=8),dimension(6) :: dvducrp ! derivatives at zcrp
+   real(kind=8),dimension(6) :: dvduvac ! derivatives at vacuum
+   real(kind=8) :: alpha,beta,gama ! parameters
+   type(Xexponential_func):: extrapolfunc
+   integer(kind=4) :: i !counter
+   ! local parameter
+   real(kind=8),parameter :: zero=0.D0 ! what we will consider zero (a.u.)
+   real(kind=8),parameter :: dz=0.5D0 ! 0.25 Angstroems approx
    character(len=*),parameter:: routinename='GET_V_AND_DERIVS_PES_H2LiF001: '
    ! Run section
    zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
    zvac=this%zvacuum
    ! Check if we are in the pure PES_H2LiF001 region
-   SELECT CASE(x(3)<= zcrp) !easy
-      CASE(.TRUE.)
-         call this%get_v_and_derivs_pure(x,v,dvdu)
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing, next switch
-   END SELECT
-   ! Check if we are in the extrapolation region
-   SELECT CASE(x(3)>zcrp .AND. x(3)<zvac)
-      CASE(.TRUE.) ! uff
-         ! Set potential and derivs
-         vzvac=this%farpot%getpot(x(4))
-         CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp,x(4),x(5),x(6)],vzcrp,dvducrp)
-         dvduvac(1:3)=zero
-         dvduvac(4)=this%farpot%getderiv(x(4))
-         dvduvac(5:6)=zero
-         ! Check kind of extrapolation
-         SELECT CASE(this%extrapol2vac_flag)
-            CASE("Xexponential")
-               ALLOCATE(Xexponential_func::extrapolfunc)
-               ! Extrapol potential
-               beta=-1.D0/zvac
-               alpha=(vzcrp-vzvac)/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
-               gama=vzvac-alpha*zvac*dexp(beta*zvac)
-               CALL extrapolfunc%READ([alpha,beta])
-               v=extrapolfunc%getvalue(x(3))+gama
-               dvdu(3)=extrapolfunc%getderiv(x(3))
-               ! Extrapol derivatives
-               DO i = 1, 6
-                  SELECT CASE(i)
-                     CASE(3)
-                        ! Skip dvdz
-                     CASE DEFAULT
-                        beta=-1.D0/zvac
-                        alpha=(dvducrp(i)-dvduvac(i))/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
-                        gama=dvduvac(i)-alpha*zvac*dexp(beta*zvac)
-                        CALL extrapolfunc%READ([alpha,beta])
-                        dvdu(i)=extrapolfunc%getvalue(x(3))+gama
-                  END SELECT
-               END DO
-               DEALLOCATE(extrapolfunc)
-               RETURN
+   select case(x(3)<= zcrp) !easy
+   case(.true.)
+      call this%get_v_and_derivs_pure(x,v,dvdu)
+      return
+   case(.false.)
+      ! do nothing, next switch
+   end select
+   ! check if we are in the extrapolation region
+   select case(x(3)>zcrp .AND. x(3)<zvac)
+   case(.true.) ! uff
+      ! Set potential and derivs
+      vzvac=this%farpot%getpot(x(4))
+      CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp,x(4),x(5),x(6)],vzcrp,dvducrp)
+      dvduvac(1:3)=zero
+      dvduvac(4)=this%farpot%getderiv(x(4))
+      dvduvac(5:6)=zero
+      ! Extrapol potential
+      beta=-1.D0/zvac
+      alpha=(vzcrp-vzvac)/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+      gama=vzvac-alpha*zvac*dexp(beta*zvac)
+      CALL extrapolfunc%READ([alpha,beta])
+      v=extrapolfunc%getvalue(x(3))+gama
+      dvdu(3)=extrapolfunc%getderiv(x(3))
+      ! extrapol derivatives
+      do i = 1, 6
+         select case(i)
+         case(3)
+            ! skip dvdz
+         case default
+            beta=-1.D0/zvac
+            alpha=(dvducrp(i)-dvduvac(i))/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+            gama=dvduvac(i)-alpha*zvac*dexp(beta*zvac)
+            call extrapolfunc%READ([alpha,beta])
+            dvdu(i)=extrapolfunc%getvalue(x(3))+gama
+         end select
+      end do
+      return
 
-            CASE("Linear")
-               ALLOCATE(Linear_func::extrapolfunc)
-               ! Extrapol potential
-               beta=(vzcrp*zvac-vzvac*zcrp)/(zvac-zcrp)
-               alpha=(vzvac-beta)/zvac
-               CALL extrapolfunc%READ([alpha,beta])
-               v=extrapolfunc%getvalue(x(3))
-               dvdu(3)=extrapolfunc%getderiv(x(3))
-               ! Extrapol derivatives
-               DO i = 1, 6
-                  SELECT CASE(i)
-                     CASE(3)
-                        ! do nothing
-                     CASE DEFAULT
-                        beta=(dvducrp(i)*zvac-dvduvac(i)*zcrp)/(zvac-zcrp)
-                        alpha=(dvduvac(i)-beta)/zvac
-                        CALL extrapolfunc%READ([alpha,beta])
-                        dvdu(i)=extrapolfunc%getvalue(x(3))
-                  END SELECT
-               END DO
-               DEALLOCATE(extrapolfunc)
-               RETURN
-
-            CASE DEFAULT
-               WRITE(0,*) "GET_V_AND_DERIVS_PES_H2LiF001 ERR: type of extrapolation function isn't implemented yet"
-               WRITE(0,*) "Implemented ones: Linear, Xexponential, None"
-               CALL EXIT(1)
-         END SELECT
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   ! Check if we are in the Vacuum region
-   SELECT CASE(x(3)>=zvac) !easy
-      CASE(.TRUE.)
+   case(.false.)
+      ! do nothing
+   end select
+   ! check if we are in the Vacuum region
+   select case(x(3)>=zvac) !easy
+      case(.true.)
          v=this%farpot%getpot(x(4))
          dvdu(1:3)=0.D0
          dvdu(4)=this%farpot%getderiv(x(4))
          dvdu(5:6)=0.D0
-      CASE(.FALSE.) ! this's the last switch!
+      case(.false.) ! this's the last switch!
           errCode=1_1
-   END SELECT
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_PES_H2LiF001
+   end select
+   return
+end subroutine get_v_and_derivs_PES_H2LiF001
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_SMOOTH_PES_H2LiF001
 !###########################################################
@@ -418,10 +356,10 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_PES_H2LiF001(this,x,v,dvdu)
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
    CALL xyinterpol%READ(xy,f,this%xyklist)
-   CALL xyinterpol%INTERPOL(system_surface)
+   CALL xyinterpol%INTERPOL(sysLiF001Surf)
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,x(1:2),aux1,aux2)
+   CALL xyinterpol%GET_F_AND_DERIVS(sysLiF001Surf,x(1:2),aux1,aux2)
    v=aux1(1)
    dvdu(1)=aux2(1,1)
    dvdu(2)=aux2(1,2)
@@ -453,26 +391,6 @@ SUBROUTINE INTERPOL_PES_H2LiF001(this)
    this%is_interpolated=.TRUE.
    RETURN
 END SUBROUTINE INTERPOL_PES_H2LiF001
-!###########################################################
-!# SUBROUTINE: RAWINTERPOL_PES_H2LiF001
-!###########################################################
-SUBROUTINE RAWINTERPOL_PES_H2LiF001(this)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(PES_H2LiF001),INTENT(INOUT)::this
-   ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
-   ! Run section
-   CALL this%EXTRACT_VACUUMSURF()   
-   DO i = 1, this%nsites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
-         CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL()
-      END DO
-   END DO
-   this%is_interpolated=.TRUE.
-   RETURN
-END SUBROUTINE RAWINTERPOL_PES_H2LiF001
 !###########################################################
 !# SUBROUTINE: SMOOTH_PES_H2LiF001
 !###########################################################
@@ -512,106 +430,6 @@ SUBROUTINE SMOOTH_PES_H2LiF001(this)
    RETURN
 END SUBROUTINE SMOOTH_PES_H2LiF001
 !###########################################################
-!# SUBROUTINE: ROUGH_PES_H2LiF001
-!###########################################################
-SUBROUTINE ROUGH_PES_H2LiF001(this)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-    CLASS(PES_H2LiF001),INTENT(INOUT):: this
-   ! Local variables
-   REAL(KIND=8),DIMENSION(6):: molcoord,atomcoord
-   INTEGER(KIND=4):: nr,nz
-   INTEGER(KIND=4):: i,j,k,l ! counters
-   REAL(KIND=8):: newpot
-   ! Parameters
-   CHARACTER(LEN=*),PARAMETER:: routinename="ROUGH_PES_H2LiF001: "
-   ! Run section
-   DO i = 1, this%nsites ! cycle wyckoff sites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
-         molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
-         molcoord(2)=this%wyckoffsite(i)%zrcut(j)%y
-         molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
-         molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
-         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
-         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
-         DO k = 1, nr
-            DO l = 1, nz
-               molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
-               molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
-               atomcoord(:)=from_molecular_to_atomic(molcoord)
-               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
-               SELECT CASE(this%natomic)
-                  CASE(1)
-                     newpot=newpot+this%atomiccrp(1)%getpot(atomcoord(1:3))+&
-                        this%atomiccrp(1)%getpot(atomcoord(4:6))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE(2)
-                     newpot=newpot+this%atomiccrp(1)%getpot(atomcoord(1:3))+&
-                        this%atomiccrp(2)%getpot(atomcoord(4:6))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE DEFAULT
-                     WRITE(0,*) "SMOOTH_PES_H2LiF001 ERR: Something is wrong with number of atomic crp potentials"
-                     CALL EXIT(1)
-               END SELECT
-            END DO
-         END DO
-      END DO
-   END DO
-   this%is_smooth=.FALSE.
-   RETURN
-END SUBROUTINE ROUGH_PES_H2LiF001
-!###########################################################
-!# SUBROUTINE: SMOOTH_EXTRA_PES_H2LiF001
-!###########################################################
-SUBROUTINE SMOOTH_EXTRA_PES_H2LiF001(this)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-    CLASS(PES_H2LiF001),INTENT(INOUT) :: this
-   ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
-   INTEGER(KIND=4) :: nr,nz
-   INTEGER(KIND=4) :: i,j,k,l ! counters
-   CHARACTER(LEN=20),PARAMETER :: routinename="SMOOTH_EXTRA_PES_H2LiF001: "
-   REAL(KIND=8) :: newpot
-   ! Run section
-   DO i = 1, this%nsites ! cycle wyckoff sites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
-         molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
-         molcoord(2)=this%wyckoffsite(i)%zrcut(j)%y
-         molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
-         molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
-         nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
-         nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
-         DO k = 1, nr
-            DO l = 1, nz
-               molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
-               molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
-               atomcoord(:)=from_molecular_to_atomic(molcoord)
-               newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
-               SELECT CASE(this%natomic)
-                  CASE(1)
-                     newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))&
-                        -this%atomiccrp(1)%getpot(atomcoord(4:6))-this%farpot%getpot(molcoord(4))&
-                        -0.8*dexp(-molcoord(4))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE(2)
-                     newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))-&
-                        this%atomiccrp(2)%getpot(atomcoord(4:6))-this%farpot%getpot(molcoord(4))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE DEFAULT
-                     WRITE(0,*) "SMOOTH_EXTRA_PES_H2LiF001 ERR: Something is wrong with number of atomic crp potentials"
-                     CALL EXIT(1)
-               END SELECT
-            END DO
-         END DO
-      END DO
-   END DO
-   this%is_smooth=.TRUE.
-   RETURN
-END SUBROUTINE SMOOTH_EXTRA_PES_H2LiF001
-!###########################################################
 !# SUBROUTINE: EXTRACT_VACUUMSURF_PES_H2LiF001
 !###########################################################
 SUBROUTINE EXTRACT_VACUUMSURF_PES_H2LiF001(this)
@@ -623,7 +441,7 @@ SUBROUTINE EXTRACT_VACUUMSURF_PES_H2LiF001(this)
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
    REAL(KIND=8) :: newpot
-   CHARACTER(LEN=26),PARAMETER :: routinename="EXTRACT_VACUUMSURF_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename="EXTRACT_VACUUMSURF_PES_H2LiF001: "
    ! Run section
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
@@ -654,7 +472,7 @@ SUBROUTINE ADD_VACUUMSURF_PES_H2LiF001(this)
    INTEGER(KIND=4) :: nr,nz
    INTEGER(KIND=4) :: i,j,k,l ! counters
    REAL(KIND=8) :: newpot
-   CHARACTER(LEN=22),PARAMETER :: routinename="ADD_VACUUMSURF_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename="ADD_VACUUMSURF_PES_H2LiF001: "
    ! Run section
    DO i = 1, this%nsites ! cycle wyckoff sites
       DO j = 1, this%wyckoffsite(i)%n2dcuts
@@ -676,54 +494,67 @@ END SUBROUTINE ADD_VACUUMSURF_PES_H2LiF001
 !###########################################################
 !# SUBROUTINE: READ_PES_H2LiF001
 !###########################################################
-subroutine READ_PES_H2LiF001(this,filename,tablename)
+subroutine initialize_PES_H2LiF001(this,filename,tablename)
    ! Initial declarations   
    implicit none
    ! I/O variables
-   class(Pes_H2lif001),intent(out):: this
-   character(len=*),intent(in):: filename,tablename
+   class(Pes_H2LiF001),intent(out):: this
+   character(len=*),optional,intent(in):: filename,tablename
    ! local variables
-   character(len=*),parameter:: routinename="READ_PES_H2LiF001: "
    real(kind=8),dimension(14,14):: gridPot1414
    real(kind=8),dimension(14,16):: gridPot1416
-   real(kind=8),dimension(14):: gridR14,gridZ14
-   real(kind=8),dimension(16):: gridR16
-   data gridR14(:)/0.7558904532d0,0.9448630664d0,1.1338356797d0,1.2283219864d0,1.3228082930d0,1.4172945997d0,1.5117809063d0&
-                   1.6062672130d0,1.8897261329d0,2.3621576661d0,2.8345891993d0,3.3070207325d0,3.7794522658d0,4.3463701056d0/
-   data gridZ14(:)/0.4724315332d0,0.9448630664d0,1.8897261329d0,2.8345891993d0,3.4015070392d0,3.9684248791d0,4.7243153322d0,&
-                   5.4802057854d0,6.0471236252d0,6.4250688518d0,6.8030140784d0,7.1809593050d0,7.3699319183d0,7.5589045315d0/
-   data gridZ16(:)/0.4724315332d0,0.9448630664d0,1.3983973383d0,1.8897261329d0,2.3054658821d0,2.8345891993d0,&
-                   3.4015070392d0,3.9684248791d0,4.7243153322d0,5.4802057854d0,6.0471236252d0,6.4250688518d0,&
-                   6.8030140784d0,7.1809593050d0,7.3699319183d0,7.5589045315d0/
+   ! Parameters
+   character(len=*),parameter:: routinename="READ_PES_H2LiF001: "
+   real(kind=8),dimension(14),parameter:: gridR14=[ 0.7558904532d0,0.9448630664d0,1.1338356797d0,1.2283219864d0,&
+                                                    1.3228082930d0,1.4172945997d0,1.5117809063d0,1.6062672130d0,&
+                                                    1.8897261329d0,2.3621576661d0,2.8345891993d0,3.3070207325d0,&
+                                                    3.7794522658d0,4.3463701056d0 ]
+   real(kind=8),dimension(14),parameter:: gridZ14=[ 0.4724315332d0,0.9448630664d0,1.8897261329d0,2.8345891993d0,&
+                                                    3.4015070392d0,3.9684248791d0,4.7243153322d0,5.4802057854d0,&
+                                                    6.0471236252d0,6.4250688518d0,6.8030140784d0,7.1809593050d0,&
+                                                    7.3699319183d0,7.5589045315d0 ]
+   real(kind=8),dimension(16),parameter:: gridZ16=[ 0.4724315332d0,0.9448630664d0,1.3983973383d0,1.8897261329d0,&
+                                                    2.3054658821d0,2.8345891993d0,3.4015070392d0,3.9684248791d0,&
+                                                    4.7243153322d0,5.4802057854d0,6.0471236252d0,6.4250688518d0,&
+                                                    6.8030140784d0,7.1809593050d0,7.3699319183d0,7.5589045315d0 ]
    ! Run section -----------------------
    call this%set_pesType('PES_H2LiF001')
    call this%set_alias('H2_on_LiF001')
    call this%set_dimensions(6)
-   this%is_homonuclear=.true.
-   call this%atomicCrp(1)%initialize()
-   call this%farPot%initialize('Numerical')
+   this%is_homonucl=.true.
+   call this%farPot%initialize_direct( x=[ 0.7558904532d0,0.9448630664d0,1.1338356797d0,1.2283219864d0,1.3228082930d0,&
+                                           1.4172945997d0,1.5117809063d0,1.6062672130d0,1.7007535196d0,1.8897261329d0,&
+                                           2.3621576661d0,2.8345891993d0,3.3070207325d0,3.7794522658d0,4.3463701056d0 ],&
+                                       f=[ -0.0412144309d0,-0.1744799612d0,-0.2298169263d0,-0.2422003318d0,-0.2483344814d0,&
+                                           -0.2500191955d0,-0.2485072327d0,-0.2446916237d0,-0.2392079371d0,-0.2250493114d0,&
+                                           -0.1828462465d0,-0.1423982815d0,-0.1082070069d0,-0.0810442795d0,-0.0564546003d0 ],&
+                                       surfaceEnergy=-7.09306998104d0 )
    call this%dumpFunc%read([3.d0,4.d0])
    this%zvacuum=13.2280829302d0
+   allocate( this%wyckoffSite(4) )
+   allocate( this%atomicCrp(1) )
+   call this%atomicCrp(1)%initialize()
+   allocate( this%xyKlist(4,2) )
    this%xyklist(:,1)=[0,1,1,2]
    this%xyklist(:,2)=[0,0,1,0]
+   call sysLiF001Surf%initialize('dummyString')
    ! Create wyckoff sites//////////////////////////////////
    ! Wickoff Top Li -----------> 'a'
    this%wyckoffSite(1)%id='a'
    this%wyckoffSite(1)%myNumber=1
-   this%wyckoffSite(1)%is_homonuclear=.true.
-   this%wyckoffSite(1)%alias='Top Li'
+   this%wyckoffSite(1)%is_homonucl=.true.
    this%wyckoffSite(1)%x=0.d0
    this%wyckoffSite(1)%y=0.d0
    this%wyckoffSite(1)%n2dcuts=5
    allocate( this%wyckoffSite(1)%nPhiPoints(3) )
    this%wyckoffSite(1)%nPhiPoints(:)=[1,2,2]
    allocate( this%wyckoffSite(1)%zrCut(5) )
-   this%wickoffSite(1)%zrCut(:)%x=0.d0
-   this%wickoffSite(1)%zrCut(:)%y=0.d0
+   this%wyckoffSite(1)%zrCut(:)%x=0.d0
+   this%wyckoffSite(1)%zrCut(:)%y=0.d0
    ! Reading zrcuts
-   this%wickoffSite(1)%zrcut(1)%alias='Top_Li_0_0'
-   this%wickoffSite(1)%zrCut(1)%theta=0.d0
-   this%wickoffSite(1)%zrCut(1)%phi=0.d0
+   this%wyckoffSite(1)%zrcut(1)%alias='Top_Li_0_0'
+   this%wyckoffSite(1)%zrCut(1)%theta=0.d0
+   this%wyckoffSite(1)%zrCut(1)%phi=0.d0
    gridPot1416(:,:)=reshape( [ -2.3486329404d0, 1.0844017627d0, 8.8266781296d0, 9.1272988309d0, 6.5171540893d0, 1.6638643184d0,&
                                -0.9649307703d0,-2.4497027752d0,-4.5344580512d0,-5.7406206931d0,-6.3350386134d0,-6.6717466581d0,&
                                -6.8772623685d0,-7.0181287846d0,-5.8769513827d0,-5.7776624228d0,-5.5109630136d0,-5.2525253008d0,&
@@ -764,9 +595,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                                -7.1750937403d0,-7.1507212202d0 ],shape( gridPot1416 ) )
    call this%wyckoffSite(1)%zrCut(1)%interRZ%read( gridR14,gridZ16,gridPot1416 )
    ! Second cut2d
-   this%wickoffSite(1)%zrcut(2)%alias='Top_Li_45_0'
-   this%wickoffSite(1)%zrCut(2)%theta=0.785398163397d0
-   this%wickoffSite(1)%zrCut(2)%phi=0.d0
+   this%wyckoffSite(1)%zrcut(2)%alias='Top_Li_45_0'
+   this%wyckoffSite(1)%zrCut(2)%theta=0.785398163397d0
+   this%wyckoffSite(1)%zrCut(2)%phi=0.d0
    gridPot1414(:,:)=reshape( [  -4.3930691146d0,-4.5492390478d0,-4.7432240368d0,-4.8587091594d0,&
                                 -4.9825143292d0,-5.1107735173d0,-5.2401098281d0,-5.3680834739d0,&
                                 -5.7370930050d0,-6.2247672104d0,-6.5372845760d0,-6.7355163171d0,&
@@ -818,9 +649,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                                 -7.2362828371d0,-7.2023477750d0,-7.1753186462d0,-7.1509273840d0 ],shape( gridPot1414 ) )
    call this%wyckoffSite(1)%zrCut(2)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! third cut2d
-   this%wickoffSite(1)%zrcut(3)%alias='Top_Li_45_45'
-   this%wickoffSite(1)%zrCut(3)%theta=0.785398163397d0
-   this%wickoffSite(1)%zrCut(3)%phi=0.785398163397d0
+   this%wyckoffSite(1)%zrcut(3)%alias='Top_Li_45_45'
+   this%wyckoffSite(1)%zrCut(3)%theta=0.785398163397d0
+   this%wyckoffSite(1)%zrCut(3)%phi=0.785398163397d0
    gridPot1414(:,:)=reshape( [ -4.3930823443d0,-4.5492658748d0,-4.7432806308d0,-4.8587903754d0,&
                                -4.9826212697d0,-5.1109150022d0,-5.2403027620d0,-5.3683429241d0,&
                                -5.7369761422d0,-6.2233861707d0,-6.5348999123d0,-6.7319990392d0,&
@@ -872,9 +703,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                                -7.2363015793d0,-7.2023705596d0,-7.1753421658d0,-7.1509483311d0 ],shape( gridPot1414 ) )
    call this%wyckoffSite(1)%zrCut(3)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Fourth cut2d
-   this%wickoffSite(1)%zrcut(4)%alias='Top_Li_90_0'
-   this%wickoffSite(1)%zrCut(4)%theta=1.57079632679d0
-   this%wickoffSite(1)%zrCut(4)%phi=0.d0
+   this%wyckoffSite(1)%zrcut(4)%alias='Top_Li_90_0'
+   this%wyckoffSite(1)%zrCut(4)%theta=1.57079632679d0
+   this%wyckoffSite(1)%zrCut(4)%phi=0.d0
    gridPot1414(:,:)=reshape( [ -5.0184217276d0,-5.2816556754d0,-5.4847890415d0,-5.5759494181d0,&
                                -5.6628281308d0,-5.7462241099d0,-5.8264578096d0,-5.9036012584d0,&
                                -6.1161872860d0,-6.4275860022d0,-6.6500858953d0,-6.7907248286d0,&
@@ -926,9 +757,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                                -7.2362560101d0,-7.2022988984d0,-7.1752804269d0,-7.1511129681d0 ],shape( gridPot1414 ) )
    call this%wyckoffSite(1)%zrCut(4)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Fifth cut2d
-   this%wickoffSite(1)%zrcut(5)%alias='Top_Li_90_45'
-   this%wickoffSite(1)%zrCut(5)%theta=1.57079632679d0
-   this%wickoffSite(1)%zrCut(5)%phi=0.785398163397d0
+   this%wyckoffSite(1)%zrcut(5)%alias='Top_Li_90_45'
+   this%wyckoffSite(1)%zrCut(5)%theta=1.57079632679d0
+   this%wyckoffSite(1)%zrCut(5)%phi=0.785398163397d0
    gridpot1414(:,:)=reshape( [ -5.0184786890d0,-5.2817479162d0,-5.4849353038d0,-5.5761136876d0,&
                                -5.6629935027d0,-5.7463681673d0,-5.8265401280d0,-5.9035718590d0,&
                                -6.1151924818d0,-6.4139604549d0,-6.6235473700d0,-6.7500183359d0,&
@@ -982,8 +813,7 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
    ! Wickoff Top F -----------> 'b'
    this%wyckoffSite(2)%id='b'
    this%wyckoffSite(2)%myNumber=2
-   this%wyckoffSite(2)%is_homonuclear=.true.
-   this%wyckoffSite(2)%alias='Top F'
+   this%wyckoffSite(2)%is_homonucl=.true.
    this%wyckoffSite(2)%x=2.7216780628885480d0
    this%wyckoffSite(2)%y=2.7216780628885480d0
    this%wyckoffSite(2)%n2dcuts=5
@@ -993,9 +823,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
    this%wyckoffSite(2)%zrCut(:)%x=2.7216780628885480d0
    this%wyckoffSite(2)%zrCut(:)%y=2.7216780628885480d0
    ! reading zrcuts
-   this%wickoffSite(2)%zrcut(1)%alias='Top_F_0_0'
-   this%wickoffSite(2)%zrCut(1)%theta=0.d0
-   this%wickoffSite(2)%zrCut(1)%phi=0.d0
+   this%wyckoffSite(2)%zrcut(1)%alias='Top_F_0_0'
+   this%wyckoffSite(2)%zrCut(1)%theta=0.d0
+   this%wyckoffSite(2)%zrCut(1)%phi=0.d0
    gridPot1416(:,:)=reshape( [ 33.4715168470d0,36.7280777391d0,32.7111077495d0,27.9642199020d0,&
                                21.3856928713d0,13.9533148245d0, 9.0618268879d0, 5.5913042852d0,&
                                -0.5049412292d0,-4.6567383910d0,-6.2356988133d0,-6.8413948663d0,&
@@ -1054,9 +884,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                                -7.2365433898d0,-7.2027325405d0,-7.1758937732d0,-7.1518435446d0 ],shape( gridPot1416 ) )
    call this%wyckoffSite(2)%zrCut(1)%interRZ%read( gridR14,gridZ16,gridPot1416 )
    ! Second cut2d
-   this%wickoffSite(2)%zrcut(2)%alias='Top_F_45_0'
-   this%wickoffSite(2)%zrCut(2)%theta=0.785398163397d0
-   this%wickoffSite(2)%zrCut(2)%phi=0.d0
+   this%wyckoffSite(2)%zrcut(2)%alias='Top_F_45_0'
+   this%wyckoffSite(2)%zrCut(2)%theta=0.785398163397d0
+   this%wyckoffSite(2)%zrCut(2)%phi=0.d0
    gridPot1414(:,:)=reshape( [   7.3744382510d0,   5.3167479737d0,   2.8013896828d0,   1.5772557258d0,&
                                0.4404425759d0,  -0.5879814523d0,  -1.5016393216d0,  -2.3030362705d0,&
                               -4.1194461324d0,  -5.7720787303d0,  -6.5066907626d0,  -6.8351525581d0,&
@@ -1108,9 +938,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.2363273038d0,  -7.2023962842d0,  -7.1753686253d0,  -7.1509755256d0 ],shape( gridPot1414 ) )
    call this%wyckoffSite(2)%zrCut(2)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Third cut2d
-   this%wickoffSite(2)%zrcut(3)%alias='Top_F_45_45'
-   this%wickoffSite(2)%zrCut(3)%theta=0.785398163397d0
-   this%wickoffSite(2)%zrCut(3)%phi=0.785398163397d0
+   this%wyckoffSite(2)%zrcut(3)%alias='Top_F_45_45'
+   this%wyckoffSite(2)%zrCut(3)%theta=0.785398163397d0
+   this%wyckoffSite(2)%zrCut(3)%phi=0.785398163397d0
    gridPot1414(:,:)=reshape( [ 7.3744812477d0, 5.3168402145d0, 2.8015803383d0, 1.5775181527d0,&
                                0.4407941934d0,-0.5875210935d0,-1.5010470327d0,-2.3022891935d0,&
                               -4.1180518630d0,-5.7690799853d0,-6.5014565562d0,-6.8269313665d0,&
@@ -1162,9 +992,9 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.2363364911d0,-7.2024006941d0,-7.1753605404d0,-7.1509373063d0 ],shape( gridPot1414 ) )
    call this%wyckoffSite(2)%zrCut(3)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Fourth cut2d
-   this%wickoffSite(2)%zrcut(4)%alias='Top_F_90_0'
-   this%wickoffSite(2)%zrCut(4)%theta=1.57079632679d0
-   this%wickoffSite(2)%zrCut(4)%phi=0.d0
+   this%wyckoffSite(2)%zrcut(4)%alias='Top_F_90_0'
+   this%wyckoffSite(2)%zrCut(4)%theta=1.57079632679d0
+   this%wyckoffSite(2)%zrCut(4)%phi=0.d0
    gridPot1414(:,:)=reshape( [ 0.9741794146d0,-0.9041065359d0,-2.4291775949d0,-3.0667038997d0,&
                               -3.6277203507d0,-4.1181084570d0,-4.5440853224d0,-4.9120283881d0,&
                               -5.7275583925d0,-6.4391914392d0,-6.7431337173d0,-6.8884126204d0,&
@@ -1214,11 +1044,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3232898049d0,-7.3356868224d0,-7.3418346170d0,-7.3435324358d0,&
                               -7.3420326959d0,-7.3382258333d0,-7.3186248456d0,-7.2764924790d0,&
                               -7.2361229775d0,-7.2021581485d0,-7.1751404120d0,-7.1509828754d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(2)%zrCut(4)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(2)%zrCut(4)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Fifth cut2d
-   this%wickoffSite(2)%zrcut(5)%alias='Top_F_90_45'
-   this%wickoffSite(2)%zrCut(5)%theta=1.57079632679d0
-   this%wickoffSite(2)%zrCut(5)%phi=0.785398163397d0
+   this%wyckoffSite(2)%zrcut(5)%alias='Top_F_90_45'
+   this%wyckoffSite(2)%zrCut(5)%theta=1.57079632679d0
+   this%wyckoffSite(2)%zrCut(5)%phi=0.785398163397d0
    gridPot1414(:,:)=reshape( [ 0.9743341660d0,-0.9037241960d0,-2.4283785544d0,-3.0655893662d0,&
                               -3.6261854049d0,-4.1160920215d0,-4.5414735478d0,-4.9086048210d0,&
                               -5.7208854500d0,-6.4226847447d0,-6.7098175139d0,-6.8282418475d0,&
@@ -1268,24 +1098,23 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3232956848d0,-7.3356945397d0,-7.3418438043d0,-7.3435441956d0,&
                               -7.3420477631d0,-7.3382431054d0,-7.3186524076d0,-7.2765406206d0,&
                               -7.2361880238d0,-7.2022202549d0,-7.1751429844d0,-7.1506697712d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(2)%zrCut(5)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(2)%zrCut(5)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Wickoff Hollow -----------> 'c'
    this%wyckoffSite(3)%id='c'
    this%wyckoffSite(3)%myNumber=3
-   this%wyckoffSite(3)%is_homonuclear=.true.
-   this%wyckoffSite(3)%alias='Hollow'
+   this%wyckoffSite(3)%is_homonucl=.true.
    this%wyckoffSite(3)%x=2.7216780628885480d0
    this%wyckoffSite(3)%y=0.d0
    this%wyckoffSite(3)%n2dcuts=4
    allocate( this%wyckoffSite(3)%nPhiPoints(2) )
    this%wyckoffSite(3)%nPhiPoints(:)=[1,3]
    allocate( this%wyckoffSite(3)%zrCut(4) )
-   this%wickoffSite(3)%zrCut(:)%x=2.7216780628885480d0
-   this%wickoffSite(3)%zrCut(:)%y=0.d0
+   this%wyckoffSite(3)%zrCut(:)%x=2.7216780628885480d0
+   this%wyckoffSite(3)%zrCut(:)%y=0.d0
    ! Reading zrcuts
-   this%wickoffSite(3)%zrcut(1)%alias='Hollow_0_0'
-   this%wickoffSite(3)%zrCut(1)%theta=0.d0
-   this%wickoffSite(3)%zrCut(1)%phi=0.d0
+   this%wyckoffSite(3)%zrcut(1)%alias='Hollow_0_0'
+   this%wyckoffSite(3)%zrCut(1)%theta=0.d0
+   this%wyckoffSite(3)%zrCut(1)%phi=0.d0
    gridPot1414(:,:)=reshape( [ -6.9155832341d0,-7.0431757894d0,-7.0949357443d0,-7.1065338314d0,&
                                -7.1126007775d0,-7.1149446495d0,-7.1148035321d0,-7.1130384620d0,&
                                -7.1032602015d0,-7.0866983830d0,-7.0775919002d0,-7.0752053990d0,&
@@ -1335,11 +1164,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                                -7.3233405190d0,-7.3357463563d0,-7.3419007658d0,-7.3436059345d0,&
                                -7.3421139119d0,-7.3383132966d0,-7.3187321536d0,-7.2766369038d0,&
                                -7.2363170140d0,-7.2024153938d0,-7.1754593961d0,-7.1512235835d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(3)%zrCut(1)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(3)%zrCut(1)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! 2nd cut2d
-   this%wickoffSite(3)%zrcut(2)%alias='Hollow_90_0'
-   this%wickoffSite(3)%zrCut(2)%theta=1.57079632679d0
-   this%wickoffSite(3)%zrCut(2)%phi=0.d0
+   this%wyckoffSite(3)%zrcut(2)%alias='Hollow_90_0'
+   this%wyckoffSite(3)%zrCut(2)%theta=1.57079632679d0
+   this%wyckoffSite(3)%zrCut(2)%phi=0.d0
    gridPot1414(:,:)=reshape( [ -6.8925656617d0,-7.0062897566d0,-7.0400972985d0,-7.0410130916d0,&
                                -7.0351728889d0,-7.0243105233d0,-7.0095927859d0,-6.9918072149d0,&
                                -6.9244964155d0,-6.7748156782d0,-6.5731195782d0,-6.3010488876d0,&
@@ -1389,11 +1218,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                                -7.3232956848d0,-7.3356930697d0,-7.3418412319d0,-7.3435390507d0,&
                                -7.3420393107d0,-7.3382317131d0,-7.3186277855d0,-7.2764906415d0,&
                                -7.2361196701d0,-7.2021563111d0,-7.1751411470d0,-7.1509854479d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(3)%zrCut(2)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(3)%zrCut(2)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! third cut2d
-   this%wickoffSite(3)%zrcut(3)%alias='Hollow_90_45'
-   this%wickoffSite(3)%zrCut(3)%theta=1.57079632679d0
-   this%wickoffSite(3)%zrCut(3)%phi=0.785398163397d0
+   this%wyckoffSite(3)%zrcut(3)%alias='Hollow_90_45'
+   this%wyckoffSite(3)%zrCut(3)%theta=1.57079632679d0
+   this%wyckoffSite(3)%zrCut(3)%phi=0.785398163397d0
    gridPot1414(:,:)=reshape( [-6.9006196438d0,-7.0199344136d0,-7.0617540434d0,-7.0677937950d0,&
                               -7.0679308700d0,-7.0639924448d0,-7.0572294665d0,-7.0485217138d0,&
                               -7.0162065620d0,-6.9582091442d0,-6.9074149616d0,-6.8693941095d0,&
@@ -1443,11 +1272,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3233217768d0,-7.3357243067d0,-7.3418772462d0,-7.3435805775d0,&
                               -7.3420870849d0,-7.3382853672d0,-7.3187016517d0,-7.2765990520d0,&
                               -7.2362567451d0,-7.2022996334d0,-7.1752300803d0,-7.1507605420d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(3)%zrCut(3)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(3)%zrCut(3)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! third cut2d
-   this%wickoffSite(3)%zrcut(4)%alias='Hollow_90_90'
-   this%wickoffSite(3)%zrCut(4)%theta=1.57079632679d0
-   this%wickoffSite(3)%zrCut(4)%phi=1.57079632679d0
+   this%wyckoffSite(3)%zrcut(4)%alias='Hollow_90_90'
+   this%wyckoffSite(3)%zrCut(4)%theta=1.57079632679d0
+   this%wyckoffSite(3)%zrCut(4)%phi=1.57079632679d0
    gridPot1414(:,:)=reshape( [-6.9064025177d0,-7.0281412729d0,-7.0723304993d0,-7.0794484761d0,&
                               -7.0805373586d0,-7.0773614819d0,-7.0711074817d0,-7.0625684085d0,&
                               -7.0274220886d0,-6.9381322527d0,-6.7570407645d0,-6.3143201714d0,&
@@ -1496,25 +1325,24 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.1753355509d0,-7.1511743394d0,-7.1346533127d0,-7.2679526707d0,&
                               -7.3233353741d0,-7.3357386389d0,-7.3418923134d0,-7.3435960122d0,&
                               -7.3421021521d0,-7.3383004344d0,-7.3187134114d0,-7.2766005220d0,&
-                              -7.2362460878d0,-7.2022908136d0,-7.1752752820d0,-7.1511126006d0 ],shape( gridPot1414 )
-   call this%wyckofrSite(3)%zrCut(4)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+                              -7.2362460878d0,-7.2022908136d0,-7.1752752820d0,-7.1511126006d0 ],shape( gridPot1414 ) )
+   call this%wyckoffSite(3)%zrCut(4)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Wickoff Bridge -----------> 'f'
    this%wyckoffSite(4)%id='f'
    this%wyckoffSite(4)%myNumber=4
-   this%wyckoffSite(4)%is_homonuclear=.true.
-   this%wyckoffSite(4)%alias='Bridge'
+   this%wyckoffSite(4)%is_homonucl=.true.
    this%wyckoffSite(4)%x=1.36083903144d0
    this%wyckoffSite(4)%y=1.36083903144d0
    this%wyckoffSite(4)%n2dcuts=7
    allocate( this%wyckoffSite(4)%nPhiPoints(3) )
    this%wyckoffSite(4)%nPhiPoints(:)=[1,3,3]
    allocate( this%wyckoffSite(4)%zrCut(7) )
-   this%wickoffSite(4)%zrCut(:)%x=1.36083903144d0
-   this%wickoffSite(4)%zrCut(:)%y=1.36083903144d0
+   this%wyckoffSite(4)%zrCut(:)%x=1.36083903144d0
+   this%wyckoffSite(4)%zrCut(:)%y=1.36083903144d0
    ! First zrcuts
-   this%wickoffSite(4)%zrcut(1)%alias='Bridge_0_0'
-   this%wickoffSite(4)%zrCut(1)%theta=0.d0
-   this%wickoffSite(4)%zrCut(1)%phi=0.d0
+   this%wyckoffSite(4)%zrcut(1)%alias='Bridge_0_0'
+   this%wyckoffSite(4)%zrCut(1)%theta=0.d0
+   this%wyckoffSite(4)%zrCut(1)%phi=0.d0
    gridPot1414(:,:)=reshape( [-6.6746098227d0,-6.8113661897d0,-6.8747940554d0,-6.8930176784d0,&
                               -6.9061375550d0,-6.9158812712d0,-6.9234034906d0,-6.9294829315d0,&
                               -6.9436067997d0,-6.9648464398d0,-6.9878140332d0,-7.0109010619d0,&
@@ -1564,11 +1392,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3233353741d0,-7.3357412114d0,-7.3418956209d0,-7.3436011571d0,&
                               -7.3421091345d0,-7.3383088867d0,-7.3187288462d0,-7.2766365363d0,&
                               -7.2363217914d0,-7.2024264186d0,-7.1754792408d0,-7.1512599654d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(4)%zrCut(1)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(4)%zrCut(1)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Second cuts2d
-   this%wickoffSite(4)%zrcut(2)%alias='Bridge_90_0'
-   this%wickoffSite(4)%zrCut(2)%theta=1.57079632679d0
-   this%wickoffSite(4)%zrCut(2)%phi=0.d0
+   this%wyckoffSite(4)%zrcut(2)%alias='Bridge_90_0'
+   this%wyckoffSite(4)%zrCut(2)%theta=1.57079632679d0
+   this%wyckoffSite(4)%zrCut(2)%phi=0.d0
    gridPot1414(:,:)=reshape( [-6.6458520056d0,-6.7681765451d0,-6.8148717079d0,-6.8238907273d0,&
                               -6.8272709303d0,-6.8267626871d0,-6.8235563085d0,-6.8184977638d0,&
                               -6.7975223514d0,-6.7619155625d0,-6.7443820919d0,-6.7518649895d0,&
@@ -1618,11 +1446,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3233107520d0,-7.3357114444d0,-7.3418629140d0,-7.3435640403d0,&
                               -7.3420676077d0,-7.3382636851d0,-7.3186707822d0,-7.2765487055d0,&
                               -7.2361869214d0,-7.2022265023d0,-7.1752091332d0,-7.1510475543d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(4)%zrCut(2)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(4)%zrCut(2)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! third cut2d
-   this%wickoffSite(4)%zrcut(3)%alias='Bridge_90_54'
-   this%wickoffSite(4)%zrCut(3)%theta=1.57079632679d0
-   this%wickoffSite(4)%zrCut(3)%phi=0.942477796077d0
+   this%wyckoffSite(4)%zrcut(3)%alias='Bridge_90_54'
+   this%wyckoffSite(4)%zrCut(3)%theta=1.57079632679d0
+   this%wyckoffSite(4)%zrCut(3)%phi=0.942477796077d0
    gridPot1414(:,:)=reshape( [-6.6059602453d0,-6.6999852318d0,-6.7044785719d0,-6.6853839899d0,&
                               -6.6547934839d0,-6.6134240333d0,-6.5613171649d0,-6.4980344590d0,&
                               -6.2319002544d0,-5.4521493932d0,-4.1165565330d0,-2.3944015246d0,&
@@ -1672,11 +1500,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3233158970d0,-7.3357184268d0,-7.3418717338d0,-7.3435750651d0,&
                               -7.3420812050d0,-7.3382802223d0,-7.3186972417d0,-7.2765961121d0,&
                               -7.2362538051d0,-7.2022963260d0,-7.1752293454d0,-7.1507756092d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(4)%zrCut(3)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(4)%zrCut(3)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Fourh cut2d
-   this%wickoffSite(4)%zrcut(4)%alias='Bridge_90_144'
-   this%wickoffSite(4)%zrCut(4)%theta=1.57079632679d0
-   this%wickoffSite(4)%zrCut(4)%phi=2.51327412287d0
+   this%wyckoffSite(4)%zrcut(4)%alias='Bridge_90_144'
+   this%wyckoffSite(4)%zrCut(4)%theta=1.57079632679d0
+   this%wyckoffSite(4)%zrCut(4)%phi=2.51327412287d0
    gridPot1414(:,:)=reshape( [-6.6769162103d0,-6.8143105457d0,-6.8780765051d0,-6.8963177678d0,&
                               -6.9093439337d0,-6.9188741362d0,-6.9260608343d0,-6.9316820111d0,&
                               -6.9436865458d0,-6.9589536855d0,-6.9728078137d0,-6.9831847207d0,&
@@ -1726,11 +1554,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3233162644d0,-7.3357191618d0,-7.3418724688d0,-7.3435761675d0,&
                               -7.3420826750d0,-7.3382816922d0,-7.3186994467d0,-7.2765986845d0,&
                               -7.2362552751d0,-7.2022955910d0,-7.1752264054d0,-7.1507711993d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(4)%zrCut(4)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(4)%zrCut(4)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Fifth cut2d
-   this%wickoffSite(4)%zrcut(5)%alias='Bridge_135_54'
-   this%wickoffSite(4)%zrCut(5)%theta=2.35619449019d0
-   this%wickoffSite(4)%zrCut(5)%phi=0.942477796077d0
+   this%wyckoffSite(4)%zrcut(5)%alias='Bridge_135_54'
+   this%wyckoffSite(4)%zrCut(5)%theta=2.35619449019d0
+   this%wyckoffSite(4)%zrCut(5)%phi=0.942477796077d0
    gridPot1414(:,:)=reshape( [-6.6524169050d0,-6.7781863263d0,-6.8274892213d0,-6.8369484976d0,&
                               -6.8398568392d0,-6.8377022263d0,-6.8314265440d0,-6.8216280714d0,&
                               -6.7745113938d0,-6.6526102065d0,-6.5226774542d0,-6.4649644761d0,&
@@ -1780,11 +1608,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3233570562d0,-7.3357662009d0,-7.3419261228d0,-7.3436364364d0,&
                               -7.3421495587d0,-7.3383555584d0,-7.3187960974d0,-7.2767368620d0,&
                               -7.2364441666d0,-7.2025447514d0,-7.1755494320d0,-7.1511963890d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(4)%zrCut(5)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(4)%zrCut(5)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Sixth cut2d
-   this%wickoffSite(4)%zrcut(6)%alias='Bridge_135_144'
-   this%wickoffSite(4)%zrCut(6)%theta=2.35619449019d0
-   this%wickoffSite(4)%zrCut(6)%phi=2.51327412287d0
+   this%wyckoffSite(4)%zrcut(6)%alias='Bridge_135_144'
+   this%wyckoffSite(4)%zrCut(6)%theta=2.35619449019d0
+   this%wyckoffSite(4)%zrCut(6)%phi=2.51327412287d0
    gridPot1414(:,:)=reshape( [-6.6740618902d0,-6.8098815170d0,-6.8718555793d0,-6.8891685540d0,&
                               -6.9012737818d0,-6.9099135482d0,-6.9162675066d0,-6.9211371597d0,&
                               -6.9316298271d0,-6.9481552637d0,-6.9695275689d0,-6.9941073552d0,&
@@ -1834,11 +1662,11 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3233239818d0,-7.3357279816d0,-7.3418831261d0,-7.3435879273d0,&
                               -7.3420955372d0,-7.3382960245d0,-7.3187185563d0,-7.2766273490d0,&
                               -7.2363001093d0,-7.2023632098d0,-7.1753259961d0,-7.1509170942d0 ],shape( gridPot1414 ) )
-   call this%wyckofrSite(4)%zrCut(6)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(4)%zrCut(6)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    ! Sixth cut2d, THE LAST ONE (thank goodness (>_<)Uu )
-   this%wickoffSite(4)%zrcut(7)%alias='Bridge_135_234'
-   this%wickoffSite(4)%zrCut(7)%theta=2.35619449019d0
-   this%wickoffSite(4)%zrCut(7)%phi=4.08407044967d0
+   this%wyckoffSite(4)%zrcut(7)%alias='Bridge_135_234'
+   this%wyckoffSite(4)%zrCut(7)%theta=2.35619449019d0
+   this%wyckoffSite(4)%zrCut(7)%phi=4.08407044967d0
    gridPot1414(:,:)=reshape( [-6.6335189320d0,-6.7466719423d0,-6.7809414232d0,-6.7825547186d0,&
                               -6.7777637091d0,-6.7683389771d0,-6.7554906779d0,-6.7400603712d0,&
                               -6.6836281071d0,-6.5747909375d0,-6.4733613294d0,-6.4107511363d0,&
@@ -1888,9 +1716,10 @@ subroutine READ_PES_H2LiF001(this,filename,tablename)
                               -7.3232993598d0,-7.3356993171d0,-7.3418500517d0,-7.3435508105d0,&
                               -7.3420540105d0,-7.3382500878d0,-7.3186579200d0,-7.2765402531d0,&
                               -7.2361854514d0,-7.2022202549d0,-7.1751529068d0,-7.1507024781d0 ],shape( gridPot1414  ) )
-   call this%wyckofrSite(4)%zrCut(7)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%wyckoffSite(4)%zrCut(7)%interRZ%read( gridR14,gridZ14,gridPot1414 )
+   call this%interpol()
    return
-end subroutine READ_PES_H2LiF001
+end subroutine initialize_PES_H2LiF001
 !#######################################################################
 ! SUBROUTINE: PLOT1D_PHI_PES_H2LiF001 #######################################
 !#######################################################################
@@ -1907,7 +1736,7 @@ SUBROUTINE PLOT1D_PHI_PES_H2LiF001(thispes,npoints,X,filename)
    REAL(KIND=8) :: xmax, xmin 
    REAL(KIND=8),DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename = "PLOT1D_PHI_PES_H2LiF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
       WRITE(0,*) "PLOT1D_PHI_PES_H2LiF001 ERR: Less than 2 points"
@@ -1957,7 +1786,7 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_PES_H2LiF001(thispes,npoints,X,filename)
    REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8),DIMENSION(6) :: r, dvdu, ratom
    INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename = "PLOT1D_PHI_PES_H2LiF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
       WRITE(0,*) "PLOT1D_PHI_PES_H2LiF001 ERR: Less than 2 points"
@@ -1991,55 +1820,6 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_PES_H2LiF001(thispes,npoints,X,filename)
    CLOSE(11)
 END SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_PES_H2LiF001
 !#######################################################################
-! SUBROUTINE: PLOT1D_PHI_SMOOTH_PES_H2LiF001 #######################################
-!#######################################################################
-SUBROUTINE PLOT1D_PHI_SMOOTH_PES_H2LiF001(thispes,npoints,X,filename)
-   IMPLICIT NONE
-   ! I/O variables -------------------------------
-   CLASS(PES_H2LiF001),INTENT(IN) :: thispes
-   INTEGER,INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
-   ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin 
-   REAL(KIND=8),DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=25),PARAMETER :: routinename = "PLOT1D_PHI_SMOOTH_PES_H2LiF001: "
-   ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_PHI_PES_H2LiF001 ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
-   !
-   xmin = 0.D0
-   xmax = 2.D0*PI
-   r(1:5)=x(1:5)
-   !
-   inpoints=npoints-2
-   ndelta=npoints-1
-   delta=2.D0*PI/dfloat(ndelta)
-   !
-   OPEN(11,file=filename,status="replace")
-   ! Initial value
-   r(6)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(6),v,dvdu(:)  
-   ! cycle for inpoints
-   DO i=1, inpoints
-      r(6)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(6),v,dvdu(:)
-   END DO
-   ! Final value
-   r(6) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(6),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_PHI_SMOOTH_PES_H2LiF001
-!#######################################################################
 ! SUBROUTINE: PLOT1D_THETA_PES_H2LiF001 #########################################
 !#######################################################################
 SUBROUTINE PLOT1D_THETA_PES_H2LiF001(thispes,npoints,X,filename)
@@ -2055,7 +1835,7 @@ SUBROUTINE PLOT1D_THETA_PES_H2LiF001(thispes,npoints,X,filename)
    REAL(KIND=8) :: xmax, xmin 
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=20),PARAMETER :: routinename = "PLOT1D_THETA_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename = "PLOT1D_THETA_PES_H2LiF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
       WRITE(0,*) "PLOT1D_THETA_PES_H2LiF001 ERR: Less than 2 points"
@@ -2106,7 +1886,7 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_PES_H2LiF001(thispes,npoints,X,filename)
    REAL(KIND=8), DIMENSION(6) :: r,dvdu,ratom
    REAL(KIND=8),DIMENSION(2) :: v
    INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=20),PARAMETER :: routinename = "PLOT1D_THETA_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename = "PLOT1D_THETA_PES_H2LiF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
       WRITE(0,*) "PLOT1D_THETA_PES_H2LiF001 ERR: Less than 2 points"
@@ -2142,57 +1922,7 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_PES_H2LiF001(thispes,npoints,X,filename)
    CLOSE(11)
 END SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_PES_H2LiF001
 !#######################################################################
-! SUBROUTINE: PLOT1D_THETA_SMOOTH_PES_H2LiF001 #########################################
-!#######################################################################
-SUBROUTINE PLOT1D_THETA_SMOOTH_PES_H2LiF001(thispes,npoints,X,filename)
-   IMPLICIT NONE
-   ! I/O variables -------------------------------
-   CLASS(PES_H2LiF001),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
-   ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=27),PARAMETER :: routinename = "PLOT1D_THETA_SMOOTH_PES_H2LiF001: "
-   ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_THETA_PES_H2LiF001 ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
-   !
-   xmin = 0.D0
-   xmax = 2.D0*PI
-   r(1:4)=x(1:4)
-   r(6)=x(6)
-   !
-   inpoints=npoints-2
-   ndelta=npoints-1
-   delta=2.D0*PI/dfloat(ndelta)
-   !
-   OPEN(11,file=filename,status="replace")
-   ! Initial value
-   r(5)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(5),v,dvdu(:)  
-   ! cycle for inpoints
-   DO i=1, inpoints
-      r(5)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(5),v,dvdu(:)
-   END DO
-   ! Final value
-   r(5) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(5),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_THETA_SMOOTH_PES_H2LiF001
-!#######################################################################
-! SUBROUTINE: PLOT1D_R_PES_H2LiF001 #########################################
+!# SUBROUTINE: PLOT1D_R_PES_H2LiF001 ###################################
 !#######################################################################
 SUBROUTINE PLOT1D_R_PES_H2LiF001(thispes,npoints,X,filename)
    IMPLICIT NONE
@@ -2207,7 +1937,7 @@ SUBROUTINE PLOT1D_R_PES_H2LiF001(thispes,npoints,X,filename)
    REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_R_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename = "PLOT1D_R_PES_H2LiF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
       WRITE(0,*) "PLOT1D_R_PES_H2LiF001 ERR: Less than 2 points"
@@ -2242,56 +1972,6 @@ SUBROUTINE PLOT1D_R_PES_H2LiF001(thispes,npoints,X,filename)
    CLOSE(11)
 END SUBROUTINE PLOT1D_R_PES_H2LiF001
 !#######################################################################
-! SUBROUTINE: PLOT1D_R_SMOOTH_PES_H2LiF001 #########################################
-!#######################################################################
-SUBROUTINE PLOT1D_R_SMOOTH_PES_H2LiF001(thispes,npoints,X,filename)
-   IMPLICIT NONE
-   ! I/O variables -------------------------------
-   CLASS(PES_H2LiF001),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
-   ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_R_SMOOTH_PES_H2LiF001: "
-   ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_R_PES_H2LiF001 ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
-   !
-   xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstr()
-   xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastr()
-   r(1:3)=x(1:3)
-   r(5:6)=x(5:6)
-   !
-   inpoints=npoints-2
-   ndelta=npoints-1
-   delta=(xmax-xmin)/dfloat(ndelta)
-   !
-   OPEN(11,file=filename,status="replace")
-   ! Initial value
-   r(4)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(4),v,dvdu(:)  
-   ! cycle for inpoints
-   DO i=1, inpoints
-      r(4)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(4),v,dvdu(:)
-   END DO
-   ! Final value
-   r(4) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(4),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_R_SMOOTH_PES_H2LiF001
-!#######################################################################
 ! SUBROUTINE: PLOT1D_Z_PES_H2LiF001 #########################################
 !#######################################################################
 SUBROUTINE PLOT1D_Z_PES_H2LiF001(thispes,npoints,X,L,filename)
@@ -2308,7 +1988,7 @@ SUBROUTINE PLOT1D_Z_PES_H2LiF001(thispes,npoints,X,L,filename)
    REAL(KIND=8) :: xmax, xmin
    REAL(KIND=8), DIMENSION(6) :: r, dvdu
    INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_Z_PES_H2LiF001: "
+   CHARACTER(LEN=*),PARAMETER :: routinename = "PLOT1D_Z_PES_H2LiF001: "
    ! HE HO ! LET'S GO ----------------------------
    IF (npoints.lt.2) THEN
       WRITE(0,*) "PLOT1D_Z_PES_H2LiF001 ERR: Less than 2 points"
@@ -2342,59 +2022,6 @@ SUBROUTINE PLOT1D_Z_PES_H2LiF001(thispes,npoints,X,L,filename)
    WRITE(*,*) routinename, "file created ",filename
    CLOSE(11)
 END SUBROUTINE PLOT1D_Z_PES_H2LiF001
-!#######################################################################
-! SUBROUTINE: PLOT1D_Z_SMOOTH_PES_H2LiF001 #########################################
-!#######################################################################
-SUBROUTINE PLOT1D_Z_SMOOTH_PES_H2LiF001(thispes,npoints,X,filename)
-   IMPLICIT NONE
-   ! I/O variables -------------------------------
-   CLASS(PES_H2LiF001),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
-   ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_Z_SMOOTH_PES_H2LiF001: "
-   ! HE HO ! LET'S GO ----------------------------
-   SELECT CASE(npoints)
-      CASE(: 1)
-         WRITE(0,*) "PLOT1D_Z_PES_H2LiF001 ERR: Less than 2 points"
-         CALL EXIT(1)
-      CASE DEFAULT
-         ! do nothing
-   END SELECT
-   !
-   xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstz()
-   xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastz()
-   r(1:2)=x(1:2)
-   r(4:6)=x(4:6)
-   !
-   inpoints=npoints-2
-   ndelta=npoints-1
-   delta=(xmax-xmin)/dfloat(ndelta)
-   !
-   OPEN(11,file=filename,status="replace")
-   ! Initial value
-   r(3)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)  
-   ! cycle for inpoints
-   DO i=1, inpoints
-      r(3)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(3),v,dvdu(:)
-   END DO
-   ! Final value
-   r(3) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_Z_SMOOTH_PES_H2LiF001
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_PES_H2LiF001
 !#######################################################################
@@ -2668,5 +2295,27 @@ LOGICAL FUNCTION is_allowed_PES_H2LiF001(this,x)
    END SELECT
    RETURN
 END FUNCTION is_allowed_PES_H2LiF001
+!###########################################################
+! FUNCTION: from_molecular_to_atomic
+!###########################################################
+pure function from_molecular_to_atomic(molcoord) result(atomcoord)
+   ! Initial declarations
+   implicit none
+   ! i/o variables
+   real(kind=8),dimension(6),intent(in):: molcoord
+   ! dymmy function variable
+   real(kind=8),dimension(6):: atomcoord
+   real(kind=8),dimension(2),parameter:: masa=[ 1.d0,1.d0 ]
+   real(kind=8):: mTot
+   ! run section
+   mTot=sum(masa(:))
+   atomcoord(1)=molcoord(1)+(masa(2)/(mTot))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(2)=molcoord(2)+(masa(2)/(mTot))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(3)=molcoord(3)+(masa(2)/(mTot))*molcoord(4)*dcos(molcoord(5))
+   atomcoord(4)=molcoord(1)-(masa(1)/(mTot))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(5)=molcoord(2)-(masa(1)/(mTot))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(6)=molcoord(3)-(masa(1)/(mTot))*molcoord(4)*dcos(molcoord(5))
+   return
+end function from_molecular_to_atomic
 
-END MODULE PES_H2LiF001_MOD
+end module PES_H2LiF001_MOD
