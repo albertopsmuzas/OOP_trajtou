@@ -9,6 +9,9 @@
 !##################################################################################################
 MODULE INTERPOL1D_MOD
 ! Initial declarations
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////////////////
 ! TYPE: interpol1d
@@ -114,9 +117,6 @@ END SUBROUTINE PLOT_DATA_INTERPOL1D
 !! by @b npoints. Cannot be less than two. It also plots the first derivative
 !----------------------------------------------------------------------
 SUBROUTINE PLOT_INTERPOL_INTERPOL1D(this,npoints,filename,shift)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables -------------------------------
    INTEGER,INTENT(IN) :: npoints

@@ -8,6 +8,10 @@
 MODULE CUBICSPLINES_MOD
 ! Initial declarations
 use INTERPOL1D_MOD
+use MATHS_MOD
+#ifdef DEBUG
+   use DEBUG_MOD
+#endif
 IMPLICIT NONE
 !//////////////////////////////////////////////////////////////////////
 ! TYPE: Cubic Splines
@@ -97,9 +101,6 @@ END SUBROUTINE REINTERPOL_CSPLINES
 !-----------------------------------------------------------
 SUBROUTINE SET_MINIMUM_CSPLINES(this)
    ! Initial declarations  
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(Csplines),TARGET,INTENT(INOUT)::this
@@ -164,9 +165,6 @@ END SUBROUTINE SET_MINIMUM_CSPLINES
 !-----------------------------------------------------------
 SUBROUTINE SET_XROOT_CSPLINES(this)
    ! Initial declarations  
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables
    CLASS(Csplines),TARGET,INTENT(INOUT)::this
@@ -296,7 +294,6 @@ END SUBROUTINE SET_XROOT_CSPLINES
 !> @see debug_mod 
 !----------------------------------------------------------------------
 SUBROUTINE DSPLIN(cubicspl,cond1,id1,cond2,id2)
-        USE MATHS_MOD 
         IMPLICIT NONE
         ! I/O Variables
         CLASS(Csplines),TARGET,INTENT(INOUT) :: cubicspl

@@ -1,5 +1,4 @@
 MODULE PES_MOD
-   USE SURFACE_MOD
 IMPLICIT NONE
 !////////////////////////////////////////////////////////////////////////////////////////
 ! TYPE: PES
@@ -13,7 +12,6 @@ IMPLICIT NONE
 !> @param v - last value of the potential (at r, obviously)
 !> @param initialized - Controls status of the PES
 !> @param atomdat - Contains array of atoms (with some info) related to this PES
-!> @param surf - Surface specifications
 !
 !> @details
 !! In order to add a new PES type, one should create a fortran module that declares an
@@ -83,6 +81,11 @@ ABSTRACT INTERFACE
       REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
    END FUNCTION is_allowed_PES
 END INTERFACE
+
+private set_lastPot_PES, set_lastDeriv_PES, set_pesType_PES, set_alias_PES,&
+        set_dimensions_PES, is_initialized_PES, getAlias_PES, getDimensions_PES,&
+        getLastPotValue_PES, getLastDerivValue_PES
+
 !////////////////////////////////////////////////////////////////////////////////////////
 CONTAINS
 !###############################################################

@@ -501,6 +501,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    class(Pes_H2LiF001),intent(out):: this
    character(len=*),optional,intent(in):: filename,tablename
    ! local variables
+   integer(kind=4):: i
    real(kind=8),dimension(14,14):: gridPot1414
    real(kind=8),dimension(14,16):: gridPot1416
    ! Parameters
@@ -546,6 +547,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    this%wyckoffSite(1)%x=0.d0
    this%wyckoffSite(1)%y=0.d0
    this%wyckoffSite(1)%n2dcuts=5
+   this%wyckoffSite(1)%nphicuts=3
    allocate( this%wyckoffSite(1)%nPhiPoints(3) )
    this%wyckoffSite(1)%nPhiPoints(:)=[1,2,2]
    allocate( this%wyckoffSite(1)%zrCut(5) )
@@ -817,6 +819,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    this%wyckoffSite(2)%x=2.7216780628885480d0
    this%wyckoffSite(2)%y=2.7216780628885480d0
    this%wyckoffSite(2)%n2dcuts=5
+   this%wyckoffSite(2)%nphicuts=3
    allocate( this%wyckoffSite(2)%nPhiPoints(3) )
    this%wyckoffSite(2)%nPhiPoints(:)=[1,2,2]
    allocate( this%wyckoffSite(2)%zrCut(5) )
@@ -887,7 +890,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    this%wyckoffSite(2)%zrcut(2)%alias='Top_F_45_0'
    this%wyckoffSite(2)%zrCut(2)%theta=0.785398163397d0
    this%wyckoffSite(2)%zrCut(2)%phi=0.d0
-   gridPot1414(:,:)=reshape( [   7.3744382510d0,   5.3167479737d0,   2.8013896828d0,   1.5772557258d0,&
+   gridPot1414(:,:)=reshape( [ 7.3744382510d0,   5.3167479737d0,   2.8013896828d0,   1.5772557258d0,&
                                0.4404425759d0,  -0.5879814523d0,  -1.5016393216d0,  -2.3030362705d0,&
                               -4.1194461324d0,  -5.7720787303d0,  -6.5066907626d0,  -6.8351525581d0,&
                               -6.9866299699d0,  -7.0681296839d0,  -3.9607838600d0,  -3.8982769324d0,&
@@ -1106,6 +1109,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    this%wyckoffSite(3)%x=2.7216780628885480d0
    this%wyckoffSite(3)%y=0.d0
    this%wyckoffSite(3)%n2dcuts=4
+   this%wyckoffSite(3)%nphicuts=2
    allocate( this%wyckoffSite(3)%nPhiPoints(2) )
    this%wyckoffSite(3)%nPhiPoints(:)=[1,3]
    allocate( this%wyckoffSite(3)%zrCut(4) )
@@ -1334,6 +1338,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    this%wyckoffSite(4)%x=1.36083903144d0
    this%wyckoffSite(4)%y=1.36083903144d0
    this%wyckoffSite(4)%n2dcuts=7
+   this%wyckoffSite(4)%nphicuts=3
    allocate( this%wyckoffSite(4)%nPhiPoints(3) )
    this%wyckoffSite(4)%nPhiPoints(:)=[1,3,3]
    allocate( this%wyckoffSite(4)%zrCut(7) )
@@ -1718,6 +1723,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
                               -7.2361854514d0,-7.2022202549d0,-7.1751529068d0,-7.1507024781d0 ],shape( gridPot1414  ) )
    call this%wyckoffSite(4)%zrCut(7)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    call this%interpol()
+   call this%interpol_new_rzgrid(nRpoints=25,nZpoints=50)
    return
 end subroutine initialize_PES_H2LiF001
 !#######################################################################

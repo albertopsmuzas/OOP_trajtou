@@ -139,7 +139,7 @@ case('HLiF001_NS')
 
 case default
    write(0,*) 'ERR: wrong specified PES: '//trim(auxString)
-   write(0,*) 'Implemented ones: Crp3d, Crp6d, HLiF001_WS, HLiF001_NS'
+   write(0,*) 'Implemented ones: Crp3d, Crp6d, HLiF001_WS, HLiF001_NS, H2LiF001'
    write(0,*) 'Warning: Case-sensitive'
    call exit(1)
 end select

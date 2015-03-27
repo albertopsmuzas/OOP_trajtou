@@ -4,6 +4,9 @@
 !! Types and procedures to manage a function 
 !##########################################################
 MODULE FUNCTION1D_MOD
+#ifdef DEBUG
+   USE DEBUG_MOD
+#endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Function1d
@@ -122,9 +125,6 @@ END SUBROUTINE SET_ID_FUNCTION1D
 ! - Common plot function
 !-----------------------------------------------------------
 SUBROUTINE PLOT_FUNCTION1D(this,npoints,xmin,xmax,filename)
-#ifdef DEBUG
-   USE DEBUG_MOD
-#endif
    IMPLICIT NONE
    ! I/O variables -------------------------------
    CLASS(Function1d),INTENT(IN) :: this
