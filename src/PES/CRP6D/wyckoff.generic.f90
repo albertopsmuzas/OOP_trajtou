@@ -4,12 +4,12 @@
 !! Provides generic routines to interpol a CRP6D PES 
 !##########################################################
 MODULE WYCKOFF_GENERIC_MOD
-   USE BICSPLINES_MOD
-   USE FOURIER1D_MOD
-   USE MATHS_MOD
-   USE UNITS_MOD
+   use BICSPLINES_MOD
+   use FOURIER1D_MOD
+   use MATHS_MOD
+   use UNITS_MOD
 #ifdef DEBUG
-   USE DEBUG_MOD
+   use DEBUG_MOD
 #endif
 ! Initial declarations
 IMPLICIT NONE

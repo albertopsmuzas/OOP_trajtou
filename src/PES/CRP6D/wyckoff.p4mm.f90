@@ -6,7 +6,18 @@
 !##########################################################
 MODULE WYCKOFF_P4MM_MOD
 ! Initial declarations
-USE WYCKOFF_GENERIC_MOD
+use WYCKOFF_GENERIC_MOD
+use FOURIER1D_2_MOD
+use FOURIER1D_4MM_MOD
+use FOURIER1D_M_MOD
+use FOURIER1D_M45_MOD
+use FOURIER1D_MM2_MOD
+use FOURIER1D_M45M1352_MOD
+use FOURIER1D_E_MOD
+#ifdef DEBUG
+use DEBUG_MOD
+use UNITS_MOD
+#endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Wyckoffp4mm
@@ -43,17 +54,6 @@ CONTAINS
 !-----------------------------------------------------------
 SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    ! Initial declarations   
-#ifdef DEBUG
-   USE DEBUG_MOD
-   USE UNITS_MOD
-#endif
-   USE FOURIER1D_2_MOD
-   USE FOURIER1D_4MM_MOD
-   USE FOURIER1D_M_MOD
-   USE FOURIER1D_M45_MOD
-   USE FOURIER1D_MM2_MOD
-   USE FOURIER1D_M45M1352_MOD
-   USE FOURIER1D_E_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Wyckoffp4mm),INTENT(IN) :: this
