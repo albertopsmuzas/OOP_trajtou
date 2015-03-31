@@ -10032,7 +10032,6 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
                               -7.2361854514d0,-7.2022202549d0,-7.1751529068d0,-7.1507024781d0 ],shape( gridPot1414  ) )
    call this%wyckoffSite(4)%zrCut(7)%interRZ%read( gridR14,gridZ14,gridPot1414 )
    call this%interpol()
-   call this%interpol_new_rzgrid(nRpoints=25,nZpoints=50)
    return
 end subroutine initialize_PES_H2LiF001
 !#######################################################################
