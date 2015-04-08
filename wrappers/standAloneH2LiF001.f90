@@ -3521,7 +3521,7 @@ subroutine initialize_PES_HLIF001_NS(this,filename,tablename)
    call this%set_dimensions(3)
    allocate( this%all_pairpots(2) )
    ! Create surface if this was the first call.
-   select case( invoke )
+   select case( invoked )
    case(0)
       call sysLiF001Surf%initialize('dummyString')
       invoked=1
@@ -8549,54 +8549,65 @@ END SUBROUTINE GET_V_AND_DERIVS_PURE_PES_H2LiF001
 !###########################################################
 !# SUBROUTINE: GET_V AND DERIVS_PES_H2LiF001
 !###########################################################
-subroutine get_v_and_derivs_PES_H2LiF001(this,X,v,dvdu,errCode)
+subroutine get_v_and_derivs_PES_H2LiF001(this,x,v,dvdu,errCode)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
    class(PES_H2LiF001),target,intent(in):: this
    real(kind=8),dimension(:),intent(in) :: x
-   real(kind=8),intent(out) :: v
-   real(kind=8),dimension(:),intent(out) :: dvdu
+   real(kind=8),intent(out):: v
+   real(kind=8),dimension(:),intent(out):: dvdu
    integer(kind=1),optional,intent(out):: errCode
    ! Local variables
-   real(kind=8) :: zcrp, zvac ! last PES_H2LiF001 z value and Z infinity
-   real(kind=8) :: vzcrp, vzvac ! potentials at zcrp and zvac
-   real(kind=8),dimension(6) :: dvducrp ! derivatives at zcrp
-   real(kind=8),dimension(6) :: dvduvac ! derivatives at vacuum
-   real(kind=8) :: alpha,beta,gama ! parameters
+   real(kind=8),dimension(6):: geom
+   real(kind=8):: zCrpMin,zCrpMax,zvac ! first and last PES_H2LiF001 z value and Z infinity
+   real(kind=8):: rCrpMin,rCrpMax ! first and last PES_H2LiF001 r value
+   real(kind=8):: vzCrpMax, vzvac ! potentials at zCrpMax and zvac
+   real(kind=8),dimension(6):: dvducrp ! derivatives at zCrpMax
+   real(kind=8),dimension(6):: dvduvac ! derivatives at vacuum
+   real(kind=8):: alpha,beta,gama ! parameters
    type(Xexponential_func):: extrapolfunc
-   integer(kind=4) :: i !counter
+   integer(kind=4):: i !counter
    ! local parameter
-   real(kind=8),parameter :: zero=0.D0 ! what we will consider zero (a.u.)
-   real(kind=8),parameter :: dz=0.5D0 ! 0.25 Angstroems approx
+   real(kind=8),parameter:: zero=0.D0 ! what we will consider zero (a.u.)
+   real(kind=8),parameter:: dz=0.5D0 ! 0.25 Angstroems approx
    character(len=*),parameter:: routinename='GET_V_AND_DERIVS_PES_H2LiF001: '
    ! Run section
-   zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
+   zCrpMin=this%wyckoffSite(1)%zrcut(1)%getFirstZ()
+   zCrpMax=this%wyckoffSite(1)%zrcut(1)%getLastZ()
    zvac=this%zvacuum
-   ! Check if we are in the pure PES_H2LiF001 region
-   select case(x(3)<= zcrp) !easy
+   rCrpMin=this%wyckoffSite(1)%zrcut(1)%getFirstR()
+   rCrpMax=this%wyckoffSite(1)%zrcut(1)%getLastR()
+   geom(:)=x(1:6)
+   if( geom(4)>rCrpMax ) geom(4)=rCrpMax
+   if( geom(4)<rCrpMin ) geom(4)=rCrpMin
+   if( geom(3)<zCrpMin ) geom(3)=zCrpMin
+   ! *************************************************************************
+   ! SWITCH 1: Check if we are inside Z's range
+   select case( geom(3) >= zCrpMin .and. geom(3)<= zCrpMax ) !easy
    case(.true.)
-      call this%get_v_and_derivs_pure(x,v,dvdu)
+      call this%get_v_and_derivs_pure(geom,v,dvdu)
       return
    case(.false.)
       ! do nothing, next switch
    end select
-   ! check if we are in the extrapolation region
-   select case(x(3)>zcrp .AND. x(3)<zvac)
+   ! *************************************************************************
+   ! SWITCH 2: Check if we are inside the extrapolation region
+   select case(geom(3)>zCrpMax .AND. geom(3)<zvac)
    case(.true.) ! uff
       ! Set potential and derivs
-      vzvac=this%farpot%getpot(x(4))
-      CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp,x(4),x(5),x(6)],vzcrp,dvducrp)
+      vzvac=this%farpot%getpot(geom(4))
+      CALL this%GET_V_AND_DERIVS_PURE([geom(1),geom(2),zCrpMax,geom(4),geom(5),geom(6)],vzCrpMax,dvducrp)
       dvduvac(1:3)=zero
-      dvduvac(4)=this%farpot%getderiv(x(4))
+      dvduvac(4)=this%farpot%getderiv(geom(4))
       dvduvac(5:6)=zero
       ! Extrapol potential
       beta=-1.D0/zvac
-      alpha=(vzcrp-vzvac)/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+      alpha=(vzCrpMax-vzvac)/(zCrpMax*dexp(beta*zCrpMax)-zvac*dexp(beta*zvac))
       gama=vzvac-alpha*zvac*dexp(beta*zvac)
       CALL extrapolfunc%READ([alpha,beta])
-      v=extrapolfunc%getvalue(x(3))+gama
-      dvdu(3)=extrapolfunc%getderiv(x(3))
+      v=extrapolfunc%getvalue(geom(3))+gama
+      dvdu(3)=extrapolfunc%getderiv(geom(3))
       ! extrapol derivatives
       do i = 1, 6
          select case(i)
@@ -8604,10 +8615,10 @@ subroutine get_v_and_derivs_PES_H2LiF001(this,X,v,dvdu,errCode)
             ! skip dvdz
          case default
             beta=-1.D0/zvac
-            alpha=(dvducrp(i)-dvduvac(i))/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+            alpha=(dvducrp(i)-dvduvac(i))/(zCrpMax*dexp(beta*zCrpMax)-zvac*dexp(beta*zvac))
             gama=dvduvac(i)-alpha*zvac*dexp(beta*zvac)
             call extrapolfunc%READ([alpha,beta])
-            dvdu(i)=extrapolfunc%getvalue(x(3))+gama
+            dvdu(i)=extrapolfunc%getvalue(geom(3))+gama
          end select
       end do
       return
@@ -8615,12 +8626,13 @@ subroutine get_v_and_derivs_PES_H2LiF001(this,X,v,dvdu,errCode)
    case(.false.)
       ! do nothing
    end select
-   ! check if we are in the Vacuum region
-   select case(x(3)>=zvac) !easy
+   ! *************************************************************************
+   ! SWITCH 3: Check if we are inside the Vacuum region
+   select case(geom(3)>=zvac) !easy
       case(.true.)
-         v=this%farpot%getpot(x(4))
+         v=this%farpot%getpot(geom(4))
          dvdu(1:3)=0.D0
-         dvdu(4)=this%farpot%getderiv(x(4))
+         dvdu(4)=this%farpot%getderiv(geom(4))
          dvdu(5:6)=0.D0
       case(.false.) ! this's the last switch!
           errCode=1_1
