@@ -3443,13 +3443,21 @@ subroutine initialize_PES_HLIF001_WS(this,filename,tablename)
    ! Local variables
    real(kind=8),dimension(129):: commonGrid
    integer(kind=4):: i ! counter
+   integer(kind=4),save:: invoked
+   data invoked/0/
    ! HEY HO!, LET'S GO!! ------------------
    call this%set_pesType('CRP3D')
    call this%set_alias('H_on_LiF001')
    call this%set_dimensions(3)
    allocate( this%all_pairpots(2) )
    ! Create surface
-   call sysLiF001Surf%initialize('dummyString')
+   select case( invoke )
+   case(0)
+      call sysLiF001Surf%initialize('dummyString')
+      invoked=1
+   case default
+      ! do nothing
+   end select
    ! Pair potential for Li
    this%all_pairpots(1)%alias='Pairpot_Li'
    this%all_pairpots(1)%vasint=-7.1343585831139720d0

@@ -3513,13 +3513,21 @@ subroutine initialize_PES_HLIF001_NS(this,filename,tablename)
    ! Local variables
    real(kind=8),dimension(129):: commonGrid
    integer(kind=4):: i ! counter
+   integer(kind=4),save:: invoked
+   data invoked/0/
    ! HEY HO!, LET'S GO!! ------------------
    call this%set_pesType('CRP3D')
    call this%set_alias('H_on_LiF001')
    call this%set_dimensions(3)
    allocate( this%all_pairpots(2) )
-   ! Create surface
-   call sysLiF001Surf%initialize('dummyString')
+   ! Create surface if this was the first call.
+   select case( invoke )
+   case(0)
+      call sysLiF001Surf%initialize('dummyString')
+      invoked=1
+   case default
+      ! do nothing
+   end select
    ! Pair potential for Li
    this%all_pairpots(1)%alias='Pairpot_Li'
    this%all_pairpots(1)%vasint=-7.1343585831139720d0
@@ -8813,7 +8821,9 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    integer(kind=4):: i
    real(kind=8),dimension(14,14):: gridPot1414
    real(kind=8),dimension(14,16):: gridPot1416
+   integer(kind=4),save:: invoked ! 0 if this was the first call. 1 if not.
    ! Parameters
+   data invoked/0/
    character(len=*),parameter:: routinename="READ_PES_H2LiF001: "
    real(kind=8),dimension(14),parameter:: gridR14=[ 0.7558904532d0,0.9448630664d0,1.1338356797d0,1.2283219864d0,&
                                                     1.3228082930d0,1.4172945997d0,1.5117809063d0,1.6062672130d0,&
@@ -8847,7 +8857,13 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    allocate( this%xyKlist(4,2) )
    this%xyklist(:,1)=[0,1,1,2]
    this%xyklist(:,2)=[0,0,1,0]
-   call sysLiF001Surf%initialize('dummyString')
+   select case( invoked ) ! check if this routine has been initialized before
+   case(0)
+      call sysLiF001Surf%initialize('dummyString')
+      invoked=1
+   case default
+      ! do nothing
+   end select
    ! Create wyckoff sites//////////////////////////////////
    ! Wickoff Top Li -----------> 'a'
    this%wyckoffSite(1)%id='a'
