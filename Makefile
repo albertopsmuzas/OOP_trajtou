@@ -11,7 +11,8 @@ joblist = test_inicond3dInput.x trajtouDynamics3D.x trajtouDynamics6D.x trajtouG
 			 test_crp3dInput.x trajtouGetPot_crp3d.x test_crp6dInput.x test_CRP6D.x\
 			 test_dynamics3dInput.x test_dynamics6dInput.x trajtouAtom2Molec.x\
 			 trajtouNewSeed.x trajtouZcut_crp6d.x test_inicondAtomSurfInput.x trajtouDynamicsAtomSurf.x\
-			 trajtouEvaluateEnergyRovibrState.x test_CRP6D_bugs.x trajtouGetPot.x
+			 trajtouEvaluateEnergyRovibrState.x test_CRP6D_bugs.x trajtouGetPot.x\
+			 trajtouZcut_rawInterpolMolec.x
 # Rules 
 link_jobs2lib: $(joblist)
 lib: 

@@ -26,7 +26,7 @@ CALL VERBOSE_WRITE('##############################################')
 CALL thispes%INITIALIZE()
 CALL thisrawpes%READ(trim(luaFile),'pes')
 CALL thisrawpes%RAWINTERPOL()
-CALL thisrawpes%INTERPOL_NEW_RZGRID(25,50)
+!CALL thisrawpes%INTERPOL_NEW_RZGRID(25,50)
 ! STEP 2: DO GRAPHS
 ! datagroup 1
 pos=(/0.0D0,0.D0,4.724315D0,1.511781D0,1.570796D0,0.D0/)
