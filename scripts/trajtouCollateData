@@ -10,8 +10,8 @@ ioFile=$1
 countLimit=$2
 # Script's corpus
 if [[ -f $ioFile ]]; then
-	echo Previous i/o file exists. Erasing it.
-	rm $ioFile
+	echo Previous i/o file exists. Saving it with extension .safe
+	mv $ioFile ${ioFile}.safe
 fi
 let counter=0
 let whosFirst=0
@@ -23,10 +23,13 @@ while [[ $counter -le $countLimit ]];do
 		let whosFirst=whosFirst+1
 		if [[ $whosFirst == 1 ]]; then
 			echo Copying first job from $folder/$ioFile
+			headerLines=$(awk 'BEGIN{count=0};$1=="#"{count=count+1};END{print count}' $folder/$ioFile)
+			echo Number of header lines are: $headerLines
+			let headerLines=headerLines+1
 			cp  $folder/$ioFile $ioFile 	
 		else
 			echo Appending job from $folder/$ioFile
-			tail -n +4 $folder/$ioFile >> $ioFile	
+			tail -n +${headerLines} $folder/$ioFile >> $ioFile	
 		fi
 	else
 		echo $folder/$ioFile does not exist. Cycling
