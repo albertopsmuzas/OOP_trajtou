@@ -5,6 +5,8 @@
 \textclass article
 \begin_preamble
 \usepackage{dsfont}
+\usepackage{bbold}
+\usepackage{multicol}
 \end_preamble
 \use_default_options true
 \maintain_unincluded_children false
@@ -744,6 +746,10 @@ By definition, matrix
 \end{pmatrix}
 \]
 
+\end_inset
+
+notice that: 
+\begin_inset Formula $\underline{v_{\mathcal{A}}}=\underline{\underline{K_{aux}}}\underline{v_{\mathcal{G}}}=2\pi\cdot\left(\underline{\underline{S_{aux}}}^{-1}\right)^{T}\underline{v_{\mathcal{G}}}$
 \end_inset
 
 
@@ -2865,6 +2871,1600 @@ We can also assign to each peak an azimuthal angle respect to surface plane
 
 \begin_layout Standard
 \begin_inset Formula $\theta_{out}=\arctan\left(\frac{p_{f}^{z}}{\sqrt{\left(p_{f}^{x}\right)^{2}+\left(p_{f}^{y}\right)^{2}}}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Diffraction orders
+\end_layout
+
+\begin_layout Standard
+Two diffraction peaks have the same diffraction order if the variation of
+ momentum associated with them has the same value.
+\end_layout
+
+\begin_layout Subsection
+Mathematical tools
+\end_layout
+
+\begin_layout Standard
+Given the set 
+\begin_inset Formula $\mathbb{Z}^{2}=\{\omega_{hk}\,:\, h,k\in\mathbb{Z}\}$
+\end_inset
+
+ we can define some fundamental operators 
+\begin_inset Formula $\mathcal{T}\,:\,\mathbb{Z}^{2}\longrightarrow\mathbb{Z}^{2}$
+\end_inset
+
+ acting on it:
+\end_layout
+
+\begin_layout Itemize
+Identity: 
+\begin_inset Formula $\mathbb{1}\left(\omega_{hk}\right)=\omega_{hk}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Permutation: 
+\begin_inset Formula $\mathcal{P}\left(\omega_{hk}\right)=\omega_{kh}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Negation: 
+\begin_inset Formula $\mathcal{N}\left(\omega_{hk}\right)=\omega_{\bar{h}k}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+All of them have projector properties: 
+\begin_inset Formula $\mathcal{T}^{2}=\mathbb{1}$
+\end_inset
+
+.
+ Now, we will state some interesting properties and extra helpful operators
+ composed of the fundamental ones:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{N}_{2}\left(\omega_{hk}\right)=\omega_{h\bar{k}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{N}_{12}\left(\omega_{hk}\right)=\omega_{\bar{h}\bar{k}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{N}_{12}=\mathcal{N}\mathcal{N}_{2}=\mathcal{N}_{2}\mathcal{N}=\mathcal{N}_{21}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{N}_{2}=\mathcal{P}\mathcal{N}\mathcal{P}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+If we have elements 
+\begin_inset Formula $\omega_{kk}$
+\end_inset
+
+: 
+\begin_inset Formula $\mathcal{P}\left(\omega_{kk}\right)=\mathbb{1}\left(\omega_{kk}\right)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+One can find that the set of operators: 
+\begin_inset Formula $\mathcal{T}=\left\{ \mathbb{1},\mathcal{P},\mathcal{N},\mathcal{PN},\mathcal{NP},\mathcal{N}_{2},\mathcal{N}_{12},\mathcal{PN}_{12}\right\} $
+\end_inset
+
+ has group structure.
+ If we apply them on a generic element 
+\begin_inset Formula $\omega_{hk}$
+\end_inset
+
+ with property: 
+\begin_inset Formula $h\ne k$
+\end_inset
+
+ we generate the set of elements 
+\begin_inset Formula $\tau=\left\{ \omega_{hk},\omega_{kh},\omega_{\bar{h}k},\omega_{k\bar{h}},\omega_{\bar{k}h},\omega_{h\bar{k}},\omega_{\bar{h}\bar{k}},\omega_{\bar{k}\bar{h}}\right\} $
+\end_inset
+
+ .
+ When we are dealing with elements of the type 
+\begin_inset Formula $\omega_{kk}$
+\end_inset
+
+ sets 
+\begin_inset Formula $\mathcal{T}$
+\end_inset
+
+ and 
+\begin_inset Formula $\tau$
+\end_inset
+
+ are reduced to: 
+\begin_inset Formula $\mathcal{T}=\left\{ \mathbb{1},\mathcal{N},\mathcal{N}_{2},\mathcal{N}_{12}\right\} $
+\end_inset
+
+ and 
+\begin_inset Formula $\tau=\left\{ \omega_{kk},\omega_{\bar{k}k},\omega_{k\bar{k}},\omega_{\bar{k}\bar{k}}\right\} $
+\end_inset
+
+.
+ This can be easily deduced from properties and common sense.
+\end_layout
+
+\begin_layout Standard
+Hereinafter, we can apply our mathematical tools to create a generalized
+ way of deduction of diffraction orders.
+ 
+\end_layout
+
+\begin_layout Subsection
+Generalized diffraction order assignation
+\end_layout
+
+\begin_layout Standard
+In any scheme of difrraction we will have at least a collection of 
+\begin_inset Formula $\mathbb{Z}^{2}$
+\end_inset
+
+ points, each of them with an associated change in momentum.
+ This change in momentum can be represented as the distance of a given element
+ 
+\begin_inset Formula $\omega_{hk}$
+\end_inset
+
+ to the origin in reciprocal space: 
+\begin_inset Formula $f(\omega_{hk})=r_{hk}^{2}$
+\end_inset
+
+, where 
+\begin_inset Formula $r_{hk}\in\mathbb{R}$
+\end_inset
+
+ is this distance.
+ Once one has noticed that 
+\begin_inset Formula $\omega_{hk}$
+\end_inset
+
+ is not more than a point given in reciprocal space coordinates 
+\begin_inset Formula $\underline{\omega_{hk}}_{\mathcal{G}}$
+\end_inset
+
+, we can assign an explicit form to 
+\begin_inset Formula $f$
+\end_inset
+
+, which is the quadratic distance: 
+\begin_inset Formula 
+\[
+f\left(\omega_{hk}\right)=\underline{\omega_{hk}}_{\mathcal{G}}^{T}\left(\underline{\underline{K_{aux}}}^{T}\underline{\underline{K_{aux}}}\right)\underline{\omega_{hk}}_{\mathcal{G}}=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\left[\underline{\underline{S_{aux}^{-1}}}\left(\underline{\underline{S_{aux}^{-1}}}\right)^{T}\right]\underline{\omega_{hk}}_{\mathcal{G}}=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\underline{\underline{M_{S}^{-1}}}\underline{\omega_{hk}}_{\mathcal{G}}
+\]
+
+\end_inset
+
+thus, 
+\begin_inset Formula $f$
+\end_inset
+
+ depends of how the unit surface in real space was defined.
+ Let's calculate 
+\begin_inset Formula $\underline{\underline{M_{S}^{-1}}}$
+\end_inset
+
+: 
+\begin_inset Formula 
+\[
+\underline{\underline{M_{S}^{-1}}}=\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}b^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}
+\end{pmatrix}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+f\left(\omega_{hk}\right)=\frac{4\pi^{2}}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}h & k\end{pmatrix}\begin{pmatrix}b^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}
+\end{pmatrix}\begin{pmatrix}h\\
+k
+\end{pmatrix}=\frac{4\pi^{2}}{a^{2}b^{2}\sin\gamma}\cdot\left(b^{2}h^{2}+a^{2}k^{2}-2abhk\cos\gamma\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+f\left(\omega_{hk}\right)=4\pi^{2}\cdot\left(\frac{h^{2}}{a^{2}\sin\gamma}+\frac{k^{2}}{b^{2}\sin\gamma}-\frac{2hk}{ab\tan\gamma}\right)=f_{\gamma}^{ab}\left(\omega_{hk}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now we can define the function 
+\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=f_{\gamma}^{ab}\left(\omega_{hk}\right)-f_{\gamma}^{ab}\left(\omega_{nm}\right)$
+\end_inset
+
+: 
+\begin_inset Formula 
+\[
+\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=4\pi^{2}\cdot\left(\frac{h^{2}}{a^{2}\sin\gamma}+\frac{k^{2}}{b^{2}\sin\gamma}-\frac{2hk}{ab\tan\gamma}\right)-4\pi^{2}\cdot\left(\frac{n^{2}}{a^{2}\sin\gamma}\frac{m^{2}}{b^{2}\sin\gamma}-\frac{2nm}{ab\tan\gamma}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=4\pi^{2}\cdot\left[\frac{h^{2}-n^{2}}{a^{2}\sin\gamma}+\frac{k^{2}-m^{2}}{b^{2}\sin\gamma}-\frac{2\left(hk-nm\right)}{ab\tan\gamma}\right]
+\]
+
+\end_inset
+
+so, hereinafter, we can say that 
+\begin_inset Formula $\omega_{hk}$
+\end_inset
+
+ and 
+\begin_inset Formula $\omega_{nm}$
+\end_inset
+
+ belong to the same diffraction order if 
+\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=0$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathbb{1}}=\begin{pmatrix}1 & 0\\
+0 & 1
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\hat{\mathbb{1}}^{T}=\hat{\mathbb{1}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathcal{P}}=\begin{pmatrix}0 & 1\\
+1 & 0
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\hat{\mathcal{P}}^{T}=\hat{\mathcal{P}}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathcal{N}}=\begin{pmatrix}-1 & 0\\
+0 & 1
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\hat{\mathcal{N}}^{T}=\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}=\begin{pmatrix}0 & 1\\
+-1 & 0
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\left(\hat{\mathcal{P}}\hat{\mathcal{N}}\right)^{T}=\hat{\mathcal{N}}^{T}\hat{\mathcal{P}}^{T}=\hat{\mathcal{N}}\hat{\mathcal{P}}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathcal{N}}\hat{\mathcal{P}}=\begin{pmatrix}0 & -1\\
+1 & 0
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\left(\hat{\mathcal{N}}\hat{\mathcal{P}}\right)^{T}=\hat{\mathcal{P}}\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathcal{N}}_{2}=\begin{pmatrix}1 & 0\\
+0 & -1
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\hat{\mathcal{N}}_{2}^{T}=\hat{\mathcal{N}}_{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathcal{N}}_{12}=\begin{pmatrix}-1 & 0\\
+0 & -1
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\hat{\mathcal{N}}_{12}^{T}=\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}=\begin{pmatrix}0 & -1\\
+-1 & 0
+\end{pmatrix}$
+\end_inset
+
+; 
+\begin_inset Formula $\left(\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right)^{T}=\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $M_{S}=M_{S}^{T}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\delta_{\gamma}^{ab}\left(\mathcal{A}\omega_{hk},\mathcal{B}\omega_{hk}\right)=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\mathcal{A}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{A}\underline{\omega_{hk}}_{\mathcal{G}}-4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\mathcal{B}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{B}\underline{\omega_{hk}}_{\mathcal{G}}=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\left(\mathcal{A}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{A}-\mathcal{B}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{B}\right)\underline{\omega_{hk}}_{\mathcal{G}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\delta_{\gamma}^{ab}\left(\mathcal{A},\mathcal{B}\right)=\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}-\mathcal{B}^{T}M_{S}^{-1}\mathcal{B}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}=\mathcal{B}^{T}M_{S}^{-1}\mathcal{B}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can notice: if 
+\begin_inset Formula $\mathcal{B}=\mathcal{A}^{T}$
+\end_inset
+
+, 
+\begin_inset Formula $\delta_{\gamma}^{ab}\left(\mathcal{A},\mathcal{B}\right)=\underline{\underline{0}}$
+\end_inset
+
+, which is the case of 
+\begin_inset Formula $\hat{\mathcal{N}}\hat{\mathcal{P}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}$
+\end_inset
+
+.
+ This means that 
+\begin_inset Formula $\omega_{\bar{k}h}$
+\end_inset
+
+ has always the same diffraction order as 
+\begin_inset Formula $\omega_{k\bar{h}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="9" columns="6">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}$
+\end_inset
+
+, 
+\begin_inset Formula $a=b$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}$
+\end_inset
+
+, 
+\begin_inset Formula $\left(a=b\right)\bigwedge\left(\gamma=\frac{\pi}{2}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathbb{1}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}b^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathbb{1}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & -\cos\gamma\\
+-\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathbb{1}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color blue
+\begin_inset Formula $\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color blue
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}a^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & -\cos\gamma\\
+-\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}b^{2} & ab\cos\gamma\\
+ab\cos\gamma & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & \cos\gamma\\
+\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}a^{2} & ab\cos\gamma\\
+ab\cos\gamma & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & \cos\gamma\\
+\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{N}}\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}a^{2} & ab\cos\gamma\\
+ab\cos\gamma & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{N}}\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & \cos\gamma\\
+\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $\hat{\mathcal{N}}_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color green
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}b^{2} & ab\cos\gamma\\
+ab\cos\gamma & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{N}}_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & \cos\gamma\\
+\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color blue
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color blue
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}a^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & -\cos\gamma\\
+-\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}b^{2} & -ab\cos\gamma\\
+-ab\cos\gamma & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\begin{pmatrix}1 & -\cos\gamma\\
+-\cos\gamma & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}\sin\gamma}\cdot\mathbb{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="9" columns="2">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}$
+\end_inset
+
+, 
+\begin_inset Formula $\gamma=\frac{\pi}{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathbb{1}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}b^{2} & 0\\
+0 & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}a^{2} & 0\\
+0 & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}b^{2} & 0\\
+0 & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}a^{2} & 0\\
+0 & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{N}}\hat{\mathcal{P}}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}a^{2} & 0\\
+0 & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}b^{2} & 0\\
+0 & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color magenta
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}a^{2} & 0\\
+0 & b^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\hat{\mathcal{N}}_{12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color red
+\begin_inset Formula $\frac{1}{a^{2}b^{2}}\cdot\begin{pmatrix}b^{2} & 0\\
+0 & a^{2}
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Checking rules on a,b and 
+\begin_inset Formula $\gamma$
+\end_inset
+
+ under which 
+\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=0$
+\end_inset
+
+ is true:
+\end_layout
+
+\begin_layout Standard
+For any surface we have:
+\begin_inset Formula 
+\[
+\frac{h^{2}-n^{2}}{a^{2}}+\frac{k^{2}-m^{2}}{b^{2}}-\frac{2\left(hk-nm\right)\cos\gamma}{ab}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\mathcal{P}\omega_{hk}\right)=\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{kh}\right)=$
 \end_inset
 
 
