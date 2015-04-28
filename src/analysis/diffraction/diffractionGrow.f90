@@ -1,13 +1,11 @@
-MODULE DIFFRACTIONCRP6D_MOD
+MODULE DIFFRACTIONGROW_MOD
 use SYSTEM_MOD
-use INITDIATOMIC_MOD, only: InitDiatomic
-use CRP6D_MOD, only: CRP6D
 #ifdef DEBUG
 use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
 IMPLICIT NONE
 !////////////////////////////////////////////////////////
-! TYPE: SubPeakCRP6D
+! TYPE: SubPeakGROW
 !////////////////////////////////////////////////////////
 !> @param robivrState(:) - integer(kind=4): V,J,mJ state
 !> @param phiOut - real(kind=8): deflection angle respect to the perpendicular plane to the surface
@@ -15,16 +13,16 @@ IMPLICIT NONE
 !> @param prob - real(kind=8): Probability
 !> @param dE - real(kind=8): internal energy exchange after data binning
 !------------------------------------------------------
-type:: SubPeakCRP6D
+type:: SubPeakGROW
    private
    real(kind=8):: phiOut
    real(kind=8):: thetaOut
    integer(kind=4),dimension(3):: rovibrState
    real(kind=8):: prob
    real(kind=8):: dE
-end type SubPeakCRP6D
+end type SubPeakGROW
 !======================================================
-! TYPE: PeakCRP6D
+! TYPE: PeakGROW
 !------------------------------------------------------
 !> @brief
 !! All information that defines a fiffraction peak
@@ -35,7 +33,7 @@ end type SubPeakCRP6D
 !> @param g - integer(kind=4),dimension(2): diffraction state
 !> @param psiOut - real(kind=8): azimuthal exit angle
 !------------------------------------------------------
-TYPE :: PeakCRP6D
+TYPE :: PeakGROW
    PRIVATE
    INTEGER(KIND=4):: id
    integer(kind=4):: envOrder
@@ -45,61 +43,62 @@ TYPE :: PeakCRP6D
    real(kind=8):: dkxy
    INTEGER(KIND=4),DIMENSION(2):: g
 	REAL(KIND=8):: psiOut
-	type(SubPeakCRP6D),dimension(:),allocatable:: subPeaks
-END TYPE PeakCRP6D
+	type(SubPeakGROW),dimension(:),allocatable:: subPeaks
+END TYPE PeakGROW
 !======================================================
-! Allowed_peaksCRP6D derived data
+! Allowed_peaksGROW derived data
 !----------------------------
-TYPE :: Allowed_peaksCRP6D
+TYPE :: Allowed_peaksGROW
    PRIVATE
-   TYPE(Initdiatomic):: inicond
-   TYPE(CRP6D):: thispes
+   TYPE(InitSurfaceGrowDiatomic):: inicond
+   class(Pes),allocatable:: thispes
    REAL(KIND=8):: E
    REAL(KIND=8),DIMENSION(6):: conic
-   TYPE(PeakCRP6D),DIMENSION(:),ALLOCATABLE:: peaks
+   TYPE(PeakGROW),DIMENSION(:),ALLOCATABLE:: peaks
+   integer(kind=4):: totAllowedScatt
+   integer(kind=4):: totScatt
    character(len=24):: fileNameAllowed='OUTANA6DallowedPeaks.out'
    character(len=21):: fileNameSeen='OUTANA6DseenPeaks.out'
    character(len=25):: fileNameUnmapped='OUTANA6DunmappedTrajs.out'
    CONTAINS
       ! private tools section
-      procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSCRP6D
-      procedure,private:: addNewPeak => addNewPeak_ALLOWEDPEAKSCRP6D
-      procedure,private:: addProbToSubPeak => addProbToSubPeak_ALLOWEDPEAKSCRP6D
+      procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSGROW
+      procedure,private:: addNewPeak => addNewPeak_ALLOWEDPEAKSGROW
+      procedure,private:: addProbToSubPeak => addProbToSubPeak_ALLOWEDPEAKSGROW
       ! public tools section
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
-      PROCEDURE,PUBLIC:: getEnvOrder => getEnvOrder_ALLOWEDPEAKSCRP6D
-      procedure,public:: printAllowedPeaks => printAllowedPeaks_ALLOWEDPEAKSCRP6D
-      procedure,public:: printSeenPeaks => printSeenPeaks_ALLOWEDPEAKSCRP6D
-      procedure,public:: sortByDiffOrder => sortByDiffOrder_ALLOWEDPEAKSCRP6D
-      PROCEDURE,PUBLIC:: assignTrajsToPeaks => AssignTrajsToPeaks_ALLOWEDPEAKSCRP6D
-      PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
-      PROCEDURE,PUBLIC:: isAllowed => isAllowed_ALLOWEDPEAKSCRP6D
-      procedure,public:: quantizeRovibrState => quantizeRovibrState_ALLOWEDPEAKSCRP6D
-END TYPE Allowed_peaksCRP6D
+      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSGROW
+      PROCEDURE,PUBLIC:: getEnvOrder => getEnvOrder_ALLOWEDPEAKSGROW
+      procedure,public:: printAllowedPeaks => printAllowedPeaks_ALLOWEDPEAKSGROW
+      procedure,public:: printSeenPeaks => printSeenPeaks_ALLOWEDPEAKSGROW
+      procedure,public:: sortByDiffOrder => sortByDiffOrder_ALLOWEDPEAKSGROW
+      PROCEDURE,PUBLIC:: assignTrajsToPeaks => AssignTrajsToPeaks_ALLOWEDPEAKSGROW
+      PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW
+      PROCEDURE,PUBLIC:: isAllowed => isAllowed_ALLOWEDPEAKSGROW
+      procedure,public:: quantizeRovibrState => quantizeRovibrState_ALLOWEDPEAKSGROW
+END TYPE Allowed_peaksGROW
 !=======================================================
 CONTAINS
-SUBROUTINE INITIALIZE_ALLOWEDPEAKSCRP6D(this)
+SUBROUTINE INITIALIZE_ALLOWEDPEAKSGROW(this)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(Allowed_peaksCRP6D),INTENT(OUT):: this
+   CLASS(Allowed_peaksGROW),INTENT(OUT):: this
    ! Run section
-   CALL this%thispes%INITIALIZE()
    CALL this%inicond%INITIALIZE()
    CALL this%inicond%GENERATE_TRAJS(this%thispes)
    RETURN
 END SUBROUTINE 
 !######################################################################
-!# FUNCTION: getEnvOrder_ALLOWEDPEAKSCRP6D ############################
+!# FUNCTION: getEnvOrder_ALLOWEDPEAKSGROW ############################
 !######################################################################
 !> @brief
 !! - Search for the environmental order of a given diffraction state.
 !! - Environmental orders are general for all cells
 !----------------------------------------------------------------------
-function getEnvOrder_ALLOWEDPEAKSCRP6D(this,diffState) result(envOrder)
+function getEnvOrder_ALLOWEDPEAKSGROW(this,diffState) result(envOrder)
    implicit none
    ! I/O variables
-   class(Allowed_peaksCRP6D),intent(inout):: this
+   class(Allowed_peaksGROW),intent(inout):: this
    integer(kind=4),dimension(2),intent(in):: diffState
    ! Function dummy variable
    integer(kind=4):: envOrder
@@ -170,21 +169,22 @@ function getEnvOrder_ALLOWEDPEAKSCRP6D(this,diffState) result(envOrder)
 	      end select
 		enddo
 	enddo
-end function getEnvOrder_ALLOWEDPEAKSCRP6D
+end function getEnvOrder_ALLOWEDPEAKSGROW
 !####################################################################################
-! SUBROUTINE: assignTrajsToPeaks_ALLOWEDPEAKSCRP6D
+! SUBROUTINE: assignTrajsToPeaks_ALLOWEDPEAKSGROW
 !####################################################################################
 ! - At the moment only works with rectancular cells
 !------------------------------------------------------------------------------------
-subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
+subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    implicit none
    ! I/O variables
-   class(Allowed_peaksCRP6D),intent(inout):: this
+   class(Allowed_peaksGROW),intent(inout):: this
    ! Local variables
    integer(kind=4):: totScatt,totTrajs,allowedScatt
    integer(kind=4),dimension(2):: g
 	real(kind=8),dimension(2,2):: to_rec_space
 	real(kind=8),dimension(6):: p,r ! final momentum and position
+	real(kind=8),dimension(12):: phaseSpaceVect
 	real(kind=8),dimension(2):: dp ! variation of momentum
 	real(kind=8),dimension(2):: dk ! variation of momentum in rec. space coord
 	real(kind=8):: gama,a,b,Etot,dE
@@ -197,6 +197,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
    ! Auxiliar variables
 	real(kind=8),dimension(2):: auxReal
 	integer(kind=4),dimension(2):: auxInt
+	character(len=4):: auxString
    ! Some parameters
    character(len=*),parameter:: routinename = "assigtTrajsToPeaks_ALLOWEDPEAKSCVRP6D: "
    character(len=*),parameter:: formatUnmap='(I6," ---> ",5(I5))'        ! Id/--->/n/m/v,J,mJ
@@ -225,6 +226,18 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
    ioErr=0
    do while( ioErr == 0 )
       ! read from scattered file
+      read(ruScatt,*,iostat=ioErr) auxString,auxString,auxString,auxString,id
+      read(ruScatt,*,iostat=ioErr) r(1:3)
+      read(ruScatt,*,iostat=ioErr) r(4:6)
+      read(ruScatt,*,iostat=ioErr)
+      read(ruScatt,*,iostat=ioErr) p(1:3)
+      read(ruScatt,*,iostat=ioErr) p(4:6)
+      phaseSpaceVect(1:6)=r(:)
+      phaseSpaceVect(7:12)=p(:)
+      phaseSpaceVect(:)=from_molecular_to_atomic_phaseSpace(molcoord=phaseSpaceVect)
+      r(:)=phaseSpaceVect(1:6)
+      p(:)=phaseSpaceVect(7:12)
+
       read(ruScatt,*,ioStat=ioErr) id,stat,auxInt(:),Etot,auxReal(:),r(:),p(:)
       select case( ioErr==0 .and. stat=='Scattered' )
       case(.true.) ! secure to operate
@@ -254,26 +267,28 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
       end select
    enddo
    totTrajs=this%inicond%ntraj-this%inicond%nstart+1
+   this%totScatt=totScatt
+   this%totAllowedScatt=allowedScatt
    write(*,'("===========================================================")')
-   write(*,'("ASSIGN PEAKS TO TRAJS: total trajs: ",I10)')             totTrajs
-   write(*,'("ASSIGN PEAKS TO TRAJS: scattered trajs: ",I10)')         totScatt
-   write(*,'("ASSIGN PEAKS TO TRAJS: allowed scattered trajs: ",I10)') allowedScatt
+   write(*,'("ASSIGN PEAKS TO TRAJS: total trajs initialized: ",I10)')             totTrajs
+   write(*,'("ASSIGN PEAKS TO TRAJS: scattered trajs: ",I10)')         this%totScatt
+   write(*,'("ASSIGN PEAKS TO TRAJS: allowed scattered trajs: ",I10)') this%totAlloweScatt
    write(*,'("ASSIGN PEAKS TO TRAJS: probability: ",F10.5)')           dfloat(allowedScatt)/dfloat(totTrajs)
    write(*,'("===========================================================")')
    close(unit=ruScatt)
    close(unit=wuUnmap)
    call deleteIfEmptyFile( this%fileNameUnmapped )
    return
-end subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D
+end subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW
 !####################################################################################
 ! FUNCTION: EVALUATE_PEAK ###########################################################
 !####################################################################################
 ! - TRUE if A*(n^2) + B*nm + C*(m^2) + D*n + E*m + F < 0
 !------------------------------------------------------------------------------------
-function isAllowed_ALLOWEDPEAKSCRP6D(this,diffState,rovibrState,diffEnergy) result(isAllowed)
+function isAllowed_ALLOWEDPEAKSGROW(this,diffState,rovibrState,diffEnergy) result(isAllowed)
    IMPLICIT NONE
    ! I/O variables
-   class(Allowed_peaksCRP6D),intent(in):: this
+   class(Allowed_peaksGROW),intent(in):: this
    integer(kind=4),dimension(2),intent(in):: diffState
    integer(kind=4),dimension(3),intent(in):: rovibrState
    real(kind=8),optional,intent(out):: diffEnergy
@@ -309,7 +324,7 @@ function isAllowed_ALLOWEDPEAKSCRP6D(this,diffState,rovibrState,diffEnergy) resu
    isAllowed=( C(1)*(n**2.D0)+C(2)*n*m+C(3)*(m**2.D0)+C(4)*n+C(5)*m+C(6) < 0.d0 )
 	if( present(diffEnergy) ) diffEnergy=dE
    return
-end function isAllowed_ALLOWEDPEAKSCRP6D
+end function isAllowed_ALLOWEDPEAKSGROW
 !###########################################################################3########
 ! SUBROUTINE: PRINT_XY_EXIT_ANGLES 
 !###########################################################################3########
@@ -317,10 +332,10 @@ end function isAllowed_ALLOWEDPEAKSCRP6D
 !   information about exit angles in XY plane (taken from momenta information)
 ! - Only trajectories with "Scattered" status will be taken into account
 !------------------------------------------------------------------------------------
-subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
+subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    implicit none
 	! I/O Variables
-   class(Allowed_peaksCRP6D),intent(in):: this
+   class(Allowed_peaksGROW),intent(in):: this
 	! Local variables
 	integer(kind=4):: dummy_int
 	real(kind=8),dimension(9):: dummy_real
@@ -366,7 +381,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D(this)
    close(unit=wuFinal)
    close(unit=ruScatt)
    return
-end subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
+end subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW
 !###########################################################
 !# FUNCTION: getDiffOrderC4
 !###########################################################
@@ -425,18 +440,18 @@ function getDiffOrderC4(envOrder,g) result(diffOrder)
    RETURN
 end function getDiffOrderC4
 !######################################################
-! FUNCTION: getPeakId_ALLOWEDPEAKSCRP6D
+! FUNCTION: getPeakId_ALLOWEDPEAKSGROW
 !######################################################
 !> @brief
 !! - Gets allowed peak ID number given its diffraction numbers.
 !! - If there is not an allowed peak with diffraction number g(:),
 !!   this function exits with a negative integer
 !------------------------------------------------------
-function getPeakId_ALLOWEDPEAKSCRP6D(this,g) result(peakId)
+function getPeakId_ALLOWEDPEAKSGROW(this,g) result(peakId)
    ! Initial declarations
    implicit none
    ! I/O variables
-   class(Allowed_peaksCRP6D),intent(in):: this
+   class(Allowed_peaksGROW),intent(in):: this
    integer(kind=4),dimension(2):: g
    ! Function dummy variable
    integer(kind=4):: peakId
@@ -445,7 +460,7 @@ function getPeakId_ALLOWEDPEAKSCRP6D(this,g) result(peakId)
    ! Run section
    select case( .not.allocated(this%peaks) )
    case(.true.) ! stop! badness!
-      write(0,*) 'getPeakId_ALLOWEDPEAKSCRP6D ERR: Peaks are not allocated'
+      write(0,*) 'getPeakId_ALLOWEDPEAKSGROW ERR: Peaks are not allocated'
       call exit(1)
    case(.false.) ! Initialize values
       peakId = -1
@@ -456,20 +471,20 @@ function getPeakId_ALLOWEDPEAKSCRP6D(this,g) result(peakId)
       i=i+1
    enddo
    return
-end function getPeakId_ALLOWEDPEAKSCRP6D
+end function getPeakId_ALLOWEDPEAKSGROW
 !############################################################
-! SUBROUTINE: addNewPeak_PEAKCRP6D
+! SUBROUTINE: addNewPeak_PEAKGROW
 !############################################################
 !------------------------------------------------------------
-subroutine addNewPeak_ALLOWEDPEAKSCRP6D(this,g,peakId)
+subroutine addNewPeak_ALLOWEDPEAKSGROW(this,g,peakId)
    ! Initial declarations
    implicit none
    ! I/O variables
-   class(Allowed_peaksCRP6D),intent(inout):: this
+   class(Allowed_peaksGROW),intent(inout):: this
    integer(kind=4),dimension(2),intent(in):: g
    integer(kind=4),optional,intent(out):: peakId
    ! Local variables
-   type(PeakCRP6D),dimension(:),allocatable:: auxListPeaks
+   type(PeakGROW),dimension(:),allocatable:: auxListPeaks
    integer(kind=4):: oldN
    integer(kind=4):: idNew
    integer(kind=4):: i ! counters
@@ -523,26 +538,26 @@ subroutine addNewPeak_ALLOWEDPEAKSCRP6D(this,g,peakId)
    end select
    if( present(peakId) ) peakId=idNew
    return
-end subroutine addNewPeak_ALLOWEDPEAKSCRP6D
+end subroutine addNewPeak_ALLOWEDPEAKSGROW
 !############################################################
-! SUBROUTINE: addProbToPeak_ALLOWEDPEAKSCRP6D
+! SUBROUTINE: addProbToPeak_ALLOWEDPEAKSGROW
 !############################################################
 !> @brief
 !! Adds probability to a given subpeak. If it does not exist, this
 !! routine will initialize it. Subpeaks are classified by their quantum
 !! state.
 !------------------------------------------------------------
-subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
+subroutine addProbToSubPeak_ALLOWEDPEAKSGROW(this,peakId,rovibrState)
    ! Initial declarations
    implicit none
    ! I/O variables
-   class(Allowed_peaksCRP6D),intent(inout):: this
+   class(Allowed_peaksGROW),intent(inout):: this
    integer(kind=4),intent(in):: peakId
    integer(kind=4),dimension(3),intent(in):: rovibrState
    ! Local variables
    real(kind=8):: initE,kz,masa,theta_in,pinit_par
    integer(kind=4):: N,newCol,oldCol
-   type(subPeakCRP6D),dimension(:),allocatable:: auxListSubPeaks
+   type(subPeakGROW),dimension(:),allocatable:: auxListSubPeaks
    logical:: isNew
    integer(kind=4):: i ! counter
    ! Run section
@@ -597,18 +612,18 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    end select
 
    return
-end subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D
+end subroutine addProbToSubPeak_ALLOWEDPEAKSGROW
 !#######################################################
-! SUBROUTINE: printAllowedPeaks_ALLOWEDPEAKSCRP6D
+! SUBROUTINE: printAllowedPeaks_ALLOWEDPEAKSGROW
 !#######################################################
 !> @brief
 !! Prints all allowed peaks.
 !-------------------------------------------------------
-subroutine printAllowedPeaks_ALLOWEDPEAKSCRP6D(this)
+subroutine printAllowedPeaks_ALLOWEDPEAKSGROW(this)
    ! initial declarations
    implicit none
    ! I/O variables
-   class(Allowed_PeaksCRP6D),intent(in):: this
+   class(Allowed_PeaksGROW),intent(in):: this
    ! Local variables
    integer(kind=4),parameter:: wuAllowed=20
    integer(kind=4):: i ! counter
@@ -624,23 +639,23 @@ subroutine printAllowedPeaks_ALLOWEDPEAKSCRP6D(this)
    enddo
    close(unit=wuAllowed)
    return
-end subroutine printAllowedPeaks_ALLOWEDPEAKSCRP6D
+end subroutine printAllowedPeaks_ALLOWEDPEAKSGROW
 !########################################################
-! SUBROUTINE: sortByDiffOrder_ALLOWEDCRP6D
+! SUBROUTINE: sortByDiffOrder_ALLOWEDGROW
 !########################################################
 ! @brief
 !! sort peaks by diffraction order and not by peak id
 !--------------------------------------------------------
-subroutine sortByDiffOrder_ALLOWEDPEAKSCRP6D(this)
+subroutine sortByDiffOrder_ALLOWEDPEAKSGROW(this)
    ! initial declarations
    implicit none
    ! I/O variables
-   class(Allowed_PeaksCRP6D),intent(inout):: this
+   class(Allowed_PeaksGROW),intent(inout):: this
    ! Local variables
    integer(kind=4),dimension(:),allocatable:: intList
    integer(kind=4):: N
    integer(kind=4):: i,j,diffOrder ! counters
-   type(peakCRP6D),dimension(:),allocatable:: auxPeaksList
+   type(peakGROW),dimension(:),allocatable:: auxPeaksList
    ! Run section -----------------------------------------
    N=size( this%peaks )
    allocate( intList(N) )
@@ -664,18 +679,18 @@ subroutine sortByDiffOrder_ALLOWEDPEAKSCRP6D(this)
       this%peaks(i)=auxPeaksList(intList(i))
    enddo
    return
-end subroutine sortByDiffOrder_ALLOWEDPEAKSCRP6D
+end subroutine sortByDiffOrder_ALLOWEDPEAKSGROW
 !###########################################################
-! SUBROUTINE: printSeenPeaks_ALLOWEDPEAKSCRP6D
+! SUBROUTINE: printSeenPeaks_ALLOWEDPEAKSGROW
 !###########################################################
 !> @brief
 !! Prints Seen peaks file
 !-----------------------------------------------------------
-subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D(this)
+subroutine printSeenPeaks_ALLOWEDPEAKSGROW(this)
    ! initial declarations
    implicit none
    ! I/O variables
-   class(Allowed_PeaksCRP6D),intent(in):: this
+   class(Allowed_PeaksGROW),intent(in):: this
    ! Local variables
    integer(kind=4),parameter:: wuSeen=123
    character(len=*),parameter:: formatSeen='(6(I10,1X),6(F10.5,1X))'
@@ -699,16 +714,16 @@ subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D(this)
    enddo
    close(unit=wuSeen)
    return
-end subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D
+end subroutine printSeenPeaks_ALLOWEDPEAKSGROW
 !###########################################################
-! FUNCTION: quantizeRovibrState_ALLOWEDPEAKSCRP6D
+! FUNCTION: quantizeRovibrState_ALLOWEDPEAKSGROW
 !###########################################################
 !-----------------------------------------------------------
-function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,Etot,position,momenta) result(rovibrState)
+function quantizeRovibrState_ALLOWEDPEAKSGROW(this,Etot,position,momenta) result(rovibrState)
    ! initial declarations
    implicit none
    ! I/O variables
-   class(Allowed_peaksCRP6D),intent(in):: this
+   class(Allowed_peaksGROW),intent(in):: this
    real(kind=8),intent(in):: Etot
    real(kind=8),dimension(6),intent(in):: position
    real(kind=8),dimension(6),intent(in):: momenta
@@ -717,7 +732,7 @@ function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,Etot,position,momenta) resul
    ! Local variables
    real(kind=8):: L2,mu,masa,Ecm,Evibr,Erot,finalJ,finalV
    ! Parameters
-   character(len=*),parameter:: routinename='quantizeRovibrState_ALLOWEDPEAKSCRP6D: '
+   character(len=*),parameter:: routinename='quantizeRovibrState_ALLOWEDPEAKSGROW: '
    ! Run section ------------------------------------------
    masa=sum( system_mass(:) )
    mu=product( system_mass(:) )/masa
@@ -788,5 +803,5 @@ function quantizeRovibrState_ALLOWEDPEAKSCRP6D(this,Etot,position,momenta) resul
 	      return
 	   end function discretizeJ
 
-end function quantizeRovibrState_ALLOWEDPEAKSCRP6D
-END MODULE DIFFRACTIONCRP6D_MOD
+end function quantizeRovibrState_ALLOWEDPEAKSGROW
+END MODULE DIFFRACTIONGROW_MOD

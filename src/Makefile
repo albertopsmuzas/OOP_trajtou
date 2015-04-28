@@ -13,7 +13,7 @@ objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
 				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o fourier.p6mm.o link_fourier2d.o exponential.o xexponential.o\
 				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o\
-				diffractionAtomSurf.o LiF001Surf.o HLiF001_WS.o HLiF001_NS.o H2LiF001.o
+				diffractionAtomSurf.o LiF001Surf.o HLiF001_WS.o HLiF001_NS.o H2LiF001.o initSurfaceGrowDiatomic.o
 				
 
 # Where to find fortran files:
@@ -86,6 +86,7 @@ inicond.o: units.o link_PES.o
 initatom.o: debug.o inicond.o system.o
 initdiatomic.o: debug.o inicond.o system.o
 initAtomSurf.o: debug.o inicond.o system.o
+initSurfaceGrowDiatomic.o: debug.o inicond.o system.o
 # Dynamics section -----------------------------------------------------------------------
 dynamics.o: units.o link_PES.o inicond.o link_integrator.o
 dynatom.o: debug.o dynamics.o initatom.o system.o
