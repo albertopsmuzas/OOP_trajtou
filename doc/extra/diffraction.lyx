@@ -2877,12 +2877,7 @@ We can also assign to each peak an azimuthal angle respect to surface plane
 \end_layout
 
 \begin_layout Section
-Diffraction orders
-\end_layout
-
-\begin_layout Standard
-Two diffraction peaks have the same diffraction order if the variation of
- momentum associated with them has the same value.
+Diffraction orders for any surface symmetry
 \end_layout
 
 \begin_layout Subsection
@@ -2931,12 +2926,19 @@ All of them have projector properties:
 \end_inset
 
 .
- Now, we will state some interesting properties and extra helpful operators
- composed of the fundamental ones:
+ Now, we will define new operators composed by the fundamental ones for
+ the sake of notation simplicity:
 \end_layout
 
 \begin_layout Itemize
 \begin_inset Formula $\mathcal{N}_{2}\left(\omega_{hk}\right)=\omega_{h\bar{k}}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{N}_{2}=\mathcal{P}\mathcal{N}\mathcal{P}$
 \end_inset
 
 
@@ -2956,25 +2958,6 @@ All of them have projector properties:
 
 \end_layout
 
-\begin_layout Itemize
-\begin_inset Formula $\mathcal{N}_{2}=\mathcal{P}\mathcal{N}\mathcal{P}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Itemize
-If we have elements 
-\begin_inset Formula $\omega_{kk}$
-\end_inset
-
-: 
-\begin_inset Formula $\mathcal{P}\left(\omega_{kk}\right)=\mathbb{1}\left(\omega_{kk}\right)$
-\end_inset
-
-
-\end_layout
-
 \begin_layout Standard
 One can find that the set of operators: 
 \begin_inset Formula $\mathcal{T}=\left\{ \mathbb{1},\mathcal{P},\mathcal{N},\mathcal{PN},\mathcal{NP},\mathcal{N}_{2},\mathcal{N}_{12},\mathcal{PN}_{12}\right\} $
@@ -2985,47 +2968,312 @@ One can find that the set of operators:
 \begin_inset Formula $\omega_{hk}$
 \end_inset
 
- with property: 
-\begin_inset Formula $h\ne k$
+ (generator element), the set of elements 
+\begin_inset Formula $\tau\left(\omega_{hk}\right)=\left\{ \omega_{hk},\omega_{kh},\omega_{\bar{h}k},\omega_{k\bar{h}},\omega_{\bar{k}h},\omega_{h\bar{k}},\omega_{\bar{h}\bar{k}},\omega_{\bar{k}\bar{h}}\right\} $
 \end_inset
 
- we generate the set of elements 
-\begin_inset Formula $\tau=\left\{ \omega_{hk},\omega_{kh},\omega_{\bar{h}k},\omega_{k\bar{h}},\omega_{\bar{k}h},\omega_{h\bar{k}},\omega_{\bar{h}\bar{k}},\omega_{\bar{k}\bar{h}}\right\} $
+ is generated.
+ If we assume 
+\begin_inset Formula $\left(h\ne k\right)\bigwedge\left(k\ne0\right)\bigwedge\left(h\ne0\right)$
 \end_inset
 
- .
- When we are dealing with elements of the type 
-\begin_inset Formula $\omega_{kk}$
-\end_inset
-
- sets 
-\begin_inset Formula $\mathcal{T}$
-\end_inset
-
- and 
+ all 
 \begin_inset Formula $\tau$
 \end_inset
 
- are reduced to: 
-\begin_inset Formula $\mathcal{T}=\left\{ \mathbb{1},\mathcal{N},\mathcal{N}_{2},\mathcal{N}_{12}\right\} $
+-elements are different from each other.
+ Nevertheless, 
+\begin_inset Formula $\tau-$
 \end_inset
 
- and 
-\begin_inset Formula $\tau=\left\{ \omega_{kk},\omega_{\bar{k}k},\omega_{k\bar{k}},\omega_{\bar{k}\bar{k}}\right\} $
+elements can be redundant in some cases, which means that two or more operators
+ got the same result after applying it on the generator.
+ Knowing this, we re-define 
+\begin_inset Formula $\mathcal{T}$
 \end_inset
 
-.
- This can be easily deduced from properties and common sense.
+ to be the set of classes of operators that yield to the same element:
+\begin_inset Formula 
+\[
+\mathcal{T}\left(\omega_{hk}\right)=\left\{ \left[\mathcal{A}\,:\,\mathcal{A}\left(\omega_{hk}\right)=\omega_{nm}\right]_{nm}\right\} 
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
-Hereinafter, we can apply our mathematical tools to create a generalized
- way of deduction of diffraction orders.
- 
+There are three of such special cases: 
+\begin_inset Formula $\omega_{00}$
+\end_inset
+
+, 
+\begin_inset Formula $\omega_{h0}$
+\end_inset
+
+ and 
+\begin_inset Formula $\omega_{hh}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="3">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Generator
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\tau$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{T}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\omega_{00}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \omega_{00}\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \left[\mathbb{1},\mathcal{P},\mathcal{N},\mathcal{PN},\mathcal{NP},\mathcal{N}_{2},\mathcal{N}_{12},\mathcal{PN}_{12}\right]_{00}\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\omega_{h0}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \omega_{h0},\omega_{0h},\omega_{\bar{h}0},\omega_{0\bar{h}}\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \left[\mathbb{1},\mathcal{N}_{2}\right]_{h0},\left[\mathcal{P},\mathcal{NP}\right]_{0h},\left[\mathcal{N},\mathcal{N}_{12}\right]_{\bar{h}0},\left[\mathcal{PN},\mathcal{PN}_{12}\right]_{0\bar{h}}\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\omega_{hh}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \omega_{hh},\omega_{\bar{h}h},\omega_{h\bar{h}},\omega_{\bar{h}\bar{h}}\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \left[\mathbb{1},\mathcal{P}\right]_{hh},\left[\mathcal{N},\mathcal{NP}\right]_{\bar{h}h},\left[\mathcal{PN},\mathcal{N}_{2}\right]_{h\bar{h}},\left[\mathcal{N}_{12},\mathcal{PN}_{12}\right]_{\bar{h}\bar{h}}\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\omega_{hk}:\,\left(h\ne k\right)\bigwedge\left(k\ne0\right)\bigwedge\left(h\ne0\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \omega_{hk},\omega_{kh},\omega_{\bar{h}k},\omega_{k\bar{h}},\omega_{\bar{k}h},\omega_{h\bar{k}},\omega_{\bar{h}\bar{k}},\omega_{\bar{k}\bar{h}}\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left\{ \left[\mathbb{1}\right],\left[\mathcal{P}\right],\left[\mathcal{N}\right],\left[\mathcal{PN}\right],\left[\mathcal{NP}\right],\left[\mathcal{N}_{2}\right],\left[\mathcal{N}_{12}\right],\left[\mathcal{PN}_{12}\right]\right\} $
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "degeneracyByElement"
+
+\end_inset
+
+Degeneracy introduced by generator elements
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Notice that sometimes we will drop subindexes, sometimes we will refer to
+ a class with notation 
+\begin_inset Formula $\left[nm\right]$
+\end_inset
+
+ instead of 
+\begin_inset Formula $\left[\mathcal{A}\right]_{nm}$
+\end_inset
+
+ and other abuses of notation to make the reading of this work easier.
+ Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "degeneracyByElement"
+
+\end_inset
+
+ is fundamental for our study.
 \end_layout
 
 \begin_layout Subsection
-Generalized diffraction order assignation
+Quadratic distance 
 \end_layout
 
 \begin_layout Standard
@@ -3052,11 +3300,14 @@ In any scheme of difrraction we will have at least a collection of
 \begin_inset Formula $\omega_{hk}$
 \end_inset
 
- is not more than a point given in reciprocal space coordinates 
-\begin_inset Formula $\underline{\omega_{hk}}_{\mathcal{G}}$
+ is not more than a point given in reciprocal space coordinates with representan
+t 
+\begin_inset Formula $\underline{\omega_{hk}}_{\mathcal{G}}=\begin{pmatrix}h\\
+k
+\end{pmatrix}$
 \end_inset
 
-, we can assign an explicit form to 
+, we can assign an explicit matrix form to 
 \begin_inset Formula $f$
 \end_inset
 
@@ -3073,11 +3324,11 @@ thus,
 \end_inset
 
  depends of how the unit surface in real space was defined.
- Let's calculate 
+ The explicit form of 
 \begin_inset Formula $\underline{\underline{M_{S}^{-1}}}$
 \end_inset
 
-: 
+ is: 
 \begin_inset Formula 
 \[
 \underline{\underline{M_{S}^{-1}}}=\frac{1}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}b^{2} & -ab\cos\gamma\\
@@ -3087,64 +3338,19 @@ thus,
 
 \end_inset
 
-
-\begin_inset Formula 
-\[
-f\left(\omega_{hk}\right)=\frac{4\pi^{2}}{a^{2}b^{2}\sin\gamma}\cdot\begin{pmatrix}h & k\end{pmatrix}\begin{pmatrix}b^{2} & -ab\cos\gamma\\
--ab\cos\gamma & a^{2}
-\end{pmatrix}\begin{pmatrix}h\\
-k
-\end{pmatrix}=\frac{4\pi^{2}}{a^{2}b^{2}\sin\gamma}\cdot\left(b^{2}h^{2}+a^{2}k^{2}-2abhk\cos\gamma\right)
-\]
-
-\end_inset
-
-
-\begin_inset Formula 
-\[
-f\left(\omega_{hk}\right)=4\pi^{2}\cdot\left(\frac{h^{2}}{a^{2}\sin\gamma}+\frac{k^{2}}{b^{2}\sin\gamma}-\frac{2hk}{ab\tan\gamma}\right)=f_{\gamma}^{ab}\left(\omega_{hk}\right)
-\]
-
+which is a symmetric matrix: 
+\begin_inset Formula $M_{S}^{-1}=\left(M_{S}^{-1}\right)^{T}$
 \end_inset
 
 
 \end_layout
 
-\begin_layout Standard
-Now we can define the function 
-\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=f_{\gamma}^{ab}\left(\omega_{hk}\right)-f_{\gamma}^{ab}\left(\omega_{nm}\right)$
+\begin_layout Subsection
+Matrix representation of 
+\begin_inset Formula $\mathcal{T}-$
 \end_inset
 
-: 
-\begin_inset Formula 
-\[
-\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=4\pi^{2}\cdot\left(\frac{h^{2}}{a^{2}\sin\gamma}+\frac{k^{2}}{b^{2}\sin\gamma}-\frac{2hk}{ab\tan\gamma}\right)-4\pi^{2}\cdot\left(\frac{n^{2}}{a^{2}\sin\gamma}\frac{m^{2}}{b^{2}\sin\gamma}-\frac{2nm}{ab\tan\gamma}\right)
-\]
-
-\end_inset
-
-
-\begin_inset Formula 
-\[
-\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=4\pi^{2}\cdot\left[\frac{h^{2}-n^{2}}{a^{2}\sin\gamma}+\frac{k^{2}-m^{2}}{b^{2}\sin\gamma}-\frac{2\left(hk-nm\right)}{ab\tan\gamma}\right]
-\]
-
-\end_inset
-
-so, hereinafter, we can say that 
-\begin_inset Formula $\omega_{hk}$
-\end_inset
-
- and 
-\begin_inset Formula $\omega_{nm}$
-\end_inset
-
- belong to the same diffraction order if 
-\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=0$
-\end_inset
-
-.
- 
+elements and their transposes
 \end_layout
 
 \begin_layout Itemize
@@ -3251,8 +3457,70 @@ so, hereinafter, we can say that
 
 \end_layout
 
-\begin_layout Itemize
-\begin_inset Formula $M_{S}=M_{S}^{T}$
+\begin_layout Subsection
+\begin_inset Formula $\delta_{\gamma}^{ab}$
+\end_inset
+
+ score function
+\end_layout
+
+\begin_layout Standard
+Now we can define the score function 
+\begin_inset Formula $\delta_{\gamma}^{ab}$
+\end_inset
+
+ as: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=f_{\gamma}^{ab}\left(\omega_{hk}\right)-f_{\gamma}^{ab}\left(\omega_{nm}\right)
+\]
+
+\end_inset
+
+Hereinafter, we can say that 
+\begin_inset Formula $\omega_{hk}$
+\end_inset
+
+ and 
+\begin_inset Formula $\omega_{nm}$
+\end_inset
+
+ belong to the same diffraction order if 
+\begin_inset Formula 
+\[
+\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Given a pair of operators 
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{B}$
+\end_inset
+
+ acting on a generator element 
+\begin_inset Formula $\omega_{hk}$
+\end_inset
+
+, let's take a look to the score function structure: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\delta_{\gamma}^{ab}\left(\mathcal{A}\omega_{hk},\mathcal{B}\omega_{hk}\right)=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\mathcal{A}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{A}\underline{\omega_{hk}}_{\mathcal{G}}-4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\mathcal{B}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{B}\underline{\omega_{hk}}_{\mathcal{G}}=
+\]
+
 \end_inset
 
 
@@ -3261,12 +3529,12 @@ so, hereinafter, we can say that
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\delta_{\gamma}^{ab}\left(\mathcal{A}\omega_{hk},\mathcal{B}\omega_{hk}\right)=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\mathcal{A}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{A}\underline{\omega_{hk}}_{\mathcal{G}}-4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\mathcal{B}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{B}\underline{\omega_{hk}}_{\mathcal{G}}=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\left(\mathcal{A}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{A}-\mathcal{B}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{B}\right)\underline{\omega_{hk}}_{\mathcal{G}}
+\delta_{\gamma}^{ab}\left(\mathcal{A}\omega_{hk},\mathcal{B}\omega_{hk}\right)=4\pi^{2}\underline{\omega_{hk}}_{\mathcal{G}}^{T}\left(\mathcal{A}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{A}-\mathcal{B}^{T}\underline{\underline{M_{S}^{-1}}}\mathcal{B}\right)\underline{\omega_{hk}}_{\mathcal{G}}
 \]
 
 \end_inset
 
-
+which allows us to define a score function acting directly on operators:
 \end_layout
 
 \begin_layout Standard
@@ -3281,6 +3549,27 @@ so, hereinafter, we can say that
 \end_layout
 
 \begin_layout Standard
+Now, given a generator element 
+\begin_inset Formula $\omega_{hk}$
+\end_inset
+
+ and two operators 
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathcal{B}$
+\end_inset
+
+, we can assure that they will yield to elements within the same diffraction
+ order if 
+\begin_inset Formula $\delta_{\gamma}^{ab}\left(\mathcal{A},\mathcal{B}\right)=\hat{0}$
+\end_inset
+
+ or more explicitly:
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
 \mathcal{A}^{T}M_{S}^{-1}\mathcal{A}=\mathcal{B}^{T}M_{S}^{-1}\mathcal{B}
@@ -3292,35 +3581,13 @@ so, hereinafter, we can say that
 \end_layout
 
 \begin_layout Standard
-We can notice: if 
-\begin_inset Formula $\mathcal{B}=\mathcal{A}^{T}$
-\end_inset
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
 
-, 
-\begin_inset Formula $\delta_{\gamma}^{ab}\left(\mathcal{A},\mathcal{B}\right)=\underline{\underline{0}}$
-\end_inset
-
-, which is the case of 
-\begin_inset Formula $\hat{\mathcal{N}}\hat{\mathcal{P}}$
-\end_inset
-
- and 
-\begin_inset Formula $\hat{\mathcal{P}}\hat{\mathcal{N}}$
-\end_inset
-
-.
- This means that 
-\begin_inset Formula $\omega_{\bar{k}h}$
-\end_inset
-
- has always the same diffraction order as 
-\begin_inset Formula $\omega_{k\bar{h}}$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Tabular
 <lyxtabular version="3" rows="9" columns="6">
 <features rotate="0" tabularvalignment="middle">
@@ -4139,7 +4406,7 @@ ab\cos\gamma & a^{2}
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="9" columns="2">
@@ -4439,32 +4706,19 @@ ab\cos\gamma & a^{2}
 
 \end_layout
 
-\begin_layout Subsubsection*
-Checking rules on a,b and 
-\begin_inset Formula $\gamma$
-\end_inset
+\begin_layout Plain Layout
+\begin_inset Caption Standard
 
- under which 
-\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{nm}\right)=0$
-\end_inset
-
- is true:
+\begin_layout Plain Layout
+Natural degeneracy of operators and degeneracy introduced by certain surface
+ structures.
 \end_layout
-
-\begin_layout Standard
-For any surface we have:
-\begin_inset Formula 
-\[
-\frac{h^{2}-n^{2}}{a^{2}}+\frac{k^{2}-m^{2}}{b^{2}}-\frac{2\left(hk-nm\right)\cos\gamma}{ab}=0
-\]
 
 \end_inset
 
 
 \end_layout
 
-\begin_layout Standard
-\begin_inset Formula $\delta_{\gamma}^{ab}\left(\omega_{hk},\mathcal{P}\omega_{hk}\right)=\delta_{\gamma}^{ab}\left(\omega_{hk},\omega_{kh}\right)=$
 \end_inset
 
 
