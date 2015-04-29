@@ -40,9 +40,10 @@ TYPE,EXTENDS(Inicond):: InitSurfaceGrowDiatomic
    LOGICAL:: control_vel,control_posX,control_posY,control_out
    REAL(KIND=8):: impact_x, impact_y
    INTEGER(KIND=4),DIMENSION(3):: init_qn
-   TYPE(Energy):: E_norm, evirot
-   TYPE(Angle):: vz_angle, vpar_angle
-   TYPE(Length):: init_z ! initial Z value
+   type(VacuumPot):: vibrPot
+   type(Energy):: E_norm, evirot
+   type(Angle):: vz_angle, vpar_angle
+   type(Length):: init_z ! initial Z value
    CONTAINS
       ! Initialization block
       procedure,public:: INITIALIZE => INITIALIZE_INITSURFACEGROW
@@ -192,6 +193,27 @@ SUBROUTINE INITIALIZE_INITSURFACEGROW(this,filename)
       CASE(.false.)
          ! do nothing
    END SELECT
+    ! get vibrational potential
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='vibrationalFunction')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='kind',val=auxstring)
+   SELECT CASE(trim(auxstring))
+      CASE('Numerical')
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,key='source',val=auxstring)
+         CALL this%vibrpot%INITIALIZE(trim(auxstring))
+         CALL this%vibrpot%SHIFTPOT()
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,'Numerical Vacuumpot loaded')
+         CALL VERBOSE_WRITE(routinename,'Equilibrium distance (au): ',this%vibrpot%getreq())
+         CALL VERBOSE_WRITE(routinename,'Potential at minimum, prior shifting (au): ',this%vibrpot%getpotmin())
+         CALL VERBOSE_WRITE(routinename,'Force Constant (d2V(r)/dr2 at Req (au): ',this%vibrpot%getForceConstant())
+#endif
+      CASE DEFAULT
+         WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: vibrational function kind not implemented"
+         WRITE(0,*) "Implemented ones: Numerical"
+         WRITE(0,*) 'Warning: case sensitive'
+         CALL EXIT(1)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
    ! get direction angle
    CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='directionAngle')
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
