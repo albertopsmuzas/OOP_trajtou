@@ -3024,7 +3024,7 @@ There are three of such special cases:
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -3585,7 +3585,7 @@ Now, given a generator element
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \begin_inset Tabular
@@ -4722,6 +4722,10 @@ Natural degeneracy of operators and degeneracy introduced by certain surface
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsection
+Union of generator, natural and surface degeneracies of fundamental operators.
 \end_layout
 
 \end_body
