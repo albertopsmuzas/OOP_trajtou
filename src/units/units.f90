@@ -152,8 +152,9 @@ REAL(KIND=8),PARAMETER:: au2angst = 0.52917720859D0
 REAL(KIND=8),PARAMETER:: au2fs = 0.02418884326505D0
 REAL(KIND=8),PARAMETER:: au2ps = 2.418884326505D-5
 REAL(KIND=8),PARAMETER:: hmass2au = 1837.15264409D0
-REAL(KIND=8),PARAMETER:: dmass2au = 3671.482934845D0
-REAL(KIND=8),PARAMETER:: pmass2au = 1836.15267247D0
+REAL(KIND=8),PARAMETER:: dmass2au = 3671.482934845d0
+REAL(KIND=8),PARAMETER:: pmass2au = 1836.15267247d0
+real(kind=8),parameter:: dalton2au=1822.88848325d0
 real(kind=8),parameter:: kelvinParam=273.15d0
 real(kind=8),parameter:: fahrenheitParam=459.67d0
 real(kind=8),parameter:: boltzmann=8.617332478d-5/au2ev
@@ -328,9 +329,9 @@ SUBROUTINE TO_ANGST_LENGTH(this)
    CLASS(Length),INTENT(INOUT):: this
    ! Run section
    SELECT CASE(this%units)
-      CASE("angst")
+      CASE('angst','Angst')
          ! do nothing
-      CASE("au")
+      CASE('au','bohr','bohrs','Bohr','Bohrs')
          this%mag = this%mag*au2angst
          this%units = "angst"
       CASE DEFAULT
@@ -353,11 +354,11 @@ subroutine TO_KELVIN_UNITS(this)
    class(Temperature),intent(inout):: this
    ! Run section
    select case(this%units)
-      case('Kelvin')
+      case( 'Kelvin','kelvin','K','k','Kelvins','kelvins' )
          ! do nothing
-      case('Celsius')
+      case( 'Celsius','celsius','C','c' )
          this%mag=this%mag+kelvinParam
-      case('Fahrenheit')
+      case( 'Fahrenheit','fahrenheit','F','f' )
          this%mag=(this%mag+fahrenheitParam)*5.d0/9.d0
       case default
          write(0,*) 'TO_KELVIN ERR: incorrect units'
@@ -379,28 +380,31 @@ end subroutine TO_KELVIN_UNITS
 !> @date 06/Nov/2013
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE MASS_AU(this)
-	! Initial declarations
-        IMPLICIT NONE
-        ! I/O variables
-        CLASS(mass), INTENT(INOUT) :: this
-        ! Run section 
-        IF (this%units.EQ."hmass") THEN
-                this%mag = this%mag*hmass2au
-        ELSE IF (this%units.EQ."dmass") THEN
-                this%mag = this%mag*dmass2au
-        ELSE IF (this%units.EQ."pmass") THEN
-                this%mag = this%mag*pmass2au
-        ELSE IF (this%units.EQ."au") THEN
-                RETURN
-        ELSE
-                WRITE(0,*) "MASS_AU ERR: incorrect units"
-                WRITE(0,*) "Supported ones: hmass, dmass, pmass, au"
-                CALL EXIT(1)
-        END IF
-        this%units = "au"
-        RETURN
-END SUBROUTINE MASS_AU
+subroutine mass_au(this)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+    class(Mass),intent(inout) :: this
+    ! Run section 
+    select case( this%units )
+    case( 'hmass','Hmass' )
+       this%mag = this%mag*hmass2au
+    case( 'dmass','Dmass' )
+       this%mag = this%mag*dmass2au
+    case( "pmass" )
+       this%mag = this%mag*pmass2au
+    case( 'Da','da','dalton','Dalton','Daltons','daltons' )
+       this%mag = this%mag*dalton2au
+    case( "au" )
+       return
+    case default
+       write(0,*) "MASS_AU ERR: incorrect units"
+       write(0,*) "Supported ones: hmass, dmass, pmass, au, Da"
+       call exit(1)
+    end select
+    this%units = "au"
+    return
+end subroutine mass_au
 !############################################################
 !# SUBROUTINE: ENERGY_AU ####################################
 !############################################################

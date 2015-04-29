@@ -241,9 +241,9 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
       phaseSpaceVect(:)=from_molecular_to_atomic_phaseSpace(molcoord=phaseSpaceVect)
       r(:)=phaseSpaceVect(1:6)
       p(:)=phaseSpaceVect(7:12)
-      Etot=0.5d0*dot_product(p(7:9),p(7:9))/mtot+& ! translational energy
-           0.5d0*(p(10)**2.d0)+(p(11)**2.d0+& ! vibrational energy
-           0.5d0*(p(12)**2.d0)/dsin(r(5)))/(mu*r(4)**2.d0)+& ! rotational energy
+      Etot=0.5d0*dot_product(p(1:3),p(1:3))/mtot+& ! translational energy
+           0.5d0*(p(4)**2.d0)/mu+& ! vibrational energy
+           0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+& ! rotational energy
            this%inicond%vibrPot%getPot( r(4) ) ! potential energy
       if( r(3) >= this%inicond%trajs(id)%init_r(3) ) stat='Scattered'
       select case( ioErr==0 .and. stat=='Scattered' )
