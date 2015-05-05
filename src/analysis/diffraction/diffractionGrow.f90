@@ -222,7 +222,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    write(wuUnmap,'("# *************** LIST OF UNMAPPED TRAJS ***************")')
    write(wuUnmap,'("# Format: id/n,m/v,J,mJ")')
    write(wuUnmap,'("# ----------------------------------------------------------------")')
-   open(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
+   open(unit=ruScatt,file="OUT_FINALCV",status="old",action='read')
    call skipHeaderFromFile(unit=ruScatt)
    i=0
    totScatt=0
@@ -236,6 +236,9 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
       read(ruScatt,*,iostat=ioErr)
       read(ruScatt,*,iostat=ioErr) p(1:3)
       read(ruScatt,*,iostat=ioErr) p(4:6)
+      ! correct momenta
+      p(1:3)=system_mass(1)*p(1:3)/dsqrt(pmass2au)
+      p(4:6)=system_mass(2)*p(4:6)/dsqrt(pmass2au)
       phaseSpaceVect(1:6)=r(:)
       phaseSpaceVect(7:12)=p(:)
       phaseSpaceVect(:)=from_molecular_to_atomic_phaseSpace(molcoord=phaseSpaceVect)
