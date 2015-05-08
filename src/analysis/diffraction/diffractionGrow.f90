@@ -20,6 +20,8 @@ type:: SubPeakGROW
    real(kind=8):: thetaOut
    integer(kind=4),dimension(3):: rovibrState
    real(kind=8):: prob
+   real(kind=8):: deviation
+   integer(kind=4):: ntrajs
    real(kind=8):: dE
 end type SubPeakGROW
 !======================================================
@@ -65,7 +67,8 @@ TYPE :: Allowed_peaksGROW
       ! private tools section
       procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSGROW
       procedure,private:: addNewPeak => addNewPeak_ALLOWEDPEAKSGROW
-      procedure,private:: addProbToSubPeak => addProbToSubPeak_ALLOWEDPEAKSGROW
+      procedure,private:: addCountToSubPeak => addCountToSubPeak_ALLOWEDPEAKSGROW
+      procedure,private:: doSubPeakStatistics => doSubPeakStatistics_ALLOWEDPEAKSGROW
       ! public tools section
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSGROW
       PROCEDURE,PUBLIC:: getEnvOrder => getEnvOrder_ALLOWEDPEAKSGROW
@@ -189,7 +192,6 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
 	real(kind=8),dimension(2):: dp ! variation of momentum
 	real(kind=8),dimension(2):: dk ! variation of momentum in rec. space coord
 	real(kind=8):: gama,a,b,Etot,dE
-   character(len=10):: stat
    integer(kind=4):: ioErr
    integer(kind=4),dimension(3):: rovibrState
    integer(kind=4):: peakId
@@ -212,6 +214,9 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
 	mtot=sum( system_mass(:) )
 	mu=product( system_mass(:) )/mtot
    gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
+   write(*,*) 'a: ',a
+   write(*,*) 'b: ',b
+   write(*,*) 'gamma= ',gama
    to_rec_space(1,1) = a/(2.D0*PI)
    to_rec_space(1,2) = 0.D0
    to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
@@ -241,27 +246,45 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
       p(4:6)=system_mass(2)*p(4:6)/dsqrt(pmass2au)
       phaseSpaceVect(1:6)=r(:)
       phaseSpaceVect(7:12)=p(:)
-      phaseSpaceVect(:)=from_molecular_to_atomic_phaseSpace(molcoord=phaseSpaceVect)
+      phaseSpaceVect(:)=from_atomic_to_molecular_phaseSpace(atomcoord=phaseSpaceVect)
       r(:)=phaseSpaceVect(1:6)
       p(:)=phaseSpaceVect(7:12)
-      Etot=0.5d0*dot_product(p(1:3),p(1:3))/mtot+& ! translational energy
-           0.5d0*(p(4)**2.d0)/mu+& ! vibrational energy
-           0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+& ! rotational energy
-           this%inicond%vibrPot%getPot( r(4) ) ! potential energy
-      if( r(3) >= this%inicond%trajs(id)%init_r(3) ) stat='Scattered'
-      select case( ioErr==0 .and. stat=='Scattered' )
+      select case( r(3) >= this%inicond%trajs(id)%init_r(3) )
+      case(.true.)
+         this%inicond%trajs(id)%stat='Scattered'
+      case(.false.)
+         this%inicond%trajs(id)%stat='SmallZ'
+      end select
+      select case( ioErr==0 .and. this%inicond%trajs(id)%stat=='Scattered' )
       case(.true.) ! secure to operate
          dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
          dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
          dk = matmul(to_rec_space,dp)
          g(1) = nint(dk(1))
          g(2) = nint(dk(2))
+         Etot=0.5d0*dot_product(p(1:3),p(1:3))/mtot+&                      ! Kinetic energy
+              0.5d0*(p(4)**2.d0)/mu+&                                      ! Internal kinetic energy (1)
+              0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+& ! Internal kinetic energy (2)
+              this%inicond%vibrPot%getPot( r(4) )                          ! Potential energy
          rovibrState=this%quantizeRovibrState( Etot=Etot,position=r(:),momenta=p(:) )
          totScatt=totScatt+1
+         write(*,*) '-----------------------------'
+         write(*,*) 'Id: ',id
+         write(*,*) 'Limit: ',this%inicond%trajs(id)%init_r(3)
+         write(*,*) 'initial momentum'
+         write(*,*) this%inicond%trajs(id)%init_p(:)
+         write(*,*) 'final momentum'
+         write(*,*) p(:)
+         write(*,*) 'Momentum variation in aux, recip and recip rounded coordinates'
+         write(*,*) dp(:)
+         write(*,*) dk(:)
+         write(*,*) g(:)
+         write(*,*) 'Ekin: ',0.5d0*dot_product(p(1:3),p(1:3))/mtot
+         write(*,*) 'Eint: ',Etot-0.5d0*dot_product(p(1:3),p(1:3))/mtot
          select case( this%isAllowed(diffState=g(:),rovibrState=rovibrState,diffEnergy=dE) )
          case(.true.) ! Allowed peak: add to list
             call this%addNewPeak(g, peakId=peakId)
-            call this%addProbToSubPeak( peakId=peakId,rovibrState=rovibrState )
+            call this%addCountToSubPeak( peakId=peakId,rovibrState=rovibrState )
             allowedScatt=allowedScatt+1
          case(.false.)
             write(wuUnmap,formatUnmap) id,g(:),rovibrState(:)
@@ -270,6 +293,9 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
          select case( ioErr )
          case(-1)
             ! do nothing, EOF reached, let it break the cycle
+         case(0)
+            ! just ignore it
+            write(wuUnmap,formatUnmap) id,g(:),rovibrState(:)
          case default
             write(0,*) routinename//'ERR: unexpected error encountered. Error Code: ',ioErr
             call exit(1)
@@ -288,8 +314,29 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    close(unit=ruScatt)
    close(unit=wuUnmap)
    call deleteIfEmptyFile( this%fileNameUnmapped )
+   call this%doSubPeakStatistics()
    return
 end subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW
+!####################################################################################
+! SUBROUTINE: doSubPeakStatistics_ALLOWEDPEAKSGROW
+!####################################################################################
+!------------------------------------------------------------------------------------
+subroutine doSubPeakStatistics_ALLOWEDPEAKSGROW(this)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_peaksGrow),intent(inout):: this
+   ! Local variables
+   integer(kind=4):: nPeaks
+   integer(kind=4):: i,j ! counters
+   ! Run section ------------------------------------
+   nPeaks=size( this%peaks(:) )
+   do i=1,nPeaks
+      this%peaks(i)%subPeaks(:)%prob=dfloat(this%peaks(i)%subPeaks(:)%ntrajs)/dfloat(this%totAllowedScatt)
+      this%peaks(i)%subPeaks(:)%deviation=dsqrt(this%peaks(i)%subPeaks(:)%prob*(1.d0-this%peaks(i)%subPeaks(:)%prob)/dfloat(this%totAllowedScatt-1))
+   enddo
+   return
+end subroutine doSubPeakStatistics_ALLOWEDPEAKSGROW
 !####################################################################################
 ! FUNCTION: EVALUATE_PEAK ###########################################################
 !####################################################################################
@@ -550,14 +597,14 @@ subroutine addNewPeak_ALLOWEDPEAKSGROW(this,g,peakId)
    return
 end subroutine addNewPeak_ALLOWEDPEAKSGROW
 !############################################################
-! SUBROUTINE: addProbToPeak_ALLOWEDPEAKSGROW
+! SUBROUTINE: addCountToPeak_ALLOWEDPEAKSGROW
 !############################################################
 !> @brief
 !! Adds probability to a given subpeak. If it does not exist, this
 !! routine will initialize it. Subpeaks are classified by their quantum
 !! state.
 !------------------------------------------------------------
-subroutine addProbToSubPeak_ALLOWEDPEAKSGROW(this,peakId,rovibrState)
+subroutine addCountToSubPeak_ALLOWEDPEAKSGROW(this,peakId,rovibrState)
    ! Initial declarations
    implicit none
    ! I/O variables
@@ -582,9 +629,7 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSGROW(this,peakId,rovibrState)
    case(.true.)
       oldCol=0
       newCol=oldCol+1
-
       allocate( this%peaks(peakId)%subPeaks(newCol) )
-
    case(.false.)
       oldCol=size( this%peaks(peakId)%subPeaks )
       newCol=oldCol+1
@@ -597,12 +642,9 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSGROW(this,peakId,rovibrState)
          call move_alloc( from=this%peaks(peakId)%subPeaks, to=auxListSubPeaks )
          allocate( this%peaks(peakId)%subPeaks(neWcol) )
          this%peaks(peakId)%subPeaks(1:oldCol) = auxListSubPeaks(1:oldCol)
-
       case(.false.)
          ! do nothing
-
       end select
-
    end select
 
    select case( isNew )
@@ -611,17 +653,15 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSGROW(this,peakId,rovibrState)
       this%peaks(peakId)%subPeaks(newCol)%dE=evaluateEnergyRovibrState(rovibrState)-initE
       kz=dsqrt( 2.d0*masa*this%inicond%E_norm%getValue()-2.d0*pinit_par*this%peaks(peakId)%dkx &
                 -this%peaks(peakId)%dkxy**2.d0-2.d0*masa*this%peaks(peakId)%subPeaks(newCol)%dE )
-      this%peaks(peakId)%subPeaks(newCol)%prob=1.d0/this%totAllowedScatt
       this%peaks(peakId)%subPeaks(newCol)%phiOut=datan( this%peaks(peakId)%dky/kz )
       this%peaks(peakId)%subPeaks(newCol)%thetaOut=datan( kz/norm2([this%peaks(peakId)%dkx+pinit_par,this%peaks(peakId)%dky]) )
-
+      this%peaks(peakId)%subPeaks(newCol)%ntrajs=1
    case(.false.)
-      this%peaks(peakId)%subPeaks(i-1)%prob=this%peaks(peakId)%subPeaks(i-1)%prob+1.d0/this%totAllowedScatt
-
+      this%peaks(peakId)%subPeaks(i-1)%ntrajs=this%peaks(peakId)%subPeaks(i-1)%ntrajs+1
    end select
 
    return
-end subroutine addProbToSubPeak_ALLOWEDPEAKSGROW
+end subroutine addCountToSubPeak_ALLOWEDPEAKSGROW
 !#######################################################
 ! SUBROUTINE: printAllowedPeaks_ALLOWEDPEAKSGROW
 !#######################################################
@@ -702,7 +742,7 @@ subroutine printSeenPeaks_ALLOWEDPEAKSGROW(this)
    class(Allowed_PeaksGROW),intent(in):: this
    ! Local variables
    integer(kind=4),parameter:: wuSeen=123
-   character(len=*),parameter:: formatSeen='(6(I10,1X),6(F10.5,1X))'
+   character(len=*),parameter:: formatSeen='(6(I10,1X),6(F10.5,1X),F10.5)'
    integer(kind=4):: i,j ! counters
    ! Run section --------------------------------------------
    open(unit=wuSeen,file=this%fileNameSeen,status='replace',action='write')
@@ -710,7 +750,7 @@ subroutine printSeenPeaks_ALLOWEDPEAKSGROW(this)
    write(wuSeen,'("# Initialized trajectories: ",I15)') size( this%inicond%trajs(:) )
    write(wuSeen,'("# Total scattered trajectories: ",I15)') this%totScatt
    write(wuSeen,'("# Total physical scattered trajectories (probabilities based on this number): ",I15)')  this%totAllowedScatt
-   write(wuSeen,'("# Format: diffOrder/n,m,V,J,mJ/Azimuthal angle/Deflection from perp. surf./Deflection from surf./dKxy(au)/dE(au)/prob")')
+   write(wuSeen,'("# Format: diffOrder/n,m,V,J,mJ/Azimuthal angle/Deflection from perp. surf./Deflection from surf./dKxy(au)/dE(au)/prob/deviat")')
    write(wuSeen,'("# -------------------------------------------------------------------------------------------------------------------")')
    do i=1,size( this%peaks )
       select case( allocated(this%peaks(i)%subPeaks) )
@@ -718,7 +758,8 @@ subroutine printSeenPeaks_ALLOWEDPEAKSGROW(this)
          do j =1,size( this%peaks(i)%subPeaks )
             write(wuSeen,formatSeen) this%peaks(i)%diffOrder,this%peaks(i)%g(:),this%peaks(i)%subPeaks(j)%rovibrState(:),&
                                      this%peaks(i)%psiOut,this%peaks(i)%subPeaks(j)%PhiOut,this%peaks(i)%subPeaks(j)%thetaOut,&
-                                     this%peaks(i)%dkxy,this%peaks(i)%subPeaks(j)%dE,this%peaks(i)%subPeaks(j)%prob
+                                     this%peaks(i)%dkxy,this%peaks(i)%subPeaks(j)%dE,this%peaks(i)%subPeaks(j)%prob,&
+                                     this%peaks(i)%subPeaks(j)%deviation
          enddo
       case(.false.)
          ! do nothing. do not print anything

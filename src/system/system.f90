@@ -409,58 +409,33 @@ FUNCTION from_atomic_to_molecular_phaseSpace(atomcoord) result(molcoord)
    ! Dummy function variable
    REAL(KIND=8),DIMENSION(12):: molcoord
    ! Local variables
-   REAL(KIND=8):: masa,nua,nub
-   REAL(KIND=8),DIMENSION(6,6):: mtrx, invMtrx
-   DATA mtrx(:,1)/1.d0,0.d0,0.d0,1.d0,0.d0,0.d0/
-   DATA mtrx(:,2)/0.d0,1.d0,0.d0,0.d0,1.d0,0.d0/
-   DATA mtrx(:,3)/0.d0,0.d0,1.d0,0.d0,0.d0,1.d0/
-   DATA mtrx(:,6)/1.d0,1.d0,0.d0,-1.d0,-1.d0,0.d0/
+   REAL(KIND=8):: masa,nua,nub,mu
+   real(kind=8):: stheta,sphi,ctheta,cphi
    ! Run section
    masa=sum(system_mass(:))
+   mu=product(system_mass(:))/masa
    nua=system_mass(1)/masa
    nub=system_mass(2)/masa
-   !
-   molcoord(1)=(1.D0/(masa))*(atomcoord(1)*system_mass(1)+atomcoord(4)*system_mass(2))
-   molcoord(2)=(1.D0/(masa))*(atomcoord(2)*system_mass(1)+atomcoord(5)*system_mass(2))
-   molcoord(3)=(1.D0/(masa))*(atomcoord(3)*system_mass(1)+atomcoord(6)*system_mass(2))
-   molcoord(4)=dsqrt((atomcoord(1)-atomcoord(4))**2.D0+&
-      (atomcoord(2)-atomcoord(5))**2.D0+(atomcoord(3)-atomcoord(6))**2.D0)
-   molcoord(5)=dacos((atomcoord(3)-atomcoord(6))/molcoord(4))
-   molcoord(6)=datan2((atomcoord(2)-atomcoord(5)),(atomcoord(1)-atomcoord(4)))
-   SELECT CASE(molcoord(6)<0.d0)
-      CASE(.true.)
-         molcoord(6)=molcoord(6)+2.d0*pi
-      CASE(.false.)
-         ! do nothing
-   END SELECT
-   mtrx(1,4)=dsin(molcoord(5))*dcos(molcoord(6))/nua
-   mtrx(2,4)=dsin(molcoord(5))*dsin(molcoord(6))/nua
-   mtrx(3,4)=dcos(molcoord(5))/nua
-   mtrx(4,4)=-dsin(molcoord(5))*dcos(molcoord(6))/nub
-   mtrx(5,4)=-dsin(molcoord(5))*dsin(molcoord(6))/nub
-   mtrx(6,4)=-dcos(molcoord(5))/nub
-
-   mtrx(1,5)=dcos(molcoord(5))*dcos(molcoord(6))/(nua*molcoord(4))
-   mtrx(2,5)=dcos(molcoord(5))*dsin(molcoord(6))/(nua*molcoord(4))
-   mtrx(3,5)=dsin(molcoord(5))/(nua*molcoord(4))
-   mtrx(4,5)=-dcos(molcoord(5))*dcos(molcoord(6))/(nub*molcoord(4))
-   mtrx(5,5)=-dcos(molcoord(5))*dsin(molcoord(6))/(nub*molcoord(4))
-   mtrx(6,5)=-dsin(molcoord(5))/(nub*molcoord(4))
-   SELECT CASE(dsin(molcoord(5)) /= 0.d0)
-       CASE(.true.)
-          mtrx(1,6)=-dsin(molcoord(6))/(nua*dsin(molcoord(5)))
-          mtrx(2,6)=dcos(molcoord(6))/(nua*dsin(molcoord(5)))
-          mtrx(3,6)=0.d0
-          mtrx(4,6)=dsin(molcoord(6))/(nub*dsin(molcoord(5)))
-          mtrx(5,6)=-dcos(molcoord(6))/(nub*dsin(molcoord(5)))
-          mtrx(6,6)=0.d0
-          CALL INV_MTRX(6,mtrx,invMtrx)
-          molcoord(7:12)=matmul(invMtrx,atomcoord(7:12))
-       CASE(.false.)
-         CALL INV_MTRX(6,mtrx,invMtrx)
-         molcoord(7:12)=matmul(invMtrx,atomcoord(7:12))
-         molcoord(12)=0.d0
-   END SELECT
+   ! Spatial coordinates
+   molCoord(1)=(system_mass(1)*atomCoord(1)+system_mass(2)*atomCoord(4))/masa ! xcm
+   molCoord(2)=(system_mass(1)*atomCoord(2)+system_mass(2)*atomCoord(5))/masa ! ycm
+   molCoord(3)=(system_mass(1)*atomCoord(3)+system_mass(2)*atomCoord(6))/masa ! zcm
+   molCoord(4)=dsqrt((atomCoord(4)-atomCoord(1))**2.d0+(atomCoord(5)-atomCoord(2))**2.d0+(atomCoord(6)-atomCoord(3))**2.d0)
+   molCoord(5)=dacos((atomCoord(6)-atomCoord(3))/molCoord(4)) ! theta
+   molCoord(6)=datan2((atomCoord(5)-atomCoord(2))/(molCoord(4)*dsin(molCoord(5))),&
+                       (atomCoord(4)-atomCoord(1))/(molCoord(4)*dsin(molCoord(5)))) ! phi
+   ! useful aliases
+   stheta=dsin(molCoord(5))
+   ctheta=dcos(molCoord(5))
+   sphi=dsin(molCoord(6))
+   cphi=dcos(molCoord(6))
+   ! Momenta
+   molCoord(7)=nua*atomCoord(10)-nub*atomCoord(7) ! px
+   molCoord(8)=nua*atomCoord(11)-nub*atomCoord(8) ! py
+   molCoord(9)=nua*atomCoord(12)-nub*atomCoord(9) ! pz
+   molCoord(10)=molCoord(7)*stheta*cphi+molCoord(8)*stheta*sphi+molCoord(9)*ctheta ! pr
+   molCoord(11)=molCoord(4)*(molCoord(7)*ctheta*cphi+molCoord(8)*ctheta*sphi-molCoord(9)*stheta) ! ptheta
+   molCoord(12)=molCoord(4)*stheta*(molCoord(8)*cphi-molCoord(7)*sphi) ! pphi
    RETURN
 END FUNCTION from_atomic_to_molecular_phaseSpace
 !###############################################################################################
@@ -707,5 +682,5 @@ function evaluateEnergyRovibrState(rovibrState,eVibr,eRot) result(energy)
       call exit(1)
    endif
    return
-end function
+end function evaluateEnergyRovibrState
 END MODULE SYSTEM_MOD
