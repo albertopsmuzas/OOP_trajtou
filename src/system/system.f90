@@ -697,15 +697,136 @@ function evaluateEnergyRovibrState(rovibrState,eVibr,eRot) result(energy)
       J=dfloat(rovibrState(2))
       vibr=omega*(v+0.5d0)-((omega**2.d0)/(4.d0*ed))*(v+0.5d0)**2.d0
       rot=j*(j+1)/(2.d0*mu*req**2.d0)
-      energy=vibr+rot
-      if( present(eVibr) ) eVibr=vibr
-      if( present(eRot) ) eRot=rot
+   elseif( system_binningScheme == 'Dong' )
+      if( rovibrState(1) == 0 ) then
+         vibr=0.01d0
+         if( rovibrState(2) == 0) then
+            rot=0.d0
+         elseif( rovibrState(2) == 1) then
+            rot=0.0005d0
+         elseif( rovibrState(2) == 2) then
+            rot=0.0016d0
+         elseif( rovibrState(2) == 3) then
+            rot=0.0031d0
+         elseif( rovibrState(2) == 4) then
+            rot=0.0052d0
+         elseif( rovibrState(2) == 5) then
+            rot=0.0077d0
+         else
+            write(0,*) 'evaluateEnergyRovibrState ERR: rotational number not implemented'
+            write(0,*) 'implemented ones: up to J=5'
+            call exit(1)
+         endif
+      elseif( rovibrState(1) == 1 ) then
+         vibr=0.0288d0
+         if( rovibrState(2) == 0) then
+            rot=0.d0
+         elseif( rovibrState(2) == 1) then
+            rot=0.0005d0
+         elseif( rovibrState(2) == 2) then
+            rot=0.0015d0
+         elseif( rovibrState(2) == 3) then
+            rot=0.0028d0
+         elseif( rovibrState(2) == 4) then
+            rot=0.0049d0
+         elseif( rovibrState(2) == 5) then
+            rot=0.0072d0
+         else
+            write(0,*) 'evaluateEnergyRovibrState ERR: rotational number not implemented'
+            write(0,*) 'implemented ones: up to J=5'
+            call exit(1)
+         endif
+      elseif( rovibrState(1) == 2 ) then
+         vibr=0.0464d0
+         if( rovibrState(2) == 0) then
+            rot=0.d0
+         elseif( rovibrState(2) == 1) then
+            rot=0.0004d0
+         elseif( rovibrState(2) == 2) then
+            rot=0.0013d0
+         elseif( rovibrState(2) == 3) then
+            rot=0.0027d0
+         elseif( rovibrState(2) == 4) then
+            rot=0.0045d0
+         elseif( rovibrState(2) == 5) then
+            rot=0.0067d0
+         else
+            write(0,*) 'evaluateEnergyRovibrState ERR: rotational number not implemented'
+            write(0,*) 'implemented ones: up to J=5'
+            call exit(1)
+         endif
+      elseif( rovibrState(1) == 3 ) then
+         vibr=0.0628d0
+         if( rovibrState(2) == 0) then
+            rot=0.d0
+         elseif( rovibrState(2) == 1) then
+            rot=0.0004d0
+         elseif( rovibrState(2) == 2) then
+            rot=0.0013d0
+         elseif( rovibrState(2) == 3) then
+            rot=0.0026d0
+         elseif( rovibrState(2) == 4) then
+            rot=0.0043d0
+         elseif( rovibrState(2) == 5) then
+            rot=0.0064d0
+         else
+            write(0,*) 'evaluateEnergyRovibrState ERR: rotational number not implemented'
+            write(0,*) 'implemented ones: up to J=5'
+            call exit(1)
+         endif
+      elseif( rovibrState(1) == 4 ) then
+         vibr=0.0783d0
+         if( rovibrState(2) == 0) then
+            rot=0.d0
+         elseif( rovibrState(2) == 1) then
+            rot=0.0004d0
+         elseif( rovibrState(2) == 2) then
+            rot=0.0012d0
+         elseif( rovibrState(2) == 3) then
+            rot=0.0024d0
+         elseif( rovibrState(2) == 4) then
+            rot=0.0040d0
+         elseif( rovibrState(2) == 5) then
+            rot=0.0060d0
+         else
+            write(0,*) 'evaluateEnergyRovibrState ERR: rotational number not implemented'
+            write(0,*) 'implemented ones: up to J=5'
+            call exit(1)
+         endif
+      elseif( rovibrState(1) == 5 ) then
+         vibr=0.0929d0
+         if( rovibrState(2) == 0) then
+            rot=0.d0
+         elseif( rovibrState(2) == 1) then
+            rot=0.0004d0
+         elseif( rovibrState(2) == 2) then
+            rot=0.0012d0
+         elseif( rovibrState(2) == 3) then
+            rot=0.0023d0
+         elseif( rovibrState(2) == 4) then
+            rot=0.0038d0
+         elseif( rovibrState(2) == 5) then
+            rot=0.0057d0
+         else
+            write(0,*) 'evaluateEnergyRovibrState ERR: rotational number not implemented'
+            write(0,*) 'implemented ones: up to J=5'
+            call exit(1)
+         endif
+      else
+         write(0,*) 'evaluateEnergyRovibrState ERR: vibrational number not implemented'
+         write(0,*) 'implemented ones: up to V=5'
+         call exit(1)
+      endif
+         
    else
       write(0,*) 'evaluateEnergyRovibrState ERR: wrong binning type: '//system_binningScheme
       write(0,*) 'implemented ones: Morse'
       write(0,*) 'case sensitive'
       call exit(1)
    endif
+   energy=vibr+rot
+   if( present(eVibr) ) eVibr=vibr
+   if( present(eRot) )  eRot=rot
    return
 end function
 END MODULE SYSTEM_MOD
