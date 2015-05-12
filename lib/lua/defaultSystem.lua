@@ -13,10 +13,10 @@ local SYSTEM={
 	symbols={},         								-- Table of atomic symbols
 	masses={},          								-- Table of magnitudes (mass units)
 	surfaceOscillator={
-    wx=0.0,wy=0.0,wz=0.0,
-    mass={0.0,'au'},
+   wx=0.0,wy=0.0,wz=0.0,
+   mass={0.0,'au'},
   },
-  binning={kind='Morse',dissociationEnergy=0.0,equilibriumDistance=0.0,width=0.0,dJ=1}, -- Morse is the only one implemented
-	pesPath=os.getenv('OOPTRAJTOUPES')..'/'	-- Path to search for data input files
+   binning={kind='Morse',dissociationEnergy=0.0,equilibriumDistance=0.0,width=0.0,dJ=1}, -- Morse is the only one implemented
+   pesPath=os.getenv('OOPTRAJTOUPES')..'/'	-- Path to search for data input files
 }
 return SYSTEM
