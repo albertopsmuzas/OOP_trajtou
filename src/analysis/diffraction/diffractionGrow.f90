@@ -214,9 +214,6 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
 	mtot=sum( system_mass(:) )
 	mu=product( system_mass(:) )/mtot
    gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
-   write(*,*) 'a: ',a
-   write(*,*) 'b: ',b
-   write(*,*) 'gamma= ',gama
    to_rec_space(1,1) = a/(2.D0*PI)
    to_rec_space(1,2) = 0.D0
    to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
@@ -268,19 +265,19 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
               this%inicond%vibrPot%getPot( r(4) )                          ! Potential energy
          rovibrState=this%quantizeRovibrState( Etot=Etot,position=r(:),momenta=p(:) )
          totScatt=totScatt+1
-         write(*,*) '-----------------------------'
-         write(*,*) 'Id: ',id
-         write(*,*) 'Limit: ',this%inicond%trajs(id)%init_r(3)
-         write(*,*) 'initial momentum'
-         write(*,*) this%inicond%trajs(id)%init_p(:)
-         write(*,*) 'final momentum'
-         write(*,*) p(:)
-         write(*,*) 'Momentum variation in aux, recip and recip rounded coordinates'
-         write(*,*) dp(:)
-         write(*,*) dk(:)
-         write(*,*) g(:)
-         write(*,*) 'Ekin: ',0.5d0*dot_product(p(1:3),p(1:3))/mtot
-         write(*,*) 'Eint: ',Etot-0.5d0*dot_product(p(1:3),p(1:3))/mtot
+         !write(*,*) '-----------------------------'
+         !write(*,*) 'Id: ',id
+         !write(*,*) 'Limit: ',this%inicond%trajs(id)%init_r(3)
+         !write(*,*) 'initial momentum'
+         !write(*,*) this%inicond%trajs(id)%init_p(:)
+         !write(*,*) 'final momentum'
+         !write(*,*) p(:)
+         !write(*,*) 'Momentum variation in aux, recip and recip rounded coordinates'
+         !write(*,*) dp(:)
+         !write(*,*) dk(:)
+         !write(*,*) g(:)
+         !write(*,*) 'Ekin: ',0.5d0*dot_product(p(1:3),p(1:3))/mtot
+         !write(*,*) 'Eint: ',Etot-0.5d0*dot_product(p(1:3),p(1:3))/mtot
          select case( this%isAllowed(diffState=g(:),rovibrState=rovibrState,diffEnergy=dE) )
          case(.true.) ! Allowed peak: add to list
             call this%addNewPeak(g, peakId=peakId)

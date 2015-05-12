@@ -329,7 +329,7 @@ SUBROUTINE GENERATE_TRAJS_INITSURFACEGROW(this,thispes)
       this%trajs(i)%init_p(3)=-dsqrt(2.d0*masa*Enorm)
       p(:)=this%trajs(i)%init_p(:)
       r(:)=this%trajs(i)%init_r(:)
-      write(*,*) 0.5d0*(p(4)**2.d0)/mu+0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+this%vibrPot%getPot(r(4))
+      !write(*,*) 0.5d0*(p(4)**2.d0)/mu+0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+this%vibrPot%getPot(r(4))
    enddo
    close(runit)
    ! Print if the option was given
