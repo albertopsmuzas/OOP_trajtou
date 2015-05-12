@@ -908,7 +908,7 @@ Suppose we have an incident particle with a given initial momentum
 \begin_layout Standard
 \begin_inset Formula 
 \[
-E_{i}=T_{i\parallel}+T_{i\perp}+\epsilon_{i}\,\,\,\,,\,\,\,\, T_{\alpha}=\frac{\boldsymbol{p}_{\alpha}^{2}}{2M}
+E_{i}=T_{i\parallel}+T_{i\perp}+\epsilon_{i}\,\,\,\,,\,\,\,\,T_{\alpha}=\frac{\boldsymbol{p}_{\alpha}^{2}}{2M}
 \]
 
 \end_inset
@@ -1786,7 +1786,7 @@ The last general result is not simple, but if laboratory coordinates and
 \end_inset
 
 
-\begin_inset Formula $\frac{E_{i}^{\parallel}}{E_{i}^{\perp}-\Delta\epsilon}=\frac{\sin^{2}\gamma}{-\sin^{2}(\gamma)}\,\implies\, E_{i}^{\parallel}=\Delta\epsilon-E_{i}^{\perp}\implies\Delta\epsilon=E_{i}$
+\begin_inset Formula $\frac{E_{i}^{\parallel}}{E_{i}^{\perp}-\Delta\epsilon}=\frac{\sin^{2}\gamma}{-\sin^{2}(\gamma)}\,\implies\,E_{i}^{\parallel}=\Delta\epsilon-E_{i}^{\perp}\implies\Delta\epsilon=E_{i}$
 \end_inset
 
 
@@ -2408,7 +2408,7 @@ which are tilted respect to
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $r_{\pm}\,:\,\, m=\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right]\cdot n+\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\cdot k_{1}^{\parallel}-k_{2}^{\parallel}\right]$
+\begin_inset Formula $r_{\pm}\,:\,\,m=\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\right]\cdot n+\left[\frac{b^{2}-a^{2}\mp\sqrt{a^{4}+b^{4}+2a^{2}b^{2}\cos(2\gamma)}}{2ab\cos\gamma}\cdot k_{1}^{\parallel}-k_{2}^{\parallel}\right]$
 \end_inset
 
 
@@ -2856,14 +2856,14 @@ We can also assign to each peak an azimuthal angle respect to surface plane
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $\Psi=\arctan\left(\frac{p_{f}^{y}}{p_{f}^{x}}\right)\Rightarrow\Psi_{n,m}\left(\beta,\, surface,\, p_{i}^{\parallel}\right)$
+\begin_inset Formula $\Psi=\arctan\left(\frac{p_{f}^{y}}{p_{f}^{x}}\right)\Rightarrow\Psi_{n,m}\left(\beta,\,surface,\,p_{i}^{\parallel}\right)$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $\Theta=\arctan\left(\frac{p_{f}^{y}}{p_{f}^{z}}\right)\Rightarrow\Theta_{n,m}\left(\beta,\, surface,p_{f}^{z}\right)$
+\begin_inset Formula $\Theta=\arctan\left(\frac{p_{f}^{y}}{p_{f}^{z}}\right)\Rightarrow\Theta_{n,m}\left(\beta,\,surface,p_{f}^{z}\right)$
 \end_inset
 
 
@@ -2886,7 +2886,7 @@ Mathematical tools
 
 \begin_layout Standard
 Given the set 
-\begin_inset Formula $\mathbb{Z}^{2}=\{\omega_{hk}\,:\, h,k\in\mathbb{Z}\}$
+\begin_inset Formula $\mathbb{Z}^{2}=\{\omega_{hk}\,:\,h,k\in\mathbb{Z}\}$
 \end_inset
 
  we can define some fundamental operators 
@@ -3589,15 +3589,18 @@ Now, given a generator element
 
 \begin_layout Standard
 \begin_inset Float table
+placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
-<lyxtabular version="3" rows="5" columns="3">
+<lyxtabular version="3" rows="5" columns="5">
 <features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -3619,6 +3622,30 @@ status collapsed
 
 \begin_layout Plain Layout
 \begin_inset Formula $\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\gamma}^{ab}\left(\omega_{h0}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\gamma}^{ab}\left(\omega_{hh}\right)$
 \end_inset
 
 
@@ -3670,11 +3697,35 @@ status collapsed
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h}{a\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}-\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\frac{4\pi^{2}}{\sin^{2}\gamma}\left[\frac{h^{2}}{a^{2}}+\frac{k^{2}}{b^{2}}-2\frac{hk}{ab}\cos\gamma\right]$
+\begin_inset Formula $\left(\frac{2\pi\left|k\boldsymbol{a}-h\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
 \end_inset
 
 
@@ -3714,11 +3765,35 @@ status collapsed
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h}{b\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}-\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\frac{4\pi^{2}}{\sin^{2}\gamma}\left[\frac{h^{2}}{b^{2}}+\frac{k^{2}}{a^{2}}-2\frac{hk}{ab}\cos\gamma\right]$
+\begin_inset Formula $\left(\frac{2\pi\left|h\boldsymbol{a}-k\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
 \end_inset
 
 
@@ -3758,11 +3833,35 @@ ab\cos\gamma & a^{2}
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h}{a\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}+\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\frac{4\pi^{2}}{\sin^{2}\gamma}\left[\frac{h^{2}}{a^{2}}+\frac{k^{2}}{b^{2}}+2\frac{hk}{ab}\cos\gamma\right]$
+\begin_inset Formula $\left(\frac{2\pi\left|k\boldsymbol{a}+h\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
 \end_inset
 
 
@@ -3802,11 +3901,35 @@ ab\cos\gamma & b^{2}
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h}{b\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}+\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\frac{4\pi^{2}}{\sin^{2}\gamma}\left[\frac{h^{2}}{b^{2}}+\frac{k^{2}}{a^{2}}+2\frac{hk}{ab}\cos\gamma\right]$
+\begin_inset Formula $\left(\frac{2\pi\left|h\boldsymbol{a}+k\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
 \end_inset
 
 
@@ -3852,9 +3975,10 @@ General natural order spliting in operators acting on the same generator
 
 \begin_layout Standard
 \begin_inset Float table
+placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -4005,6 +4129,11 @@ status open
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
+General natural order spliting in operators acting on the same generator
+ element with boundary 
+\begin_inset Formula $a=b$
+\end_inset
+
 
 \end_layout
 
@@ -4020,6 +4149,7 @@ status open
 
 \begin_layout Standard
 \begin_inset Float table
+placement H
 wide false
 sideways false
 status collapsed
@@ -4173,6 +4303,11 @@ status collapsed
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
+General natural order spliting in operators acting on the same generator
+ element with boundary 
+\begin_inset Formula $\gamma=\frac{\pi}{2}$
+\end_inset
+
 
 \end_layout
 
@@ -4192,6 +4327,7 @@ status collapsed
 
 \begin_layout Standard
 \begin_inset Float table
+placement H
 wide false
 sideways false
 status collapsed
@@ -4299,6 +4435,11 @@ status collapsed
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
+General natural order spliting in operators acting on the same generator
+ element with boundary 
+\begin_inset Formula $\left(a=b\right)\bigwedge\left(\gamma=\frac{\pi}{2}\right)$
+\end_inset
+
 
 \end_layout
 
@@ -4342,9 +4483,7 @@ reference "tab:General-natural-order"
 \[
 \begin{cases}
 \left(a=b\right)\bigwedge\left(\cos\gamma>0\right) & \implies\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]<\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]\\
-\left(a=b\right)\bigwedge\left(\cos\gamma<0\right) & \implies\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]<\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]\\
-\\
-\\
+\left(a=b\right)\bigwedge\left(\cos\gamma<0\right) & \implies\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]<\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]
 \end{cases}
 \]
 

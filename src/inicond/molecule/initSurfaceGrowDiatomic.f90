@@ -291,7 +291,8 @@ SUBROUTINE GENERATE_TRAJS_INITSURFACEGROW(this,thispes)
    ! Local variables
    INTEGER :: i ! counters
    real(kind=8),dimension(12):: phaseSpaceVect
-   REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint
+   REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint,Epar
+   real(kind=8),dimension(6):: p,r
    ! Parameters
    character(len=*),parameter:: formatFile='("# Format: id/Etot/X,Y,Z,R(a.u.)/THETA,PHI(rad)/Px,Py,Pz,pr,ptheta,pphi(a.u.)")'
    character(len=*),parameter:: routinename = "GENERATE_TRAJS_ATOMS: "
@@ -301,6 +302,7 @@ SUBROUTINE GENERATE_TRAJS_INITSURFACEGROW(this,thispes)
    masa = sum(system_mass(1:2))
    mu = product(system_mass(1:2))/masa
    Enorm = this%E_norm%getvalue()
+   Epar = Enorm/(dtan(alpha)**2.d0)
    Eint = this%evirot%getvalue()
    ALLOCATE(DiatomicGrow::this%trajs(this%ntraj))
    open(unit=runit,file='init.raw.dat',status='old',action='read')
@@ -308,18 +310,26 @@ SUBROUTINE GENERATE_TRAJS_INITSURFACEGROW(this,thispes)
       call this%trajs(i)%initialize()
       read(runit,*)
       read(runit,*)
-      read(runit,*) this%trajs(i)%E
+      read(runit,*) 
       read(runit,*)
       read(runit,*) this%trajs(i)%init_r(1:3)
       read(runit,*) this%trajs(i)%init_r(4:6)
       read(runit,*)
       read(runit,*) this%trajs(i)%init_p(1:3) ! velocities!
       read(runit,*) this%trajs(i)%init_p(4:6) ! velocities!
+      this%trajs(i)%init_p(1:3)=this%trajs(i)%init_p(1:3)*system_mass(1)/dsqrt(pmass2au)
+      this%trajs(i)%init_p(4:6)=this%trajs(i)%init_p(4:6)*system_mass(2)/dsqrt(pmass2au)
       phaseSpaceVect(1:6)=this%trajs(i)%init_r(:)
-      phaseSpaceVect(7:12)=this%trajs(i)%init_p(:)*masa
+      phaseSpaceVect(7:12)=this%trajs(i)%init_p(:)
       phaseSpaceVect(:)=from_atomic_to_molecular_phaseSpace(atomcoord=phaseSpaceVect)
       this%trajs(i)%init_r(:)=phaseSpaceVect(1:6)
       this%trajs(i)%init_p(:)=phaseSpaceVect(7:12)
+      this%trajs(i)%init_p(1)=dcos(delta)*dsqrt(2.d0*masa*Epar)
+      this%trajs(i)%init_p(2)=dsin(delta)*dsqrt(2.d0*masa*Epar)
+      this%trajs(i)%init_p(3)=-dsqrt(2.d0*masa*Enorm)
+      p(:)=this%trajs(i)%init_p(:)
+      r(:)=this%trajs(i)%init_r(:)
+      write(*,*) 0.5d0*(p(4)**2.d0)/mu+0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+this%vibrPot%getPot(r(4))
    enddo
    close(runit)
    ! Print if the option was given

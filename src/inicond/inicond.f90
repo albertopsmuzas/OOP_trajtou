@@ -43,6 +43,7 @@ TYPE,ABSTRACT::  Dynobject
    CHARACTER(LEN=10):: stat 
    CONTAINS
       PROCEDURE(INITIALIZE_DYNOBJECT),DEFERRED,PUBLIC:: INITIALIZE
+      procedure,public:: forceStatus => forceStatus_DYNOBJECT
 END TYPE Dynobject
 ABSTRACT INTERFACE
    !###########################################################
@@ -99,4 +100,19 @@ ABSTRACT INTERFACE
    END SUBROUTINE GENERATE_TRAJS_INICOND
 END INTERFACE
 !////////////////////////////////////////////////////////
+contains
+!####################################################
+!# SUBROUTINE: forceStatus_DYNOBJECT
+!####################################################
+!> @brief
+!! Standard set procedure. Sets "stat" atribute of DynObject
+!! class
+!----------------------------------------------------
+subroutine forceStatus_DYNOBJECT(this,string)
+   implicit none
+   class(DynObject),intent(inout):: this
+   character(len=*),intent(in):: string
+   this%stat=trim(string)
+   return
+end subroutine forceStatus_DYNOBJECT
 END MODULE INICOND_MOD

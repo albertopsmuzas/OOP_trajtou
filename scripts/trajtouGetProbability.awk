@@ -36,60 +36,71 @@ BEGIN{
 	J="undefined";
 	mJ="undefined";
 }
-!/\#/{
-	if ( n == "undefined" || m == "undefined" || V == "undefined" || J == "undefined" || mJ == "undefined" )
+#!/\#/{
+{	if ( $1 != "#" )
 	{
-		print "At least one parameter was not initialized and still has the value \"undefined\".";
-		badness=1;
-		exit 1;
-	}
-	else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J != "all" && mJ != "all" )
-	{
-		if ($colN==n && $colM==m && $colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n == "all" && m != "all" && V != "all" && J != "all" && mJ != "all" )
-	{
-		if ($colM=m && $colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n != "all" && m == "all" && V != "all" && J != "all" && mJ != "all" )
-	{
-		if ($colN==n && $colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n != "all" && m != "all" && V == "all" && J != "all" && mJ != "all" )
-	{
-		if ($colN==n && $colM==m && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J == "all" && mJ != "all" )
-	{
-		if ($colN==n && $colM==m && $colV==V && $colmJ==mJ) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J != "all" && mJ == "all" )
-	{
-		if ($colN==n && $colM==m && $colV==V && $colJ==J) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n != "all" && m != "all" && V == "all" && J == "all" && mJ == "all" )
-	{
-		if ($colN==n && $colM==m) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n == "all" && m == "all" && V != "all" && J != "all" && mJ != "all" )
-	{
-		if ($colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
-	}
-	else if ( diffOrder =="unset" && n == "all" && m == "all" && V == "all" && J == "all" && mJ == "all" )
-	{
-		prob=prob+$colProb;
-	}
-	else if ( diffOrder != "unset" )
-	{
-		if($colDiffOrder==diffOrder) prob=prob+$colProb;
+		if ( n == "undefined" || m == "undefined" || V == "undefined" || J == "undefined" || mJ == "undefined" )
+		{
+			print "At least one parameter was not initialized and still has the value \"undefined\".";
+			badness=1;
+			exit 1;
+		}
+		else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J != "all" && mJ != "all" )
+		{
+			if ($colN==n && $colM==m && $colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n == "all" && m != "all" && V != "all" && J != "all" && mJ != "all" )
+		{
+			if ($colM=m && $colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n != "all" && m == "all" && V != "all" && J != "all" && mJ != "all" )
+		{
+			if ($colN==n && $colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n != "all" && m != "all" && V == "all" && J != "all" && mJ != "all" )
+		{
+			if ($colN==n && $colM==m && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J == "all" && mJ != "all" )
+		{
+			if ($colN==n && $colM==m && $colV==V && $colmJ==mJ) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J != "all" && mJ == "all" )
+		{
+			if ($colN==n && $colM==m && $colV==V && $colJ==J) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n != "all" && m != "all" && V == "all" && J == "all" && mJ == "all" )
+		{
+			if ($colN==n && $colM==m) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n == "all" && m == "all" && V != "all" && J != "all" && mJ != "all" )
+		{
+			if ($colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n == "all" && m == "all" && V == "all" && J != "all" && mJ == "all" )
+		{
+			if ($colJ==J) prob=prob+$colProb;
+		}
+		else if ( diffOrder =="unset" && n == "all" && m == "all" && V == "all" && J == "all" && mJ == "all" )
+		{
+			prob=prob+$colProb;
+		}
+		else if ( diffOrder != "unset" )
+		{
+			if($colDiffOrder==diffOrder) prob=prob+$colProb;
+		}
+		else
+		{
+			print "Specification not implemented. Check script";
+			badness=1;
+			exit 1;
+		}
 	}
 	else
 	{
-		print "Specification not implemented. Check script";
-		badness=1;
-		exit 1;
+		if( $2 == "Total" && $4 == "scattered" ) ntrajs=$11;
 	}
 }
 END{
-		if(badness==0) print prob;
+		if(badness==0) print prob,"+/-",sqrt(prob*(1-prob)/(ntrajs-1));
 }
