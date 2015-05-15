@@ -796,9 +796,12 @@ function quantizeRovibrState_ALLOWEDPEAKSGROW(this,Etot,position,momenta) result
    Erot=0.5d0*L2/(mu*position(4)**2.d0)
    Evibr=Etot-Ecm-Erot
    select case( system_binningScheme)
-   case('Morse')
+   case( 'Morse' )
       finalJ=(-1.d0+dsqrt(1.d0+4.d0*L2))*0.5d0
       finalV=dsqrt(1.d0-Evibr/system_binningParam(1))+dsqrt(2.d0*system_binningParam(1)/masa)/system_binningParam(3)-0.5d0
+   case( 'Harmonic' )
+      finalJ=(-1.d0+dsqrt(1.d0+4.d0*L2))*0.5d0
+      finalV=dsqrt(mu/system_binningParam(1))*Evibr-0.5d0
    case default
       write(0,*) routinename//'ERR: bad binning Scheme'
       write(0,*) 'Implemented ones: Morse'

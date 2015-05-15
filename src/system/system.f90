@@ -251,7 +251,8 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
    call aot_table_open(L=conf,parent=sys_table,thandle=binning_table,key='binning')
    call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='kind',val=auxString)
    system_binningScheme=trim(auxString)
-   if( system_binningScheme=='Morse' ) then
+   select case( system_binningScheme )
+   case( 'Morse' )
       allocate( system_binningParam(3) )
       call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='dissociationEnergy',val=system_binningParam(1))
       call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='equilibriumDistance',val=system_binningParam(2))
@@ -264,12 +265,23 @@ SUBROUTINE INITIALIZE_SYSTEM(filename)
       call verbose_write( routinename,'Morse width parameter(au): ',system_binningParam(3) )
       call verbose_write( routinename,'dJ: ',system_binningdJ )
 #endif
-   else
+   case( 'Harmonic' )
+      allocate( system_binningParam(2) )
+      call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='forceConstant',val=system_binningParam(1))
+      call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='equilibriumDistance',val=system_binningParam(2))
+      call aot_get_val(L=conf,ErrCode=iErr,thandle=binning_table,key='dJ',val=system_binningdJ)
+#ifdef DEBUG
+      call verbose_write( routinename,'Kind of data binning: '//system_binningScheme )
+      call verbose_write( routinename,'Force constant(au): ',system_binningParam(1) )
+      call verbose_write( routinename,'Equilibrium Distance(au): ',system_binningParam(2) )
+      call verbose_write( routinename,'dJ: ',system_binningdJ )
+#endif
+   case default
       write(0,*) 'INITIALIZE SYSTEM ERR: wrong binning scheme type: '//system_binningScheme
       write(0,*) 'Implemented ones: Morse'
       write(0,*) 'Case sensitive'
       call exit(1)
-   endif
+   end select
    call aot_table_close(L=conf,thandle=binning_table)
    ! CLOSE LUA FILE /////////
    CALL CLOSE_CONFIG(conf)
@@ -662,8 +674,8 @@ function evaluateEnergyRovibrState(rovibrState,eVibr,eRot) result(energy)
    real(kind=8):: vibr,rot,ed,width,req,omega
    real(kind=8):: v,J,mu
    ! Run section
+   mu=product(system_mass(:))/sum(system_mass(:))
    if( system_binningScheme == 'Morse' ) then
-      mu=product(system_mass(:))/sum(system_mass(:))
       ed=system_binningParam(1)
       req=system_binningParam(2)
       width=system_binningParam(3)
@@ -672,7 +684,13 @@ function evaluateEnergyRovibrState(rovibrState,eVibr,eRot) result(energy)
       J=dfloat(rovibrState(2))
       vibr=omega*(v+0.5d0)-((omega**2.d0)/(4.d0*ed))*(v+0.5d0)**2.d0
       rot=j*(j+1)/(2.d0*mu*req**2.d0)
-   elseif( system_binningScheme == 'Dong' )
+   elseif( system_binningScheme == 'Harmonic' ) then
+      omega=dsqrt(system_binningParam(1)/mu)
+      v=dfloat(rovibrState(1))
+      J=dfloat(rovibrState(2))
+      vibr=omega*(v+0.5d0)
+      rot=j*(j+1)/(2.d0*mu*system_binningParam(2)**2.d0)
+   elseif( system_binningScheme == 'Dong' ) then
       if( rovibrState(1) == 0 ) then
          vibr=0.01d0
          if( rovibrState(2) == 0) then
