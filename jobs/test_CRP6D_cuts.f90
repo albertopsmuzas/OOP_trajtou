@@ -11,6 +11,7 @@ CHARACTER(LEN=1024):: luaFile
 REAL(KIND=4),DIMENSION(2):: timearr
 REAL(KIND=4):: timer
 REAL(KIND=8),DIMENSION(6) :: r
+real(kind=8),parameter:: ucell=2.d0*5.44335612578d0
 ! STEP 1: READ CRP6D INPUT FILES
 SELECT CASE(command_argument_count())
    CASE(1)
@@ -27,54 +28,44 @@ CALL VERBOSE_WRITE('##############################################')
 CALL thispes%INITIALIZE()
 CALL thisrawpes%READ(trim(luaFile),'pes')
 CALL thisrawpes%RAWINTERPOL()
-CALL thisrawpes%INTERPOL_NEW_RZGRID(25,50)
-! STEP 2: DO GRAPHS
+!CALL thisrawpes%INTERPOL_NEW_RZGRID(25,50)
+! corrugation extraction + addition
+r=[0.d0,0.d0,13.6060281568d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z7.2.dat")
+r=[0.d0,0.d0,13.0391103169d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z6.9.dat")
+r=[0.d0,0.d0,11.3383567973d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z6.dat")
+r=[0.d0,0.d0,9.44863066443d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z5.dat")
+r=[0.d0,0.d0,7.55890453154d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z4.dat")
+r=[0.d0,0.d0,5.66917839866d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z3.dat")
+r=[0.d0,0.d0,3.77945226577d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z2.dat")
+CALL thispes%atomiccrp(1)%PLOT_XYMAP(init_xyz=r(1:3),nxpoints=150,nypoints=150,Lx=ucell,Ly=ucell,filename="xycut_Z2.atom.dat")
+r=[0.d0,0.d0,1.88972613289d0,1.42d0,0.d0,0.d0]
+CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z1.dat")
+! raw
+r=[0.d0,0.d0,13.6060281568d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z7.2.raw.dat")
+r=[0.d0,0.d0,13.0391103169d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z6.9.raw.dat")
+r=[0.d0,0.d0,11.3383567973d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z6.raw.dat")
+r=[0.d0,0.d0,9.44863066443d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z5.raw.dat")
+r=[0.d0,0.d0,7.55890453154d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z4.raw.dat")
+r=[0.d0,0.d0,5.66917839866d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z3.raw.dat")
+r=[0.d0,0.d0,3.77945226577d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z2.raw.dat")
+r=[0.d0,0.d0,1.88972613289d0,1.42d0,0.d0,0.d0]
+CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z1.raw.dat")
 
-! Randomconf 1
-r=(/4.43141D0,2.55113D0,3.77945D0,1.13384D0,1.91986D0,0.D0/)
-CALL thispes%PLOT1D_PHI(1000,r,"randomconf.1.dat")
-CALL thispes%PLOT1D_PHI_SMOOTH(1000,r,"randomconfsmooth.1.dat")
-CALL thisrawpes%PLOT1D_PHI_SMOOTH(1000,r,"randomconfraw.1.dat")
-CALL thispes%PLOT1D_ATOMIC_INTERAC_PHI(1000,r,"randomconfatomic.1.dat")
-r=(/2.5511300000000001D0,1.0119461257770961D0,3.77945D0,1.0D0,1.91986D0,0.D0/)
-CALL thispes%PLOT1D_Z(1000,r,14.D0,"zcut1.dat")
-! Randomconf 2
-r=(/10.1006D0,6.29279D0,5.669180D0,1.51178D0,1.91986D0,0.D0/)
-CALL thispes%PLOT1D_PHI(1000,r,"randomconf.2.dat")
-CALL thispes%PLOT1D_PHI_SMOOTH(1000,r,"randomconfsmooth.2.dat")
-CALL thisrawpes%PLOT1D_PHI_SMOOTH(1000,r,"randomconfraw.2.dat")
-CALL thispes%PLOT1D_ATOMIC_INTERAC_PHI(1000,r,"randomconfatomic.2.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,5.669180D0,1.5D0,1.91986D0,0.D0/)
-CALL thispes%PLOT1D_Z(1000,r,14.D0,"zcut2.dat")
-! Randomconf 3
-r=(/10.1006D0,6.29279D0,5.669180D0,1.3606D0,0.D0,0.558505D0/)
-CALL thispes%PLOT1D_THETA(1000,r,"randomconf.3.dat")
-CALL thispes%PLOT1D_THETA_SMOOTH(1000,r,"randomconfsmooth.3.dat")
-CALL thisrawpes%PLOT1D_THETA_SMOOTH(1000,r,"randomconfraw.3.dat")
-CALL thispes%PLOT1D_ATOMIC_INTERAC_THETA(1000,r,"randomconfatomic.3.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,5.669180D0,1.6D0,0.D0,2.58308765359D0/)
-CALL thispes%PLOT1D_Z(1000,r,14.D0,"zcut3.dat")
-! Randomconf 4
-r=(/10.1006D0,6.29279D0,7.5589D0,1.3606D0,0.D0,0.558505D0/)
-CALL thispes%PLOT1D_THETA(1000,r,"randomconf.4.dat")
-CALL thispes%PLOT1D_THETA_SMOOTH(1000,r,"randomconfsmooth.4.dat")
-CALL thisrawpes%PLOT1D_THETA_SMOOTH(1000,r,"randomconfraw.4.dat")
-CALL thispes%PLOT1D_ATOMIC_INTERAC_THETA(1000,r,"randomconfatomic.4.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,7.5589D0,1.7D0,0.D0,2.58308765359D0/)
-CALL thispes%PLOT1D_Z(1000,r,14.D0,"zcut4.dat")
 
-r=(/0.84943387422290395D0,0.78611225155419195D0,10.D0,1.3606D0,1.23D0,2.58308765359D0/)
-CALL thispes%PLOT_XYMAP(r,100,100,8.D0,8.D0,"xycut10.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,8.D0,1.3606D0,1.23D0,2.58308765359D0/)
-CALL thispes%PLOT_XYMAP(r,100,100,8.D0,8.D0,"xycut8.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,7.5D0,1.3606D0,1.23D0,2.58308765359D0/)
-CALL thispes%PLOT_XYMAP(r,100,100,8.D0,8.D0,"xycut7.5.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,7.D0,1.3606D0,1.23D0,2.58308765359D0/)
-CALL thispes%PLOT_XYMAP(r,100,100,8.D0,8.D0,"xycut7.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,5.D0,1.3606D0,1.23D0,2.58308765359D0/)
-CALL thispes%PLOT_XYMAP(r,100,100,8.D0,8.D0,"xycut5.dat")
-r=(/0.84943387422290395D0,0.78611225155419195D0,4.D0,1.3606D0,1.23D0,2.58308765359D0/)
-CALL thispes%PLOT_XYMAP(r,100,100,8.D0,8.D0,"xycut4.dat")
 CALL VERBOSE_WRITE("****************** RUN TIME ***************************")
 CALL VERBOSE_WRITE('',"User time: ",real(timearr(1),kind=8))
 CALL VERBOSE_WRITE('',"System time: ", real(timearr(2),kind=8))

@@ -75,6 +75,7 @@ TYPE,EXTENDS(PES):: CRP6D
       PROCEDURE,PUBLIC:: PLOT1D_Z => PLOT1D_Z_CRP6D
       PROCEDURE,PUBLIC:: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_CRP6D
       PROCEDURE,PUBLIC:: PLOT_XYMAP => PLOT_XYMAP_CRP6D
+      PROCEDURE,PUBLIC:: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_SMOOTH_CRP6D
       PROCEDURE,PUBLIC:: PLOT_RZMAP => PLOT_RZMAP_CRP6D
       PROCEDURE,PUBLIC:: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
       ! Enquire block
@@ -2000,6 +2001,91 @@ SUBROUTINE PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    CLOSE(11)
    RETURN
 END SUBROUTINE PLOT_XYMAP_CRP6D
+!######################################################################################
+! SUBROUTINE: PLOT_XYMAP_SMOOTH_CRP6D
+!######################################################################################
+!> @brief
+!! Same as plot_xymap_crp6d but calling get_v_and_derivs_smooth, i.e. potential
+!! and derivatives are not corrected. Thus, we get smooth corrugationless potential.
+!-------------------------------------------------------------------------------------
+SUBROUTINE PLOT_XYMAP_SMOOTH_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
+   IMPLICIT NONE
+   CLASS(CRP6D),INTENT(IN) :: thispes
+   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: init_point ! Initial position to start the scan (in a.u. and radians)
+   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
+   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
+   REAL(KIND=8),INTENT(IN) :: Lx ! Length of X axis
+   REAL(KIND=8),INTENT(IN) :: Ly ! Length of X axis
+   ! Local variables
+   REAL(KIND=8) :: xmin, ymin, xmax, ymax
+   REAL(KIND=8),DIMENSION(6) :: r,dvdu
+   REAL(KIND=8) :: xdelta, ydelta
+   INTEGER :: xinpoints, nxdelta
+   INTEGER :: yinpoints, nydelta
+   INTEGER :: i, j ! counters
+   REAL(KIND=8) :: v ! potential
+   ! GABBA, GABBA HEY! ---------
+   xmin = init_point(1)
+   ymin = init_point(2)
+   xmax = init_point(1)+Lx
+   ymax = init_point(2)+Ly
+   ! For X, grid parameters
+   xinpoints=nxpoints-2
+   nxdelta=nxpoints-1
+   xdelta=Lx/DFLOAT(nxdelta)
+   ! For Y, grid parameters
+   yinpoints=nypoints-2
+   nydelta=nypoints-1
+   ydelta=(ymax-ymin)/DFLOAT(nydelta)
+   ! Let's go!
+   ! 1st XY point
+   OPEN(11,file=filename,status="replace")
+   r(1) = xmin
+   r(2) = ymin
+   r(3:6)=init_point(3:6)
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   ! inpoints in XY
+   DO i = 1, xinpoints
+      r(1) = xmin+DFLOAT(i)*xdelta
+      r(2) = ymin
+      r(3:6) = init_point(3:6)
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+      DO j = 1, yinpoints
+         r(2) = ymin + DFLOAT(j)*ydelta
+         CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+         WRITE(11,*) r(1:2),v,dvdu(:)
+      END DO
+      r(2) = ymax
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+   END DO
+   ! Last point in XY plane
+   r(1) = xmax
+   r(2) = ymax
+   r(3:6) = init_point(3:6)
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   DO i =1, yinpoints
+      r(2) = ymin + DFLOAT(i)*ydelta
+      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      WRITE(11,*) r(1:2),v,dvdu(:)
+   END DO
+   r(2) = ymax
+   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   WRITE(11,*) r(1:2),v,dvdu(:)
+   CLOSE(11)
+   RETURN
+END SUBROUTINE PLOT_XYMAP_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT_RZMAP_CRP6D
 !#######################################################################

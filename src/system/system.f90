@@ -313,15 +313,17 @@ PURE FUNCTION from_molecular_to_atomic(molcoord) result(atomcoord)
    ! Dymmy function variable
    REAL(KIND=8),DIMENSION(6):: atomcoord
    ! Local
-   REAL(KIND=8):: masa
+   REAL(KIND=8):: masa,nua,nub
    ! Run section
    masa=sum(system_mass(:))
-   atomcoord(1)=molcoord(1)+(system_mass(2)/(masa))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
-   atomcoord(2)=molcoord(2)+(system_mass(2)/(masa))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
-   atomcoord(3)=molcoord(3)+(system_mass(2)/(masa))*molcoord(4)*dcos(molcoord(5))
-   atomcoord(4)=molcoord(1)-(system_mass(1)/(masa))*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
-   atomcoord(5)=molcoord(2)-(system_mass(1)/(masa))*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
-   atomcoord(6)=molcoord(3)-(system_mass(1)/(masa))*molcoord(4)*dcos(molcoord(5))
+   nua=system_mass(1)/masa
+   nub=system_mass(2)/masa
+   atomcoord(1)=molcoord(1)+nub*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(2)=molcoord(2)+nub*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(3)=molcoord(3)+nub*molcoord(4)*dcos(molcoord(5))
+   atomcoord(4)=molcoord(1)-nua*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(5)=molcoord(2)-nua*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(6)=molcoord(3)-nua*molcoord(4)*dcos(molcoord(5))
    RETURN
 END FUNCTION from_molecular_to_atomic
 

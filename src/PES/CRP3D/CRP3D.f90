@@ -1908,45 +1908,45 @@ SUBROUTINE PLOT_XYMAP_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
    r(2) = ymin
    r(3) = z
    CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1),r(2),v,dvdu(:)
    DO i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
       CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v,dvdu(:)
    END DO
    r(2) = ymax
    CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1), r(2), v,dvdu(:)
    ! inpoints in XY
    DO i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
       r(3) = z
       CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v,dvdu(:)
       DO j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
          CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-         WRITE(11,*) r(1), r(2), v
+         WRITE(11,*) r(1), r(2), v,dvdu(:)
       END DO
       r(2) = ymax
       CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v,dvdu(:)
    END DO
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
    r(3) = z
    CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1), r(2), v,dvdu(:)
    DO i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
       CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
+      WRITE(11,*) r(1), r(2), v,dvdu(:)
    END DO
    r(2) = ymax
    CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   WRITE(11,*) r(1), r(2), v,dvdu(:)
    CLOSE(11)
    RETURN
 END SUBROUTINE PLOT_XYMAP_CRP3D
