@@ -1,74 +1,74 @@
-PROGRAM TEST_CRP6D
+program TEST_CRP6D
 ! Initial declarations
-use SYSTEM_MOD, only: INITIALIZE_SYSTEM
-use CRP6D_MOD, only: CRP6D
-use DEBUG_MOD, only: VERBOSE_WRITE
-IMPLICIT NONE
+use SYSTEM_MOD, only: initialize_system
+use CRP6D_MOD,  only: Crp6d
+use DEBUG_MOD,  only: verbose_write
+use UNITS_MOD,  only: pi
+implicit none
 ! Variables
-TYPE(CRP6D):: thispes
-TYPE(CRP6D):: thisrawpes
-CHARACTER(LEN=1024):: luaFile
-REAL(KIND=4),DIMENSION(2):: timearr
-REAL(KIND=4):: timer
-REAL(KIND=8),DIMENSION(6) :: r
-real(kind=8),parameter:: ucell=2.d0*5.44335612578d0
+type(Crp6d):: thispes
+!type(Crp6d):: thisrawpes
+character(len=1024):: luaFile
+real(kind=4),dimension(2):: timearr
+real(kind=4):: timer
+real(kind=8),dimension(6) :: r
+real(kind=8),parameter:: ucell=5.44335612578d0
 ! STEP 1: READ CRP6D INPUT FILES
-SELECT CASE(command_argument_count())
-   CASE(1)
-      CALL GET_COMMAND_ARGUMENT(1,luaFile)
-   CASE DEFAULT
-      WRITE(0,*) "ERR: Bad number of arguments: ",command_argument_count()
-      WRITE(0,*) "It is only needed one string, which is a config lua file"
-      CALL EXIT(1)
-END SELECT
-CALL INITIALIZE_SYSTEM(trim(luaFile))
-CALL VERBOSE_WRITE('##############################################')
-CALL VERBOSE_WRITE('######### TEST SOME PRE-DEFINED CUTS #########')
-CALL VERBOSE_WRITE('##############################################')
-CALL thispes%INITIALIZE()
-CALL thisrawpes%READ(trim(luaFile),'pes')
-CALL thisrawpes%RAWINTERPOL()
+select case(command_argument_count())
+   case(1)
+      call get_command_argument(1,luaFile)
+   case default
+      write(0,*) "ERR: Bad number of arguments: ",command_argument_count()
+      write(0,*) "It is only needed one string, which is a config lua file"
+      call exit(1)
+end select
+call initialize_system(trim(luaFile))
+call verbose_write('##############################################')
+call verbose_write('######### TEST SOME PRE-DEFINED CUTS #########')
+call verbose_write('##############################################')
+call thispes%initialize()
+!CALL thisrawpes%READ(trim(luaFile),'pes')
+!CALL thisrawpes%RAWINTERPOL()
 !CALL thisrawpes%INTERPOL_NEW_RZGRID(25,50)
-! corrugation extraction + addition
-r=[0.d0,0.d0,13.6060281568d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z7.2.dat")
-r=[0.d0,0.d0,13.0391103169d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z6.9.dat")
-r=[0.d0,0.d0,11.3383567973d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z6.dat")
-r=[0.d0,0.d0,9.44863066443d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z5.dat")
-r=[0.d0,0.d0,7.55890453154d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z4.dat")
-r=[0.d0,0.d0,5.66917839866d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z3.dat")
-r=[0.d0,0.d0,3.77945226577d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z2.dat")
-CALL thispes%atomiccrp(1)%PLOT_XYMAP(init_xyz=r(1:3),nxpoints=150,nypoints=150,Lx=ucell,Ly=ucell,filename="xycut_Z2.atom.dat")
-r=[0.d0,0.d0,1.88972613289d0,1.42d0,0.d0,0.d0]
-CALL thispes%PLOT_XYMAP(r,150,150,ucell,ucell,"xycut_Z1.dat")
-! raw
-r=[0.d0,0.d0,13.6060281568d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z7.2.raw.dat")
-r=[0.d0,0.d0,13.0391103169d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z6.9.raw.dat")
-r=[0.d0,0.d0,11.3383567973d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z6.raw.dat")
-r=[0.d0,0.d0,9.44863066443d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z5.raw.dat")
-r=[0.d0,0.d0,7.55890453154d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z4.raw.dat")
-r=[0.d0,0.d0,5.66917839866d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z3.raw.dat")
-r=[0.d0,0.d0,3.77945226577d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z2.raw.dat")
-r=[0.d0,0.d0,1.88972613289d0,1.42d0,0.d0,0.d0]
-CALL thisrawpes%PLOT_XYMAP_SMOOTH(r,150,150,ucell,ucell,"xycut_Z1.raw.dat")
+! CRP for cartwheel
+r=[-1.d0,-1.d0,13.6060281568d0,1.42d0,0.d0,0.d0]
+call thispes%PLOT_XYMAP(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z7.2.cart.dat")
+r=[-1.d0,-1.d0,13.0391103169d0,1.42d0,0.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z6.9.cart.dat")
+r=[-1.d0,-1.d0,11.3383567973d0,1.42d0,0.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z6.cart.dat")
+r=[-1.d0,-1.d0,9.44863066443d0,1.42d0,0.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z5.cart.dat")
+r=[-1.d0,-1.d0,7.55890453154d0,1.42d0,0.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z4.cart.dat")
+r=[-1.d0,-1.d0,5.66917839866d0,1.42d0,0.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z3.cart.dat")
+r=[-1.d0,-1.d0,3.77945226577d0,1.42d0,0.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z2.cart.dat")
+call thispes%atomiccrp(1)%plot_xyMap(init_xyz=r(1:3),nxpoints=150,nypoints=150,Lx=ucell,Ly=ucell,filename="xycut_Z2.atom.dat")
+r=[-1.d0,-1.d0,1.88972613289d0,1.42d0,0.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z1.cart.dat")
+! crp for helicopter
+r=[-1.d0,-1.d0,13.6060281568d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z7.2.hel.dat")
+r=[-1.d0,-1.d0,13.0391103169d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z6.9.hel.dat")
+r=[-1.d0,-1.d0,11.3383567973d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z6.hel.dat")
+r=[-1.d0,-1.d0,9.44863066443d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z5.hel.dat")
+r=[-1.d0,-1.d0,7.55890453154d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z4.hel.dat")
+r=[-1.d0,-1.d0,5.66917839866d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z3.hel.dat")
+r=[-1.d0,-1.d0,3.77945226577d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z2.hel.dat")
+r=[-1.d0,-1.d0,1.88972613289d0,1.42d0,pi/2.d0,0.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z1.hel.dat")
 
-
-CALL VERBOSE_WRITE("****************** RUN TIME ***************************")
-CALL VERBOSE_WRITE('',"User time: ",real(timearr(1),kind=8))
-CALL VERBOSE_WRITE('',"System time: ", real(timearr(2),kind=8))
-CALL VERBOSE_WRITE('',"Total time: ",real(timer,kind=8))
-CALL VERBOSE_WRITE("******************************************************")
-END PROGRAM TEST_CRP6D
+call verbose_write("****************** RUN TIME ***************************")
+call verbose_write('',"User time: ",real(timearr(1),kind=8))
+call verbose_write('',"System time: ", real(timearr(2),kind=8))
+call verbose_write('',"Total time: ",real(timer,kind=8))
+call verbose_write("******************************************************")
+end program TEST_CRP6D

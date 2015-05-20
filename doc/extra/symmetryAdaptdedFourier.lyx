@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -15,13 +15,13 @@
 \font_roman default
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -32,15 +32,24 @@
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -168,17 +177,17 @@ A general Fourier series has the form:
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -318,7 +327,7 @@ where
 \end_inset
 
 , 
-\begin_inset Formula $\boldsymbol{a}\in\mathcal{V}\,:\, F(\boldsymbol{x}+\boldsymbol{a})=F(\boldsymbol{x})$
+\begin_inset Formula $\boldsymbol{a}\in\mathcal{V}\,:\,F(\boldsymbol{x}+\boldsymbol{a})=F(\boldsymbol{x})$
 \end_inset
 
 .
@@ -393,11 +402,11 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -531,8 +540,8 @@ F_{\mathbb{R}}(\boldsymbol{x})=C_{\boldsymbol{0}}+\underset{\boldsymbol{\forall 
 \begin_inset Formula 
 \[
 \begin{array}{c}
-C_{\boldsymbol{k}}^{\oplus}=2\mathrm{Re}\left(C_{\boldsymbol{k}}\right)\in\mathbb{R}\\
-C_{\boldsymbol{k}}^{\oplus}=-2\mathrm{Im}\left(C_{\boldsymbol{k}}\right)\in\mathbb{R}
+C_{\boldsymbol{k}}^{\oplus}=C_{\boldsymbol{k}}+C_{\boldsymbol{k}}^{*}=2\mathrm{Re}\left(C_{\boldsymbol{k}}\right)\in\mathbb{R}\\
+C_{\boldsymbol{k}}^{\ominus}=\left(C_{\boldsymbol{k}}-C_{\boldsymbol{k}}^{*}\right)i=-2\mathrm{Im}\left(C_{\boldsymbol{k}}\right)\in\mathbb{R}
 \end{array}
 \]
 
@@ -547,6 +556,7 @@ where
 \end_inset
 
  denote the parity of the term, even or odd respectively.
+ 
 \end_layout
 
 \begin_layout Subsection
@@ -698,11 +708,11 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -812,7 +822,7 @@ status collapsed
 
 \begin_inset Formula 
 \[
-F(\theta)=\underset{l\ge0}{\sum}\left[C_{k}^{+}\cos\left(\frac{2\pi}{a}\cdot l\theta\right)+C_{k}^{-}\sin\left(\frac{2\pi}{a}\cdot l\theta\right)\right]\,;\, F(\theta+a)=F(\theta)
+F(\theta)=\underset{l\ge0}{\sum}\left[C_{k}^{+}\cos\left(\frac{2\pi}{a}\cdot l\theta\right)+C_{k}^{-}\sin\left(\frac{2\pi}{a}\cdot l\theta\right)\right]\,;\,F(\theta+a)=F(\theta)
 \]
 
 \end_inset
@@ -836,11 +846,11 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -950,7 +960,7 @@ status collapsed
 
 \begin_inset Formula 
 \[
-F(\theta)=\underset{l\ge0}{\sum}\left[C_{k}^{+}\cos\left(l\theta\right)+C_{k}^{-}\sin\left(l\theta\right)\right]\,;\, F(\theta+2\pi)=F(\theta)
+F(\theta)=\underset{l\ge0}{\sum}\left[C_{k}^{+}\cos\left(l\theta\right)+C_{k}^{-}\sin\left(l\theta\right)\right]\,;\,F(\theta+2\pi)=F(\theta)
 \]
 
 \end_inset
@@ -980,11 +990,11 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -1117,13 +1127,13 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="6" columns="6">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
 \begin_inset Text
@@ -1501,7 +1511,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Character table for 4mm point symmetry group
@@ -1532,9 +1542,9 @@ status open
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="8" columns="3">
-<features booktabs="true" tabularvalignment="middle">
-<column alignment="left" valignment="top" width="0">
-<column alignment="left" valignment="top" width="0">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
@@ -1848,7 +1858,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Definition of 
@@ -1883,7 +1893,7 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="5" columns="1">
-<features booktabs="true" tabularvalignment="middle">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
@@ -1978,7 +1988,7 @@ C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[0]_{2}\iff 
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Symmetry adapted terms
@@ -2061,12 +2071,12 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="5" columns="5">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
 \begin_inset Text
@@ -2337,7 +2347,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Character table for mm2 point symmetry group
@@ -2376,9 +2386,9 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="4" columns="3">
-<features booktabs="true" tabularvalignment="middle">
-<column alignment="left" valignment="top" width="0">
-<column alignment="left" valignment="top" width="0">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
@@ -2540,7 +2550,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Definition of 
@@ -2576,9 +2586,9 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="4" columns="3">
-<features booktabs="true" tabularvalignment="middle">
-<column alignment="left" valignment="top" width="0">
-<column alignment="left" valignment="top" width="0">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
@@ -2740,7 +2750,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Definition of 
@@ -2781,7 +2791,7 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="4" columns="1">
-<features booktabs="true" tabularvalignment="middle">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
@@ -2859,7 +2869,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Symmetry adapted terms for choice 1
@@ -2890,7 +2900,7 @@ status open
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="8" columns="1">
-<features booktabs="true" tabularvalignment="middle">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
@@ -3032,7 +3042,7 @@ C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[1]_{2}=\{1,
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Symmetry adapted terms for choice 2
@@ -3115,10 +3125,10 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="3" columns="3">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
 \begin_inset Text
@@ -3229,7 +3239,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Character table for mm2 point symmetry group
@@ -3256,9 +3266,9 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="3">
-<features booktabs="true" tabularvalignment="middle">
-<column alignment="left" valignment="top" width="0">
-<column alignment="left" valignment="top" width="0">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
@@ -3344,7 +3354,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Definition of 
@@ -3379,7 +3389,7 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="1">
-<features booktabs="true" tabularvalignment="middle">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
@@ -3423,7 +3433,7 @@ C_{l}^{\oplus}\cos\left(l\theta\right)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Symmetry adapted terms
@@ -3487,10 +3497,10 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="3" columns="3">
-<features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
 \begin_inset Text
@@ -3601,7 +3611,7 @@ status collapsed
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Character table for [m] point symmetry group
@@ -3635,9 +3645,9 @@ status open
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="3" columns="3">
-<features booktabs="true" tabularvalignment="middle">
-<column alignment="left" valignment="top" width="0">
-<column alignment="left" valignment="top" width="0">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
@@ -3761,7 +3771,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Definition of 
@@ -3796,7 +3806,7 @@ status open
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="1">
-<features booktabs="true" tabularvalignment="middle">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
@@ -3834,7 +3844,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Symmetry adapted terms when 
@@ -3865,7 +3875,7 @@ status open
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="4" columns="1">
-<features booktabs="true" tabularvalignment="middle">
+<features rotate="0" booktabs="true" tabularvalignment="middle">
 <column alignment="left" valignment="top" width="0pt">
 <row>
 <cell alignment="left" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
@@ -3941,7 +3951,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Symmetry adapted terms when 
@@ -4097,11 +4107,11 @@ status open
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
+<features rotate="0" tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0pt">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -4232,7 +4242,7 @@ Conceptual form:
 \end_inset
 
  , where 
-\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\,a\mod n=m\}$
 \end_inset
 
  
@@ -4304,11 +4314,11 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
+<features rotate="0" tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0pt">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -4435,7 +4445,7 @@ Conceptual form:
 \end_inset
 
  , where 
-\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\,a\mod n=m\}$
 \end_inset
 
  
@@ -4475,11 +4485,11 @@ status collapsed
 \align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="2" columns="4">
-<features tabularvalignment="middle">
+<features rotate="0" tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0pt">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" usebox="none">
 \begin_inset Text
@@ -4607,7 +4617,7 @@ Conceptual form:
 \end_inset
 
  , where 
-\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\,a\mod n=m\}$
 \end_inset
 
  
