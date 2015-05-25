@@ -177,7 +177,7 @@ A general Fourier series has the form:
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -368,6 +368,30 @@ F(\boldsymbol{x})=\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}C_{\bold
 
 \end_inset
 
+where 
+\begin_inset Formula $\mathfrak{R}^{+}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathfrak{R}^{-}$
+\end_inset
+
+ are an arbitrary partition of 
+\begin_inset Formula $\mathfrak{R}$
+\end_inset
+
+ that holds:
+\begin_inset Formula 
+\[
+\left(\mathfrak{R}=\mathfrak{R}^{+}\bigcup\mathfrak{R}^{-}\right)\bigwedge\left[\left(\forall k\in\mathfrak{R}^{+}\right)\left(\exists q\in\mathfrak{R}^{-}\right)\,:\,k+q=0\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 Now, adding condition Eq.
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -630,8 +654,7 @@ It is easy to deduce the result for
 \[
 \begin{array}{c}
 F_{\mathbb{R}}^{\Gamma}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}F_{\mathbb{R}}(\boldsymbol{x})=\underset{\boldsymbol{\forall k}\in\mathfrak{R}^{+}}{\sum}\underset{\odot}{\sum}C_{\boldsymbol{k}}^{\odot}f_{\boldsymbol{k}}^{\Gamma,\odot}(\boldsymbol{x})\\
-f_{\boldsymbol{k}}^{\Gamma,\odot}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}f_{\boldsymbol{k}}^{\odot}(\boldsymbol{x})=\overset{g}{\underset{i=1}{\sum}}D_{i}^{\Gamma}f_{\boldsymbol{k}}^{\odot}(A_{i}^{-1}\boldsymbol{x})\\
-D_{i}^{\Gamma}=\frac{d_{\Gamma}}{g}\mathcal{X}^{\Gamma}(A_{i})
+f_{\boldsymbol{k}}^{\Gamma,\odot}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}f_{\boldsymbol{k}}^{\odot}(\boldsymbol{x})=\frac{d_{\Gamma}}{g}\cdot\overset{g}{\underset{i=1}{\sum}}\mathcal{X}^{\Gamma}(A_{i})\cdot f_{\boldsymbol{k}}^{\odot}(A_{i}^{-1}\boldsymbol{x})
 \end{array}
 \]
 
@@ -702,7 +725,7 @@ Particular properties:
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -984,7 +1007,7 @@ Each
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -1536,7 +1559,7 @@ Character table for 4mm point symmetry group
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -1651,7 +1674,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $C_{4z}^{-1}(\theta)=\theta-\frac{\pi}{2}=\theta+\frac{3\pi}{2}=\left(C_{4z}^{3}\right)^{-1}(\theta)$
+\begin_inset Formula $C_{4z}^{-1}(\theta)=\theta-\frac{\pi}{2}=\theta+\frac{3\pi}{2}=C_{4z}^{3}(\theta)$
 \end_inset
 
 
@@ -1689,7 +1712,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $C_{4z}^{3}(\theta)=\theta-\frac{3\pi}{2}=\theta+\frac{\pi}{2}=C_{4z}(\theta)$
+\begin_inset Formula $\left(C_{4z}^{3}\right)^{-1}(\theta)=\theta-\frac{3\pi}{2}=\theta+\frac{\pi}{2}=C_{4z}(\theta)$
 \end_inset
 
 
@@ -2894,7 +2917,7 @@ and now, table based on choice 2:
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -3639,7 +3662,7 @@ Character table for [m] point symmetry group
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -3800,7 +3823,7 @@ Definition of
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -3869,7 +3892,7 @@ Symmetry adapted terms when
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -4079,6 +4102,794 @@ F^{A^{''}}(-\theta)=-F^{A^{''}}(\frac{\pi}{2}-\theta)
 
 \end_layout
 
+\begin_layout Part
+Two dimensional series
+\end_layout
+
+\begin_layout Standard
+Particular properties:
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="4">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $F\,:\,$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{R}^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\longrightarrow$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathbb{R}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\underline{x}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\longrightarrow$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $F(\underline{x})$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+F(\underline{x}_{\mathcal{A}})=\underset{\underline{k}_{\mathcal{G}}\in\mathbb{\mathfrak{R}}^{+}}{\sum}\left[C_{\underline{k}_{\mathcal{G}}}^{\oplus}\cos\left(\underline{k}_{\mathcal{G}}^{T}\underline{\underline{M}}\underline{x}_{\mathcal{A}}\right)+C_{\underline{k}_{\mathcal{G}}}^{\ominus}\sin\left(\underline{k}_{\mathcal{G}}^{T}\underline{\underline{M}}\underline{x}_{\mathcal{A}}\right)\right]\,;\,F(\underline{x}_{\mathcal{A}}+\underline{\underline{K_{aux}}}\underline{k}_{\mathcal{G}})=F(\underline{x}_{\mathcal{A}})
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\underline{\underline{M}}=\underline{\underline{K_{aux}}}^{T}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+p4mm wallpaper group 
+\end_layout
+
+\begin_layout Subsection
+Details
+\end_layout
+
+\begin_layout Standard
+We will obtain p4mm symmetry adapted functions aplying 
+\begin_inset Formula $C_{4v}$
+\end_inset
+
+ operations to a Fourier series.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="3">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="left" valignment="top" width="0pt">
+<column alignment="left" valignment="top">
+<column alignment="left" valignment="top" width="0pt">
+<row>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E=\begin{pmatrix}1 & 0\\
+0 & 1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E^{-1}=E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(E\right)=2$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2z}=-\begin{pmatrix}1 & 0\\
+0 & 1
+\end{pmatrix}=-E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{2v}^{-1}=C_{2v}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(C_{2z}\right)=-2$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{4z}=\begin{pmatrix}0 & -1\\
+1 & 0
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{4z}^{-1}=C_{4v}^{3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(C_{4z}\right)=0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $C_{4z}^{3}=\begin{pmatrix}0 & 1\\
+-1 & 0
+\end{pmatrix}=-C_{4z}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(C_{4z}^{3}\right)^{-1}=C_{4v}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(C_{4z}^{3}\right)=0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}=\begin{pmatrix}1 & 0\\
+0 & -1
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{xz}^{-1}=\sigma_{xz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(\sigma_{xz}\right)=0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{yz}=\begin{pmatrix}-1 & 0\\
+0 & 1
+\end{pmatrix}=-\sigma_{xz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{yz}^{-1}=\sigma_{yz}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(\sigma_{yz}\right)=0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}^{+}=\begin{pmatrix}0 & 1\\
+1 & 0
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\sigma_{d}^{+}\right)^{-1}=\sigma_{d}^{+}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(\sigma_{d}^{+}\right)=0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="left" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sigma_{d}^{-}=-\begin{pmatrix}0 & 1\\
+1 & 0
+\end{pmatrix}=-\sigma_{d}^{+}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left(\sigma_{d}^{-}\right)^{-1}=\sigma_{d}^{-}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="left" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\text{tr}\left(\sigma_{d}^{-}\right)=0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Definition of 
+\begin_inset Formula $A_{i}$
+\end_inset
+
+ matrices
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="6" columns="3">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top" width="0pt">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\Gamma$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\boldsymbol{k}}^{\oplus,\Gamma}(x,y)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\boldsymbol{k}}^{\ominus,\Gamma}(x,y)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $A_{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\cos\left(Ghx\right)\cos\left(Gky\right)+\cos\left(Gkx\right)\cos\left(Ghy\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $A_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sin\left(Gkx\right)\sin\left(Ghy\right)-\sin\left(Ghx\right)\sin\left(Gky\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $B_{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\cos\left(Ghx\right)\cos\left(Gky\right)-\cos\left(Gkx\right)\cos\left(Ghy\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $B_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sin\left(Gkx\right)\sin\left(Ghy\right)+\sin\left(Ghx\right)\sin\left(Gky\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sin\left(Ghx\right)\cos\left(Gky\right)+\cos\left(Ghx\right)\sin\left(Gky\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Symmetry adapted terms
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 \start_of_appendix
 Notation
@@ -4101,7 +4912,7 @@ Even switch function
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
