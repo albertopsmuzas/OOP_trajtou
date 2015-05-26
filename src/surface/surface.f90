@@ -563,76 +563,67 @@ END FUNCTION project_unitcell_SURFACE
 !
 !> @param[in] surf - Surface specifications
 !> @param[in] x - 2D point
-!
-!> @warning
-!! - r is in cartesian coordinates (Input and output)
-!! - Only C4v symmetry
 !----------------------------------------------------------------
-FUNCTION project_iwscell_SURFACE(surf,x)
-	IMPLICIT NONE
-	! I/O variables
-	CLASS(Surface) , INTENT(IN) :: surf
-   REAL(KIND=8),DIMENSION(2),INTENT(IN) :: x
-	! Local variables
-	REAL*8,DIMENSION(2) :: r
-	REAL*8,DIMENSION(2,2) :: Proj_x, Proj_y, Rot
-	REAL*8,DIMENSION(2) :: aux
-	REAL*8 :: angle, radius, alpha
-	INTEGER :: i ! counters
-   REAL(KIND=8),DIMENSION(2) :: project_iwscell_SURFACE
-	! HEY, HO! LET'S GO! ------------------
-	! Go to surface coordinates
-   r = x
-	r = surf%cart2surf(r)
-	FORALL (i=1:2) 
-      aux(i)=DFLOAT(INT(r(i),8))
-      r(i)=r(i)-aux(i)
-	END FORALL
-	! Now, r vector is inside the unit cell. Let's define this vector
-	! taking as the origin the center of the cell (in surface units is 0.5,0.5):
-	FORALL (i=1:2) r(i)=r(i)-0.5D0
-	! Calculate angle
-	IF (r(1).EQ.0.D0) THEN
-		angle = PI/2.D0
-	ELSE
-		angle = DATAN(DABS(r(2))/DABS(r(1))) ! Only angles from 0 to pi rad.
-	END IF
-	radius = DSQRT(r(1)**2.D0+r(2)**2.D0) ! Radius
-	r(1)=radius*DCOS(angle)
-	r(2)=radius*DSIN(angle)
-	alpha = PI/2.D0 ! 90 deg.
-	! 2D Projectors ========================
-	!Rotation
-	Rot(1,1)=DCOS(alpha)
-	Rot(1,2)=-DSIN(alpha)
-	Rot(2,1)=DSIN(alpha)
-	Rot(2,2)=DCOS(alpha)
-	! Projector X
-	Proj_x(1,1)=1.D0
-	Proj_x(1,2)=0.D0
-	Proj_x(2,1)=0.D0
-	Proj_x(2,2)=-1.D0
-	! Projector Y
-	Proj_y(1,1)=-1.D0
-	Proj_y(1,2)=0.D0
-	Proj_y(2,1)=0.D0
-	Proj_y(2,2)=1.D0
-	! Project onto IWS cell
-	IF ((angle.LE.(PI/4.D0)).AND.(angle.GE.0.D0)) THEN
-		r = MATMUL(Proj_y,r)
-		r = MATMUL(Rot, r)
-	ELSE IF ((angle.LE.(PI/2.D0)).AND.(angle.GT.(PI/4.D0))) THEN
-		r = MATMUL(Proj_y, r)
-		r = MATMUL(Proj_x, r)
-	ELSE 
-		WRITE(*,*) "ERR GET_V_XYZ: Incorrect angle value."
-		WRITE(*,*) "angle : ", angle
-		STOP
-	END IF
-	FORALL (i=1:2) r(i)=r(i)+0.5D0
-	! Go to cartesian coordinates
-   r = surf%surf2cart(r)
-   project_iwscell_SURFACE = r
-	RETURN
-END FUNCTION project_iwscell_SURFACE
+function project_iwscell_SURFACE(surf,x) result(r)
+   implicit none
+   ! I/O variables
+   class(Surface),intent(in):: surf
+   real(kind=8),dimension(:),intent(in):: x
+   ! dummy variable
+   real(kind=8),dimension(:),allocatable:: r
+   ! Local variables
+   real(kind=8):: auxReal
+   ! Parameters
+   character(len=*),parameter:: routineName='PROJECT_IWCELL_SURFACE: '
+   ! HEY, HO! LET'S GO! ------------------
+   ! Go to surface coordinates
+   allocate(r(size(x)),source=x)
+   r(1:2)=surf%cart2surf( r(1:2) )
+   ! ----------------------------------------------------------
+   if( surf%symmLabel=='p4mm' ) then
+      if( r(1)>0.5d0 .and. r(2)<=1.d0-r(1) ) then ! sector II
+         r(1)=1.d0-r(1)
+         if( size(r)==6 ) r(6)=pi-r(6)
+      elseif( r(1)>0.5d0 .and. r(2)<0.5d0 ) then ! sector III
+         auxReal=r(1)
+         r(1)=r(2)
+         r(2)=1.d0-auxReal
+         if( size(r)==6 ) r(6)=3.d0*pi/2.d0+r(6)
+      elseif( r(1)>0.5d0 .and. r(2)<r(1) ) then ! sector IV
+         auxReal=r(1)
+         r(1)=1.d0-r(2)
+         r(2)=1.d0-auxReal
+         if( size(r)==6 ) r(6)=3.d0*pi/2.d0-r(6)
+      elseif( r(1)>0.5d0 ) then ! sector V
+         r(1)=1.d0-r(1)
+         r(2)=1.d0-r(2)
+         if( size(r)==6 ) r(6)=pi+r(6)
+      elseif( r(1)<=0.5d0 .and. r(2)>1.d0-r(1) ) then ! sector VI
+         r(2)=1.d0-r(2)
+         if( size(r)==6 ) r(6)=-r(6)
+      elseif( r(1)<=0.5d0 .and. r(2)>0.5d0 ) then ! sector VII
+         auxReal=r(1)
+         r(1)=1.d0-r(2)
+         r(2)=auxReal
+         if( size(r)==6 ) r(6)=pi/2.d0+r(6)
+      elseif( r(1)<=0.5d0 .and. r(2)>r(1) ) then ! sector VIII
+         auxReal=r(1)
+         r(1)=r(2)
+         r(2)=auxReal
+         if( size(r)==6 ) r(6)=pi/2.d0-r(6)
+      elseif( r(1)<=0.5d0 .and. r(2)<=r(1) ) then ! sector I
+         ! do nothing
+      else
+         write(0,*) routinename//'sector selector had a weird problem. Rewrite this switch'
+         call exit(1)
+      endif
+   ! --------------------------------------------------------
+   else ! default case
+      write(0,*) routinename//'surface is not implemented'
+      call exit(1)
+   endif
+   ! Go to cartesian coordinates
+   r(1:2)=surf%surf2cart( r(1:2) )
+   return
+end function project_iwscell_SURFACE
 END MODULE SURFACE_MOD

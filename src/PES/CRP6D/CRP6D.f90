@@ -298,6 +298,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! Local variables
    INTEGER(KIND=4):: i ! counters
    REAL(KIND=8):: ma,mb
+   real(kind=8),dimension(:),allocatable:: r
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xy
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
@@ -316,6 +317,8 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
          WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH())"
          CALl EXIT(1)
    END SELECT
+   allocate( r(size(x)),source=x )
+   r(:)=system_surface%project_iwscell( r(:) )
    ALLOCATE(f(5,this%nsites))
    ALLOCATE(xy(this%nsites,2))
    DO i = 1, this%nsites 
@@ -324,7 +327,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
       CALL DEBUG_WRITE(routinename,"WYCKOFF SITE: ",i)
       CALL DEBUG_WRITE(routinename,"Letter: ",this%wyckoffsite(i)%id)
 #endif
-      CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
+      CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(r(3:6),f(1,i),f(2:5,i))
       xy(i,1)=this%wyckoffsite(i)%x
       xy(i,2)=this%wyckoffsite(i)%y
    END DO
@@ -337,7 +340,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    CALL xyinterpol%INTERPOL(system_surface)
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,x(1:2),aux1,aux2)
+   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,r(1:2),aux1,aux2)
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
