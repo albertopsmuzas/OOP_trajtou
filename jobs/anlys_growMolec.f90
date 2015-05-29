@@ -24,7 +24,7 @@ select case(command_argument_count())
       call anlyDiff%initialize()
       call anlyDiff%assignTrajsToPeaks()
       call anlyDiff%sortByDiffOrder()
-      !CALL anlyDiff%print_labmomenta_and_angles()
+      CALL anlyDiff%print_labmomenta_and_angles()
       call anlyDiff%printSeenPeaks()
       call etime(timearr,timer)
 

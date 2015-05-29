@@ -177,7 +177,6 @@ end function getEnvOrder_ALLOWEDPEAKSGROW
 !####################################################################################
 ! SUBROUTINE: assignTrajsToPeaks_ALLOWEDPEAKSGROW
 !####################################################################################
-! - At the moment only works with rectancular cells
 !------------------------------------------------------------------------------------
 subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    implicit none
@@ -200,8 +199,8 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    real(kind=8):: mtot, mu
    ! Auxiliar variables
 	real(kind=8),dimension(2):: auxReal
-	integer(kind=4),dimension(2):: auxInt
-	character(len=4):: auxString
+   integer(kind=4),dimension(2):: auxInt
+   character(len=4):: auxString
    ! Some parameters
    character(len=*),parameter:: routinename = "assigtTrajsToPeaks_ALLOWEDPEAKSCVRP6D: "
    character(len=*),parameter:: formatUnmap='(I6," ---> ",5(I5))'        ! Id/--->/n/m/v,J,mJ
@@ -209,10 +208,10 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    integer(kind=4),parameter:: wuUnmap=13
    integer(kind=4),parameter:: ruScatt=14
    ! RUN SECTION -------------------------
-	a=system_surface%norm_s1
-	b=system_surface%norm_s2
-	mtot=sum( system_mass(:) )
-	mu=product( system_mass(:) )/mtot
+   a=system_surface%norm_s1
+   b=system_surface%norm_s2
+   mtot=sum( system_mass(:) )
+   mu=product( system_mass(:) )/mtot
    gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
    to_rec_space(1,1) = a/(2.D0*PI)
    to_rec_space(1,2) = 0.D0
@@ -225,7 +224,6 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    write(wuUnmap,'("# Format: id/n,m/v,J,mJ")')
    write(wuUnmap,'("# ----------------------------------------------------------------")')
    open(unit=ruScatt,file="OUT_FINALCV",status="old",action='read')
-   call skipHeaderFromFile(unit=ruScatt)
    i=0
    totScatt=0
    allowedScatt=0
@@ -388,49 +386,101 @@ end function isAllowed_ALLOWEDPEAKSGROW
 !------------------------------------------------------------------------------------
 subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    implicit none
-	! I/O Variables
-   class(Allowed_peaksGROW),intent(in):: this
-	! Local variables
-	integer(kind=4):: dummy_int
-	real(kind=8),dimension(9):: dummy_real
-	integer(kind=4):: i ! counters
-	integer(kind=4):: traj_id
-	character(len=10):: stat
-	real(kind=8),dimension(3):: p
+   ! I/O Variables
+   class(Allowed_peaksGROW),intent(inout):: this
+   ! Local variables
+   integer(kind=4):: i ! counters
+   integer(kind=4):: traj_id
+   character(len=10):: stat
+	real(kind=8),dimension(6):: p,r
+	real(kind=8),dimension(2):: dp ! variation of momentum
+	real(kind=8),dimension(2):: dk ! variation of momentum in rec. space coord
+   integer(kind=4),dimension(2):: g
 	real(kind=8),dimension(3):: plab
-   integer(kind=4):: ioerr
+   integer(kind=4):: ioErr
+   integer(kind=4),dimension(3):: rovibrState
+   character(len=4):: auxString
+	real(kind=8),dimension(12):: phaseSpaceVect
    real(kind=8):: psi,Theta,thetaout,beta
-   real(kind=8),dimension(2,2):: mtrx
+	real(kind=8):: gama,a,b,Etot,dE
+   real(kind=8),dimension(2,2):: mtrx,to_rec_space
+   real(kind=8):: mtot, mu
+   integer(kind=4):: id
    ! Open units
    integer(kind=4),parameter:: wuFinal=12
    integer(kind=4),parameter:: ruScatt=11
-   character(len=*),parameter:: formatFinal='(I6,1X,3(F10.5,1X),3(F10.5,1X))'
+   character(len=*),parameter:: formatFinal='(I6,1X,5(I4,1X),3(F10.5,1X),3(F10.5,1X))'
+   character(len=*),parameter:: routinename = "print_labmomenta_and_angles_ALLOWEDPEAKSGROW6D: "
    ! RUN !! --------------------------
    beta=this%inicond%vpar_angle%getvalue()
    mtrx(1,:)=[dcos(beta),dsin(beta)]
    mtrx(2,:)=[-dsin(beta),dcos(beta)]
+   a=system_surface%norm_s1
+   b=system_surface%norm_s2
+   mtot=sum( system_mass(:) )
+   mu=product( system_mass(:) )/mtot
+   gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
+   to_rec_space(1,1) = a/(2.D0*PI)
+   to_rec_space(1,2) = 0.D0
+   to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
+   to_rec_space(2,2) = b*DSIN(gama)/(2.D0*PI)
    open(unit=wuFinal,file="OUTANA6Dfinalpandangles.out",status="replace",action='write')
-   write(wuFinal,*) "# ***** FINAL MOMENTA AND EXIT ANGLES *****"
-   write(wuFinal,*) "# Format: id/Px,Py,Pz(a.u.)/Azimuthal,Polar,Deflection(rad)"
-   write(wuFinal,*) "# -----------------------------------------------------------------------"
-   open(unit=ruScatt,file="OUTDYN6Dscattered.out",status="old",action='read')
-   call skipHeaderFromFile(unit=ruScatt)
+   write(wuFinal,'("# ***** FINAL MOMENTA AND EXIT ANGLES *****")')
+   write(wuFinal,'("# Format: id/n,m,v,J,mJ/Px,Py,Pz(a.u.)/Azimuthal,Polar,Deflection(rad)")')
+   write(wuFinal,'("# -----------------------------------------------------------------------")')
+   open(unit=ruScatt,file="OUT_FINALCV",status="old",action='read')
    ioErr=0
-   do while( ioErr==0 ) 
-      read(ruScatt,*,iostat=ioerr) traj_id,stat,dummy_int,dummy_int,dummy_real(:),p(:)
-      select case( stat=="Scattered" .and. ioErr==0 )
+   do while( ioErr == 0 )
+      ! read from scattered file
+      read(ruScatt,*,iostat=ioErr) auxString,auxString,auxString,auxString,id
+      read(ruScatt,*,iostat=ioErr) r(1:3)
+      read(ruScatt,*,iostat=ioErr) r(4:6)
+      read(ruScatt,*,iostat=ioErr)
+      read(ruScatt,*,iostat=ioErr) p(1:3)
+      read(ruScatt,*,iostat=ioErr) p(4:6)
+      ! correct momenta
+      p(1:3)=system_mass(1)*p(1:3)/dsqrt(pmass2au)
+      p(4:6)=system_mass(2)*p(4:6)/dsqrt(pmass2au)
+      phaseSpaceVect(1:6)=r(:)
+      phaseSpaceVect(7:12)=p(:)
+      phaseSpaceVect(:)=from_atomic_to_molecular_phaseSpace(atomcoord=phaseSpaceVect)
+      r(:)=phaseSpaceVect(1:6)
+      p(:)=phaseSpaceVect(7:12)
+
+      select case( r(3) >= this%inicond%trajs(id)%init_r(3) )
       case(.true.)
+         this%inicond%trajs(id)%stat='Scattered'
+      case(.false.)
+         this%inicond%trajs(id)%stat='SmallZ'
+      end select
+      select case( ioErr==0 .and. this%inicond%trajs(id)%stat=='Scattered' )
+      case(.true.) ! secure to operate
+         dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
+         dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
+         dk = matmul(to_rec_space,dp)
+         g(1) = nint(dk(1))
+         g(2) = nint(dk(2))
+         Etot=0.5d0*dot_product(p(1:3),p(1:3))/mtot+&                      ! Kinetic energy
+              0.5d0*(p(4)**2.d0)/mu+&                                      ! Internal kinetic energy (1)
+              0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+& ! Internal kinetic energy (2)
+              this%inicond%vibrPot%getPot( r(4) )                          ! Potential energy
+         rovibrState=this%quantizeRovibrState( Etot=Etot,position=r(:),momenta=p(:) )
          plab(1:2)=matmul(mtrx,p(1:2))
          plab(3)=p(3)
          psi = datan(plab(2)/plab(1))
          Theta = datan(plab(2)/plab(3))
          thetaout=datan(plab(3)/dsqrt(plab(1)**2.D0+plab(2)**2.D0))
-         write(wuFinal,formatFinal) traj_id,plab(:),psi,Theta,thetaout
-
-      case(.false.)
-         ! do nothing
-
+         write(wuFinal,formatFinal) traj_id,g(:),rovibrState(:),plab(:),psi,Theta,thetaout
+      case(.false.) ! not secure to operate, next switch
+         select case( ioErr )
+         case(-1,0)
+            ! do nothing, EOF reached, let it break the cycle
+         case default
+            write(0,*) routinename//'ERR: unexpected error encountered. Error Code: ',ioErr
+            call exit(1)
+         end select
       end select
+ 
    enddo
    close(unit=wuFinal)
    close(unit=ruScatt)
