@@ -329,5 +329,43 @@ SUBROUTINE INV_MTRX (n, mtrx, i_mtrx)
 	A(:,ipvt) = B
 	i_mtrx = A
 END SUBROUTINE INV_MTRX
+!###################################################################
+! FUNCTION: cartesianPeriodizer
+!###################################################################
+!> @brief
+!! Given a function f(x), and the cartesian periodizer function g(x,T),
+!! it stands that f( g(x,T) ) is the f(x)'s segment between 0<=x<=T repeated
+!! indefinitely
+!-------------------------------------------------------------------
+function cartesianPeriodizer(x,T) result(y)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   real(kind=8),intent(in):: x, T
+   ! Dummy function variable
+   real(kind=8):: y
+   ! Run section .....................................
+   y=T/2.d0-(T/pi)*datan( 1.d0/dtan(x*pi/T) )
+   return
+end function cartesianPeriodizer
+!###################################################################
+! FUNCTION: polarPeriodizer
+!###################################################################
+!> @brief
+!! Defined as cartesian periodizer function g(x,T) with some changes:
+!! x=x-x0 and T=2pi/N
+!-------------------------------------------------------------------
+function polarPeriodizer(x,N,x0) result(y)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   real(kind=8),intent(in):: x,x0
+   integer(kind=4),intent(in):: N
+   ! dummy function out variable
+   real(kind=8):: y
+   ! Run section ..............................
+
+
+end function polarPeriodizer
 
 END MODULE MATHS_MOD
