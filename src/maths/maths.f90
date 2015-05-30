@@ -353,19 +353,59 @@ end function cartesianPeriodizer
 !###################################################################
 !> @brief
 !! Defined as cartesian periodizer function g(x,T) with some changes:
-!! x=x-x0 and T=2pi/N
+!! x=x-x0 and T=2pi/N. Designed to be used with figures with polar
+!! symmetry and whole number of lobes.
+!> @details
+!! - Extracted from E. Chicurel-Uziel/Computer Aided Geometric Design/21(2004) 23-42
 !-------------------------------------------------------------------
-function polarPeriodizer(x,N,x0) result(y)
+function polarPeriodizer(theta,N,theta0) result(y)
    ! initial declarations
    implicit none
    ! I/O variables
-   real(kind=8),intent(in):: x,x0
+   real(kind=8),intent(in):: theta,theta0
    integer(kind=4),intent(in):: N
    ! dummy function out variable
    real(kind=8):: y
    ! Run section ..............................
-
-
+   y=pi/dfloat(N)-(2.d0/dfloat(N))*datan( 1.d0/dtan(dfloat(N)*(theta-theta0)/2.d0) )
+   return
 end function polarPeriodizer
-
+!####################################################################
+! FUNCTION: radialPolygonEquation
+!####################################################################
+!> @brief
+!! 
+!--------------------------------------------------------------------
+function radialPolygonEquation(theta,r,N,theta0) result(y)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   real(kind=8),intent(in):: theta,r,theta0
+   integer(kind=4),intent(in):: N
+   ! Local variable
+   real(kind=8):: beta
+   ! Run section ......................................
+   beta=pi(dfloat(N-2)/dfloat(2*N))
+   y=r*datan(beta)/(dsin(polarPeriodizer(theta,N,theta0))+dtan(beta)*dcos(polarPeriodizer(theta,N,theta0)))
+   return
+end function radialPolygonEquation
+!####################################################################
+! FUNCTION: parametricPolygonEquation
+!####################################################################
+!> @brief
+!! 
+!--------------------------------------------------------------------
+subroutine parametricPolygonEquation(theta,r,N,theta0,x0,x)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   real(kind=8),intent(in):: theta,theta0,r
+   real(kind=8),dimension(2),intent(in):: x0
+   intent(kind=4),intent(in):: N
+   real(kind=8),dimension(2),intent(out):: x
+   ! Run section ...................................
+   x(1)=x0(1)+radialPolygonEquation(theta,r,N,theta0)*dcos(theta)
+   x(2)=x0(2)+radialPolygonEquation(theta,r,N,theta0)*dsin(theta)
+   return
+end subroutine parametricPolygonEquation
 END MODULE MATHS_MOD
