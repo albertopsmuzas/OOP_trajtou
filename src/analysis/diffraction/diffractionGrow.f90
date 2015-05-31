@@ -79,6 +79,7 @@ TYPE :: Allowed_peaksGROW
       PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW
       PROCEDURE,PUBLIC:: isAllowed => isAllowed_ALLOWEDPEAKSGROW
       procedure,public:: quantizeRovibrState => quantizeRovibrState_ALLOWEDPEAKSGROW
+      procedure,public:: quantizeDiffState => quantizeDiffState_ALLOWEDPEAKSGROW
 END TYPE Allowed_peaksGROW
 !=======================================================
 CONTAINS
@@ -403,7 +404,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
 	real(kind=8),dimension(12):: phaseSpaceVect
    real(kind=8):: psi,Theta,thetaout,beta
 	real(kind=8):: gama,a,b,Etot,dE
-   real(kind=8),dimension(2,2):: mtrx,to_rec_space
+   real(kind=8),dimension(2,2):: mtrx
    real(kind=8):: mtot, mu
    integer(kind=4):: id
    ! Open units
@@ -419,11 +420,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    b=system_surface%norm_s2
    mtot=sum( system_mass(:) )
    mu=product( system_mass(:) )/mtot
-   gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
-   to_rec_space(1,1) = a/(2.D0*PI)
-   to_rec_space(1,2) = 0.D0
-   to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
-   to_rec_space(2,2) = b*DSIN(gama)/(2.D0*PI)
+   gama=system_surface%angle
    open(unit=wuFinal,file="OUTANA6Dfinalpandangles.out",status="replace",action='write')
    write(wuFinal,'("# ***** FINAL MOMENTA AND EXIT ANGLES *****")')
    write(wuFinal,'("# Format: id/n,m,v,J,mJ/Px,Py,Pz(a.u.)/Azimuthal,Polar,Deflection(rad)")')
@@ -455,11 +452,8 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
       end select
       select case( ioErr==0 .and. this%inicond%trajs(id)%stat=='Scattered' )
       case(.true.) ! secure to operate
-         dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
-         dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
-         dk = matmul(to_rec_space,dp)
-         g(1) = nint(dk(1))
-         g(2) = nint(dk(2))
+         dp(:) = p(1:2)-this%inicond%trajs(id)%init_p(1:2)
+         g(:) = this%quantizeDiffState( dp )
          Etot=0.5d0*dot_product(p(1:3),p(1:3))/mtot+&                      ! Kinetic energy
               0.5d0*(p(4)**2.d0)/mu+&                                      ! Internal kinetic energy (1)
               0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+& ! Internal kinetic energy (2)
@@ -907,4 +901,52 @@ function quantizeRovibrState_ALLOWEDPEAKSGROW(this,Etot,position,momenta) result
 	   end function discretizeJ
 
 end function quantizeRovibrState_ALLOWEDPEAKSGROW
+!###################################################################
+! FUNCTION: quantizeDiffState_ALLOWEDPEAKSGROW
+!###################################################################
+function quantizeDiffState_ALLOWEDPEAKSGROW(this,p) result(g)
+   implicit none
+   ! I/O variables
+   class(Allowed_peaksGROW),intent(in):: this
+   real(kind=8),dimension(2),intent(in):: p
+   ! Dummy output variables
+   integer(kind=4),dimension(2):: g
+   ! Local variables
+   real(kind=8),dimension(2):: auxVect
+   integer(kind=4):: i,auxInt
+   integer(kind=4),dimension(7,2):: c
+   real(kind=8),dimension(7,2):: a
+   real(kind=8),dimension(7):: dist
+   ! Run section ..................................
+   auxVect(:)=system_surface%cart2recip( p )
+   select case( system_surface%order )
+   case(4)
+      g(:)=nint( auxVect(:) )
+   case(6)
+      c(1,:)=nint( auxVect(:) )
+      select case( dcos(system_surface%angle)>0.d0 )
+      case(.true.)
+         c(2,:)=c(1,:)+[1,0]
+         c(3,:)=c(1,:)-[1,0]
+         c(4,:)=c(1,:)+[0,1]
+         c(5,:)=c(1,:)-[0,1]
+         c(6,:)=c(1,:)+[1,1]
+         c(7,:)=c(1,:)-[1,1]
+      case(.false.)
+         c(2,:)=c(1,:)+[1,0]
+         c(3,:)=c(1,:)-[1,0]
+         c(4,:)=c(1,:)+[0,1]
+         c(5,:)=c(1,:)-[0,1]
+         c(6,:)=c(1,:)+[1,-1]
+         c(7,:)=c(1,:)-[1,-1]
+      end select
+      do i=1,7
+         a(i,:)=system_surface%recip2cart( dfloat( c(i,:) ) )
+         dist(i)=norm2( p(:)-a(i,:) )
+      enddo
+      auxInt=minval( dist(:) )
+      g(:)=c(auxInt,:)
+   end select
+   return
+end function quantizeDiffState_ALLOWEDPEAKSGROW
 END MODULE DIFFRACTIONGROW_MOD

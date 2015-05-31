@@ -59,7 +59,9 @@ END TYPE
 Type Surface
    character(len=30):: alias
    character(len=:),allocatable:: filename
+   integer(kind=4):: order
 	logical:: initialized=.false.
+	real(kind=8):: angle
    real(kind=8),public,dimension(2) :: s1,s2
 	real(kind=8),dimension(2,2):: surf2cart_mtrx
 	real(kind=8),dimension(2,2):: cart2surf_mtrx
@@ -71,7 +73,7 @@ Type Surface
    type(atom_list),dimension(:),allocatable,public:: atomType
 	real(kind=8),dimension(2,2),public:: metricSurf_mtrx
    character(len=10),public:: units
-	real(kind=8),public:: norm_s1, norm_s2
+	real(kind=8),public:: norm_s1,norm_s2
    character(len=4):: symmLabel
 contains
    ! Initiallize
@@ -303,11 +305,29 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
       END DO
       surf%s1=aux_r(1,:)
       surf%s2=aux_r(2,:)
+      ! Set primitive vectors norms
+      surf%norm_s1=norm2( surf%s1 )
+      surf%norm_s2=norm2( surf%s2 )
+      surf%angle=dacos(dot_product(surf%s1,surf%s2)/(surf%norm_s1*surf%norm_s2))
+#ifdef DEBUG
+      CALL VERBOSE_WRITE(routinename,"Modulus S1: ", surf%norm_s1)
+      CALL VERBOSE_WRITE(routinename,"Modulus S2: ", surf%norm_s2)
+      call verbose_write(routinename,'Angle between vectors (deg): ',surf%angle*180.d0/pi)
+#endif
       READ(10,*) surf%symmlabel
+      select case( trim(surf%symmlabel) )
+      case('p4mm')
+        surf%order=4
+      case default
+         write(0,*) routinename//'ERR surface not implemented'
+         write(0,*) 'Implemented ones: p4mm'
+         call exit(1)
+      end select
       aux_r=transpose(aux_r)
       surf%surf2cart_mtrx=aux_r
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,"Surface symmetry: ",surf%symmlabel)
+      CALL VERBOSE_WRITE(routinename,"Surface order: ",surf%order)
       CALL DEBUG_WRITE(routinename,"Surf2cart matrix calculated: ")
       DO i=1,2
          CALL DEBUG_WRITE(routinename,surf%surf2cart_mtrx(i,:))
@@ -375,13 +395,6 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
          DO i = 1, 2
             CALL DEBUG_WRITE(routinename,surf%cart2surf_mtrx(i,1),surf%cart2surf_mtrx(i,2))
          END DO
-#endif
-      ! Set primitive vectors norms
-      surf%norm_s1=DSQRT(DOT_PRODUCT(surf%surf2cart_mtrx(1:2,1),surf%surf2cart_mtrx(1:2,1)))
-      surf%norm_s2=DSQRT(DOT_PRODUCT(surf%surf2cart_mtrx(1:2,2),surf%surf2cart_mtrx(1:2,2)))
-#ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Modulus S1: ", surf%norm_s1)
-         CALL VERBOSE_WRITE(routinename,"Modulus S2: ", surf%norm_s2)
 #endif
       ! Set Matrix: from normalized surface coordinates to auxiliar cartesian coordinates
       FORALL(i=1:2) surf%surfunit2cart_mtrx(i,1)=surf%surf2cart_mtrx(i,1)/surf%norm_s1

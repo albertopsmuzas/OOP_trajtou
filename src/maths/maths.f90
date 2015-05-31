@@ -5,7 +5,7 @@
 !##########################################################
 MODULE MATHS_MOD
 ! Initial declarations
-IMPLICIT NONE
+implicit none
 CONTAINS
 !####################################################################
 ! SUBROUTINE: ORDER #################################################
@@ -344,6 +344,8 @@ function cartesianPeriodizer(x,T) result(y)
    real(kind=8),intent(in):: x, T
    ! Dummy function variable
    real(kind=8):: y
+   ! Local variables
+   real(kind=8),parameter:: pi=dacos(-1.d0)
    ! Run section .....................................
    y=T/2.d0-(T/pi)*datan( 1.d0/dtan(x*pi/T) )
    return
@@ -366,6 +368,8 @@ function polarPeriodizer(theta,N,theta0) result(y)
    integer(kind=4),intent(in):: N
    ! dummy function out variable
    real(kind=8):: y
+   ! Local variables
+   real(kind=8),parameter:: pi=dacos(-1.d0)
    ! Run section ..............................
    y=pi/dfloat(N)-(2.d0/dfloat(N))*datan( 1.d0/dtan(dfloat(N)*(theta-theta0)/2.d0) )
    return
@@ -382,10 +386,13 @@ function radialPolygonEquation(theta,r,N,theta0) result(y)
    ! I/O variables
    real(kind=8),intent(in):: theta,r,theta0
    integer(kind=4),intent(in):: N
+   ! Dummy output variable
+   real(kind=8):: y
    ! Local variable
    real(kind=8):: beta
+   real(kind=8),parameter:: pi=dacos(-1.d0)
    ! Run section ......................................
-   beta=pi(dfloat(N-2)/dfloat(2*N))
+   beta=pi*(dfloat(N-2)/dfloat(2*N))
    y=r*datan(beta)/(dsin(polarPeriodizer(theta,N,theta0))+dtan(beta)*dcos(polarPeriodizer(theta,N,theta0)))
    return
 end function radialPolygonEquation
@@ -401,7 +408,7 @@ subroutine parametricPolygonEquation(theta,r,N,theta0,x0,x)
    ! I/O variables
    real(kind=8),intent(in):: theta,theta0,r
    real(kind=8),dimension(2),intent(in):: x0
-   intent(kind=4),intent(in):: N
+   integer(kind=4),intent(in):: N
    real(kind=8),dimension(2),intent(out):: x
    ! Run section ...................................
    x(1)=x0(1)+radialPolygonEquation(theta,r,N,theta0)*dcos(theta)
