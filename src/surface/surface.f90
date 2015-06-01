@@ -318,6 +318,8 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
       select case( trim(surf%symmlabel) )
       case('p4mm')
         surf%order=4
+      case('p3')
+        surf%order=6
       case default
          write(0,*) routinename//'ERR surface not implemented'
          write(0,*) 'Implemented ones: p4mm'

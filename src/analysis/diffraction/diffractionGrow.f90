@@ -213,11 +213,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    b=system_surface%norm_s2
    mtot=sum( system_mass(:) )
    mu=product( system_mass(:) )/mtot
-   gama=dacos(dot_product(system_surface%s1,system_surface%s2)/(a*b))
-   to_rec_space(1,1) = a/(2.D0*PI)
-   to_rec_space(1,2) = 0.D0
-   to_rec_space(2,1) = b*DCOS(gama)/(2.D0*PI)
-   to_rec_space(2,2) = b*DSIN(gama)/(2.D0*PI)
+   gama=system_surface%angle
    ! binning parameters (only Morse implemented)
    !---------
    open(unit=wuUnmap,file=this%fileNameUnmapped,status='replace',action='write')
@@ -253,11 +249,8 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
       end select
       select case( ioErr==0 .and. this%inicond%trajs(id)%stat=='Scattered' )
       case(.true.) ! secure to operate
-         dp(1) = p(1)-this%inicond%trajs(id)%init_p(1)
-         dp(2) = p(2)-this%inicond%trajs(id)%init_p(2)
-         dk = matmul(to_rec_space,dp)
-         g(1) = nint(dk(1))
-         g(2) = nint(dk(2))
+         dp(:) = p(1:2)-this%inicond%trajs(id)%init_p(1:2)
+         g(:) = this%quantizeDiffState( dp )
          Etot=0.5d0*dot_product(p(1:3),p(1:3))/mtot+&                      ! Kinetic energy
               0.5d0*(p(4)**2.d0)/mu+&                                      ! Internal kinetic energy (1)
               0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+& ! Internal kinetic energy (2)
@@ -273,7 +266,6 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
          !write(*,*) p(:)
          !write(*,*) 'Momentum variation in aux, recip and recip rounded coordinates'
          !write(*,*) dp(:)
-         !write(*,*) dk(:)
          !write(*,*) g(:)
          !write(*,*) 'Ekin: ',0.5d0*dot_product(p(1:3),p(1:3))/mtot
          !write(*,*) 'Eint: ',Etot-0.5d0*dot_product(p(1:3),p(1:3))/mtot
@@ -481,7 +473,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    return
 end subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW
 !###########################################################
-!# FUNCTION: getDiffOrderC4
+!# FUNCTION: getDiffOrder
 !###########################################################
 !> @brief
 !! Given environment order and peak labels, sets real diffraction
@@ -491,52 +483,70 @@ end subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW
 !> @date Nov/2014
 !> @version 1.0
 !-----------------------------------------------------------
-function getDiffOrderC4(envOrder,g) result(diffOrder)
+function getDiffOrder(envOrder,g) result(diffOrder)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: envOrder
-   INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: g
+   integer(kind=4),optional,intent(in) :: envOrder
+   integer(kind=4),dimension(2),intent(in) :: g
    ! Function dummy variable
-   INTEGER(KIND=4):: diffOrder
+   integer(kind=4):: diffOrder
    ! Run section
-   SELECT CASE(g(1)==0 .AND. g(2)==0)
-      CASE(.TRUE.)
+   if( system_surface%order==4 .and. present(envOrder) ) then
+      if( all( g(:)==[0,0] ) ) then
          diffOrder=envOrder
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(g(1)==0 .OR. g(2)==0)
-      CASE(.TRUE.)
+      elseif(g(1)==0 .OR. g(2)==0) then
          diffOrder=envOrder*(envOrder+1)/2
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(abs(g(1))==abs(g(2)))
-      CASE(.TRUE.)
+      elseif(abs(g(1))==abs(g(2))) then
          diffOrder=((envOrder+1)*(envOrder+2)/2)-1
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(abs(g(1))==envOrder)
-      CASE(.TRUE.)
+      elseif(abs(g(1))==envOrder) then
          diffOrder=(envOrder*(envOrder+1)/2)+abs(g(2))
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   SELECT CASE(abs(g(2))==envOrder)
-      CASE(.TRUE.)
+      elseif(abs(g(2))==envOrder) then
          diffOrder=(envOrder*(envOrder+1)/2)+abs(g(1))
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   RETURN
-end function getDiffOrderC4
+      else
+         write(0,*) 'ERR getDiffOrder: Unclassificable difraction peak. Surface order: 4'
+         call exit(1)
+      endif
+   elseif( system_surface%order==6 .and. dcos(system_surface%angle)>0.d0 ) then
+      if( all( g(:)==[0,0] ) ) then
+         diffOrder=0
+      elseif( g(1)==0 .or. g(2)==0 ) then
+         diffOrder=checkLoschianOrder( sum(g)**2 )
+      elseif( g(1)==g(2) ) then
+         diffOrder=checkLoschianOrder( g(1)**2 )
+      elseif( g(1)==-g(2) ) then
+         diffOrder=checkLoschianOrder( 3*g(1)**2 )
+      elseif( sign( 1,g(1) )*sign( 1,g(2) ) > 0 ) then
+         diffOrder=checkLoschianOrder( g(1)**2+g(2)**2-abs(product(g)) )
+      elseif( sign( 1,g(1) )*sign( 1,g(2) ) < 0 ) then
+         diffOrder=checkLoschianOrder( g(1)**2+g(2)**2+abs(product(g)) )
+      else
+         write(0,*) 'ERR getDiffOrder: Unclassificable difraction peak. Surface order: 6'
+         call exit(1)
+      endif
+   elseif( system_surface%order==6 .and. dcos(system_surface%angle)<0.d0 ) then
+      if( all( g(:)==[0,0] ) ) then
+         diffOrder=0
+      elseif( g(1)==0 .or. g(2)==0 ) then
+         diffOrder=checkLoschianOrder( sum(g)**2 )
+      elseif( g(1)==g(2) ) then
+         diffOrder=checkLoschianOrder( 3*g(1)**2 )
+      elseif( g(1)==-g(2) ) then
+         diffOrder=checkLoschianOrder( g(1)**2 )
+      elseif( sign( 1,g(1) )*sign( 1,g(2) ) > 0 ) then
+         diffOrder=checkLoschianOrder( g(1)**2+g(2)**2+abs(product(g)) )
+      elseif( sign( 1,g(1) )*sign( 1,g(2) ) < 0 ) then
+         diffOrder=checkLoschianOrder( g(1)**2+g(2)**2-abs(product(g)) )
+      else
+         write(0,*) 'ERR getDiffOrder: Unclassificable difraction peak. Surface order: 6'
+         call exit(1)
+      endif
+   else
+      write(0,*) 'ERR getDiffOrder: wrong surface order or bar usage of this routine'
+      call exit(1)
+   endif
+   return
+end function getDiffOrder
 !######################################################
 ! FUNCTION: getPeakId_ALLOWEDPEAKSGROW
 !######################################################
@@ -622,7 +632,7 @@ subroutine addNewPeak_ALLOWEDPEAKSGROW(this,g,peakId)
    this%peaks(idNew)%id=idNew
    this%peaks(idNew)%g(:)=g(:)
    this%peaks(idNew)%envOrder=this%getEnvOrder( diffState=g(:) )
-   this%peaks(idNew)%diffOrder=getDiffOrderC4( this%peaks(idNew)%envOrder,g(:) )
+   this%peaks(idNew)%diffOrder=getDiffOrder( this%peaks(idNew)%envOrder,g(:) )
    ! Change in momentum in laboratory coordinates (by definition both components are orthogonal)
    this%peaks(idNew)%dkx=(2.d0*pi/(a*b*DSIN(gama)))*(DFLOAT(g(1))*b*DSIN(gama-beta)+DFLOAT(g(2))*a*DSIN(beta))
    this%peaks(idNew)%dky=(2.d0*pi/(a*b*DSIN(gama)))*(DFLOAT(g(2))*a*DCOS(beta)-DFLOAT(g(1))*b*DCOS(gama-beta))
@@ -913,10 +923,11 @@ function quantizeDiffState_ALLOWEDPEAKSGROW(this,p) result(g)
    integer(kind=4),dimension(2):: g
    ! Local variables
    real(kind=8),dimension(2):: auxVect
-   integer(kind=4):: i,auxInt
+   integer(kind=4):: i
    integer(kind=4),dimension(7,2):: c
    real(kind=8),dimension(7,2):: a
    real(kind=8),dimension(7):: dist
+   integer(kind=4):: auxInt
    ! Run section ..................................
    auxVect(:)=system_surface%cart2recip( p )
    select case( system_surface%order )
@@ -944,7 +955,7 @@ function quantizeDiffState_ALLOWEDPEAKSGROW(this,p) result(g)
          a(i,:)=system_surface%recip2cart( dfloat( c(i,:) ) )
          dist(i)=norm2( p(:)-a(i,:) )
       enddo
-      auxInt=minval( dist(:) )
+      auxInt=minloc( array=dist(:),dim=1 )
       g(:)=c(auxInt,:)
    end select
    return
