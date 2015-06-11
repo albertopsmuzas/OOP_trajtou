@@ -393,7 +393,7 @@ function radialPolygonEquation(theta,r,N,theta0) result(y)
    real(kind=8),parameter:: pi=dacos(-1.d0)
    ! Run section ......................................
    beta=pi*(dfloat(N-2)/dfloat(2*N))
-   y=r*datan(beta)/(dsin(polarPeriodizer(theta,N,theta0))+dtan(beta)*dcos(polarPeriodizer(theta,N,theta0)))
+   y=r*dtan(beta)/(dsin(polarPeriodizer(theta,N,theta0))+dtan(beta)*dcos(polarPeriodizer(theta,N,theta0)))
    return
 end function radialPolygonEquation
 !####################################################################
@@ -435,14 +435,16 @@ function checkLoschianOrder(num) result(order)
    ! Dummy function output variable
    integer(kind=4):: order
    ! Local variables
+   integer(kind=4),dimension(1):: arrorder
    integer(kind=4),dimension(0:63),parameter:: loschianNum=[   0,  1,  3,  4,  7,  9, 12, 13, 16, 19, 21, 25, 27, 28, 31, 36,&
                                                               37, 39, 43, 48, 49, 52, 57, 61, 63, 64, 67, 73, 75, 76, 79, 81,&
                                                               84, 91, 93, 97,100,103,108,109,111,112,117,121,124,127,129,133,&
                                                              139,144,147,148,151,156,157,163,169,171,172,175,181,183,189,192]
    integer(kind=4),dimension(0:63):: intDistance
    ! Run section ...............................................................................................................
-   intDistance(:)=( loschianNum(:)-num )**2.d0
-   order=minloc( array=intDistance(:),dim=1 )
+   intDistance(:)=( loschianNum(:) -num )**2
+   arrorder(:)=minloc( array=intDistance(:) )
+   order=arrorder(1)-1
    return
 end function checkLoschianOrder
 END MODULE MATHS_MOD

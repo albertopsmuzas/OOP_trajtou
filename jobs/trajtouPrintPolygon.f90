@@ -35,7 +35,7 @@ program trajtouPrintPolygon
       call exit(1)
    end select
    do i=0,nPoints
-      call parametricPolygonEquation( theta=dfloat(i)*2.d0*pi/nPoints,r=radius,N=N,theta0=tiltingAngle,x0=center,x=position )
+      call parametricPolygonEquation( theta=dfloat(i)*2.d0*pi/dfloat(nPoints),r=radius,N=N,theta0=tiltingAngle,x0=center,x=position )
       write(*,*) position(:)
    enddo
 end program trajtouPrintPolygon

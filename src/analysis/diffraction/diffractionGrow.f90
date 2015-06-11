@@ -383,7 +383,6 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    class(Allowed_peaksGROW),intent(inout):: this
    ! Local variables
    integer(kind=4):: i ! counters
-   integer(kind=4):: traj_id
    character(len=10):: stat
 	real(kind=8),dimension(6):: p,r
 	real(kind=8),dimension(2):: dp ! variation of momentum
@@ -402,7 +401,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    ! Open units
    integer(kind=4),parameter:: wuFinal=12
    integer(kind=4),parameter:: ruScatt=11
-   character(len=*),parameter:: formatFinal='(I6,1X,5(I4,1X),3(F10.5,1X),3(F10.5,1X))'
+   character(len=*),parameter:: formatFinal='(I6,1X,6(I4,1X),2(F10.5,1X),3(F10.5,1X),3(F10.5,1X))'
    character(len=*),parameter:: routinename = "print_labmomenta_and_angles_ALLOWEDPEAKSGROW6D: "
    ! RUN !! --------------------------
    beta=this%inicond%vpar_angle%getvalue()
@@ -415,7 +414,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    gama=system_surface%angle
    open(unit=wuFinal,file="OUTANA6Dfinalpandangles.out",status="replace",action='write')
    write(wuFinal,'("# ***** FINAL MOMENTA AND EXIT ANGLES *****")')
-   write(wuFinal,'("# Format: id/n,m,v,J,mJ/Px,Py,Pz(a.u.)/Azimuthal,Polar,Deflection(rad)")')
+   write(wuFinal,'("# Format: id/diffOrder,n,m,v,J,mJ/dpx,dpy/Ppar,Pperp,Pnorm(a.u.)/Azimuthal,Polar,Deflection(rad)")')
    write(wuFinal,'("# -----------------------------------------------------------------------")')
    open(unit=ruScatt,file="OUT_FINALCV",status="old",action='read')
    ioErr=0
@@ -456,7 +455,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
          psi = datan(plab(2)/plab(1))
          Theta = datan(plab(2)/plab(3))
          thetaout=datan(plab(3)/dsqrt(plab(1)**2.D0+plab(2)**2.D0))
-         write(wuFinal,formatFinal) traj_id,g(:),rovibrState(:),plab(:),psi,Theta,thetaout
+         write(wuFinal,formatFinal) id,getDiffOrder(g=g),g(:),rovibrState(:),dp(1:2),plab(:),psi,Theta,thetaout
       case(.false.) ! not secure to operate, next switch
          select case( ioErr )
          case(-1,0)
@@ -927,7 +926,7 @@ function quantizeDiffState_ALLOWEDPEAKSGROW(this,p) result(g)
    integer(kind=4),dimension(7,2):: c
    real(kind=8),dimension(7,2):: a
    real(kind=8),dimension(7):: dist
-   integer(kind=4):: auxInt
+   integer(kind=4),dimension(1):: auxInt
    ! Run section ..................................
    auxVect(:)=system_surface%cart2recip( p )
    select case( system_surface%order )
@@ -955,8 +954,8 @@ function quantizeDiffState_ALLOWEDPEAKSGROW(this,p) result(g)
          a(i,:)=system_surface%recip2cart( dfloat( c(i,:) ) )
          dist(i)=norm2( p(:)-a(i,:) )
       enddo
-      auxInt=minloc( array=dist(:),dim=1 )
-      g(:)=c(auxInt,:)
+      auxInt(:)=minloc( array=dist(:) )
+      g(:)=c(auxInt(1),:)
    end select
    return
 end function quantizeDiffState_ALLOWEDPEAKSGROW

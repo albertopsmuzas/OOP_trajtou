@@ -39,61 +39,66 @@ BEGIN{
 {	if ( $1 != "#" )
 	{
 		# Control that user gave some options 
-		if ( n == "undefined" || m == "undefined" || V == "undefined" || J == "undefined" || mJ == "undefined" )
+		if ( diffOrder=="unset" && ( n == "undefined" || m == "undefined" || V == "undefined" || J == "undefined" || mJ == "undefined" ) )
 		{
 			print "At least one parameter was not initialized and still has the value \"undefined\".";
 			badness=1;
 			exit 1;
 		}
-		# State (n,m,v,J,mJ)
+		# State: (n,m,v,J,mJ)
 		else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J != "all" && mJ != "all" )
 		{
 			if ($colN==n && $colM==m && $colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
 		}
-		# State (n,m,J,mJ)
+		# State: (n,m,J,mJ)
 		else if ( diffOrder =="unset" && n != "all" && m != "all" && V == "all" && J != "all" && mJ != "all" )
 		{
 			if ($colN==n && $colM==m && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
 		}
-		# State (n,m,J)
+		# State: (n,m,J)
 		else if ( diffOrder =="unset" && n != "all" && m != "all" && V == "all" && J != "all" && mJ == "all" )
 		{
 			if ($colN==n && $colM==m && $colJ==J) prob=prob+$colProb;
 		}
-		# State (n,m,v,mJ)
+		# State: (diffOrder,J)
+		else if ( diffOrder !="unset" && n == "undefined" && m == "undefined" && V == "all" && J != "all" && mJ == "all" )
+		{
+			if ($colDiffOrder==diffOrder && $colJ==J) prob=prob+$colProb;
+		}
+		# State: (n,m,v,mJ)
 		else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J == "all" && mJ != "all" )
 		{
 			if ($colN==n && $colM==m && $colV==V && $colmJ==mJ) prob=prob+$colProb;
 		}
-		# State (n,m,v,J)
+		# State: (n,m,v,J)
 		else if ( diffOrder =="unset" && n != "all" && m != "all" && V != "all" && J != "all" && mJ == "all" )
 		{
 			if ($colN==n && $colM==m && $colV==V && $colJ==J) prob=prob+$colProb;
 		}
-		# State (n,m)
+		# State: (n,m)
 		else if ( diffOrder =="unset" && n != "all" && m != "all" && V == "all" && J == "all" && mJ == "all" )
 		{
 			if ($colN==n && $colM==m) prob=prob+$colProb;
 		}
-		# State (v,J,mJ)
+		#  State:  (diffOrder)
+		else if ( diffOrder != "unset" && V=="all" && J=="all" && mJ=="all" )
+		{
+			if($colDiffOrder==diffOrder) prob=prob+$colProb;
+		}
+		# State: (v,J,mJ)
 		else if ( diffOrder =="unset" && n == "all" && m == "all" && V != "all" && J != "all" && mJ != "all" )
 		{
 			if ($colV==V && $colJ==J && $colmJ==mJ) prob=prob+$colProb;
 		}
-		# State (J)
+		# State: (J)
 		else if ( diffOrder =="unset" && n == "all" && m == "all" && V == "all" && J != "all" && mJ == "all" )
 		{
 			if ($colJ==J) prob=prob+$colProb;
 		}
-		# All states (should give something very close to 1)
+		# State: all. Should give 1 probability
 		else if ( diffOrder =="unset" && n == "all" && m == "all" && V == "all" && J == "all" && mJ == "all" )
 		{
 			prob=prob+$colProb;
-		}
-		# State based on diffraction order 
-		else if ( diffOrder != "unset" )
-		{
-			if($colDiffOrder==diffOrder) prob=prob+$colProb;
 		}
 		# Give error if asking for a non implemented case 
 		else
