@@ -398,24 +398,24 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
    dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
    dvdu(4)=aux1(3)&
-      +(mb/(ma+mb))*dvdu_atomicA(1)*dcos(x(6))*dsin(x(5))&
-      +(mb/(ma+mb))*dvdu_atomicA(2)*dsin(x(6))*dsin(x(5))&
-      +(mb/(ma+mb))*dvdu_atomicA(3)*dcos(x(5))&
-      -(ma/(ma+mb))*dvdu_atomicB(1)*dcos(x(6))*dsin(x(5))&
-      -(ma/(ma+mb))*dvdu_atomicB(2)*dsin(x(6))*dsin(x(5))&
-      -(ma/(ma+mb))*dvdu_atomicB(3)*dcos(x(5))
+      +(mb/(ma+mb))*dvdu_atomicA(1)*dcos(r(6))*dsin(r(5))&
+      +(mb/(ma+mb))*dvdu_atomicA(2)*dsin(r(6))*dsin(r(5))&
+      +(mb/(ma+mb))*dvdu_atomicA(3)*dcos(r(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(1)*dcos(r(6))*dsin(r(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(2)*dsin(r(6))*dsin(r(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(3)*dcos(r(5))
    dvdu(5)=aux1(4)&
-      +(mb/(ma+mb))*x(4)*dvdu_atomicA(1)*dcos(x(6))*dcos(x(5))&
-      +(mb/(ma+mb))*x(4)*dvdu_atomicA(2)*dsin(x(6))*dcos(x(5))&
-      -(mb/(ma+mb))*x(4)*dvdu_atomicA(3)*dsin(x(5))&
-      -(ma/(ma+mb))*x(4)*dvdu_atomicB(1)*dcos(x(6))*dcos(x(5))&
-      -(ma/(ma+mb))*x(4)*dvdu_atomicB(2)*dsin(x(6))*dcos(x(5))&
-      +(ma/(ma+mb))*x(4)*dvdu_atomicB(3)*dsin(x(5))
+      +(mb/(ma+mb))*r(4)*dvdu_atomicA(1)*dcos(r(6))*dcos(r(5))&
+      +(mb/(ma+mb))*r(4)*dvdu_atomicA(2)*dsin(r(6))*dcos(r(5))&
+      -(mb/(ma+mb))*r(4)*dvdu_atomicA(3)*dsin(r(5))&
+      -(ma/(ma+mb))*r(4)*dvdu_atomicB(1)*dcos(r(6))*dcos(r(5))&
+      -(ma/(ma+mb))*r(4)*dvdu_atomicB(2)*dsin(r(6))*dcos(r(5))&
+      +(ma/(ma+mb))*r(4)*dvdu_atomicB(3)*dsin(r(5))
    dvdu(6)=aux1(5)&
-      -(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(1)*dsin(x(6))&
-      +(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(2)*dcos(x(6))&
-      +(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(1)*dsin(x(6))&
-      -(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(2)*dcos(x(6))
+      -(mb/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicA(1)*dsin(r(6))&
+      +(mb/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicA(2)*dcos(r(6))&
+      +(ma/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicB(1)*dsin(r(6))&
+      -(ma/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicB(2)*dcos(r(6))
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D
 !###########################################################

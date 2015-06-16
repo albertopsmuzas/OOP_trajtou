@@ -546,29 +546,46 @@ END FUNCTION recip2cart_SURFACE
 !# SUBROUTINE: PROJECT_UNITCELL #################################
 !################################################################
 !> @brief
-!! Projects 2D point into the C4v unit cell
+!! Projects 2D point into the C4v unit cell.
 !
 !> @warning
 !! - Input/output in cartesian coordinates (r)
+!! - Special care should be taken to project into the correct quadrant
+!!   of the cell.
 !----------------------------------------------------------------
-FUNCTION project_unitcell_SURFACE(surf,r)
-	IMPLICIT NONE
+function project_unitcell_SURFACE(surf,r) result(newR)
+	implicit none
 	! I/O variables
-	CLASS(Surface),INTENT(IN) :: surf
-	REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
+	class(Surface),intent(in):: surf
+	real(kind=8),dimension(2),intent(in):: r
+	! Dummy function output variable
+	real(kind=8),dimension(2):: newR
 	! Local variables
-   REAL(KIND=8),DIMENSION(2) :: project_unitcell_SURFACE
-	REAL(KIND=8), DIMENSION(2) :: aux
-	INTEGER :: i ! counters
+	real(kind=8),dimension(2):: center
+	! Parameters
+	character(len=*),parameter:: routinename='project_unitcell_SURFACE: '
 	! HEY, HO! LET'S GO !!! ----------------------
-   project_unitcell_SURFACE = surf%cart2surf(r)
-	FORALL (i=1:2)
-		aux(i)=dfloat(int(project_unitcell_SURFACE(i),8))
-		project_unitcell_SURFACE(i)=project_unitcell_SURFACE(i)-aux(i)
-	END FORALL
-   project_unitcell_SURFACE = surf%surf2cart(project_unitcell_SURFACE)
-	RETURN
-END FUNCTION project_unitcell_SURFACE
+   newR=surf%cart2surf( r )
+   if( surf%symmLabel=='p4mm' ) then
+      if( newR(1)>=0.d0 ) then
+         center(1)=dfloat( int( newR(1) ) )
+      else
+         center(1)=dfloat( int( newR(1) ) )-1.d0
+      endif
+      if( newR(2)>=0.d0 ) then
+         center(2)=dfloat( int( newR(2) ) )
+      else
+         center(2)=dfloat( int( newR(2) ) )-1.d0
+      endif
+   else
+      write(0,*) 'ERR '//routinename//'wallpaper symmetry not implemented'
+      write(0,*) 'Implemented ones: p4mm'
+      call exit(1)
+   endif
+   newR(:)=newR(:)-center(:)
+   newR(:)=surf%surf2cart( newR(:) )
+   return
+end function project_unitcell_SURFACE
 !################################################################
 ! SUBROUTINE: project_iwscell ###################################
 !################################################################
@@ -593,6 +610,7 @@ function project_iwscell_SURFACE(surf,x) result(r)
    ! HEY, HO! LET'S GO! ------------------
    ! Go to surface coordinates
    allocate(r(size(x)),source=x)
+   r(1:2)=surf%project_unitCell( r(1:2) )
    r(1:2)=surf%cart2surf( r(1:2) )
    ! ----------------------------------------------------------
    if( surf%symmLabel=='p4mm' ) then
@@ -603,7 +621,7 @@ function project_iwscell_SURFACE(surf,x) result(r)
          auxReal=r(1)
          r(1)=r(2)
          r(2)=1.d0-auxReal
-         if( size(r)==6 ) r(6)=3.d0*pi/2.d0+r(6)
+         if( size(r)==6 ) r(6)=r(6)-pi/2.d0
       elseif( r(1)>0.5d0 .and. r(2)<r(1) ) then ! sector IV
          auxReal=r(1)
          r(1)=1.d0-r(2)
@@ -612,7 +630,7 @@ function project_iwscell_SURFACE(surf,x) result(r)
       elseif( r(1)>0.5d0 ) then ! sector V
          r(1)=1.d0-r(1)
          r(2)=1.d0-r(2)
-         if( size(r)==6 ) r(6)=pi+r(6)
+         if( size(r)==6 ) r(6)=r(6)-pi
       elseif( r(1)<=0.5d0 .and. r(2)>1.d0-r(1) ) then ! sector VI
          r(2)=1.d0-r(2)
          if( size(r)==6 ) r(6)=-r(6)
@@ -620,7 +638,7 @@ function project_iwscell_SURFACE(surf,x) result(r)
          auxReal=r(1)
          r(1)=1.d0-r(2)
          r(2)=auxReal
-         if( size(r)==6 ) r(6)=pi/2.d0+r(6)
+         if( size(r)==6 ) r(6)=r(6)-3.d0*pi/2.d0
       elseif( r(1)<=0.5d0 .and. r(2)>r(1) ) then ! sector VIII
          auxReal=r(1)
          r(1)=r(2)

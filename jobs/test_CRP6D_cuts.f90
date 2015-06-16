@@ -65,6 +65,23 @@ r=[-1.d0,-1.d0,3.77945226577d0,1.42d0,pi/2.d0,0.d0]
 call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z2.hel.dat")
 r=[-1.d0,-1.d0,1.88972613289d0,1.42d0,pi/2.d0,0.d0]
 call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z1.hel.dat")
+! crp for tilted
+r=[-1.d0,-1.d0,13.6060281568d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z7.2.tilt.dat")
+r=[-1.d0,-1.d0,13.0391103169d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z6.9.tilt.dat")
+r=[-1.d0,-1.d0,11.3383567973d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z6.tilt.dat")
+r=[-1.d0,-1.d0,9.44863066443d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z5.tilt.dat")
+r=[-1.d0,-1.d0,7.55890453154d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z4.tilt.dat")
+r=[-1.d0,-1.d0,5.66917839866d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z3.tilt.dat")
+r=[-1.d0,-1.d0,3.77945226577d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z2.tilt.dat")
+r=[-1.d0,-1.d0,1.88972613289d0,1.42d0,pi/2.d0,pi/6.d0]
+call thispes%plot_xyMap(init_point=r,nxpoints=100,nypoints=100,Lx=ucell+2.d0,Ly=ucell+2.d0,filename="xycut_Z1.tilt.dat")
 
 call verbose_write("****************** RUN TIME ***************************")
 call verbose_write('',"User time: ",real(timearr(1),kind=8))

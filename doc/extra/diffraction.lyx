@@ -7,6 +7,8 @@
 \usepackage{dsfont}
 \usepackage{bbold}
 \usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{mathtools}
 \end_preamble
 \use_default_options true
 \maintain_unincluded_children false
@@ -3024,7 +3026,7 @@ There are three of such special cases:
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3468,7 +3470,8 @@ elements and their transposes
 \begin_inset Formula $\delta_{\gamma}^{ab}$
 \end_inset
 
- score function
+ score function and equivalence classes of operators depending of surface
+ boundaries
 \end_layout
 
 \begin_layout Standard
@@ -3592,7 +3595,7 @@ Now, given a generator element
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -3701,7 +3704,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h}{a\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{a}h^{2}$
 \end_inset
 
 
@@ -3713,7 +3716,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}-\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}h^{2}\left|\boldsymbol{a}-\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3725,7 +3728,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi\left|k\boldsymbol{a}-h\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}\left|k\boldsymbol{a}-h\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3769,7 +3772,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h}{b\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{b}h^{2}$
 \end_inset
 
 
@@ -3781,7 +3784,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}-\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}h^{2}\left|\boldsymbol{a}-\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3793,7 +3796,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi\left|h\boldsymbol{a}-k\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}\left|h\boldsymbol{a}-k\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3837,7 +3840,7 @@ ab\cos\gamma & a^{2}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h}{a\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{a}h^{2}$
 \end_inset
 
 
@@ -3849,7 +3852,7 @@ ab\cos\gamma & a^{2}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}+\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}h^{2}\left|\boldsymbol{a}+\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3861,7 +3864,7 @@ ab\cos\gamma & a^{2}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi\left|k\boldsymbol{a}+h\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}\left|k\boldsymbol{a}+h\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3905,7 +3908,7 @@ ab\cos\gamma & b^{2}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h}{b\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{b}h^{2}$
 \end_inset
 
 
@@ -3917,7 +3920,7 @@ ab\cos\gamma & b^{2}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi h\left|\boldsymbol{a}+\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}h^{2}\left|\boldsymbol{a}+\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3929,7 +3932,7 @@ ab\cos\gamma & b^{2}
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\left(\frac{2\pi\left|h\boldsymbol{a}+k\boldsymbol{b}\right|}{\boldsymbol{\left|a\right|}\left|\boldsymbol{b}\right|\sin\gamma}\right)^{2}$
+\begin_inset Formula $G_{ab}\left|h\boldsymbol{a}+k\boldsymbol{b}\right|^{2}$
 \end_inset
 
 
@@ -3956,15 +3959,15 @@ name "tab:General-natural-order"
 \end_inset
 
 General natural order spliting in operators acting on the same generator
- element 
+ element with 
+\begin_inset Formula $G_{x}=\left(\frac{2\pi}{x\sin\gamma}\right)^{2}$
+\end_inset
+
+, 
 \end_layout
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Plain Layout
 
 \end_layout
 
@@ -3978,13 +3981,15 @@ General natural order spliting in operators acting on the same generator
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
-<lyxtabular version="3" rows="3" columns="3">
+<lyxtabular version="3" rows="3" columns="5">
 <features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -4010,6 +4015,30 @@ status collapsed
 
 , 
 \begin_inset Formula $a=b$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\gamma}^{aa}\left(\omega_{h0}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\gamma}^{aa}\left(\omega_{hh}\right)$
 \end_inset
 
 
@@ -4061,11 +4090,35 @@ status collapsed
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}\left|\boldsymbol{u}_{a}-\boldsymbol{u}_{b}\right|^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\frac{4\pi^{2}}{a^{2}\sin^{2}\gamma}\left[h^{2}+k^{2}-2hk\cos\gamma\right]$
+\begin_inset Formula $G\left|h\boldsymbol{u}_{a}-k\boldsymbol{u}_{b}\right|^{2}$
 \end_inset
 
 
@@ -4105,11 +4158,35 @@ status collapsed
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}\left|\boldsymbol{u}_{a}+\boldsymbol{u}_{b}\right|^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\frac{4\pi^{2}}{a^{2}\sin^{2}\gamma}\left[h^{2}+k^{2}+2hk\cos\gamma\right]$
+\begin_inset Formula $G\left|h\boldsymbol{u}_{a}+k\boldsymbol{u}_{b}\right|^{2}$
 \end_inset
 
 
@@ -4129,9 +4206,28 @@ status collapsed
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:aa gamma"
+
+\end_inset
+
 General natural order spliting in operators acting on the same generator
  element with boundary 
 \begin_inset Formula $a=b$
+\end_inset
+
+, 
+\begin_inset Formula $G=\left(\frac{2\pi}{a\sin\gamma}\right)^{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\boldsymbol{u}_{x}=\frac{1}{|\boldsymbol{x}|}\cdot\boldsymbol{x}$
+\end_inset
+
+.
+ It exists a new degeneracy between operator classes because 
+\begin_inset Formula $\left|h\boldsymbol{u}_{a}\pm k\boldsymbol{u}_{b}\right|=\left|k\boldsymbol{u}_{a}\pm h\boldsymbol{u}_{b}\right|$
 \end_inset
 
 
@@ -4157,8 +4253,10 @@ status collapsed
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
-<lyxtabular version="3" rows="3" columns="3">
+<lyxtabular version="3" rows="3" columns="5">
 <features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -4184,6 +4282,30 @@ status collapsed
 
 , 
 \begin_inset Formula $\gamma=\frac{\pi}{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\gamma}^{ab}\left(\omega_{h0}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\gamma}^{ab}\left(\omega_{hh}\right)$
 \end_inset
 
 
@@ -4235,11 +4357,35 @@ status collapsed
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G_{a}h^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G_{ab}h^{2}\left(a^{2}+b^{2}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $4\pi^{2}\left[\frac{h^{2}}{a^{2}}+\frac{k^{2}}{b^{2}}\right]$
+\begin_inset Formula $G_{ab}\left(k^{2}a^{2}+h^{2}b^{2}\right)$
 \end_inset
 
 
@@ -4279,11 +4425,35 @@ status collapsed
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G_{b}h^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G_{ab}h^{2}\left(a^{2}+b^{2}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $4\pi^{2}\left[\frac{h^{2}}{b^{2}}+\frac{k^{2}}{a^{2}}\right]$
+\begin_inset Formula $G_{ab}\left(h^{2}a^{2}+k^{2}b^{2}\right)$
 \end_inset
 
 
@@ -4308,15 +4478,21 @@ General natural order spliting in operators acting on the same generator
 \begin_inset Formula $\gamma=\frac{\pi}{2}$
 \end_inset
 
+ and 
+\begin_inset Formula $G_{x}=\left(\frac{2\pi}{x}\right)^{2}$
+\end_inset
 
+.
+ It exists a new degeneracy between operator classes because it stands:
+ 
+\begin_inset Formula $\left(\gamma=\frac{\pi}{2}\right)\implies\left(\left|k\boldsymbol{a}\pm h\boldsymbol{b}\right|=\left|k\boldsymbol{a}\mp h\boldsymbol{b}\right|\right)$
+\end_inset
+
+ 
 \end_layout
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Plain Layout
 
 \end_layout
 
@@ -4335,8 +4511,10 @@ status collapsed
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
-<lyxtabular version="3" rows="2" columns="3">
+<lyxtabular version="3" rows="2" columns="5">
 <features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
@@ -4362,6 +4540,30 @@ status collapsed
 
 , 
 \begin_inset Formula $\left(a=b\right)\bigwedge\left(\gamma=\frac{\pi}{2}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{\pi}{2}}^{aa}\left(\omega_{h0}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{\pi}{2}}^{aa}\left(\omega_{hh}\right)$
 \end_inset
 
 
@@ -4411,11 +4613,35 @@ status collapsed
 
 \end_inset
 </cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
 <cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\frac{4\pi^{2}}{a^{2}}\left[h^{2}+k^{2}\right]$
+\begin_inset Formula $G\left(h^{2}+k^{2}\right)$
 \end_inset
 
 
@@ -4440,7 +4666,11 @@ General natural order spliting in operators acting on the same generator
 \begin_inset Formula $\left(a=b\right)\bigwedge\left(\gamma=\frac{\pi}{2}\right)$
 \end_inset
 
+ and 
+\begin_inset Formula $G=\left(\frac{2\pi}{a}\right)^{2}$
+\end_inset
 
+.
 \end_layout
 
 \end_inset
@@ -4457,43 +4687,581 @@ General natural order spliting in operators acting on the same generator
 
 \end_layout
 
+\begin_layout Subsection
+Hexagonal symmetry
+\end_layout
+
 \begin_layout Standard
-Using 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "tab:General-natural-order"
-
-\end_inset
-
-, we can order operator classes depending on the value of their characteristic
- 
-\begin_inset Formula $f_{\gamma}^{ab}$
-\end_inset
-
- function, which is the same as ordering them as a function of their diffraction
- order.
- We will assume that 
-\begin_inset Formula $h\ge k$
+When we have hexagonal symmetry our boundaries are: 
+\begin_inset Formula $\left(a=b\right)\bigwedge\left[\left(\gamma=\frac{\pi}{3}\right)\bigvee\left(\gamma=\frac{2}{3}\pi\right)\right]$
 \end_inset
 
 .
- We will see later that we can define any family of generator obeying this
- arbitrary statement:
-\begin_inset Formula 
-\[
-\begin{cases}
-\left(a=b\right)\bigwedge\left(\cos\gamma>0\right) & \implies\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]<\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]\\
-\left(a=b\right)\bigwedge\left(\cos\gamma<0\right) & \implies\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]<\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]
-\end{cases}
-\]
+ In such a case table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:aa gamma"
+
+\end_inset
+
+ reduces to: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="5">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[\mathcal{A}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}$
+\end_inset
+
+, 
+\begin_inset Formula $\left(a=b\right)\bigwedge\left(\gamma=\frac{\pi}{3}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{\pi}{3}}^{aa}\left(\omega_{h0}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{\pi}{3}}^{aa}\left(\omega_{hh}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{\pi}{3}}^{aa}\left(\omega_{hk}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\frac{8}{3a^{2}}\cdot\begin{pmatrix}2 & -1\\
+-1 & 2
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G\left(h^{2}+k^{2}-hk\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\frac{8}{3a^{2}}\cdot\begin{pmatrix}2 & 1\\
+1 & 2
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G\left(h^{2}+k^{2}+hk\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\begin_inset Newline newline
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="5">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\left[\mathcal{A}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\mathcal{A}^{T}M_{S}^{-1}\mathcal{A}$
+\end_inset
+
+, 
+\begin_inset Formula $\left(a=b\right)\bigwedge\left(\gamma=\frac{2}{3}\pi\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{2}{3}\pi}^{aa}\left(\omega_{h0}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{2}{3}\pi}^{aa}\left(\omega_{hh}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{\frac{2}{3}\pi}^{aa}\left(\omega_{hk}\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\frac{8}{3a^{2}}\cdot\begin{pmatrix}2 & 1\\
+1 & 2
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G\left(h^{2}+k^{2}+hk\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\color black
+\begin_inset Formula $\frac{8}{3a^{2}}\cdot\begin{pmatrix}2 & -1\\
+-1 & 2
+\end{pmatrix}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $Gh^{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $G\left(h^{2}+k^{2}-hk\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
 
 \end_inset
 
 
 \end_layout
 
-\begin_layout Subsection
-Union of generator, natural and surface degeneracies of fundamental operators.
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+General natural order spliting in operators acting on the same generator
+ element of hexagonal surface.
+ 
+\begin_inset Formula $G=\left(\frac{4\pi}{a\sqrt{3}}\right)^{2}$
+\end_inset
+
+.
+ Depending on how the initial unit cell was defined we interchange the behaviour
+ of 
+\color black
+
+\begin_inset Formula $\left[\hat{\mathbb{1}},\hat{\mathcal{N}}_{12},\hat{\mathcal{P},}\hat{\mathcal{P}}\hat{\mathcal{N}}_{12}\right]$
+\end_inset
+
+ and 
+\begin_inset Formula $\left[\hat{\mathcal{N}},\hat{\mathcal{N}}_{2},\hat{\mathcal{P}}\hat{\mathcal{N}},\hat{\mathcal{N}}\hat{\mathcal{P}}\right]$
+\end_inset
+
+ operators.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Numbers that can be defined as 
+\begin_inset Formula $s=h^{2}+k^{2}\pm hk$
+\end_inset
+
+ are called Löschian numbers.
+ So, if we normalice all possible distances (dividing by 
+\begin_inset Formula $G$
+\end_inset
+
+ ) for any given two points in an hexagonal lattice, their mutual square
+ distance should be a Löschian number.
+ A few first elements of this series are:
+
+\begin_inset Newline newline
+\end_inset
+
+
+\lang english
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+begin{multline}
+\end_layout
+
+\begin_layout Plain Layout
+
+L=
+\backslash
+{0,1,3,4,7,9,12,13,16,19,21,25,27,28,31,36,37,39,43,48,
+\backslash
+
+\backslash
+
+\end_layout
+
+\begin_layout Plain Layout
+
+49,52,57,61,63,64,67,73,75,76,79,81,84,91,93,97,100,103,
+\backslash
+
+\backslash
+    108,109,111,112,117,121,124,127,129,133,139,144,147,148,
+\backslash
+
+\backslash
+
+\end_layout
+
+\begin_layout Plain Layout
+
+151,156,157,163,169,171,172,175,181,183,189,192,...
+\backslash
+}
+\end_layout
+
+\begin_layout Plain Layout
+
+
+\backslash
+end{multline}
+\end_layout
+
+\end_inset
+
+ 
 \end_layout
 
 \end_body
