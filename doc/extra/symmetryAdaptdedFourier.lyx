@@ -177,7 +177,7 @@ A general Fourier series has the form:
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -336,14 +336,14 @@ where
 \begin_inset Formula $(F_{\mathbb{R}})$
 \end_inset
 
-, which is obtained adding the 
+, which is obtained adding the
 \emph on
-ad hoc 
+ 
 \emph default
 condition: 
 \begin_inset Formula 
 \begin{equation}
-C_{\boldsymbol{k}}^{*}=C_{-\boldsymbol{k}}\label{eq:real condition}
+\left(\forall\boldsymbol{k}\in\mathcal{V}\right)\left(C_{\boldsymbol{k}}^{*}=C_{-\boldsymbol{k}}\right)\label{eq:real condition}
 \end{equation}
 
 \end_inset
@@ -372,8 +372,12 @@ where
 \begin_inset Formula $\mathfrak{R}^{+}$
 \end_inset
 
- and 
+, 
 \begin_inset Formula $\mathfrak{R}^{-}$
+\end_inset
+
+ and 
+\begin_inset Formula $\left\{ \boldsymbol{0}\right\} $
 \end_inset
 
  are an arbitrary partition of 
@@ -383,7 +387,7 @@ where
  that holds:
 \begin_inset Formula 
 \[
-\left(\mathfrak{R}=\mathfrak{R}^{+}\bigcup\mathfrak{R}^{-}\right)\bigwedge\left[\left(\forall k\in\mathfrak{R}^{+}\right)\left(\exists q\in\mathfrak{R}^{-}\right)\,:\,k+q=0\right]
+\left(\forall\boldsymbol{k}\in\mathfrak{R}^{+}\right)\left(\exists\boldsymbol{q}\in\mathfrak{R}^{-}\right)\,:\,\boldsymbol{k}+\boldsymbol{q}=\boldsymbol{0}
 \]
 
 \end_inset
@@ -571,7 +575,7 @@ C_{\boldsymbol{k}}^{\ominus}=\left(C_{\boldsymbol{k}}-C_{\boldsymbol{k}}^{*}\rig
 
 \end_inset
 
-where
+where 
 \begin_inset Formula $\oplus$
 \end_inset
 
@@ -628,11 +632,7 @@ where
 \begin_inset Formula $D_{i}^{\Gamma}$
 \end_inset
 
- are a new set of coefficients that can be grouped with the old 
-\begin_inset Formula $C_{\boldsymbol{k}}$
-\end_inset
-
- ones, 
+ are a new set of coefficients uniquely determined, 
 \begin_inset Formula $F^{\Gamma}$
 \end_inset
 
@@ -653,8 +653,9 @@ It is easy to deduce the result for
 \begin_inset Formula 
 \[
 \begin{array}{c}
+\hat{\mathcal{P}}{}^{\Gamma}F_{\mathbb{R}}(\boldsymbol{x})=F_{\mathbb{R}}^{\Gamma}(\boldsymbol{x})=\frac{d_{\Gamma}}{g}\cdot\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}\underset{\forall\odot}{\sum}\overset{g}{\underset{i=1}{\sum}}C_{\boldsymbol{k}}^{\odot}\mathcal{X}^{\Gamma}(A_{i})\cdot\hat{\mathcal{A}}{}_{i}f_{\boldsymbol{k}}^{\odot}(\boldsymbol{x})=\underset{\boldsymbol{\forall k}\in\mathfrak{R}}{\sum}\underset{\forall\odot}{\sum}C_{\boldsymbol{k}}^{\odot}\overset{g}{\underset{i=1}{\sum}}\left[\frac{d_{\Gamma}}{g}\mathcal{X}^{\Gamma}(A_{i})\right]\cdot f_{\boldsymbol{k}}^{\odot}(A_{i}^{-1}\boldsymbol{x})\\
 F_{\mathbb{R}}^{\Gamma}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}F_{\mathbb{R}}(\boldsymbol{x})=\underset{\boldsymbol{\forall k}\in\mathfrak{R}^{+}}{\sum}\underset{\odot}{\sum}C_{\boldsymbol{k}}^{\odot}f_{\boldsymbol{k}}^{\Gamma,\odot}(\boldsymbol{x})\\
-f_{\boldsymbol{k}}^{\Gamma,\odot}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}f_{\boldsymbol{k}}^{\odot}(\boldsymbol{x})=\frac{d_{\Gamma}}{g}\cdot\overset{g}{\underset{i=1}{\sum}}\mathcal{X}^{\Gamma}(A_{i})\cdot f_{\boldsymbol{k}}^{\odot}(A_{i}^{-1}\boldsymbol{x})
+f_{\boldsymbol{k}}^{\Gamma,\odot}(\boldsymbol{x})=\hat{\mathcal{P}}{}^{\Gamma}f_{\boldsymbol{k}}^{\odot}(\boldsymbol{x})=\overset{g}{\underset{i=1}{\sum}}D_{i}^{\Gamma}f_{\boldsymbol{k}}^{\odot}(A_{i}^{-1}\boldsymbol{x})
 \end{array}
 \]
 
@@ -725,7 +726,7 @@ Particular properties:
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -845,7 +846,7 @@ status open
 
 \begin_inset Formula 
 \[
-F(\theta)=\underset{l\ge0}{\sum}\left[C_{k}^{+}\cos\left(\frac{2\pi}{a}\cdot l\theta\right)+C_{k}^{-}\sin\left(\frac{2\pi}{a}\cdot l\theta\right)\right]\,;\,F(\theta+a)=F(\theta)
+F(\theta)=\sum_{l\ge0}\left[C_{l}^{\oplus}\cos\left(\frac{2\pi}{a}\cdot l\theta\right)+C_{l}^{\ominus}\sin\left(\frac{2\pi}{a}\cdot l\theta\right)\right]\,;\,F(\theta+a)=F(\theta)
 \]
 
 \end_inset
@@ -863,7 +864,7 @@ It is worth noticing that if
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -983,7 +984,7 @@ status collapsed
 
 \begin_inset Formula 
 \[
-F(\theta)=\underset{l\ge0}{\sum}\left[C_{k}^{+}\cos\left(l\theta\right)+C_{k}^{-}\sin\left(l\theta\right)\right]\,;\,F(\theta+2\pi)=F(\theta)
+F(\theta)=\sum_{l\ge0}\left[C_{l}^{\oplus}\cos\left(l\theta\right)+C_{l}^{\ominus}\sin\left(l\theta\right)\right]=\sum_{l\ge0}\sum_{\forall\odot}C_{l}^{\odot}f_{l}^{\odot}\left(\theta\right)\,;\,F(\theta+2\pi)=F(\theta)
 \]
 
 \end_inset
@@ -1007,7 +1008,7 @@ Each
 placement H
 wide false
 sideways false
-status open
+status collapsed
 
 \begin_layout Plain Layout
 \align center
@@ -1915,18 +1916,41 @@ status collapsed
 \begin_layout Plain Layout
 \align center
 \begin_inset Tabular
-<lyxtabular version="3" rows="5" columns="1">
-<features rotate="0" booktabs="true" tabularvalignment="middle">
-<column alignment="left" valignment="top" width="0pt">
+<lyxtabular version="3" rows="6" columns="3">
+<features rotate="0" tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
-<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{A_{1}}(\theta)=\frac{\cos(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
-0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{2,6,10,14,...\}\\
-\cos\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
-\end{cases}$
+\begin_inset Formula $\Gamma$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{\Gamma,\oplus}\left(\theta\right)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $f_{l}^{\Gamma,\ominus}\left(\theta\right)$
 \end_inset
 
 
@@ -1936,14 +1960,35 @@ status collapsed
 </cell>
 </row>
 <row>
-<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{A_{2}}(\theta)=\frac{\sin(l\theta)}{2}\left(1+i^{l}\right)\rho_{l}=\begin{cases}
-0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{2}\setminus[0]_{4}\right)\iff l\in\{1,3,5,<7,...\}\bigcup\{2,6,10,14,...\}\\
-\sin\left(l\theta\right) & \iff l\in[0]_{4}\iff l\in\{0,4,8,12,...\}
-\end{cases}$
+\begin_inset Formula $A_{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\cos\left(l\theta\right)\iff l\in\left[0\right]_{4}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
 \end_inset
 
 
@@ -1953,14 +1998,35 @@ status collapsed
 </cell>
 </row>
 <row>
-<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{B_{1}}(\theta)=\frac{\cos(l\theta)}{2}\left(1-i^{l}\right)\rho_{l}=\begin{cases}
-0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{0,4,8,12,...\}\\
-\cos\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14,...\}
-\end{cases}$
+\begin_inset Formula $A_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sin\left(l\theta\right)\iff l\in\left[0\right]_{4}$
 \end_inset
 
 
@@ -1970,14 +2036,35 @@ status collapsed
 </cell>
 </row>
 <row>
-<cell alignment="left" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l}^{B_{2}}(\theta)=\frac{\sin(l\theta)}{2}\left(1-i^{l}\right)\rho_{l}=\begin{cases}
-0 & \iff\left(l\in[1]_{2}\right)\bigvee\left(l\in[0]_{4}\right)\iff l\in\{1,3,5,7,...\}\bigcup\{0,4,8,12,...\}\\
-\sin\left(l\theta\right) & \iff l\in[0]_{2}\setminus[0]_{4}\iff l\in\{2,6,10,14,...\}
-\end{cases}$
+\begin_inset Formula $B_{1}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\cos\left(l\theta\right)\iff l\in\left[0\right]_{2}\setminus\left[0\right]_{4}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
 \end_inset
 
 
@@ -1987,14 +2074,73 @@ status collapsed
 </cell>
 </row>
 <row>
-<cell alignment="left" valignment="top" topline="true" bottomline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $f_{l,\mathbb{R}}^{E}(\theta)=\left[C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta)\right]\rho_{l}=\begin{cases}
-0 & \iff l\in[1]_{2}\iff l\in\{1,3,5,7,...\}\\
-C_{l}^{\oplus}\cos(l\theta)+C_{l}^{\ominus}\sin(l\theta) & \iff l\in[0]_{2}\iff l\in\{0,2,4,6,...\}
-\end{cases}$
+\begin_inset Formula $B_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sin\left(l\theta\right)\iff l\in\left[0\right]_{2}\setminus\left[0\right]_{4}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $E$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\cos\left(l\theta\right)\iff l\in\left[1\right]_{2}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $\sin\left(l\theta\right)\iff l\in\left[1\right]_{2}$
 \end_inset
 
 
@@ -4693,7 +4839,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\cos\left(Ghx\right)\cos\left(Gky\right)+\cos\left(Gkx\right)\cos\left(Ghy\right)$
+\begin_inset Formula $\frac{1}{2}\left[\cos\left(Ghx\right)\cos\left(Gky\right)+\cos\left(Gkx\right)\cos\left(Ghy\right)\right]$
 \end_inset
 
 
@@ -4731,7 +4877,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\sin\left(Gkx\right)\sin\left(Ghy\right)-\sin\left(Ghx\right)\sin\left(Gky\right)$
+\begin_inset Formula $\frac{1}{2}\left[\sin\left(Gkx\right)\sin\left(Ghy\right)-\sin\left(Ghx\right)\sin\left(Gky\right)\right]$
 \end_inset
 
 
@@ -4769,7 +4915,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\cos\left(Ghx\right)\cos\left(Gky\right)-\cos\left(Gkx\right)\cos\left(Ghy\right)$
+\begin_inset Formula $\frac{1}{2}\left[\cos\left(Ghx\right)\cos\left(Gky\right)-\cos\left(Gkx\right)\cos\left(Ghy\right)\right]$
 \end_inset
 
 
@@ -4807,7 +4953,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\sin\left(Gkx\right)\sin\left(Ghy\right)+\sin\left(Ghx\right)\sin\left(Gky\right)$
+\begin_inset Formula $-\frac{1}{2}\left[\sin\left(Gkx\right)\sin\left(Ghy\right)+\sin\left(Ghx\right)\sin\left(Gky\right)\right]$
 \end_inset
 
 
