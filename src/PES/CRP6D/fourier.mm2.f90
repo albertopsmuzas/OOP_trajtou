@@ -20,13 +20,13 @@ IMPLICIT NONE
 !> @date ! type a date
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Termcalculator) :: term_A1
+TYPE,EXTENDS(Termcalculator) :: term_mm2
 PRIVATE
    ! some atributes
 CONTAINS
-   PROCEDURE,PUBLIC:: getvalue => termfou1d_MM2_A1
-   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_MM2_A1
-END TYPE term_A1
+   PROCEDURE,PUBLIC:: getvalue => termfou1d_MM2
+   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_MM2
+END TYPE term_mm2
 !///////////////////////////////////////////////////////////////////////////////
 ! TYPE: FOURIER1D_MM2
 !> @brief
@@ -34,12 +34,12 @@ END TYPE term_A1
 !-------------------------------------------------------------------------------
 TYPE,EXTENDS(FOURIER1D):: Fourier1d_MM2
    CONTAINS
-      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_MM2
+      PROCEDURE,PUBLIC :: initializeTerms => initializeTerms_FOURIER1D_MM2
 END TYPE FOURIER1D_MM2
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# SUBROUTINE: SET_IRREP_FOURIER1D_MM2 
+!# SUBROUTINE: initializeTerms_FOURIER1D_MM2
 !###########################################################
 !> @brief
 !! Sets irrep for this fourier series
@@ -48,57 +48,100 @@ CONTAINS
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SET_IRREP_FOURIER1D_MM2(this,irrep)
+SUBROUTINE initializeTerms_FOURIER1D_MM2(this)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourier1d_MM2),INTENT(INOUT):: this
-   CHARACTER(LEN=2),INTENT(IN) :: irrep
-   ! Local variables
-   INTEGER(KIND=4) :: i ! counters
    ! Run section
-   SELECT CASE(irrep)
-      CASE("A1")
-         ALLOCATE(Term_A1::this%term)
-         this%irrep=irrep
-         ALLOCATE(this%klist(this%n))
-         FORALL(i=1:this%n) this%klist(i)=(i-1)*2
-         
-      CASE DEFAULT
-         WRITE(0,*) "SET_IRREP_FOURIER1D_MM2 ERR: irrep used is not implemented or does not exist"
-         WRITE(0,*) "List of irreps implemented: A1"
-         CALL EXIT(1)
-   END SELECT
+   ALLOCATE(Term_mm2::this%term)
    RETURN
-END SUBROUTINE SET_IRREP_FOURIER1D_MM2
+END SUBROUTINE initializeTerms_FOURIER1D_MM2
 !###########################################################
 !# FUNCTION: termfou1d_MM2_A1
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_MM2_A1(this,kpoint,x)
+function termfou1d_MM2(this,kpoint,parity,irrep,x) result(answer)
    ! Initial declarations 
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
+   class(Term_mm2),intent(in):: this
+   integer(kind=4),intent(in):: kpoint
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   real(kind=8),intent(in):: x
+   ! Dummy out variable
+   real(kind=8):: answer
+   ! Parameters
+   character(len=*),parameter:: routinename='termfou1d_MM2: '
    ! Run section
-   termfou1d_MM2_A1=dcos(dfloat(kpoint)*x)
-   RETURN
-END FUNCTION termfou1d_MM2_A1
+   select case( irrep )
+   case('A1')
+      ! check KPOINT
+      select case( mod(kpoint,2)==1 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//'bad irrep'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! check parity
+      select case( parity )
+      case('+')
+         answer=dcos(dfloat(kpoint)*x)
+      case default
+         write(0,*) 'ERR '//routinename//'bad parity'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep not implemented'
+      call exit(1)
+   end select
+   return
+end function termfou1d_MM2
 !###########################################################
 !# FUNCTION: termfou1d_dx_MM2_A1
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx_MM2_A1(this,kpoint,x)
-   ! Initial declarations 
-   IMPLICIT NONE
+function termfou1d_dx_MM2(this,kpoint,parity,irrep,x) result(answer)
+   ! Initial declarations
+   implicit none
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
+   class(Term_mm2),intent(in):: this
+   integer(kind=4),intent(in):: kpoint
+   real(kind=8),intent(in):: x
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   ! Dummy out variable
+   real(kind=8):: answer
+   ! Parameters
+   character(len=*),parameter:: routinename='termfou1d_MM2: '
    ! Run section
-   termfou1d_dx_MM2_A1=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
-   RETURN
-END FUNCTION termfou1d_dx_MM2_A1
+   select case( irrep )
+   case('A1')
+      ! check KPOINT
+      select case( mod(kpoint,2)==1 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//'bad irrep'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! check parity
+      select case( parity )
+      case('+')
+         answer=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+      case default
+         write(0,*) 'ERR '//routinename//'bad parity'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep not implemented'
+      call exit(1)
+   end select
+   return
+end function termfou1d_dx_MM2
+
 END MODULE FOURIER1D_MM2_MOD

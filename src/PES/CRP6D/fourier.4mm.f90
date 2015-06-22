@@ -20,85 +20,117 @@ IMPLICIT NONE
 !> @date ! type a date
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Termcalculator) :: term_A1
+TYPE,EXTENDS(Termcalculator) :: term_4mm
 PRIVATE
    ! some atributes
 CONTAINS
-   PROCEDURE,PUBLIC:: getvalue => termfou1d_4mm_A1
-   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_4mm_A1
-END TYPE term_A1
+   PROCEDURE,PUBLIC:: getvalue => termfou1d_4mm
+   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_4mm
+END TYPE term_4mm
 !/////////////////////////////////////////////////
 ! TYPE: FOURIER1D_4MM
 !> @brief
 !! Class to store all information needed for a 1D REAL fourier interpolation
 !------------------------------------------------
-TYPE,EXTENDS(Fourier1d):: Fourier1d_4mm
-   CONTAINS
+type,extends(Fourier1d):: Fourier1d_4mm
+   contains
       ! Set block
-      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_4MM
-END TYPE FOURIER1D_4MM
+      procedure,public:: initializeTerms => initializeTerms_FOURIER1D_4MM
+end type Fourier1d_4mm
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# SUBROUTINE: SET_IRREP_FOURIER1D_4MM 
+!# SUBROUTINE: SET_IRREP_FOURIER1D_4MM
 !###########################################################
 !> @brief
 !! Sets irrep for this fourier series
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date May/2014
-!> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SET_IRREP_FOURIER1D_4MM(this,irrep)
-   ! Initial declarations   
-   IMPLICIT NONE
+subroutine initializeTerms_FOURIER1D_4MM(this)
+   ! Initial declarations
+   implicit none
    ! I/O variables
-   CLASS(Fourier1d_4mm),INTENT(INOUT):: this
-   CHARACTER(LEN=2),INTENT(IN) :: irrep
-   ! Local variables
-   INTEGER(KIND=4) :: i ! counters
+   class(Fourier1d_4mm),intent(inout):: this
    ! Run section
-   SELECT CASE(irrep)
-      CASE("A1")
-         ALLOCATE(Term_A1::this%term)
-         this%irrep=irrep
-         ALLOCATE(this%klist(this%n))
-         FORALL (i=1:this%n) this%klist(i)=(i-1)*4
-      CASE DEFAULT
-         WRITE(0,*) "SET_IRREP_FOURIER1D_4MM ERR: irrep used is not implemented or does not exist"
-         WRITE(0,*) "List of irreps implemented: A1"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END SUBROUTINE SET_IRREP_FOURIER1D_4MM
+   allocate(Term_4mm::this%term)
+   return
+end subroutine initializeTerms_FOURIER1D_4MM
 !###########################################################
-!# FUNCTION: termfou1d_4mm_A1
+!# FUNCTION: termfou1d_4mm
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_4mm_A1(this,kpoint,x)
+function termfou1d_4mm(this,kpoint,parity,irrep,x) result(realNum)
    ! Initial declarations 
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
+   class(Term_4mm),intent(in):: this
+   integer(kind=4),intent(in):: kpoint
+   real(kind=8),intent(in):: x
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   ! Dummy output variable
+   real(kind=8):: realNum
+   ! Parameters
+   character(len=*),parameter:: routinename='termfou1d_4mm: '
    ! Run section
-   termfou1d_4mm_A1=dcos(dfloat(kpoint)*x)
-   RETURN
-END FUNCTION termfou1d_4mm_A1
+   select case( irrep )
+   case('A1')
+      ! kpoint check
+      select case( mod(kpoint,4)/=0 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('+')
+         realNum=dcos(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep "'//irrep//'" not implemented yet'
+      write(0,*) 'Implemented ones: A1'
+      call exit(1)
+   end select
+
+   return
+end function termfou1d_4mm
 !###########################################################
 !# FUNCTION: termfou1d_dx_4mm_A1
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx_4mm_A1(this,kpoint,x)
+function termfou1d_dx_4mm(this,kpoint,parity,irrep,x) result(realNum)
    ! Initial declarations 
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
-   ! Run section
-   termfou1d_dx_4mm_A1=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
-   RETURN
-END FUNCTION termfou1d_dx_4mm_A1
+   class(Term_4mm),intent(in) :: this
+   integer(kind=4),intent(in) :: kpoint
+   real(kind=8),intent(in) :: x
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   ! Dummy output variable
+   real(kind=8):: realNum
+   ! Parameters
+   character(len=*),parameter:: routineName='termfou1d_dx_4mm: '
+    select case( irrep )
+   case('A1')
+      select case( parity )
+      case('+')
+         realNum=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep "'//irrep//'" not implemented yet'
+      write(0,*) 'Implemented ones: A1'
+      call exit(1)
+   end select
+
+   return
+end function termfou1d_dx_4mm
 END MODULE FOURIER1D_4MM_MOD

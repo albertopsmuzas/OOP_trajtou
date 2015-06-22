@@ -32,11 +32,11 @@ PRIVATE
    LOGICAL :: average_last=.FALSE.
    REAL(KIND=8) :: shift=0.D0
    CONTAINS
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getshift => getshift_TERMCALCULATOR
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getlastkpoint => getlastkpoint_TERMCALCULATOR
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getaveragelast => getaveragelast_TERMCALCULATOR
-      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getvalue 
-      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED :: getderiv 
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getshift => getshift_TERMCALCULATOR
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getlastkpoint => getlastkpoint_TERMCALCULATOR
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getaveragelast => getaveragelast_TERMCALCULATOR
+      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED:: getvalue
+      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED:: getderiv
 END TYPE Termcalculator
 !
 ABSTRACT INTERFACE
@@ -46,11 +46,13 @@ ABSTRACT INTERFACE
    !> @brief 
    !! Just an example that child objects should override
    !-----------------------------------------------------------
-   REAL(KIND=8) FUNCTION getvalue_termcalculator_example(this,kpoint,x) 
+   REAL(KIND=8) FUNCTION getvalue_termcalculator_example(this,kpoint,parity,irrep,x)
       IMPORT Termcalculator
       CLASS(Termcalculator),INTENT(IN):: this
-      INTEGER(KIND=4),INTENT(IN) :: kpoint
-      REAL(KIND=8),INTENT(IN) :: x
+      INTEGER(KIND=4),INTENT(IN):: kpoint
+      REAL(KIND=8),INTENT(IN):: x
+      character(len=1),intent(in):: parity
+      character(len=2),intent(in):: irrep
    END FUNCTION getvalue_termcalculator_example
    !-------------------------------------------------------------
 END INTERFACE
@@ -61,28 +63,35 @@ END INTERFACE
 !----------------------------------------------------------------------------
 TYPE,ABSTRACT,EXTENDS(Interpol1d):: FOURIER1D
    PRIVATE
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE,PUBLIC :: klist
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: coeff
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extracoeff
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: extrafuncs
-   CLASS(Termcalculator),ALLOCATABLE,PUBLIC :: term
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE,PUBLIC:: klist
+   character(len=1),dimension(:),allocatable,public:: parityList ! three posible values: "+" (par) ,"-" (odd) and "o" (both, average)
+   character(len=2),dimension(:),allocatable,public:: irrepList
+   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: coeff
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: extracoeff
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: extrafuncs
+   CLASS(Termcalculator),ALLOCATABLE,PUBLIC:: term
    CONTAINS
+      ! initialize block
+      procedure(initializeTerms_FOURIER1D),public,deferred:: initializeTerms
       ! get block
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getvalue => getvalue_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getderiv => getderiv_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: getklist => getklist_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getvalue => getvalue_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getderiv => getderiv_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getklist => getklist_FOURIER1D
+      procedure,public,non_overridable:: getParityList => getParityList_FOURIER1D
       ! Set block
-      PROCEDURE(SET_IRREP_FOURIER1D),PUBLIC,DEFERRED :: SET_IRREP 
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_AVERAGE_LASTKPOINT => SET_AVERAGE_LASTKPOINT_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_LASTKPOINT => SET_LASTKPOINT_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: SET_SHIFT => SET_SHIFT_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_AVERAGE_LASTKPOINT => SET_AVERAGE_LASTKPOINT_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_LASTKPOINT => SET_LASTKPOINT_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_SHIFT => SET_SHIFT_FOURIER1D
+      procedure,public,non_overridable:: setKlist => setKlist_FOURIER1D
+      procedure,public,non_overridable:: setParityList => setParityList_FOURIER1D
+      procedure,public,non_overridable:: setIrrepList => setIrrepList_FOURIER1D
       ! Tools
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: INTERPOL => INTERPOL_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: INTERPOL => INTERPOL_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D
       ! Plotting tools
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE :: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D
+      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
 END TYPE FOURIER1D
 ABSTRACT INTERFACE
    !###########################################################
@@ -92,11 +101,10 @@ ABSTRACT INTERFACE
    !! Sets irrep for this fourier series. Should be overriden by
    !! child non-abstract classes
    !-----------------------------------------------------------
-   SUBROUTINE SET_IRREP_FOURIER1D(this,irrep)
-      IMPORT Fourier1d
-      CLASS(FOURIER1D),INTENT(INOUT):: this
-      CHARACTER(LEN=2),INTENT(IN) :: irrep
-   END SUBROUTINE SET_IRREP_FOURIER1D
+   subroutine initializeTerms_FOURIER1D(this)
+      import Fourier1d
+      class(fourier1d),intent(inout):: this
+   end subroutine initializeTerms_FOURIER1D
 END INTERFACE
 !/////////////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -118,6 +126,23 @@ FUNCTION getklist_FOURIER1D(this)
    RETURN
 END FUNCTION getklist_FOURIER1D
 !###########################################################
+!# FUNCTION: getParitylist_FOURIER1D
+!###########################################################
+!> @brief
+!! Common get function. Gets parityList atribute
+!-----------------------------------------------------------
+function getParityList_FOURIER1D(this) result(charArray)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Fourier1d),intent(in):: this
+   ! Dummy output variable
+   character(len=1),dimension(:),allocatable:: charArray
+   ! Run section
+   allocate( charArray(size(this%ParityList)),source=this%parityList(:) )
+   return
+end function getParityList_FOURIER1D
+!###########################################################
 !# FUNCTION: getshift_TERMCALCULATOR 
 !###########################################################
 !> @brief 
@@ -132,6 +157,51 @@ REAL(KIND=8) FUNCTION getshift_TERMCALCULATOR(this)
    getshift_TERMCALCULATOR=this%shift
    RETURN
 END FUNCTION getshift_TERMCALCULATOR
+!###################################################################
+!# SUBROUTINE: setKlist_FOURIER1D
+!###################################################################
+!> @brief
+!! Common set subroutine. Sets Klist atribute of a FOURIER1D object
+!-------------------------------------------------------------------
+subroutine setKlist_FOURIER1D(this,kList)
+   implicit none
+   ! I/O variables
+   class(Fourier1d),intent(inout):: this
+   integer(kind=4),dimension(:):: kList
+   ! Run section
+   allocate( this%kList(size(kList)),source=kList(:) )
+   return
+end subroutine setKlist_FOURIER1D
+!###################################################################
+!# SUBROUTINE: setParityList_FOURIER1D
+!###################################################################
+!> @brief
+!! Common set subroutine. Sets parityList atribute of a FOURIER1D object
+!-------------------------------------------------------------------
+subroutine setParityList_FOURIER1D(this,parityList)
+   implicit none
+   ! I/O variables
+   class(Fourier1d),intent(inout):: this
+   character(len=1),dimension(:):: parityList
+   ! Run section
+   allocate( this%parityList(size(parityList)),source=parityList(:) )
+   return
+end subroutine setParityList_FOURIER1D
+!###################################################################
+!# SUBROUTINE: setIrrepList_FOURIER1D
+!###################################################################
+!> @brief
+!! Common set subroutine. Sets IrrepList atribute of a FOURIER1D object
+!-------------------------------------------------------------------
+subroutine setIrrepList_FOURIER1D(this,irrepList)
+   implicit none
+   ! I/O variables
+   class(Fourier1d),intent(inout):: this
+   character(len=2),dimension(:):: irrepList
+   ! Run section
+   allocate( this%irrepList(size(irrepList)),source=irrepList(:) )
+   return
+end subroutine setIrrepList_FOURIER1D
 !###########################################################
 !# SUBROUTINE: SET_SHIFT_FOURIER1D 
 !###########################################################
@@ -257,8 +327,8 @@ SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
    ALLOCATE(terms(this%n))
    ALLOCATE(terms_dx(this%n))
    DO i = 1, this%n
-      terms(i)=this%term%getvalue(this%klist(i),x)
-      terms_dx(i)=this%term%getderiv(this%klist(i),x)
+      terms(i)=this%term%getvalue( kpoint=this%kList(i),parity=this%parityList(i),irrep=this%irrepList(i),x=x )
+      terms_dx(i)=this%term%getderiv( kpoint=this%kList(i),parity=this%parityList(i),irrep=this%irrepList(i),x=x )
    END DO
    f(1)=dot_product(terms,this%coeff)
    dfdx(1)=dot_product(terms_dx,this%coeff)
@@ -324,7 +394,7 @@ SUBROUTINE INTERPOL_FOURIER1D(this)
    ALLOCATE(inv_terms(this%n,this%n))
    DO i = 1, this%n ! loop over eq for different points
       DO j = 1, this%n ! loop over coefficients
-         terms(i,j)=this%term%getvalue(this%klist(j),this%x(i))
+         terms(i,j)=this%term%getvalue( kpoint=this%kList(j),parity=this%parityList(j),irrep=this%irrepList(j),x=this%x(i))
       END DO
    END DO
    CALL INV_MTRX(this%n,terms,inv_terms)
@@ -373,7 +443,7 @@ REAL(KIND=8) FUNCTION getvalue_FOURIER1D(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=this%term%getvalue(this%klist(i),r)
+      terms(i)=this%term%getvalue( kpoint=this%kList(i),parity=this%parityList(i),irrep=this%irrepList(i),x=r)
    END DO
    getvalue_FOURIER1D=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
@@ -409,7 +479,7 @@ REAL(KIND=8) FUNCTION getderiv_FOURIER1D(this,x,shift)
    END SELECT
    ALLOCATE(terms(this%n))
    DO i = 1, this%n
-      terms(i)=this%term%getvalue(this%klist(i),r)
+      terms(i)=this%term%getvalue( kpoint=this%klist(i),parity=this%parityList(i),irrep=this%irrepList(i),x=r)
    END DO
    getderiv_FOURIER1D=dot_product(terms,this%coeff)
    DEALLOCATE(terms)
