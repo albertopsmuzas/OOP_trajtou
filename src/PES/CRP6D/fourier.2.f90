@@ -20,12 +20,12 @@ IMPLICIT NONE
 !> @date ! type a date
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Termcalculator) :: term_A
+TYPE,EXTENDS(Termcalculator) :: term_2
 PRIVATE
 CONTAINS
-   PROCEDURE,PUBLIC:: getvalue => termfou1d_2_A
-   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_2_A
-END TYPE term_A
+   PROCEDURE,PUBLIC:: getvalue => termfou1d_2
+   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_2
+END TYPE term_2
 !/////////////////////////////////////////////////
 ! TYPE: FOURIER1D_2
 !> @brief
@@ -34,120 +34,141 @@ END TYPE term_A
 TYPE,EXTENDS(Fourier1d):: Fourier1d_2
    CONTAINS
       ! Set block
-      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_2
+      PROCEDURE,PUBLIC :: initializeTerms => initializeTerms_FOURIER1D_2
 END TYPE FOURIER1D_2
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# SUBROUTINE: SET_IRREP_FOURIER1D_2 
+!# SUBROUTINE: initializeTerm_FOURIER1D_2
 !###########################################################
 !> @brief
-!! Sets irrep for this fourier series
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date May/2014
-!> @version 1.0
+!! Sets Term for this fourier series
 !-----------------------------------------------------------
-SUBROUTINE SET_IRREP_FOURIER1D_2(this,irrep)
+subroutine initializeTerms_FOURIER1D_2(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Fourier1d_2),INTENT(INOUT):: this
-   CHARACTER(LEN=2),INTENT(IN) :: irrep
-   ! Local variables
-   INTEGER(KIND=4) :: i ! counters
-   INTEGER(KIND=4) :: npar
+   class(Fourier1d_2),intent(inout):: this
    ! Run section
-   ALLOCATE(this%klist(this%n))
-   SELECT CASE(irrep)
-      CASE("A")
-         ALLOCATE(Term_A::this%term)
-         this%irrep=irrep
-         SELECT CASE(mod(this%n,2) == 0) 
-            CASE(.TRUE.) ! case is even
-               CALL this%SET_AVERAGE_LASTKPOINT(.TRUE.)
-               this%klist(1)=0
-               npar=(this%n-2)/2
-                DO i = 1, npar 
-                   this%klist(i+1)=2*i
-                   this%klist(i+1+npar)=-2*i
-                END DO
-                this%klist(this%n)=npar+1
-                CALL this%SET_LASTKPOINT(npar+1)
-            CASE(.FALSE.) ! case is odd
-               this%klist(1)=0
-               npar=(this%n-1)/2
-                DO i = 1, npar 
-                   this%klist(i+1)=2*i
-                   this%klist(i+1+npar)=-2*i
-                END DO
-                CALL this%SET_LASTKPOINT(npar)
-         END SELECT
-      CASE DEFAULT
-         WRITE(0,*) "SET_IRREP_FOURIER1D_2 ERR: irrep used is not implemented or does not exist"
-         WRITE(0,*) "List of irreps implemented: A"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END SUBROUTINE SET_IRREP_FOURIER1D_2
+   allocate( Term_2::this%term )
+   return
+end subroutine InitializeTerms_FOURIER1D_2
 !###########################################################
-!# FUNCTION: termfou1d_2_A1
+!# FUNCTION: termfou1d_2
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_2_A(this,kpoint,x)
+function termfou1d_2(this,kpoint,parity,irrep,x) result(answer)
    ! Initial declarations 
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Term_A),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
+   class(Term_2),intent(in):: this
+   integer(kind=4),intent(in):: kpoint
+   real(kind=8),intent(in):: x
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   ! Dummy output variable
+   real(kind=8):: answer
+   ! Parameters
+   character(len=*),parameter:: routinename='termfou_2: '
    ! Run section
-   SELECT CASE(this%getaveragelast() .AND. kpoint == this%getlastkpoint())
-      CASE(.TRUE.)
-         termfou1d_2_A=dcos(dfloat(kpoint)*x)+dsin(dfloat(kpoint)*x)
-      CASE(.FALSE.)
-         SELECT CASE(kpoint)
-            CASE(0)
-               termfou1d_2_A=1.D0
-            CASE(: -1)
-               termfou1d_2_A=dsin(dfloat(-kpoint)*x)
-            CASE(1 :)
-               termfou1d_2_A=dcos(dfloat(kpoint)*x)
-            CASE DEFAULT
-               WRITE(0,*) "Termfou1d_2_A ERR: Something went really wrong with kpoints of this interpolation"
-               CALL EXIT(1)
-         END SELECT
-   END SELECT
-   RETURN
-END FUNCTION termfou1d_2_A
+   select case( irrep )
+   case('A')
+      ! check parity
+      select case( parity )
+      case('+')
+         select case( mod(kpoint,2)==0 )
+         case(.true.) ! is par
+            answer=dcos(dfloat(kpoint)*x)
+         case(.false.) ! is odd
+            write(0,*) 'ERR '//routinename//'bad combination of parity and Kpoint'
+            call exit(1)
+         end select
+      case('-')
+         select case( mod(kpoint,2)==0 )
+         case(.true.) ! is par
+            answer=dsin(dfloat(kpoint)*x)
+         case(.false.) ! is odd
+            write(0,*) 'ERR '//routinename//'bad combination of parity and Kpoint'
+            call exit(1)
+         end select
+      case('o')
+         select case( mod(kpoint,2)==0 )
+         case(.true.) ! is par
+            answer=dsin(dfloat(kpoint)*x)+dcos(dfloat(kpoint)*x)
+         case(.false.) ! is odd
+            write(0,*) 'ERR '//routinename//'bad combination of parity and Kpoint'
+            call exit(1)
+         end select
+      case default
+         write(0,*) 'ERR '//routinename//'bad parity symbol'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep not implemented'
+      write(0,*) 'Implemented ones: A'
+      call exit(1)
+   end select
+
+   return
+end function termfou1d_2
 !###########################################################
-!# FUNCTION: termfou1d_dx_2_A1
+!# FUNCTION: termfou1d_dx_2
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx_2_A(this,kpoint,x)
+function termfou1d_dx_2(this,kpoint,parity,irrep,x) result(answer)
    ! Initial declarations 
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Term_A),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
+   class(Term_2),intent(in):: this
+   integer(kind=4),intent(in):: kpoint
+   real(kind=8),intent(in):: x
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   ! Dummy output variable
+   real(kind=8):: answer
+   ! Parameters
+   character(len=*),parameter:: routinename='termfou_2: '
    ! Run section
-   SELECT CASE(this%getaveragelast() .AND. kpoint == this%getlastkpoint())
-      CASE(.TRUE.)
-         termfou1d_dx_2_A=(-dsin(dfloat(kpoint)*x)+dcos(dfloat(kpoint)*x))*dfloat(kpoint)
-      CASE(.FALSE.)
-         SELECT CASE(kpoint)
-            CASE(0)
-               termfou1d_dx_2_A=0.D0
-            CASE(: -1)
-               termfou1d_dx_2_A=dfloat(-kpoint)*dcos(dfloat(-kpoint)*x)
-            CASE(1 :)
-               termfou1d_dx_2_A=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
-            CASE DEFAULT
-               WRITE(0,*) "Termfou1d_2_A ERR: Something went really wrong with kpoints of this interpolation"
-               CALL EXIT(1)
-         END SELECT
-   END SELECT
-   RETURN
-END FUNCTION termfou1d_dx_2_A
+   select case( irrep )
+   case('A')
+      ! check parity
+      select case( parity )
+      case('+')
+         select case( mod(kpoint,2)==0 )
+         case(.true.) ! kpoint is par
+            answer=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+         case(.false.) ! kpoint is odd
+            write(0,*) 'ERR '//routinename//'bad combination of parity and Kpoint'
+            call exit(1)
+         end select
+      case('-')
+         select case( mod(kpoint,2)==0 )
+         case(.true.) ! is par
+            answer=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
+         case(.false.) ! is odd
+            write(0,*) 'ERR '//routinename//'bad combination of parity and Kpoint'
+            call exit(1)
+         end select
+      case('o')
+         select case( mod(kpoint,2)==0 )
+         case(.true.) ! is par
+            answer=dfloat(kpoint)*( dcos(dfloat(kpoint)*x)-dsin(dfloat(kpoint)*x) )
+         case(.false.) ! is odd
+            write(0,*) 'ERR '//routinename//'bad combination of parity and Kpoint'
+            call exit(1)
+         end select
+      case default
+         write(0,*) 'ERR '//routinename//'bad parity symbol'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep not implemented'
+      write(0,*) 'Implemented ones: A'
+      call exit(1)
+   end select
+
+   return
+end function termfou1d_dx_2
 END MODULE FOURIER1D_2_MOD

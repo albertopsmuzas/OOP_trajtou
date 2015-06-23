@@ -26,18 +26,14 @@ IMPLICIT NONE
 !> @date May/2014 
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,ABSTRACT :: Termcalculator
-PRIVATE
-   INTEGER(KIND=4) :: lastkpoint
-   LOGICAL :: average_last=.FALSE.
-   REAL(KIND=8) :: shift=0.D0
-   CONTAINS
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getshift => getshift_TERMCALCULATOR
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getlastkpoint => getlastkpoint_TERMCALCULATOR
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getaveragelast => getaveragelast_TERMCALCULATOR
-      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED:: getvalue
-      PROCEDURE(getvalue_termcalculator_example),PUBLIC,DEFERRED:: getderiv
-END TYPE Termcalculator
+type,abstract:: Termcalculator
+private
+   real(kind=8):: shift=0.D0
+   contains
+      procedure,public,non_overridable:: getShift => getShift_TERMCALCULATOR
+      procedure(getvalue_termcalculator_example),public,deferred:: getvalue
+      procedure(getvalue_termcalculator_example),public,deferred:: getderiv
+end type Termcalculator
 !
 ABSTRACT INTERFACE
    !###########################################################
@@ -46,14 +42,15 @@ ABSTRACT INTERFACE
    !> @brief 
    !! Just an example that child objects should override
    !-----------------------------------------------------------
-   REAL(KIND=8) FUNCTION getvalue_termcalculator_example(this,kpoint,parity,irrep,x)
-      IMPORT Termcalculator
-      CLASS(Termcalculator),INTENT(IN):: this
-      INTEGER(KIND=4),INTENT(IN):: kpoint
-      REAL(KIND=8),INTENT(IN):: x
+   function getvalue_termcalculator_example(this,kpoint,parity,irrep,x) result(answer)
+      import Termcalculator
+      class(Termcalculator),intent(in):: this
+      integer(kind=4),intent(in):: kpoint
+      real(kind=8),intent(in):: x
       character(len=1),intent(in):: parity
       character(len=2),intent(in):: irrep
-   END FUNCTION getvalue_termcalculator_example
+      real(kind=8):: answer
+   end function getvalue_termcalculator_example
    !-------------------------------------------------------------
 END INTERFACE
 !/////////////////////////////////////////////////////////////////////////////
@@ -61,37 +58,36 @@ END INTERFACE
 !> @brief
 !! Class to store all information needed for a 1D REAL fourier interpolation
 !----------------------------------------------------------------------------
-TYPE,ABSTRACT,EXTENDS(Interpol1d):: FOURIER1D
-   PRIVATE
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE,PUBLIC:: klist
+type,abstract,extends(Interpol1d):: Fourier1d
+   ! public atributes
+   integer(kind=4),dimension(:),allocatable,public:: klist
    character(len=1),dimension(:),allocatable,public:: parityList ! three posible values: "+" (par) ,"-" (odd) and "o" (both, average)
    character(len=2),dimension(:),allocatable,public:: irrepList
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: coeff
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: extracoeff
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: extrafuncs
-   CLASS(Termcalculator),ALLOCATABLE,PUBLIC:: term
-   CONTAINS
+   class(Termcalculator),allocatable,public:: term
+   ! private atributes
+   real(kind=8),dimension(:),allocatable,private:: coeff
+   real(kind=8),dimension(:,:),allocatable,private:: extracoeff
+   real(kind=8),dimension(:,:),allocatable,private:: extrafuncs
+   contains
       ! initialize block
       procedure(initializeTerms_FOURIER1D),public,deferred:: initializeTerms
       ! get block
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getvalue => getvalue_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getderiv => getderiv_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getklist => getklist_FOURIER1D
+      procedure,public,non_overridable:: getValue => getvalue_FOURIER1D
+      procedure,public,non_overridable:: getDeriv => getderiv_FOURIER1D
+      procedure,public,non_overridable:: getKlist => getklist_FOURIER1D
       procedure,public,non_overridable:: getParityList => getParityList_FOURIER1D
-      ! Set block
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_AVERAGE_LASTKPOINT => SET_AVERAGE_LASTKPOINT_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_LASTKPOINT => SET_LASTKPOINT_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_SHIFT => SET_SHIFT_FOURIER1D
+      ! set block
+      procedure,public,non_overridable:: setShift => set_shift_FOURIER1D
       procedure,public,non_overridable:: setKlist => setKlist_FOURIER1D
       procedure,public,non_overridable:: setParityList => setParityList_FOURIER1D
       procedure,public,non_overridable:: setIrrepList => setIrrepList_FOURIER1D
-      ! Tools
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: INTERPOL => INTERPOL_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: ADD_MOREFUNCS => ADD_MORE_FUNCS_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: GET_ALLFUNCS_AND_DERIVS => GET_ALLFUNC_AND_DERIVS_FOURIER1D
-      ! Plotting tools
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: PLOTCYCLIC => PLOTCYCLIC_INTERPOL_FOURIER1D
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: PLOTCYCLIC_ALL => PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
+      ! tools
+      procedure,public,non_overridable:: interpol => interpol_FOURIER1D
+      procedure,public,non_overridable:: add_morefuncs => add_more_funcs_FOURIER1D
+      procedure,public,non_overridable:: get_allfuncs_and_derivs => get_allfunc_and_derivs_FOURIER1D
+      ! plotting tools
+      procedure,public,non_overridable:: plotCyclic => plotcyclic_interpol_FOURIER1D
+      procedure,public,non_overridable:: plotCyclic_all => plotcyclic_all_interpol_FOURIER1D
 END TYPE FOURIER1D
 ABSTRACT INTERFACE
    !###########################################################
@@ -218,68 +214,6 @@ SUBROUTINE SET_SHIFT_FOURIER1D(this,shift)
    this%term%shift=shift
    RETURN
 END SUBROUTINE SET_SHIFT_FOURIER1D
-!###########################################################
-!# FUNCTION: getaveragelast_TERMCALCULATOR 
-!###########################################################
-!> @brief 
-!! Common get function. Gets average_last atribute
-!-----------------------------------------------------------
-LOGICAL FUNCTION getaveragelast_TERMCALCULATOR(this) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Termcalculator),INTENT(IN):: this
-   ! Run section
-   getaveragelast_TERMCALCULATOR=this%average_last
-   RETURN
-END FUNCTION getaveragelast_TERMCALCULATOR
-!###########################################################
-!# FUNCTION: getlastkpoint_TERMCALCULATOR 
-!###########################################################
-!> @brief
-!! Common get functions. Gets lastkpoint atribute.
-!-----------------------------------------------------------
-INTEGER(KIND=4) FUNCTION getlastkpoint_TERMCALCULATOR(this) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Termcalculator),INTENT(IN):: this
-   ! Run section
-   getlastkpoint_TERMCALCULATOR=this%lastkpoint
-   RETURN
-END FUNCTION getlastkpoint_TERMCALCULATOR
-!###########################################################
-!# SUBROUTINE: SET_LASTKPOINT_FOURIER1D 
-!###########################################################
-!> @brief
-!! Common set function. Sets term%lastkpoint atribute
-!-----------------------------------------------------------
-SUBROUTINE SET_LASTKPOINT_FOURIER1D(this,lastkpoint)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier1d),INTENT(INOUT):: this
-   INTEGER(KIND=4),INTENT(IN) :: lastkpoint
-   ! Run section
-   this%term%lastkpoint=lastkpoint
-   RETURN
-END SUBROUTINE SET_LASTKPOINT_FOURIER1D
-!###########################################################
-!# SUBROUTINE: SET_AVERAGE_LASTKPOINT_FOURIER1D 
-!###########################################################
-!> @brief
-!! Common set function. Sets average_last_kpoint private atribute
-!-----------------------------------------------------------
-SUBROUTINE SET_AVERAGE_LASTKPOINT_FOURIER1D(this,bool)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier1d),INTENT(INOUT):: this
-   LOGICAL,INTENT(IN) :: bool
-   ! Run section
-   this%term%average_last=bool
-   RETURN
-END SUBROUTINE SET_AVERAGE_LASTKPOINT_FOURIER1D
 !###########################################################
 !# SUBROUTINE: GET_ALLFUNC_AND_DERIVS_FOURIER1D
 !###########################################################

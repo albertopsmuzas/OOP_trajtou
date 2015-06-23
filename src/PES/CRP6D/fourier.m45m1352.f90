@@ -8,7 +8,7 @@
 !> @warning
 !! - Includes FOURIER1D_mod in its scope
 !########################################################
-MODULE FOURIER1D_m45m1352_MOD
+MODULE FOURIER1D_m45m135_2_MOD
 USE FOURIER1D_MOD
 IMPLICIT NONE
 !/////////////////////////////////////////////////////////////////
@@ -20,26 +20,26 @@ IMPLICIT NONE
 !> @date ! type a date
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Termcalculator) :: term_A1
+TYPE,EXTENDS(Termcalculator) :: term_m45m135_2
 PRIVATE
    ! some atributes
 CONTAINS
-   PROCEDURE,PUBLIC:: getvalue => termfou1d_m45m1352_A1
-   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_m45m1352_A1
-END TYPE term_A1
+   PROCEDURE,PUBLIC:: getvalue => termfou1d_m45m135_2
+   PROCEDURE,PUBLIC:: getderiv => termfou1d_dx_m45m135_2
+END TYPE term_m45m135_2
 !///////////////////////////////////////////////////////////////////////////////
-! TYPE: FOURIER1D_m45m1352
+! TYPE: FOURIER1D_m45m135_2
 !> @brief
 !! Class to store all information needed for a 1D REAL fourier interpolation
 !-------------------------------------------------------------------------------
-TYPE,EXTENDS(FOURIER1D):: Fourier1d_m45m1352
+TYPE,EXTENDS(FOURIER1D):: Fourier1d_m45m135_2
    CONTAINS
-      PROCEDURE,PUBLIC :: SET_IRREP => SET_IRREP_FOURIER1D_m45m1352
-END TYPE FOURIER1D_m45m1352
+      PROCEDURE,PUBLIC :: initializeTerms => initializeTerms_FOURIER1D_m45m135_2
+END TYPE FOURIER1D_m45m135_2
 !//////////////////////////////////////////////////
 CONTAINS
 !###########################################################
-!# SUBROUTINE: SET_IRREP_FOURIER1D_m45m1352 
+!# SUBROUTINE: SET_IRREP_FOURIER1D_m45m135_2
 !###########################################################
 !> @brief
 !! Sets irrep for this fourier series
@@ -48,73 +48,116 @@ CONTAINS
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SET_IRREP_FOURIER1D_m45m1352(this,irrep)
+subroutine initializeTerms_FOURIER1D_m45m135_2(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Fourier1d_m45m1352),INTENT(INOUT):: this
-   CHARACTER(LEN=2),INTENT(IN) :: irrep
-   ! Local variables
-   INTEGER(KIND=4) :: i ! counters
+   class(Fourier1d_m45m135_2),intent(inout):: this
    ! Run section
-   SELECT CASE(irrep)
-      CASE("A1")
-         ALLOCATE(Term_A1::this%term)
-         this%irrep=irrep
-         ALLOCATE(this%klist(this%n))
-         FORALL(i=1:this%n) this%klist(i)=(i-1)*2
-         
-      CASE DEFAULT
-         WRITE(0,*) "SET_IRREP_FOURIER1D_m45m1352 ERR: irrep used is not implemented or does not exist"
-         WRITE(0,*) "List of irreps implemented: A1"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END SUBROUTINE SET_IRREP_FOURIER1D_m45m1352
+   allocate(Term_m45m135_2::this%term)
+   return
+end subroutine initializeTerms_FOURIER1D_m45m135_2
 !###########################################################
-!# FUNCTION: termfou1d_m45m1352_A1
+!# FUNCTION: termfou1d_m45m135_2_A1
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_m45m1352_A1(this,kpoint,x)
+function termfou1d_m45m135_2(this,kpoint,parity,irrep,x) result(answer)
    ! Initial declarations 
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
+   class(Term_m45m135_2),intent(in):: this
+   integer(kind=4),intent(in):: kpoint
+   real(kind=8),intent(in):: x
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   ! Dummy output variable
+   real(kind=8):: answer
+   ! Parameters
+   character(len=*),parameter:: routinename='termfou_M45M135_2: '
    ! Run section
-   SELECT CASE(mod(kpoint,4))
-      CASE(0)
-         termfou1d_m45m1352_A1=dcos(dfloat(kpoint)*x)
-      CASE(2)
-         termfou1d_m45m1352_A1=dsin(dfloat(kpoint)*x)
-      CASE DEFAULT
-         WRITE(0,*) "termfou1d_m45m1352_A1 ERR: wring kpoint"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END FUNCTION termfou1d_m45m1352_A1
+   select case( irrep )
+   case('A1')
+      select case( parity )
+      case('+')
+         select case( mod(kpoint,4) )
+         case(0)
+            answer=dcos(dfloat(kpoint)*x)
+         case default
+            write(0,*) "termfou1d_m45 ERR: incorrect Kpoint-parity combination"
+            call exit(1)
+         end select
+
+      case('-')
+         select case( mod(kpoint,4) )
+         case(2)
+            answer=dsin(dfloat(kpoint)*x)
+         case default
+            write(0,*) "termfou1d_m45 ERR: incorrect Kpoint-parity combination"
+            call exit(1)
+         end select
+
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep "'//irrep//'" not implemented yet'
+      write(0,*) 'Implemented ones: Ap'
+      call exit(1)
+   end select
+   return
+end function termfou1d_m45m135_2
 !###########################################################
-!# FUNCTION: termfou1d_dx_m45m1352_A1
+!# FUNCTION: termfou1d_dx_m45m135_2
 !###########################################################
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfou1d_dx_m45m1352_A1(this,kpoint,x)
+function termfou1d_dx_m45m135_2(this,kpoint,parity,irrep,x) result(answer)
    ! Initial declarations 
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Term_A1),INTENT(IN) :: this
-   INTEGER(KIND=4),INTENT(IN) :: kpoint
-   REAL(KIND=8),INTENT(IN) :: x
+   class(Term_m45m135_2),intent(in):: this
+   integer(kind=4),intent(in):: kpoint
+   real(kind=8),intent(in):: x
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   ! Dummy output variable
+   real(kind=8):: answer
+   ! Parameters
+   character(len=*),parameter:: routinename='termfou_dx_M45M135_2: '
    ! Run section
-   SELECT CASE(mod(kpoint,4))
-      CASE(0)
-         termfou1d_dx_m45m1352_A1=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
-      CASE(2)
-         termfou1d_dx_m45m1352_A1=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
-      CASE DEFAULT
-         WRITE(0,*) "termfou1d_m45m1352_A1 ERR: wring kpoint"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END FUNCTION termfou1d_dx_m45m1352_A1
-END MODULE FOURIER1D_m45m1352_MOD
+   select case( irrep )
+   case('A1')
+      select case( parity )
+      case('+')
+         select case( mod(kpoint,4) )
+         case(0)
+            answer=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+         case default
+            write(0,*) "termfou1d_m45 ERR: incorrect Kpoint-parity combination"
+            call exit(1)
+         end select
+
+      case('-')
+         select case( mod(kpoint,4) )
+         case(2)
+            answer=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
+         case default
+            write(0,*) "termfou1d_m45 ERR: incorrect Kpoint-parity combination"
+            call exit(1)
+         end select
+
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case default
+      write(0,*) 'ERR '//routinename//'irrep "'//irrep//'" not implemented yet'
+      write(0,*) 'Implemented ones: Ap'
+      call exit(1)
+   end select
+   return
+end function termfou1d_dx_m45m135_2
+END MODULE FOURIER1D_m45m135_2_MOD
+
