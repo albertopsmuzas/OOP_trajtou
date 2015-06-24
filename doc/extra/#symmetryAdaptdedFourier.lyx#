@@ -2052,7 +2052,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\cos\left(l\theta\right)\iff l\in\left[2\right]_{4}$
+\begin_inset Formula $\cos\left(l\theta\right)\iff l\in\left[0\right]_{2}\setminus\left[0\right]_{4}$
 \end_inset
 
 
@@ -2102,7 +2102,7 @@ status open
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\sin\left(l\theta\right)\iff l\in\left[2\right]_{4}$
+\begin_inset Formula $\sin\left(l\theta\right)\iff l\in\left[0\right]_{2}\setminus\left[0\right]_{4}$
 \end_inset
 
 
@@ -2234,7 +2234,7 @@ Details
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -2749,7 +2749,7 @@ Definition of
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -2954,7 +2954,7 @@ Therefore, we can build two Furier tables.
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3187,7 +3187,7 @@ and now, table based on choice 2:
 placement H
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
@@ -3328,12 +3328,19 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
+\begin_inset Formula 
+\begin{eqnarray*}
+0\\
+\begin{array}{cc}
 0 & \iff l\in[0]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[1]_{4}\\
-0 & \iff l\in[2]_{4}\\
-\cos(l\theta) & \iff l\in[3]_{4}
-\end{array}$
+\\
+\\
+\\
+\end{array}\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] &  & \iff l\in[1]_{4}\\
+0 &  & \iff l\in[2]_{4}\\
+\cos(l\theta) &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
@@ -3345,12 +3352,14 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
-0 & \iff l\in[0]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[1]_{4}\\
-0 & \iff l\in[2]_{4}\\
-\sin(l\theta) & \iff l\in[3]_{4}
-\end{array}$
+\begin_inset Formula 
+\begin{eqnarray*}
+0 &  & \iff l\in[0]_{4}\\
+\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] &  & \iff l\in[1]_{4}\\
+0 &  & \iff l\in[2]_{4}\\
+\sin(l\theta) &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
@@ -3376,12 +3385,14 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
-0 & \iff l\in[0]_{4}\\
-\cos(l\theta) & \iff l\in[1]_{4}\\
-0 & \iff l\in[2]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[3]_{4}
-\end{array}$
+\begin_inset Formula 
+\begin{eqnarray*}
+0 &  & \iff l\in[0]_{4}\\
+\cos(l\theta) &  & \iff l\in[1]_{4}\\
+0 &  & \iff l\in[2]_{4}\\
+\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
@@ -3393,12 +3404,14 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
-0 & \iff l\in[0]_{4}\\
-\sin(l\theta) & \iff l\in[1]_{4}\\
-0 & \iff l\in[2]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[3]_{4}
-\end{array}$
+\begin_inset Formula 
+\begin{eqnarray*}
+0 &  & \iff l\in[0]_{4}\\
+\sin(l\theta) &  & \iff l\in[1]_{4}\\
+0 &  & \iff l\in[2]_{4}\\
+\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
@@ -4477,12 +4490,14 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
-\cos(l\theta) & \iff l\in[0]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[1]_{4}\\
-0 & \iff l\in[2]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)-\sin(l\theta)\right] & \iff l\in[3]_{4}
-\end{array}$
+\begin_inset Formula 
+\begin{eqnarray*}
+\cos(l\theta) &  & \iff l\in[0]_{4}\\
+\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] &  & \iff l\in[1]_{4}\\
+0 &  & \iff l\in[2]_{4}\\
+\frac{1}{2}\left[\cos(l\theta)-\sin(l\theta)\right] &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
@@ -4494,12 +4509,14 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
-0 & \iff l\in[0]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[1]_{4}\\
-\cos(l\theta) & \iff l\in[2]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)-\sin(l\theta)\right] & \iff l\in[3]_{4}
-\end{array}$
+\begin_inset Formula 
+\begin{eqnarray*}
+0 &  & \iff l\in[0]_{4}\\
+\frac{1}{2}\left[\cos(l\theta)+\sin(l\theta)\right] &  & \iff l\in[1]_{4}\\
+\sin\left(l\theta\right) &  & \iff l\in[2]_{4}\\
+\frac{1}{2}\left[\cos(l\theta)-\sin(l\theta)\right] &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
@@ -4525,12 +4542,14 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
-0 & \iff l\in[0]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)-\sin(l\theta)\right] & \iff l\in[1]_{4}\\
-\cos(l\theta) & \iff l\in[2]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[3]_{4}
-\end{array}$
+\begin_inset Formula 
+\begin{eqnarray*}
+0 &  & \iff l\in[0]_{4}\\
+\frac{1}{2}\left[\cos\left(l\theta\right)-\sin(l\theta)\right] &  & \iff l\in[1]_{4}\\
+\cos(l\theta) &  & \iff l\in[2]_{4}\\
+\frac{1}{2}\left[\cos(l\theta)+\sin(l\theta)\right] &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
@@ -4542,12 +4561,14 @@ status collapsed
 \begin_inset Text
 
 \begin_layout Plain Layout
-\begin_inset Formula $\begin{array}{cc}
-\sin\left(l\theta\right) & \iff l\in[0]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)-\sin(l\theta)\right] & \iff l\in[1]_{4}\\
-0 & \iff l\in[2]_{4}\\
-\frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[3]_{4}
-\end{array}$
+\begin_inset Formula 
+\begin{eqnarray*}
+\sin\left(l\theta\right) &  & \iff l\in[0]_{4}\\
+\frac{1}{2}\left[\cos(l\theta)-\sin(l\theta)\right] &  & \iff l\in[1]_{4}\\
+0 &  & \iff l\in[2]_{4}\\
+\frac{1}{2}\left[\cos(l\theta)+\sin(l\theta)\right] &  & \iff l\in[3]_{4}
+\end{eqnarray*}
+
 \end_inset
 
 
