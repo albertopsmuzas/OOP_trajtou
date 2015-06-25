@@ -988,18 +988,22 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    CHARACTER(LEN=1),DIMENSION(:),ALLOCATABLE:: wyckoff_letters
    CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: cuts2d_files
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: thetablocks_data
+   type(TermsInfo),dimension(:),allocatable:: phiTerms
+   type(TermsInfo):: thetaTerms
    INTEGER(KIND=4):: n2dcuts
    INTEGER(KIND=4):: nthetablocks
+
    ! Lua specifications
    TYPE(flu_State):: conf
    INTEGER(KIND=4):: ierr
    INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table,dampfunc_table,param_table,extrapol_table
    INTEGER(KIND=4):: resize_table,wyckoff_table,inwyckoff_table,cut2d_table,files_table,kpoints_table
+   integer(kind=4):: phi_table,term_table
    INTEGER(KIND=4):: inkpoints_table
    ! Auxiliar, dummy variables
-   INTEGER(KIND=4):: auxint,auxint2
-   REAL(KIND=8):: auxreal
-   CHARACTER(LEN=1024):: auxstring
+   INTEGER(KIND=4):: auxInt,auxInt2
+   REAL(KIND=8):: auxReal
+   CHARACTER(LEN=1024):: auxString,auxString2
    TYPE(Length):: len
    ! Parameters
    CHARACTER(LEN=*),PARAMETER:: routinename="READ_CRP6D: "
@@ -1176,7 +1180,7 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='kind',val=wyckoff_letters(i))
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='n2dcuts',val=n2dcuts)
       ALLOCATE(cuts2d_files(n2dcuts))
-      nthetablocks=aot_table_length(L=conf,thandle=inwyckoff_table)-3
+      nthetablocks=aot_table_length(L=conf,thandle=inwyckoff_table)-6
       ALLOCATE(thetablocks_data(nthetablocks))
 #ifdef DEBUG
       CALL VERBOSE_WRITE(routinename,'Wyckoff Site number: ',i)
@@ -1184,7 +1188,8 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       CALL VERBOSE_WRITE(routinename,'Wyckoff number of cut2ds: ',n2dcuts)
       CALl VERBOSE_WRITE(routinename,'Wyckoff number of theta blocks: ',nthetablocks)
 #endif
-      DO j = 1, nthetablocks
+      allocate( phiTerms(nThetaBlocks) )
+      DO j = 1, nThetaBlocks
          CALL AOT_TABLE_OPEN(L=conf,parent=inwyckoff_table,thandle=cut2d_table,pos=j)
          CALL AOT_TABLE_OPEN(L=conf,parent=cut2d_table,thandle=files_table,key='files')
          thetablocks_data(j)=aot_table_length(L=conf,thandle=files_table)
@@ -1210,13 +1215,24 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
 #endif
          END DO
          CALL AOT_TABLE_CLOSE(L=conf,thandle=files_table)
+         call aot_table_open( L=conf,parent=cut2d_table,thandle=phi_table,key='phiFourierTerms' )
+         do k=1,thetaBlocks_data(j)
+            call aot_table_open( L=conf,parent=phi_table,thandle=term_table,pos=k )
+            call aot_get_val( L=conf,ErrCode=iErr,thendle=term_table,pos=1,val=auxString )
+            call aot_get_val( L=conf,ErrCode=iErr,thendle=term_table,pos=2,val=auxString2 )
+            call aot_get_val( L=conf,ErrCode=iErr,thendle=term_table,pos=3,val=auxInt )
+            call phiTerms(j)%addTerm( irrep=trim(auxString),parity=trim(auxString2),kpoint=auxInt )
+            call aot_table_close( L=conf,thandle=term_table )
+         enddo
+         call aot_table_close(L=conf,thandle=phi_table)
          CALL AOT_TABLE_CLOSE(L=conf,thandle=cut2d_table)
       END DO
-      CALL this%wyckoffsite(i)%INITIALIZE(mynumber=i,letter=wyckoff_letters(i),is_homonucl=this%is_homonucl,&
-                                          nphipoints=thetablocks_data(:),filenames=cuts2d_files(:))
+      CALL this%wyckoffsite(i)%INITIALIZE(mynumber=i,letter=wyckoff_letters(i),nphipoints=thetablocks_data(:),&
+                                          filenames=cuts2d_files(:),phiTerms=phiTerms,thetaTerms=thetaTerms)
       CALL AOT_TABLE_CLOSE(L=conf,thandle=inwyckoff_table)
-      DEALLOCATE(cuts2d_files)
-      DEALLOCATE(thetablocks_data)
+      deallocate(cuts2d_files)
+      deallocate(thetablocks_data)
+      deallocate(phiTerms)
    END DO
    CALL AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
    ! Get kpoints for Fourier interpolation

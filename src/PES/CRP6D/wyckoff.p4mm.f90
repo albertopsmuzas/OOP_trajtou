@@ -74,7 +74,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philist
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: thetalist
    CHARACTER(LEN=2) :: theta_irrep, phi_irrep
-   REAL(KIND=8) :: phi_shift
    CHARACTER(LEN=30),PARAMETER :: routinename="GET_V_AND_DERIVS_WYCKOFFP4MM: "
 #ifdef DEBUG
    TYPE(Angle),DIMENSION(:),ALLOCATABLE :: beta
@@ -90,8 +89,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    SELECT CASE(this%id)
       CASE("a" : "b")
          ALLOCATE(Fourier1d_4mm::phicut(this%nphicuts))
-         phi_irrep="A1"
-         phi_shift=0.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                ALLOCATE(Fourier1d_mm2::thetacut)
@@ -104,7 +101,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       CASE("c")
          ALLOCATE(Fourier1d_mm2::phicut(this%nphicuts))
          phi_irrep="A1"
-         phi_shift=0.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                ALLOCATE(Fourier1d_mm2::thetacut)
@@ -117,7 +113,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       CASE("f")
          ALLOCATE(Fourier1d_m45::phicut(this%nphicuts))
          !phi_irrep="Ap" ! should be decided later. There are special symmetries depending upon theta
-         phi_shift=0.D0
          SELECT CASE(this%is_homonucl)
             CASE(.TRUE.)
                ALLOCATE(Fourier1d_2::thetacut)
@@ -163,7 +158,6 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       CALL phicut(i)%READ(philist,f)
       CALL phicut(i)%ADD_MOREFUNCS(aux)
       CALL phicut(i)%SET_IRREP(phi_irrep)
-      CALL phicut(i)%SET_SHIFT(phi_shift)
       CALL phicut(i)%INTERPOL()
 #ifdef DEBUG
       CALL DEBUG_WRITE(routinename,"NEW PHICUT")

@@ -21,6 +21,19 @@ IMPLICIT NONE
 TYPE Fouklist
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: k
 END TYPE
+!//////////////////////////////////////////////////////////////
+! TTPE: TermsInfo
+!> @brief
+!! Used to store information of terms in a phiCut or a thetaCut
+!--------------------------------------------------------------
+type TermsInfo
+   character(len=2),dimension(:),allocatable,public:: irrepList
+   character(len=1),dimension(:),allocatable,public:: parityList
+   integer(kind=4),dimension(:),allocatable,public:: kpointList
+   contains
+      procedure,public:: addTerm => addTerm_TERMSINFO
+end type
+!--------------------------------------------------
 !//////////////////////////////////////////////////
 ! TYPE: Cut2d
 !> @brief
@@ -74,24 +87,31 @@ END TYPE Cut2d
 !!                     in which each phi interpolation is based
 !> 
 !---------------------------------------------------------------------------------------------------
-TYPE,ABSTRACT:: Wyckoffsitio
-   CHARACTER:: id
-   INTEGER(KIND=4):: mynumber
-   LOGICAL:: is_homonucl=.FALSE.
-   REAL(KIND=8):: x,y
-   INTEGER(KIND=4):: n2dcuts
-   INTEGER(KIND=4):: nphicuts
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: nphipoints
-   TYPE(Cut2d),DIMENSION(:),ALLOCATABLE:: zrcut
-   CONTAINS
+type,abstract:: WyckoffSitio
+   ! public atributes
+   character(len=1),public:: id
+   integer(kind=4),public:: mynumber
+   logical,public:: is_homonucl=.FALSE.
+   real(kind=8),public:: x,y
+   integer(kind=4),public:: n2dcuts
+   integer(kind=4),public:: nphicuts
+   integer(kind=4),dimension(:),allocatable,public:: nphipoints
+   type(Cut2d),dimension(:),allocatable,public:: zrcut
+   type(TermsInfo),dimension(:),allocatable:: phiTerms
+   type(TermsInfo):: thetaTerms
+   character(len=2),dimension(:,:),allocatable,public:: irrepList
+   character(len=1),dimension(:,:),allocatable,public:: parityList
+   integer(kind=4),dimension(:,:),allocatable,public:: kpointList
+
+   contains
       ! Initialization block
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: INITIALIZE => INITIALIZE_WYCKOFFSITIO
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ID => SET_ID_WYCKOFFSITIO
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
-      PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_MYNUMBER => SET_MYNUMBER_WYCKOFFSITIO
-      ! Interface procedures
-      PROCEDURE(GET_V_AND_DERIVS_WYCKOFFSITIO),PUBLIC,DEFERRED:: GET_V_AND_DERIVS
-END TYPE Wyckoffsitio
+      procedure,public,non_overridable:: INITIALIZE => INITIALIZE_WYCKOFFSITIO
+      procedure,public,non_overridable:: SET_ID => SET_ID_WYCKOFFSITIO
+      procedure,public,non_overridable:: SET_HOMONUCL => SET_HOMONUCL_WYCKOFFSITIO
+      procedure,public,non_overridable:: SET_MYNUMBER => SET_MYNUMBER_WYCKOFFSITIO
+      ! interface procedures
+      procedure(get_v_and_derivs_WYCKOFFSITIO),public,deferred:: GET_V_AND_DERIVS
+end type WyckoffSitio
 
 ABSTRACT INTERFACE
    !###########################################################
@@ -505,29 +525,30 @@ END SUBROUTINE INTERPOl_CUT2D
 !> @date 20/03/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INITIALIZE_WYCKOFFSITIO(this,nphipoints,filenames,letter,is_homonucl,mynumber)
+subroutine initialize_WYCKOFFSITIO(this,nphiPoints,fileNames,letter,myNumber,phiTerms,thetaTerms)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Wyckoffsitio),INTENT(INOUT):: this
-   INTEGER(KIND=4),DIMENSION(:),INTENT(IN):: nphipoints
-   CHARACTER(LEN=*),DIMENSION(:),INTENT(IN):: filenames
-   CHARACTER,INTENT(IN):: letter
-   LOGICAL,INTENT(IN):: is_homonucl
-   INTEGER(KIND=4),INTENT(IN):: mynumber
+   class(Wyckoffsitio),intent(inout):: this
+   integer(kind=4),dimension(:),intent(in):: nphipoints
+   character(len=*),dimension(:),intent(in):: filenames
+   character,intent(in):: letter
+   integer(kind=4),intent(in):: mynumber
+   type(TermsInfo),dimension(:):: phiTerms
+   type(TermsInfo):: thetaTerms
    ! Local variables
-   INTEGER(KIND=4):: i ! counters
+   integer(kind=4):: i ! counters
    ! Parameters 
-   CHARACTER(LEN=*),PARAMETER:: routinename="INITIALIZE_WYCKOFFSITIO: "
+   character(len=*),parameter:: routinename="INITIALIZE_WYCKOFFSITIO: "
    ! Run section
    this%mynumber=mynumber
-   this%is_homonucl=is_homonucl
    this%id=letter
    this%n2dcuts=sum(nphipoints(:))
    this%nphicuts=size(nphipoints(:))
-   ALLOCATE(this%zrcut(this%n2dcuts))
-   ALLOCATE(this%nphipoints(this%nphicuts))
-   this%nphipoints(:)=nphipoints(:)
+   allocate( this%zrcut(this%n2dcuts) )
+   allocate( this%nphipoints(this%nphicuts),source=nphipoints(:) )
+   allocate( this%phiTerms(size(phiTerms(:))),source=phiTerms(:) )
+   this%thetaTerms=thetaTerms
    SELECT CASE(this%n2dcuts==size(filenames(:)))
       CASE(.true.)
          ! do nothing
@@ -552,5 +573,52 @@ SUBROUTINE INITIALIZE_WYCKOFFSITIO(this,nphipoints,filenames,letter,is_homonucl,
    ! DEBUGGING PART
    RETURN
 END SUBROUTINE INITIALIZE_WYCKOFFSITIO
+!############################################################
+! SUBROUTINE: addTerm_TERMSINFO
+!############################################################
+!> @brief
+!! Adds a new term to the already existing ones
+!------------------------------------------------------------
+subroutine addTerm_TERMSINFO(this,irrep,parity,kpoint)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(TermsInfo),intent(inout):: this
+   character(len=2),intent(in):: irrep
+   character(len=1),intent(in):: parity
+   integer(kind=4),intent(in):: kpoint
+   ! Local variables
+   integer(kind=4):: n
+   character(len=2),dimension(:),allocatable:: auxIrrepList
+   character(len=1),dimension(:),allocatable:: auxParityList
+   integer(kind=4),dimension(:),allocatable::  auxKpointList
+
+   ! Run section
+   select case( allocated(this%kpointList) )
+   case(.true.)
+      n=size( this%kpointList(:) )
+      call move_alloc( from=this%kpointList,to=auxKpointList )
+      call move_alloc( from=this%irrepList,to=auxIrrepList )
+      call move_alloc( from=this%parityList,to=auxParityList )
+      allocate( this%kpointList(n+1) )
+      allocate( this%irrepList(n+1) )
+      allocate( this%ParityList(n+1) )
+      this%kpointList(1:n)=auxKpointList(:)
+      this%irrepList(1:n)=auxIrrepList(:)
+      this%parityList(1:n)=auxParityList(:)
+      this%kpointList(n+1)=kpoint
+      this%irrepList(n+1)=irrep
+      this%parityList(n+1)=parity
+
+   case(.false.)
+      allocate( this%kpointList(1) )
+      allocate( this%parityList(1) )
+      allocate( this%irrepList(1) )
+      this%kpointList(1)=kpoint
+      this%parityList(1)=parity
+      this%irrepList(1)=irrep
+   end select
+   return
+end subroutine addTerm_TERMSINFO
 
 END MODULE WYCKOFF_GENERIC_MOD
