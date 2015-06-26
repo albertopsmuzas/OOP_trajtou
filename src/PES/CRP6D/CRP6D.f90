@@ -16,7 +16,7 @@ use PES_MOD, only: PES
 use CRP3D_MOD, only: CRP3D
 use EXTRAPOL_TO_VACUUM_MOD, only: Vacuumpot
 use FOURIER_P4MM_MOD, only: Fourierp4mm
-use WYCKOFF_P4MM_MOD, only: WyckoffSitio, Wyckoffp4mm
+use WYCKOFF_P4MM_MOD, only: WyckoffSitio, Wyckoffp4mm,TermsInfo
 use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
 use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #if DEBUG
@@ -998,7 +998,7 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    INTEGER(KIND=4):: ierr
    INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table,dampfunc_table,param_table,extrapol_table
    INTEGER(KIND=4):: resize_table,wyckoff_table,inwyckoff_table,cut2d_table,files_table,kpoints_table
-   integer(kind=4):: phi_table,term_table
+   integer(kind=4):: phi_table,term_table,theta_table
    INTEGER(KIND=4):: inkpoints_table
    ! Auxiliar, dummy variables
    INTEGER(KIND=4):: auxInt,auxInt2
@@ -1182,11 +1182,24 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       ALLOCATE(cuts2d_files(n2dcuts))
       nthetablocks=aot_table_length(L=conf,thandle=inwyckoff_table)-6
       ALLOCATE(thetablocks_data(nthetablocks))
+      call aot_table_open(L=conf,parent=inwyckoff_table,thandle=theta_table,key='thetaFourierTerms')
+      do k=1,nThetaBlocks
+         call aot_table_open( L=conf,parent=theta_table,thandle=term_table,pos=k )
+         call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=1,val=auxString  )
+         call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=2,val=auxString2 )
+         call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=3,val=auxInt     )
+         call thetaTerms%addTerm( irrep=trim(auxString),parity=trim(auxString2),kpoint=auxInt )
+         call aot_table_close( L=conf,thandle=term_table )
+      enddo
+      call aot_table_close(L=conf,thandle=theta_table)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,'Wyckoff Site number: ',i)
-      CALL VERBOSE_WRITE(routinename,'Wyckoff Letter: '//trim(wyckoff_letters(i)))
-      CALL VERBOSE_WRITE(routinename,'Wyckoff number of cut2ds: ',n2dcuts)
-      CALl VERBOSE_WRITE(routinename,'Wyckoff number of theta blocks: ',nthetablocks)
+      CALL VERBOSE_WRITE( routinename,'Wyckoff Site number: ',i)
+      CALL VERBOSE_WRITE( routinename,'Wyckoff Letter: '//trim(wyckoff_letters(i)))
+      CALL VERBOSE_WRITE( routinename,'Wyckoff number of cut2ds: ',n2dcuts)
+      CALl VERBOSE_WRITE( routinename,'Wyckoff number of theta blocks: ',nthetablocks)
+      call verbose_write( routinename,'Wyckoff theta terms irreps: ',thetaTerms%irrepList(:) )
+      call verbose_write( routinename,'Wyckoff theta terms parities: ',thetaTerms%parityList(:) )
+      call verbose_write( routinename,'Wyckoff theta terms kpoints: ',thetaTerms%kpointList(:) )
 #endif
       allocate( phiTerms(nThetaBlocks) )
       DO j = 1, nThetaBlocks
@@ -1218,12 +1231,17 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          call aot_table_open( L=conf,parent=cut2d_table,thandle=phi_table,key='phiFourierTerms' )
          do k=1,thetaBlocks_data(j)
             call aot_table_open( L=conf,parent=phi_table,thandle=term_table,pos=k )
-            call aot_get_val( L=conf,ErrCode=iErr,thendle=term_table,pos=1,val=auxString )
-            call aot_get_val( L=conf,ErrCode=iErr,thendle=term_table,pos=2,val=auxString2 )
-            call aot_get_val( L=conf,ErrCode=iErr,thendle=term_table,pos=3,val=auxInt )
+            call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=1,val=auxString )
+            call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=2,val=auxString2 )
+            call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=3,val=auxInt )
             call phiTerms(j)%addTerm( irrep=trim(auxString),parity=trim(auxString2),kpoint=auxInt )
             call aot_table_close( L=conf,thandle=term_table )
          enddo
+#ifdef DEBUG
+         call verbose_write( routinename,'Wyckoff phi terms irreps: ',  phiTerms(j)%irrepList(:)  )
+         call verbose_write( routinename,'Wyckoff phi terms parities: ',phiTerms(j)%parityList(:) )
+         call verbose_write( routinename,'Wyckoff phi terms kpoints: ', phiTerms(j)%kpointList(:) )
+#endif
          call aot_table_close(L=conf,thandle=phi_table)
          CALL AOT_TABLE_CLOSE(L=conf,thandle=cut2d_table)
       END DO
@@ -1233,6 +1251,7 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       deallocate(cuts2d_files)
       deallocate(thetablocks_data)
       deallocate(phiTerms)
+      call thetaTerms%reboot()
    END DO
    CALL AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
    ! Get kpoints for Fourier interpolation

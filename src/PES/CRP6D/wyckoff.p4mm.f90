@@ -4,7 +4,7 @@
 !! Provides tools to interpolate through wyckoff sites belonging to
 !! p4mm wallpaper symmetry
 !##########################################################
-MODULE WYCKOFF_P4MM_MOD
+module WYCKOFF_P4MM_MOD
 ! Initial declarations
 use WYCKOFF_GENERIC_MOD
 use FOURIER1D_2_MOD
@@ -18,7 +18,7 @@ use FOURIER1D_E_MOD
 use DEBUG_MOD
 use UNITS_MOD
 #endif
-IMPLICIT NONE
+implicit none
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Wyckoffp4mm
 !> @brief
@@ -29,12 +29,12 @@ IMPLICIT NONE
 !> @date 20/03/2014 
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Wyckoffsitio) :: Wyckoffp4mm
-   CONTAINS
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_WYCKOFFP4MM
-END TYPE Wyckoffp4mm
+type,extends(Wyckoffsitio) :: Wyckoffp4mm
+   contains
+      procedure,public :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_WYCKOFFP4MM
+end type Wyckoffp4mm
 !/////////////////////////////////////////////////////////////////
-CONTAINS
+contains
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_WYCKOFFP4MM 
 !###########################################################
@@ -52,33 +52,33 @@ CONTAINS
 !> @date Apr/2014
 !> @version 1.2
 !-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
+subroutine GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Wyckoffp4mm),INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(4),INTENT(IN) ::x 
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(4),INTENT(OUT) :: dvdu
+   class(Wyckoffp4mm),intent(in) :: this
+   real(kind=8),dimension(4),intent(in) ::x 
+   real(kind=8),intent(out) :: v
+   real(kind=8),dimension(4),intent(out) :: dvdu
    ! Local variables
-   INTEGER(KIND=4) :: i,j,h ! counters
-   REAL(KIND=8) :: z,r,theta,phi
-   CLASS(Fourier1d),DIMENSION(:),ALLOCATABLE :: phicut
-   CLASS(Fourier1d),ALLOCATABLE :: thetacut
-   REAL(KIND=8) :: aux_theta
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: aux
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdz
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdr
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: dfdphi
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philist
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: thetalist
-   CHARACTER(LEN=2) :: theta_irrep, phi_irrep
-   CHARACTER(LEN=30),PARAMETER :: routinename="GET_V_AND_DERIVS_WYCKOFFP4MM: "
+   integer(kind=4) :: i,j,h ! counters
+   real(kind=8) :: z,r,theta,phi
+   class(Fourier1d),dimension(:),allocatable :: phicut
+   class(Fourier1d),allocatable :: thetacut
+   real(kind=8) :: aux_theta
+   real(kind=8),dimension(:,:),allocatable :: aux
+   real(kind=8),dimension(:),allocatable :: f
+   real(kind=8),dimension(:),allocatable :: dfdz
+   real(kind=8),dimension(:),allocatable :: dfdr
+   real(kind=8),dimension(:),allocatable :: dfdphi
+   real(kind=8),dimension(:),allocatable :: philist
+   real(kind=8),dimension(:),allocatable :: thetalist
+   character(len=2) :: theta_irrep, phi_irrep
+   character(len=30),parameter :: routinename="GET_V_AND_DERIVS_WYCKOFFP4MM: "
 #ifdef DEBUG
-   TYPE(Angle),DIMENSION(:),ALLOCATABLE :: beta
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: philistdeg
-   CHARACTER(LEN=18) :: filename
+   type(Angle),dimension(:),allocatable :: beta
+   real(kind=8),dimension(:),allocatable :: philistdeg
+   character(len=18) :: filename
 #endif
    ! Run section
    z=x(1)
@@ -86,185 +86,156 @@ SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    theta=x(3)
    phi=x(4)
    ! CONDITIONS: edit this part to include/edit symmetries
-   SELECT CASE(this%id)
-      CASE("a" : "b")
-         ALLOCATE(Fourier1d_4mm::phicut(this%nphicuts))
-         SELECT CASE(this%is_homonucl)
-            CASE(.TRUE.)
-               ALLOCATE(Fourier1d_mm2::thetacut)
-               theta_irrep="A1"
-            CASE(.FALSE.)
-               ALLOCATE(Fourier1d_m::thetacut)
-               theta_irrep="Ap"
-         END SELECT
+   select case( this%id )
+      case("a" : "b")
+         allocate( Fourier1d_4mm::phiCut(this%nphicuts) )
+         allocate( Fourier1d_mm2::thetaCut )
          
-      CASE("c")
-         ALLOCATE(Fourier1d_mm2::phicut(this%nphicuts))
-         phi_irrep="A1"
-         SELECT CASE(this%is_homonucl)
-            CASE(.TRUE.)
-               ALLOCATE(Fourier1d_mm2::thetacut)
-               theta_irrep="A1"
-            CASE(.FALSE.)
-               ALLOCATE(Fourier1d_m::thetacut)
-               theta_irrep="Ap"
-         END SELECT
+      case("c")
+         allocate( Fourier1d_mm2::phiCut(this%nphicuts) )
+         allocate( Fourier1d_mm2::thetaCut )
 
-      CASE("f")
-         ALLOCATE(Fourier1d_m45::phicut(this%nphicuts))
-         !phi_irrep="Ap" ! should be decided later. There are special symmetries depending upon theta
-         SELECT CASE(this%is_homonucl)
-            CASE(.TRUE.)
-               ALLOCATE(Fourier1d_2::thetacut)
-               theta_irrep="A"
-            CASE(.FALSE.)
-               ALLOCATE(Fourier1d_e::thetacut)
-               theta_irrep="A"
-         END SELECT
+      case("f")
+         allocate( Fourier1d_m45::phiCut(this%nphicuts) )
+         allocate( Fourier1d_2::thetaCut )
 
-      CASE DEFAULT
-         WRITE(0,*) "GET_V_AND_DERIVS_WYCKOFFP4MM: Unexpected error with Wyckoff id"
-         CALL EXIT(1)
-   END SELECT
+      case default
+         write(0,*) "GET_V_AND_DERIVS_WYCKOFFP4MM: Unexpected error with Wyckoff id"
+         call EXIT(1)
+   end select
    ! PHI INTERPOLATION ----------------------------------------------------
    h=0 ! initialize h
-   DO i = 1, this%nphicuts ! loop over specific phi cuts (each one for a different theta value) 
-      ALLOCATE(f(this%nphipoints(i)))
-      ALLOCATE(dfdr(this%nphipoints(i)))
-      ALLOCATE(dfdz(this%nphipoints(i)))
-      ALLOCATE(philist(this%nphipoints(i)))
-      ALLOCATE(aux(2,this%nphipoints(i)))
-      DO j = 1, this%nphipoints(i) ! loop over number of zrcuts inside
+   do i = 1, this%nphicuts ! loop over specific phi cuts (each one for a different theta value) 
+      allocate(f(this%nphipoints(i)))
+      allocate(dfdr(this%nphipoints(i)))
+      allocate(dfdz(this%nphipoints(i)))
+      allocate(philist(this%nphipoints(i)))
+      allocate(aux(2,this%nphipoints(i)))
+      do j = 1, this%nphipoints(i) ! loop over number of zrcuts inside
          h=h+1 ! numbering of zrcuts
          f(j)=this%zrcut(h)%interrz%getvalue((/r,z/)) ! storing potential at this site
          dfdr(j)=this%zrcut(h)%interrz%getderivx((/r,z/)) ! storing d/dr at this site
          dfdz(j)=this%zrcut(h)%interrz%getderivy((/r,z/)) ! storing d/dz at this site
          philist(j)=this%zrcut(h)%phi
          aux_theta=this%zrcut(h)%theta
-      END DO
-      SELECT CASE(this%id=="f" .AND. this%is_homonucl) ! "f" has special simmetry if theta=90 and we've a homonuclear molecule
-         CASE(.TRUE.)
-            SELECT CASE(aux_theta>=dacos(0.D0)-1.D-6 .AND. aux_theta<=dacos(0.D0)+1.D-6) ! check if theta is pi/2
-               CASE(.TRUE.)
-                  phi_irrep="A1" ! expanded symmetry m45 -> m45m1352
-               CASE(.FALSE.)
-                  phi_irrep="Ap"
-            END SELECT
-         CASE(.FALSE.)
-            ! do nothing
-      END SELECT
+      end do
       aux(1,:)=dfdz(:)
       aux(2,:)=dfdr(:)
-      CALL phicut(i)%READ(philist,f)
-      CALL phicut(i)%ADD_MOREFUNCS(aux)
-      CALL phicut(i)%SET_IRREP(phi_irrep)
-      CALL phicut(i)%INTERPOL()
+      call phiCut(i)%read(philist,f)
+      call phiCut(i)%add_morefuncs(aux)
+      call phiCut(i)%setKlist( this%phiTerms(i)%kpointList(:) )
+      call phiCut(i)%setParityList( this%phiTerms(i)%parityList(:) )
+      call phiCut(i)%setIrrepList( this%phiTerms(i)%irrepList(:) )
+      call phiCut(i)%initializeTerms()
+      call phiCut(i)%interpol()
 #ifdef DEBUG
-      CALL DEBUG_WRITE(routinename,"NEW PHICUT")
-      CALL DEBUG_WRITE(routinename,"For theta: ",this%zrcut(h)%theta)
-      CALL DEBUG_WRITE(routinename,"Is homonuclear: ",this%is_homonucl)
-      ALLOCATE(beta(size(philist)))
-      ALLOCATE(philistdeg(size(philist)))
-      DO j = 1, size(philist)
-         CALL beta(j)%READ(philist(j),"rad")
-         CALL beta(j)%TO_DEG()
+      call DEBUG_WRITE(routinename,"NEW PHICUT")
+      call DEBUG_WRITE(routinename,"For theta: ",this%zrcut(h)%theta)
+      call DEBUG_WRITE(routinename,"Is homonuclear: ",this%is_homonucl)
+      allocate(beta(size(philist)))
+      allocate(philistdeg(size(philist)))
+      do j = 1, size(philist)
+         call beta(j)%READ(philist(j),"rad")
+         call beta(j)%TO_DEG()
          philistdeg(j)=beta(j)%getvalue()
-      END DO
-      CALL DEBUG_WRITE(routinename,"At Phi: (deg)",philistdeg)
-      CALL DEBUG_WRITE(routinename,"At Phi: (rad)",philist)
-      CALL DEBUG_WRITE(routinename,"Irrep: ",phi_irrep)
-      CALL DEBUG_WRITE(routinename,"Klist: ",phicut(i)%getklist())
-      CALL DEBUG_WRITE(routinename,"f: ",f)
-      CALL DEBUG_WRITE(routinename,"dfdz: ",aux(1,:))
-      CALL DEBUG_WRITE(routinename,"dfdr: ",aux(2,:))
-      SELECT CASE(get_debugmode())
-         CASE(.TRUE.)
-            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.raw" 
-            CALL phicut(i)%PLOTDATA(filename)
-            WRITE(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
-            CALL phicut(i)%PLOTCYCLIC_ALL(300,filename)
-         CASE(.FALSE.)
+      end do
+      call DEBUG_WRITE(routinename,"At Phi: (deg)",philistdeg)
+      call DEBUG_WRITE(routinename,"At Phi: (rad)",philist)
+      call DEBUG_WRITE(routinename,"Klist: ",phicut(i)%getklist())
+      call DEBUG_WRITE(routinename,"f: ",f)
+      call DEBUG_WRITE(routinename,"dfdz: ",aux(1,:))
+      call DEBUG_WRITE(routinename,"dfdr: ",aux(2,:))
+      select case(get_debugmode())
+         case(.true.)
+            write(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.raw" 
+            call phicut(i)%PLOTDATA(filename)
+            write(filename,'(I1,A1,I1,A1,A14)') this%mynumber,"-",i,"-","wyckoffphi.cyc" 
+            call phicut(i)%PLOTCYCLIC_ALL(300,filename)
+         case(.false.)
             ! do nothing
-      END SELECT
-      DEALLOCATE(beta)
-      DEALLOCATE(philistdeg)
+      end select
+      deallocate(beta)
+      deallocate(philistdeg)
 #endif
-      DEALLOCATE(philist)
-      DEALLOCATE(f)
-      DEALLOCATE(dfdr)
-      DEALLOCATE(dfdz)
-      DEALLOCATE(aux)
-   END DO
+      deallocate(philist)
+      deallocate(f)
+      deallocate(dfdr)
+      deallocate(dfdz)
+      deallocate(aux)
+   end do
    ! THETA INTERPOLATION --------------------------
-   ALLOCATE(thetalist(this%nphicuts))
-   ALLOCATE(f(this%nphicuts))
-   ALLOCATE(dfdz(this%nphicuts))
-   ALLOCATE(dfdr(this%nphicuts))
-   ALLOCATE(dfdphi(this%nphicuts))
+   allocate(thetalist(this%nphicuts))
+   allocate(f(this%nphicuts))
+   allocate(dfdz(this%nphicuts))
+   allocate(dfdr(this%nphicuts))
+   allocate(dfdphi(this%nphicuts))
    h=0 ! reboot h
-   DO i = 1, this%nphicuts
-      DO j = 1, this%nphipoints(i)
+   do i = 1, this%nphicuts
+      do j = 1, this%nphipoints(i)
          h=h+1 
          thetalist(i)=this%zrcut(h)%theta 
-      END DO
-      ALLOCATE(aux(2,3))
-      CALL phicut(i)%GET_ALLFUNCS_AND_DERIVS(phi,aux(1,:),aux(2,:))
+      end do
+      allocate(aux(2,3))
+      call phicut(i)%GET_ALLFUNCS_AND_DERIVS(phi,aux(1,:),aux(2,:))
       f(i)=aux(1,1)
       dfdz(i)=aux(1,2)
       dfdr(i)=aux(1,3)
       dfdphi(i)=aux(2,1)
-      DEALLOCATE(aux)
-   END DO
-   ALLOCATE(aux(3,this%nphicuts))
+      deallocate(aux)
+   end do
+   allocate(aux(3,this%nphicuts))
    aux(1,:)=dfdz(:)
    aux(2,:)=dfdr(:)
    aux(3,:)=dfdphi(:)
-   CALL thetacut%READ(thetalist,f)
-   CALL thetacut%ADD_MOREFUNCS(aux)
-   CALL thetacut%SET_IRREP(theta_irrep)
-   CALL thetacut%INTERPOL()
+   call thetaCut%read(thetalist,f)
+   call thetaCut%add_morefuncs(aux)
+   call thetaCut%setKlist     ( this%thetaTerms%kpointList(:)    )
+   call thetaCut%setParityList( this%thetaTerms%parityList(:) )
+   call thetaCut%setIrrepList ( this%thetaTerms%irrepList(:)  )
+   call thetaCut%initializeTerms()
+   call thetaCut%interpol()
 #ifdef DEBUG
-   CALL DEBUG_WRITE(routinename,"NEW THETACUT")
-   ALLOCATE(beta(size(thetalist)))
-   ALLOCATE(philistdeg(size(thetalist)))
-   DO j = 1, size(thetalist)
-      CALL beta(j)%READ(thetalist(j),"rad")
-      CALL beta(j)%TO_DEG()
+   call DEBUG_WRITE(routinename,"NEW THETACUT")
+   allocate(beta(size(thetalist)))
+   allocate(philistdeg(size(thetalist)))
+   do j = 1, size(thetalist)
+      call beta(j)%READ(thetalist(j),"rad")
+      call beta(j)%TO_DEG()
       philistdeg(j)=beta(j)%getvalue()
-   END DO
-   CALL DEBUG_WRITE(routinename,"At Theta: (deg) ",philistdeg)
-   CALL DEBUG_WRITE(routinename,"At Theta: (rad) ",thetalist)
-   CALL DEBUG_WRITE(routinename,"Klist:          ",thetacut%getklist())
-   CALL DEBUG_WRITE(routinename,"f:              ",f)
-   CALL DEBUG_WRITE(routinename,"dfdz:           ",dfdz)
-   CALL DEBUG_WRITE(routinename,"dfdr:           ",dfdr)
-   CALL DEBUG_WRITE(routinename,"dfdphi:         ",dfdphi)
-   SELECT CASE(get_debugmode())
-      CASE(.TRUE.)
-         WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.raw" 
-         CALL thetacut%PLOTDATA(filename)
-         WRITE(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.cyc" 
-         CALL thetacut%PLOTCYCLIC(300,filename)
-      CASE(.FALSE.)
+   end do
+   call DEBUG_WRITE(routinename,"At Theta: (deg) ",philistdeg)
+   call DEBUG_WRITE(routinename,"At Theta: (rad) ",thetalist)
+   call DEBUG_WRITE(routinename,"Klist:          ",thetacut%getklist())
+   call DEBUG_WRITE(routinename,"f:              ",f)
+   call DEBUG_WRITE(routinename,"dfdz:           ",dfdz)
+   call DEBUG_WRITE(routinename,"dfdr:           ",dfdr)
+   call DEBUG_WRITE(routinename,"dfdphi:         ",dfdphi)
+   select case(get_debugmode())
+      case(.true.)
+         write(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.raw" 
+         call thetacut%PLOTDATA(filename)
+         write(filename,'(I1,A1,A16)') this%mynumber,"-","wyckofftheta.cyc" 
+         call thetacut%PLOTCYCLIC(300,filename)
+      case(.false.)
          ! do nothing
-   END SELECT
-   DEALLOCATE(beta)
-   DEALLOCATE(philistdeg)
+   end select
+   deallocate(beta)
+   deallocate(philistdeg)
 #endif
-   DEALLOCATE(f)
-   DEALLOCATE(dfdr)
-   DEALLOCATE(dfdz)
-   DEALLOCATE(dfdphi)
-   DEALLOCATE(aux)
-   DEALLOCATE(thetalist)
-   ALLOCATE(aux(2,4))
-   CALL thetacut%GET_ALLFUNCS_AND_DERIVS(theta,aux(1,:),aux(2,:))
+   deallocate(f)
+   deallocate(dfdr)
+   deallocate(dfdz)
+   deallocate(dfdphi)
+   deallocate(aux)
+   deallocate(thetalist)
+   allocate(aux(2,4))
+   call thetacut%GET_ALLFUNCS_AND_DERIVS(theta,aux(1,:),aux(2,:))
    v=aux(1,1) ! value of the potential
    dvdu(1)=aux(1,2) ! dvdz
    dvdu(2)=aux(1,3) ! dvdr
    dvdu(3)=aux(2,1) ! dvdtheta
    dvdu(4)=aux(1,4) ! dvdphi
-   DEALLOCATE(aux)
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_WYCKOFFP4MM
-END MODULE WYCKOFF_P4MM_MOD
+   deallocate(aux)
+   return
+end subroutine GET_V_AND_DERIVS_WYCKOFFP4MM
+end module WYCKOFF_P4MM_MOD

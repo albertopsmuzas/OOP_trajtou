@@ -32,6 +32,7 @@ type TermsInfo
    integer(kind=4),dimension(:),allocatable,public:: kpointList
    contains
       procedure,public:: addTerm => addTerm_TERMSINFO
+      procedure,public:: reboot  => reboot_TERMSINFO
 end type
 !--------------------------------------------------
 !//////////////////////////////////////////////////
@@ -548,6 +549,8 @@ subroutine initialize_WYCKOFFSITIO(this,nphiPoints,fileNames,letter,myNumber,phi
    allocate( this%zrcut(this%n2dcuts) )
    allocate( this%nphipoints(this%nphicuts),source=nphipoints(:) )
    allocate( this%phiTerms(size(phiTerms(:))),source=phiTerms(:) )
+   do i=1,size( this%phiTerms(:) )
+   enddo
    this%thetaTerms=thetaTerms
    SELECT CASE(this%n2dcuts==size(filenames(:)))
       CASE(.true.)
@@ -607,18 +610,35 @@ subroutine addTerm_TERMSINFO(this,irrep,parity,kpoint)
       this%irrepList(1:n)=auxIrrepList(:)
       this%parityList(1:n)=auxParityList(:)
       this%kpointList(n+1)=kpoint
-      this%irrepList(n+1)=irrep
-      this%parityList(n+1)=parity
+      this%irrepList(n+1)=trim(irrep)
+      this%parityList(n+1)=trim(parity)
 
    case(.false.)
       allocate( this%kpointList(1) )
       allocate( this%parityList(1) )
       allocate( this%irrepList(1) )
       this%kpointList(1)=kpoint
-      this%parityList(1)=parity
-      this%irrepList(1)=irrep
+      this%parityList(1)=trim(parity)
+      this%irrepList(1)=trim(irrep)
    end select
    return
 end subroutine addTerm_TERMSINFO
+!########################################################
+! SUBROUTINE: reboot_TERMSINFO
+!########################################################
+!> @brief
+!! Deallocates all atributes of TERMSINFO
+!--------------------------------------------------------
+subroutine reboot_TERMSINFO(this)
+   ! initial declaration
+   implicit none
+   ! I/O variables
+   class(TermsInfo),intent(inout):: this
+   ! GET TO THE CHOPPAHH !!!
+   deallocate(this%kpointList)
+   deallocate(this%parityList)
+   deallocate(this%irrepList)
+   return
+end subroutine reboot_TERMSINFO
 
 END MODULE WYCKOFF_GENERIC_MOD

@@ -60,7 +60,7 @@ END INTERFACE
 !----------------------------------------------------------------------------
 type,abstract,extends(Interpol1d):: Fourier1d
    ! public atributes
-   integer(kind=4),dimension(:),allocatable,public:: klist
+   integer(kind=4),dimension(:),allocatable,public:: kList
    character(len=1),dimension(:),allocatable,public:: parityList ! three posible values: "+" (par) ,"-" (odd) and "o" (both, average)
    character(len=2),dimension(:),allocatable,public:: irrepList
    class(Termcalculator),allocatable,public:: term

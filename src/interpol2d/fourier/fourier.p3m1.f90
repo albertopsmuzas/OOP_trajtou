@@ -6,8 +6,15 @@
 !##########################################################
 MODULE FOURIER_P4MM_MOD
 !use other modules?
-USE FOURIER2D_MOD
+use FOURIER2D_MOD
+use SURFACE_MOD, only: norm_s1
+use UNITS_MOD, only: pi
+use MATHS_MOD, only: inv_mtrx
+
 IMPLICIT NONE
+!////////////////////////////////////////////////////////////////
+! TYPE: Fourierp4mm
+!----------------------------------------------------------------
 TYPE,EXTENDS(Fourier2d) :: Fourierp4mm
    PRIVATE
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: coeff
@@ -17,6 +24,8 @@ TYPE,EXTENDS(Fourier2d) :: Fourierp4mm
       PROCEDURE,PUBLIC :: GET_F_AND_DERIVS => GET_F_AND_DERIVS_FOURIERP4MM
       PROCEDURE,PUBLIC :: SET_TERMMAP => SET_TERMMAP_FOURIERP4MM
 END TYPE Fourierp4mm
+!//////////////////////////////////////////////////////////////////
+
 ! variables and types, body
 CONTAINS
 !###########################################################
@@ -26,8 +35,6 @@ CONTAINS
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r) 
    ! Initial declarations   
-   USE SURFACE_MOD
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: id
@@ -73,8 +80,6 @@ END FUNCTION termfoup4mm
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION termfoup4mm_dx(id,surf,k,r) 
    ! Initial declarations   
-   USE SURFACE_MOD
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: id
@@ -121,8 +126,6 @@ END FUNCTION termfoup4mm_dx
 !-----------------------------------------------------------
 REAL(KIND=8) FUNCTION termfoup4mm_dy(id,surf,k,r) 
    ! Initial declarations   
-   USE SURFACE_MOD
-   USE CONSTANTS_MOD
    IMPLICIT NONE
    ! I/O variables
    INTEGER(KIND=4),INTENT(IN) :: id
@@ -170,8 +173,6 @@ END FUNCTION termfoup4mm_dy
 !-----------------------------------------------------------
 SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
    ! Initial declarations   
-   USE SURFACE_MOD
-   USE MATHS_MOD
    IMPLICIT NONE
    ! I/O variables
    CLASS(Fourierp4mm),INTENT(INOUT) :: this
@@ -286,8 +287,6 @@ END SUBROUTINE SET_TERMMAP_FOURIERP4MM
 !> @version 1.0
 !-----------------------------------------------------------
 SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
-   USE SURFACE_MOD
-   USE CONSTANTS_MOD
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables

@@ -80,7 +80,7 @@ function termfou1d_MM2(this,kpoint,parity,irrep,x) result(answer)
       ! check KPOINT
       select case( mod(kpoint,2)==1 )
       case(.true.)
-         write(0,*) 'ERR '//routinename//'bad irrep'
+         write(0,*) 'ERR '//routinename//'bad irrep. Given: "'//irrep//'"'
          call exit(1)
       case(.false.)
          ! do nothing
@@ -90,12 +90,12 @@ function termfou1d_MM2(this,kpoint,parity,irrep,x) result(answer)
       case('+')
          answer=dcos(dfloat(kpoint)*x)
       case default
-         write(0,*) 'ERR '//routinename//'bad parity'
+         write(0,*) 'ERR '//routinename//'bad parity. Given: "'//parity//'"'
          call exit(1)
       end select
 
    case default
-      write(0,*) 'ERR '//routinename//'irrep not implemented'
+      write(0,*) 'ERR '//routinename//'irrep not implemented. Given: "'//irrep//'"'
       call exit(1)
    end select
    return

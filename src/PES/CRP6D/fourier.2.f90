@@ -68,10 +68,13 @@ function termfou1d_2(this,kpoint,parity,irrep,x) result(answer)
    character(len=2),intent(in):: irrep
    ! Dummy output variable
    real(kind=8):: answer
+   ! Local
+   character(len=1):: auxChar
    ! Parameters
    character(len=*),parameter:: routinename='termfou_2: '
    ! Run section
-   select case( irrep )
+   auxChar=trim(irrep)
+   select case( auxChar )
    case('A')
       ! check parity
       select case( parity )
@@ -100,12 +103,12 @@ function termfou1d_2(this,kpoint,parity,irrep,x) result(answer)
             call exit(1)
          end select
       case default
-         write(0,*) 'ERR '//routinename//'bad parity symbol'
+         write(0,*) 'ERR '//routinename//'bad parity symbol: "'//parity//'"'
          call exit(1)
       end select
 
    case default
-      write(0,*) 'ERR '//routinename//'irrep not implemented'
+      write(0,*) 'ERR '//routinename//'irrep not implemented: "'//auxChar//'"'
       write(0,*) 'Implemented ones: A'
       call exit(1)
    end select
@@ -127,10 +130,13 @@ function termfou1d_dx_2(this,kpoint,parity,irrep,x) result(answer)
    character(len=2),intent(in):: irrep
    ! Dummy output variable
    real(kind=8):: answer
+   ! Local
+   character(len=1):: auxChar
    ! Parameters
-   character(len=*),parameter:: routinename='termfou_2: '
+   character(len=*),parameter:: routinename='termfou_dx_2: '
    ! Run section
-   select case( irrep )
+   auxChar=trim(irrep)
+   select case( auxChar )
    case('A')
       ! check parity
       select case( parity )
@@ -159,12 +165,12 @@ function termfou1d_dx_2(this,kpoint,parity,irrep,x) result(answer)
             call exit(1)
          end select
       case default
-         write(0,*) 'ERR '//routinename//'bad parity symbol'
+         write(0,*) 'ERR '//routinename//'bad parity symbol: "'//parity//'"'
          call exit(1)
       end select
 
    case default
-      write(0,*) 'ERR '//routinename//'irrep not implemented'
+      write(0,*) 'ERR '//routinename//'irrep not implemented: "'//auxChar//'"'
       write(0,*) 'Implemented ones: A'
       call exit(1)
    end select
