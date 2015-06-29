@@ -40,7 +40,7 @@ abstract interface
    !> @brief
    !! Dummy function. Override it!!
    !-----------------------------------------------------------
-   function getValue_INTERPOL3D(this,x,shift) result(answer)
+   function getValue_INTERPOL3D(this,x) result(answer)
       import Interpol3d
       class(Interpol3d),target,intent(in):: this
       real(kind=8),dimension(:,3),intent(in):: x

@@ -6,8 +6,38 @@
 module FOURIER2D_MOD
 use SURFACE_MOD, only: Surface
 implicit none
+!/////////////////////////////////////////////////////////////////
+! TYPE: TermcalCulator2d
+!> @brief
+!! Abstract class to calculate terms of the series avoiding the use of
+!! unnecessary switches
+!----------------------------------------------------------------
+type,abstract:: TermCalculator2d
+   contains
+      procedure(getvalue_termcalculator_example),public,deferred:: getValue
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv1
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv2
+end type TermCalculator2d
+abstract interface
+   !###########################################################
+   !# FUNCTION: getvalue_termcalculator_example
+   !###########################################################
+   !> @brief
+   !! Just an example that child objects should override
+   !-----------------------------------------------------------
+   function getvalue_termcalculator_example(this,kpoint,parity,irrep,x) result(answer)
+      import TermCalculator2d
+      class(TermCalculator2d),intent(in):: this
+      integer(kind=4),intent(in):: kpoint
+      real(kind=8),dimension(2),intent(in):: x
+      character(len=1),intent(in):: parity
+      character(len=2),intent(in):: irrep
+      real(kind=8):: answer
+   end function getvalue_termcalculator_example
+   !-------------------------------------------------------------
+end interface
 !////////////////////////////////////////////////////////////////
-! TYPE: Interpol2d
+! TYPE: Fourier2d
 !
 !> @brief
 !! Generic 2D interpolation type variable
@@ -36,6 +66,7 @@ type,abstract :: Fourier2d
 contains
    ! initialize block
    procedure,public,non_overridable :: read => read_FOURIER2D
+   procedure(initializeTerms_FOURIER2D),public,deferred:: initializeTerms
    ! tools block
    procedure(interpol_FOURIER2D),public,deferred :: interpol  ! deferred !!!! take a look to interface
    procedure(get_f_and_derivs_FOURIER2D),public,deferred :: get_f_and_derivs ! deferred !!!! take a look to interface
@@ -66,6 +97,17 @@ abstract interface
       real(kind=8),dimension(:),intent(out) :: v
       real(kind=8),dimension(:,:),intent(out) :: dvdu
    end subroutine get_f_and_derivs_FOURIER2D
+   !###########################################################
+   !# SUBROUTINE: INITIALIZETERMS_FOURIER2D
+   !###########################################################
+   !> @brief
+   !! Sets terms for this fourier series. Should be overriden by
+   !! child non-abstract classes
+   !-----------------------------------------------------------
+   subroutine initializeTerms_FOURIER2D(this)
+      import Fourier1d
+      class(fourier1d),intent(inout):: this
+   end subroutine initializeTerms_FOURIER2D
 end interface
 !////////////////////////////////////////////////////////////////
 CONTAINS

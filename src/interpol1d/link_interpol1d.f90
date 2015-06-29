@@ -3,8 +3,8 @@
 !> @brief
 !! Link all types and subtypes of interpol1d 
 !##########################################################
-MODULE LINK_INTERPOL1D_MOD
-USE INTERPOL1D_MOD
-USE FOURIER1D_MOD
-USE CUBICSPLINES_MOD
-END MODULE LINK_INTERPOL1D_MOD
+module LINK_INTERPOL1D_MOD
+use INTERPOL1D_MOD
+use FOURIER1D_MOD
+use CUBICSPLINES_MOD
+end module LINK_INTERPOL1D_MOD

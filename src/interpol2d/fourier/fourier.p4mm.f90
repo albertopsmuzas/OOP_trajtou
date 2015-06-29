@@ -27,7 +27,7 @@ CONTAINS
 !###########################################################
 !
 !-----------------------------------------------------------
-function termfoup4mm(surf,k,parity,irrep,r) result(answer)
+function termFoup4mm(surf,k,parity,irrep,r) result(answer)
    ! Initial declarations   
    implicit none
    ! I/O variables
@@ -59,7 +59,7 @@ function termfoup4mm(surf,k,parity,irrep,r) result(answer)
       call exit(1)
    end select
    return
-end function termfoup4mm
+end function termFoup4mm
 !###########################################################
 !# FUNCTION: termfoup4mm_dx 
 !###########################################################

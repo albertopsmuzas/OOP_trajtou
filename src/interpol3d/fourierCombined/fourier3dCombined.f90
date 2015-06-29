@@ -1,5 +1,5 @@
 !########################################################
-! MODULE : FOURIER1D_MOD
+! MODULE : FOURIER3D_MOD
 !
 !> @brief
 !! Provides tools to perform 1D periodical interpolations with
@@ -8,272 +8,239 @@
 !> @warning
 !! - Includes Interpol1d_mod in its scope
 !########################################################
-MODULE FOURIER1D_MOD
-use INTERPOL1D_MOD
-use UNITS_MOD, only: pi
-use MATHS_MOD, only: INV_MTRX
+module FOURIER3D_MOD
+use INTERPOL3D_MOD, only: Interpol3d
+use MATHS_MOD, only: inv_mtrx
+use FOURIER1D_MOD, only: Fourier1d
+use FOURIER2D_MOD, only: Fourier2d
 #ifdef DEBUG
-use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+use DEBUG_MOD, only: verbose_write, debug_write
 #endif
-IMPLICIT NONE
+implicit none
 !/////////////////////////////////////////////////////////////////
 ! TYPE: Termcalculator
 !> @brief
 !! Abstract class to calculate terms of the series avoiding the use of
 !! unnecessary switches
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date May/2014 
-!> @version 1.0
 !----------------------------------------------------------------
-type,abstract:: Termcalculator
-private
-   real(kind=8):: shift=0.D0
+type,abstract:: TermCalculator3d
+   ! public atributes
+   type(Fourier1d),allocatable,public:: angleFourier
+   type(Fourier2d),allocatable,public:: xyFourier
    contains
-      procedure,public,non_overridable:: getShift => getShift_TERMCALCULATOR
-      procedure(getvalue_termcalculator_example),public,deferred:: getvalue
-      procedure(getvalue_termcalculator_example),public,deferred:: getderiv
-end type Termcalculator
+      procedure(getvalue_termcalculator_example),public,deferred:: getValue
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv1
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv2
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv3
+end type TermCalculator3d
 !
-ABSTRACT INTERFACE
+abstract interface
    !###########################################################
    !# FUNCTION: getvalue_termcalculator_example 
    !###########################################################
    !> @brief 
    !! Just an example that child objects should override
    !-----------------------------------------------------------
-   function getvalue_termcalculator_example(this,kpoint,parity,irrep,x) result(answer)
-      import Termcalculator
-      class(Termcalculator),intent(in):: this
-      integer(kind=4),intent(in):: kpoint
-      real(kind=8),intent(in):: x
-      character(len=1),intent(in):: parity
-      character(len=2),intent(in):: irrep
+   function getvalue_termcalculator_example(this,k,parityXY,irrepXY,l,parityAngle,irrepAngle,x) result(answer)
+      import TermCalculator3d
+      class(TermCalculator3d),intent(in):: this
+      integer(kind=4),dimension(2),intent(in):: k
+      integer(kind=4),intent(in):: l
+      character(len=1),intent(in):: parityXY
+      character(len=1),intent(in):: parityAngle
+      character(len=2),intent(in):: irrepXY
+      character(len=2),intent(in):: irrepAngle
+      real(kind=8),dimension(3),intent(in):: x
       real(kind=8):: answer
    end function getvalue_termcalculator_example
    !-------------------------------------------------------------
-END INTERFACE
+end interface
+!
 !/////////////////////////////////////////////////////////////////////////////
-! TYPE: FOURIER1D
+! TYPE: FOURIER3D
 !> @brief
-!! Class to store all information needed for a 1D REAL fourier interpolation
+!! Class to store all information needed for a 3D REAL combined fourier interpolation
 !----------------------------------------------------------------------------
-type,abstract,extends(Interpol1d):: Fourier1d
+type,abstract,extends(Interpol3d):: Fourier3d
    ! public atributes
-   integer(kind=4),dimension(:),allocatable,public:: kList
-   character(len=1),dimension(:),allocatable,public:: parityList
-   character(len=2),dimension(:),allocatable,public:: irrepList
-   class(Termcalculator),allocatable,public:: term
+   type(TermCalculator3d),allocatable,public:: term
+   integer(kind=4),dimension(:,:),allocatable,public:: kListXY
+   character(len=1),dimension(:),allocatable,public:: parityListXY
+   character(len=2),dimension(:),allocatable,public:: irrepListXY
+   integer(kind=4),dimension(:),allocatable,public:: kListAngle
+   character(len=1),dimension(:),allocatable,public:: parityListAngle
+   character(len=2),dimension(:),allocatable,public:: irrepListAngle
    ! private atributes
    real(kind=8),dimension(:),allocatable,private:: coeff
    real(kind=8),dimension(:,:),allocatable,private:: extracoeff
    real(kind=8),dimension(:,:),allocatable,private:: extrafuncs
    contains
       ! initialize block
-      procedure(initializeTerms_FOURIER1D),public,deferred:: initializeTerms
+      procedure(initializeTerms_FOURIER3D),public,deferred:: initializeTerms
       ! get block
-      procedure,public,non_overridable:: getValue => getvalue_FOURIER1D
-      procedure,public,non_overridable:: getDeriv => getderiv_FOURIER1D
-      procedure,public,non_overridable:: getKlist => getklist_FOURIER1D
-      procedure,public,non_overridable:: getParityList => getParityList_FOURIER1D
+      procedure,public,non_overridable:: getValue => getvalue_FOURIER3D
+      procedure,public,non_overridable:: getDeriv1 => getDeriv1_FOURIER3D
+      procedure,public,non_overridable:: getDeriv2 => getDeriv2_FOURIER3D
+      procedure,public,non_overridable:: getDeriv3 => getDeriv3_FOURIER3D
       ! set block
-      procedure,public,non_overridable:: setShift => set_shift_FOURIER1D
-      procedure,public,non_overridable:: setKlist => setKlist_FOURIER1D
-      procedure,public,non_overridable:: setParityList => setParityList_FOURIER1D
-      procedure,public,non_overridable:: setIrrepList => setIrrepList_FOURIER1D
+      procedure,public,non_overridable:: setKlist => setKlist_FOURIER3D
+      procedure,public,non_overridable:: setParityList => setParityList_FOURIER3D
+      procedure,public,non_overridable:: setIrrepList => setIrrepList_FOURIER3D
       ! tools
-      procedure,public,non_overridable:: interpol => interpol_FOURIER1D
-      procedure,public,non_overridable:: add_morefuncs => add_more_funcs_FOURIER1D
-      procedure,public,non_overridable:: get_allfuncs_and_derivs => get_allfunc_and_derivs_FOURIER1D
-      ! plotting tools
-      procedure,public,non_overridable:: plotCyclic => plotcyclic_interpol_FOURIER1D
-      procedure,public,non_overridable:: plotCyclic_all => plotcyclic_all_interpol_FOURIER1D
-END TYPE FOURIER1D
-ABSTRACT INTERFACE
+      procedure,public,non_overridable:: interpol => interpol_FOURIER3D
+      procedure,public,non_overridable:: add_morefuncs => add_more_funcs_FOURIER3D
+      procedure,public,non_overridable:: get_allfuncs_and_derivs => get_allfunc_and_derivs_FOURIER3D
+end type FOURIER3D
+abstract interface
    !###########################################################
-   !# SUBROUTINE: SET_IRREP_FOURIER1D 
+   !# SUBROUTINE: SET_IRREP_FOURIER3D
    !###########################################################
    !> @brief
    !! Sets irrep for this fourier series. Should be overriden by
    !! child non-abstract classes
    !-----------------------------------------------------------
-   subroutine initializeTerms_FOURIER1D(this)
-      import Fourier1d
-      class(fourier1d),intent(inout):: this
-   end subroutine initializeTerms_FOURIER1D
-END INTERFACE
+   subroutine initializeTerms_FOURIER3D(this)
+      import Fourier3d
+      class(Fourier3d),intent(inout):: this
+   end subroutine initializeTerms_FOURIER3D
+end interface
 !/////////////////////////////////////////////////////////////////////////////
-CONTAINS
-!###########################################################
-!# FUNCTION: getklist_FOURIER1D 
-!###########################################################
-!> @brief 
-!! Common get function. Gets Klist atribute
-!-----------------------------------------------------------
-FUNCTION getklist_FOURIER1D(this) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier1d),INTENT(IN):: this
-   INTEGER(KIND=4),ALLOCATABLE,DIMENSION(:):: getklist_FOURIER1D
-   ! Run section
-   ALLOCATE(getklist_FOURIER1D(size(this%klist)))
-   getklist_FOURIER1D=this%klist
-   RETURN
-END FUNCTION getklist_FOURIER1D
-!###########################################################
-!# FUNCTION: getParitylist_FOURIER1D
-!###########################################################
-!> @brief
-!! Common get function. Gets parityList atribute
-!-----------------------------------------------------------
-function getParityList_FOURIER1D(this) result(charArray)
-   ! Initial declarations
-   implicit none
-   ! I/O variables
-   class(Fourier1d),intent(in):: this
-   ! Dummy output variable
-   character(len=1),dimension(:),allocatable:: charArray
-   ! Run section
-   allocate( charArray(size(this%ParityList)),source=this%parityList(:) )
-   return
-end function getParityList_FOURIER1D
-!###########################################################
-!# FUNCTION: getshift_TERMCALCULATOR 
-!###########################################################
-!> @brief 
-!! Common get function. Gets shift atribute
-!-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getshift_TERMCALCULATOR(this) 
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Termcalculator),INTENT(IN):: this
-   ! Run section
-   getshift_TERMCALCULATOR=this%shift
-   RETURN
-END FUNCTION getshift_TERMCALCULATOR
+contains
 !###################################################################
-!# SUBROUTINE: setKlist_FOURIER1D
+!# SUBROUTINE: setKlist_FOURIER3D
 !###################################################################
 !> @brief
-!! Common set subroutine. Sets Klist atribute of a FOURIER1D object
+!! Common set subroutine. Sets Klist atribute of a FOURIER3D object
 !-------------------------------------------------------------------
-subroutine setKlist_FOURIER1D(this,kList)
+subroutine setKlist_FOURIER3D(this,kListXY,kListAngle)
    implicit none
    ! I/O variables
-   class(Fourier1d),intent(inout):: this
-   integer(kind=4),dimension(:):: kList
+   class(Fourier3d),intent(inout):: this
+   integer(kind=4),dimension(:,:):: kListXY
+   integer(kind=4),dimension(:):: kListAngle
+   ! Local variables
+   integer(kind=4):: n
    ! Run section
-   allocate( this%kList(size(kList)),source=kList(:) )
+   n=size(kListXY(:,1))
+   allocate( this%kListXY(n,2),  source=kListXY(:,2)  )
+   allocate( this%kListAngle(n), source=kListAngle(:) )
    return
-end subroutine setKlist_FOURIER1D
+end subroutine setKlist_FOURIER3D
 !###################################################################
-!# SUBROUTINE: setParityList_FOURIER1D
+!# SUBROUTINE: setParityList_FOURIER3D
 !###################################################################
 !> @brief
-!! Common set subroutine. Sets parityList atribute of a FOURIER1D object
+!! Common set subroutine. Sets parityList atribute of a FOURIER3D object
 !-------------------------------------------------------------------
-subroutine setParityList_FOURIER1D(this,parityList)
+subroutine setParityList_FOURIER3D(this,parityListXY,parityListAngle)
    implicit none
    ! I/O variables
-   class(Fourier1d),intent(inout):: this
-   character(len=1),dimension(:):: parityList
+   class(Fourier3d),intent(inout):: this
+   character(len=1),dimension(:):: parityListXY
+   character(len=1),dimension(:):: parityListAngle
+   ! Local variables
+   integer(kind=4):: n
    ! Run section
-   allocate( this%parityList(size(parityList)),source=parityList(:) )
+   n=size(parityListXY)
+   allocate( this%parityListXY(n),    source=parityListXY(:)    )
+   allocate( this%parityListAngle(n), source=parityListAngle(:) )
    return
-end subroutine setParityList_FOURIER1D
+end subroutine setParityList_FOURIER3D
 !###################################################################
-!# SUBROUTINE: setIrrepList_FOURIER1D
+!# SUBROUTINE: setIrrepList_FOURIER3D
 !###################################################################
 !> @brief
-!! Common set subroutine. Sets IrrepList atribute of a FOURIER1D object
+!! Common set subroutine. Sets IrrepList atribute of a FOURIER3D object
 !-------------------------------------------------------------------
-subroutine setIrrepList_FOURIER1D(this,irrepList)
+subroutine setIrrepList_FOURIER3D(this,irrepListXY,irrepListAngle)
    implicit none
    ! I/O variables
-   class(Fourier1d),intent(inout):: this
-   character(len=2),dimension(:):: irrepList
+   class(Fourier3d),intent(inout):: this
+   character(len=2),dimension(:):: irrepListXY
+   character(len=2),dimension(:):: irrepListAngle
+   ! Local variables
+   integer(kind=4):: n
    ! Run section
-   allocate( this%irrepList(size(irrepList)),source=irrepList(:) )
+   n=size( irrepListXY )
+   allocate( this%irrepListXY(n),    source=irrepListXY(:)    )
+   allocate( this%irrepListAngle(n), source=irrepListAngle(:) )
    return
-end subroutine setIrrepList_FOURIER1D
+end subroutine setIrrepList_FOURIER3D
 !###########################################################
-!# SUBROUTINE: SET_SHIFT_FOURIER1D 
-!###########################################################
-!> @brief
-!! Common set subroutine. Sets shift atribute
-!-----------------------------------------------------------
-SUBROUTINE SET_SHIFT_FOURIER1D(this,shift)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourier1d),INTENT(INOUT):: this
-   REAL(KIND=8),INTENT(IN):: shift
-   ! Run section
-   this%term%shift=shift
-   RETURN
-END SUBROUTINE SET_SHIFT_FOURIER1D
-!###########################################################
-!# SUBROUTINE: GET_ALLFUNC_AND_DERIVS_FOURIER1D
+!# SUBROUTINE: GET_ALLFUNC_AND_DERIVS_FOURIER3D
 !###########################################################
 !> @brief
 !! Get value of the potential and derivs for an specific point x
 !! for the main function and extra ones
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date May/2014
-!> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D(this,x,f,dfdx)
+subroutine GET_ALLFUNC_AND_DERIVS_FOURIER3D(this,x,f,dfdx)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Fourier1d),INTENT(IN) :: this
-   REAL(KIND=8),INTENT(IN) :: x
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: f,dfdx
+   class(Fourier3d),intent(in) :: this
+   real(kind=8),dimension(3),intent(in) :: x
+   real(kind=8),dimension(:),intent(out) :: f
+   real(kind=8),dimension(:,3),intent(out):: dfdx
    ! Local variables
-   INTEGER(KIND=4) :: nfuncs
-   INTEGER(KIND=4) :: i ! counters
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms_dx
+   integer(kind=4) :: nfuncs
+   integer(kind=4) :: i ! counters
+   real(kind=8),dimension(:),allocatable :: terms
+   real(kind=8),dimension(:),allocatable :: terms_dx
+   real(kind=8),dimension(:),allocatable :: terms_dy
+   real(kind=8),dimension(:),allocatable :: terms_dz
    ! Check section
-   SELECT CASE(allocated(this%extracoeff))
-      CASE(.FALSE.)
-         WRITE(0,*) "GET_ALLFUNCS_AND_DERIVS ERR: extra coefficients are not allocated"
-         WRITE(0,*) "GET_ALLFUNCS_AND_DERIVS ERR: did you use ADD_MOREFUNCS and INTERPOL before this?"
-         CALL EXIT(1)
-      CASE(.TRUE.)
+   select case(allocated(this%extracoeff))
+      case(.false.)
+         write(0,*) "GET_ALLFUNCS_AND_DERIVS ERR: extra coefficients are not allocated"
+         write(0,*) "GET_ALLFUNCS_AND_DERIVS ERR: did you use ADD_MOREFUNCS and INTERPOL before this?"
+         call EXIT(1)
+      case(.true.)
          ! do nothing
-   END SELECT
+   end select
    nfuncs=size(this%extrafuncs(:,1))+1
-   SELECT CASE(size(f)/=nfuncs .OR. size(dfdx)/=nfuncs)
-      CASE(.TRUE.)
-         WRITE(0,*) "GET_ALLFUNCS_AND DERIVS ERR: size mismatch of output arguments"
-         WRITE(0,*) "nfuncs: ",nfuncs
-         WRITE(0,*) "size f: ", size(f)
-         WRITE(0,*) "size dfdx: ",size(dfdx)
-         CALL EXIT(1)
-      CASE(.FALSE.)
+   select case(size(f)/=nfuncs .or. size(dfdx(:,1))/=nfuncs)
+      case(.true.)
+         write(0,*) "GET_ALLFUNCS_AND DERIVS ERR: size mismatch of output arguments"
+         write(0,*) "nfuncs: ",nfuncs
+         write(0,*) "size f: ", size(f)
+         write(0,*) "size dfdx: ",size(dfdx(:,1))
+         call EXIT(1)
+      case(.false.)
          ! do nothing
-   END SELECT
+   end select
    ! Run section
-   ALLOCATE(terms(this%n))
-   ALLOCATE(terms_dx(this%n))
-   DO i = 1, this%n
-      terms(i)=this%term%getvalue( kpoint=this%kList(i),parity=this%parityList(i),irrep=this%irrepList(i),x=x )
-      terms_dx(i)=this%term%getderiv( kpoint=this%kList(i),parity=this%parityList(i),irrep=this%irrepList(i),x=x )
-   END DO
+   allocate(terms(this%n))
+   allocate(terms_dx(this%n))
+   allocate(terms_dy(this%n))
+   allocate(terms_dz(this%n))
+   do i = 1, this%n
+      terms(i)=this%term%getValue( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                   l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                   x=x )
+      terms_dx(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                       l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                       x=x )
+      terms_dy(i)=this%term%getDeriv2( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                       l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                       x=x )
+      terms_dz(i)=this%term%getDeriv3( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                       l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                       x=x )
+   end do
    f(1)=dot_product(terms,this%coeff)
-   dfdx(1)=dot_product(terms_dx,this%coeff)
-   DO i = 2, nfuncs
+   dfdx(1,1)=dot_product(terms_dx,this%coeff)
+   dfdx(1,2)=dot_product(terms_dy,this%coeff)
+   dfdx(1,3)=dot_product(terms_dz,this%coeff)
+   do i = 2, nfuncs
       f(i)=dot_product(terms,this%extracoeff(:,i-1))
-      dfdx(i)=dot_product(terms_dx,this%extracoeff(:,i-1))
-   END DO
-   RETURN
-END SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D
+      dfdx(i,1)=dot_product(terms_dx,this%extracoeff(:,i-1))
+      dfdx(i,1)=dot_product(terms_dy,this%extracoeff(:,i-1))
+      dfdx(i,1)=dot_product(terms_dz,this%extracoeff(:,i-1))
+   end do
+   return
+end subroutine GET_ALLFUNC_AND_DERIVS_FOURIER3D
 !###########################################################
-!# SUBROUTINE: ADD_MORE_FUNCS_FOURIER1D
+!# SUBROUTINE: ADD_MORE_FUNCS_FOURIER3D
 !###########################################################
 !> @brief
 !! Adds a new set of functions to interpolate at the same time
@@ -282,249 +249,178 @@ END SUBROUTINE GET_ALLFUNC_AND_DERIVS_FOURIER1D
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE ADD_MORE_FUNCS_FOURIER1D(this,f)
+subroutine ADD_MORE_FUNCS_FOURIER3D(this,f)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(FOURIER1D),INTENT(INOUT) :: this
-   REAL(KIND=8),DIMENSION(:,:),INTENT(IN) :: f
+   class(FOURIER3D),intent(inout) :: this
+   real(kind=8),dimension(:,:),intent(in) :: f
    ! Local variables
-   INTEGER(KIND=4) :: nfuncs, ndata
+   integer(kind=4) :: nfuncs, ndata
    ! Run section
    nfuncs=size(f(:,1)) ! number of rows
    ndata=size(f(1,:)) ! number of columns
-   SELECT CASE(ndata == this%n)
-      CASE(.FALSE.)
-         WRITE(0,*) "ADD_MORE_FUNCS_FOURIER1D ERR: size mismatch between extra functions and the original one"
-         CALL EXIT(1)
-      CASE(.TRUE.)
+   select case(ndata == this%n)
+      case(.false.)
+         write(0,*) "ADD_MORE_FUNCS_FOURIER3D ERR: size mismatch between extra functions and the original one"
+         call EXIT(1)
+      case(.true.)
          ! donothing
-   END SELECT
-   ALLOCATE(this%extrafuncs(nfuncs,ndata))
+   end select
+   allocate(this%extrafuncs(nfuncs,ndata))
    this%extrafuncs=f
-   RETURN
-END SUBROUTINE ADD_MORE_FUNCS_FOURIER1D
+   return
+end subroutine ADD_MORE_FUNCS_FOURIER3D
 !###########################################################
-!# SUBROUTINE: INTERPOL_FOURIER1D 
+!# SUBROUTINE: INTERPOL_FOURIER3D
 !###########################################################
 !> @brief
-!! Performs a generic FOURIER1D interpolation
+!! Performs a generic FOURIER3D interpolation
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Mar/2014 
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INTERPOL_FOURIER1D(this)
+subroutine INTERPOL_FOURIER3D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(FOURIER1D),INTENT(INOUT) :: this
+   class(FOURIER3D),intent(inout) :: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: terms,inv_terms
-   INTEGER(KIND=4) :: i,j ! counters
+   real(kind=8),dimension(:,:),allocatable :: terms,inv_terms
+   integer(kind=4) :: i,j ! counters
    ! Run section
-   ALLOCATE(this%coeff(this%n))
-   ALLOCATE(terms(this%n,this%n))
-   ALLOCATE(inv_terms(this%n,this%n))
-   DO i = 1, this%n ! loop over eq for different points
-      DO j = 1, this%n ! loop over coefficients
-         terms(i,j)=this%term%getvalue( kpoint=this%kList(j),parity=this%parityList(j),irrep=this%irrepList(j),x=this%x(i))
-      END DO
-   END DO
-   CALL INV_MTRX(this%n,terms,inv_terms)
+   allocate(this%coeff(this%n))
+   allocate(terms(this%n,this%n))
+   allocate(inv_terms(this%n,this%n))
+   do i = 1, this%n ! loop over eq for different points
+      do j = 1, this%n ! loop over coefficients
+         terms(i,j)=this%term%getValue( k=this%kListXY(j),    parityXY=this%parityListXY(j),  irrepXY=this%irrepListXY(j),&
+                                        l=this%kListAngle(j), parityAngle=parityListAngle(j), irrepAngle=irrepListAngle(j),&
+                                        x=this%x(i,:) )
+      end do
+   end do
+   call INV_MTRX(this%n,terms,inv_terms)
    this%coeff=matmul(inv_terms,this%f)
-   DEALLOCATE(terms)
+   deallocate(terms)
    ! Check if there are extra functions to be interpolated
-   SELECT CASE(allocated(this%extrafuncs))
-      CASE(.TRUE.)
-         ALLOCATE(this%extracoeff(this%n,size(this%extrafuncs(:,1))))
-         DO i = 1, size(this%extrafuncs(:,1))
+   select case(allocated(this%extrafuncs))
+      case(.true.)
+         allocate(this%extracoeff(this%n,size(this%extrafuncs(:,1))))
+         do i = 1, size(this%extrafuncs(:,1))
             this%extracoeff(:,i)=matmul(inv_terms,this%extrafuncs(i,:))
-         END DO
-      CASE(.FALSE.)
+         end do
+      case(.false.)
          ! do nothing
-   END SELECT
-   RETURN
-END SUBROUTINE INTERPOL_FOURIER1D
+   end select
+   return
+end subroutine INTERPOL_FOURIER3D
 !###########################################################
-!# FUNCTION: getvalue_FOURIER1D 
+!# FUNCTION: getvalue_FOURIER3D
 !###########################################################
 !> @brief 
-!! Get's fourier 1D interpolation value for a given point
+!! Get's fourier 3D interpolation value for a given point
 !! inside the correct range
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 03/03/2014
-!> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getvalue_FOURIER1D(this,x,shift)
+function getValue_FOURIER3D(this,x) result(answer)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(FOURIER1D),TARGET,INTENT(IN) :: this
-   REAL(KIND=8),INTENT(IN) :: x
-   REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
+   class(Fourier3d),target,intent(in) :: this
+   real(kind=8),dimension(3),intent(in) :: x
+   ! Dummy output variable
+   real(kind=8):: answer
    ! Local variables
-   INTEGER(KIND=4) :: i ! counters
-   REAL(KIND=8) :: r
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms
+   integer(kind=4):: i ! counters
+   real(kind=8),dimension(:),allocatable:: terms
    ! Run section
-   SELECT CASE(present(shift))
-      CASE(.TRUE.)
-         r=x+shift
-      CASE(.FALSE.)
-         r=x
-   END SELECT
-   ALLOCATE(terms(this%n))
-   DO i = 1, this%n
-      terms(i)=this%term%getvalue( kpoint=this%kList(i),parity=this%parityList(i),irrep=this%irrepList(i),x=r)
-   END DO
-   getvalue_FOURIER1D=dot_product(terms,this%coeff)
-   DEALLOCATE(terms)
-   RETURN
-END FUNCTION getvalue_FOURIER1D
+   allocate(terms(this%n))
+   do i = 1, this%n
+      terms(i)=this%term%getValue( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                   l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                   x=x )
+   end do
+   answer=dot_product(terms,this%coeff)
+   deallocate(terms)
+   return
+end function getValue_FOURIER3D
 !###########################################################
-!# FUNCTION: getderiv_FOURIER1D 
+!# FUNCTION: getDeriv1_FOURIER3D
 !###########################################################
 !> @brief 
 !! Get's derivative value at a given point X using the interpolation
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 03/Mar/2014
-!> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getderiv_FOURIER1D(this,x,shift)
-   ! Initial declarations   
-   IMPLICIT NONE
+function getDeriv1_FOURIER3D(this,x) result(answer)
+   ! Initial declarations
+   implicit none
    ! I/O variables
-   CLASS(FOURIER1D),TARGET,INTENT(IN) :: this
-   REAL(KIND=8),INTENT(IN) :: x
-   REAL(KIND=8),INTENT(IN),OPTIONAL :: shift
+   class(Fourier3d),target,intent(in) :: this
+   real(kind=8),dimension(3),intent(in) :: x
+   ! Dummy output variable
+   real(kind=8):: answer
    ! Local variables
-   INTEGER(KIND=4) :: i ! counters
-   REAL(KIND=8) :: r
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: terms
+   integer(kind=4):: i ! counters
+   real(kind=8),dimension(:),allocatable:: terms
    ! Run section
-   SELECT CASE(present(shift))
-      CASE(.TRUE.)
-         r=x+shift
-      CASE(.FALSE.)
-         r=x
-   END SELECT
-   ALLOCATE(terms(this%n))
-   DO i = 1, this%n
-      terms(i)=this%term%getvalue( kpoint=this%klist(i),parity=this%parityList(i),irrep=this%irrepList(i),x=r)
-   END DO
-   getderiv_FOURIER1D=dot_product(terms,this%coeff)
-   DEALLOCATE(terms)
-   RETURN
-END FUNCTION getderiv_FOURIER1D
-!######################################################################
-! SUBROUTINE: PLOT_INTERPOL_FOURIER1D ################################
-!######################################################################
-!> @brief
-!! Creates a data file called @b filename with the interpolation graphic of
-!! this FOURIER1D type variable. The number of points in that graphic is defined
-!! by @b npoints. Cannot be less than two. It also plots the first derivative.
-!! The graphic goes from 0 to @f$2\pi@f$
-!----------------------------------------------------------------------
-SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D(this,npoints,filename)
-   IMPLICIT NONE
-   ! I/O variables -------------------------------
-   INTEGER,INTENT(IN) :: npoints
-   CLASS(FOURIER1D),INTENT(IN) :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   ! Local variables -----------------------------
-   INTEGER :: inpoints,ndelta
-   REAL(KIND=8) :: delta, interval, x
-   INTEGER :: i ! Counter
-   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D: " 
-   ! Pointers ------------------------------------
-   REAL(KIND=8):: xmin, xmax
-   INTEGER(KIND=4):: n
-   ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOTCYCLIC_INTERPOL_FOURIER1D ERR: Less than 2 points"
-      STOP
-   END IF
-   !
-   n= this%n
-   xmin=0
-   xmax=2.D0*PI
-   !
-   interval=xmax-xmin
-   inpoints=npoints-2
-   ndelta=npoints-1
-   delta=interval/dfloat(ndelta)
-   !
-   OPEN(11,file=filename,status="replace")
-   WRITE(11,*) xmin,this%getvalue(xmin),this%getderiv(xmin)
-   DO i=1, inpoints
-      x=xmin+(dfloat(i)*delta)
-      WRITE(11,*) x,this%getvalue(x),this%getderiv(x)
-   END DO
-   WRITE(11,*) xmax,this%getvalue(xmax),this%getderiv(xmax)
-#ifdef DEBUG   
-   CALL DEBUG_WRITE(routinename,filename," file created")
-#endif
-   CLOSE(11)
-END SUBROUTINE PLOTCYCLIC_INTERPOL_FOURIER1D
-!######################################################################
-! SUBROUTINE: PLOTCYCLIC_ALL_INTERPOL_FOURIER1D ################################
-!######################################################################
-!> @brief
-!! Creates a data file called @b filename with the interpolation graphic of
-!! this FOURIER1D type variable. The number of points in that graphic is defined
-!! by @b npoints. Cannot be less than two. It also plots the first derivative.
-!! The graphic goes from 0 to @f$2\pi@f$
-!----------------------------------------------------------------------
-SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D(this,npoints,filename)
-   IMPLICIT NONE
-   ! I/O variables -------------------------------
-   INTEGER,INTENT(IN) :: npoints
-   CLASS(FOURIER1D),INTENT(IN) :: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   ! Local variables -----------------------------
-   INTEGER :: inpoints,ndelta,nfunc
-   REAL(KIND=8) :: delta, interval, x
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: f,dfdx
-   INTEGER :: i ! Counter
-   CHARACTER(LEN=35), PARAMETER :: routinename = "PLOTCYCLIC_INTERPOL_FOURIER1D: " 
-   ! Pointers ------------------------------------
-   REAL(KIND=8):: xmin, xmax
-   INTEGER(KIND=4):: n
-   ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOTCYCLIC_INTERPOL_FOURIER1D ERR: Less than 2 points"
-      STOP
-   END IF
-   !
-   n= this%n
-   xmin=0
-   xmax=2.D0*PI
-   nfunc=size(this%extrafuncs(:,1))+1
-   ALLOCATE(f(nfunc))
-   ALLOCATE(dfdx(nfunc))
-   !
-   interval=xmax-xmin
-   inpoints=npoints-2
-   ndelta=npoints-1
-   delta=interval/dfloat(ndelta)
-   !
-   OPEN(11,file=filename,status="replace")
-   CALL this%GET_ALLFUNCS_AND_DERIVS(xmin,f,dfdx)
-   WRITE(11,*) xmin,f(:),dfdx(:)
-   DO i=1, inpoints
-      x=xmin+(dfloat(i)*delta)
-      CALL this%GET_ALLFUNCS_AND_DERIVS(x,f,dfdx) 
-      WRITE(11,*) x,f(:),dfdx(:)
-   END DO
-   CALL this%GET_ALLFUNCS_AND_DERIVS(xmax,f,dfdx) 
-   WRITE(11,*) xmax,f(:),dfdx(:)
-#ifdef DEBUG   
-   CALL DEBUG_WRITE(routinename,filename," file created")
-#endif
-   CLOSE(11)
-END SUBROUTINE PLOTCYCLIC_ALL_INTERPOL_FOURIER1D
+   allocate(terms(this%n))
+   do i = 1, this%n
+      terms(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                    l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                    x=x )
+   end do
+   answer=dot_product(terms,this%coeff)
+   deallocate(terms)
+   return
+end function getDeriv1_FOURIER3D
+!###########################################################
+!# FUNCTION: getDeriv2_FOURIER3D
+!###########################################################
+function getDeriv2_FOURIER3D(this,x) result(answer)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Fourier3d),target,intent(in) :: this
+   real(kind=8),dimension(3),intent(in) :: x
+   ! Dummy output variable
+   real(kind=8):: answer
+   ! Local variables
+   integer(kind=4):: i ! counters
+   real(kind=8),dimension(:),allocatable:: terms
+   ! Run section
+   allocate(terms(this%n))
+   do i = 1, this%n
+      terms(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                    l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                    x=x )
+   end do
+   answer=dot_product(terms,this%coeff)
+   deallocate(terms)
+   return
+end function getDeriv2_FOURIER3D
+!###########################################################
+!# FUNCTION: getDeriv3_FOURIER3D
+!###########################################################
+function getDeriv3_FOURIER3D(this,x) result(answer)
+   ! Initial declarations   
+   implicit none
+   ! I/O variables
+   class(Fourier3d),target,intent(in) :: this
+   real(kind=8),dimension(3),intent(in) :: x
+   ! Dummy output variable
+   real(kind=8):: answer
+   ! Local variables
+   integer(kind=4):: i ! counters
+   real(kind=8),dimension(:),allocatable:: terms
+   ! Run section
+   allocate(terms(this%n))
+   do i = 1, this%n
+      terms(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                    l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+                                    x=x )
+   end do
+   answer=dot_product(terms,this%coeff)
+   deallocate(terms)
+   return
+end function getDeriv3_FOURIER3D
 
-END MODULE FOURIER1D_MOD
+end module FOURIER3D_MOD

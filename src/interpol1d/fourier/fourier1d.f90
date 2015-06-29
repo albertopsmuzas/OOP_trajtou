@@ -21,10 +21,6 @@ IMPLICIT NONE
 !> @brief
 !! Abstract class to calculate terms of the series avoiding the use of
 !! unnecessary switches
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date May/2014 
-!> @version 1.0
 !----------------------------------------------------------------
 type,abstract:: Termcalculator
 private
