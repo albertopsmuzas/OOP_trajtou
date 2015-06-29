@@ -25,13 +25,18 @@ implicit none
 !> @version 2.0 
 !---------------------------------------------------------------
 type,abstract :: Fourier2d
-   integer(kind=4) :: n
-   integer(kind=4) :: nfunc
-   real(kind=8),dimension(:,:),allocatable :: xy
-   real(kind=8),dimension(:,:),allocatable :: f
-   integer(kind=4),dimension(:,:),allocatable :: klist
+   ! public atributes
+   integer(kind=4),public :: n
+   integer(kind=4),public :: nfunc
+   real(kind=8),dimension(:,:),allocatable,public :: xy
+   real(kind=8),dimension(:,:),allocatable,public :: f
+   integer(kind=4),dimension(:,:),allocatable,public:: kList
+   character(len=1),dimension(:),allocatable,public:: parityList
+   character(len=2),dimension(:),allocatable,public:: irrepList
 contains
+   ! initialize block
    procedure,public,non_overridable :: read => read_FOURIER2D
+   ! tools block
    procedure(interpol_FOURIER2D),public,deferred :: interpol  ! deferred !!!! take a look to interface
    procedure(get_f_and_derivs_FOURIER2D),public,deferred :: get_f_and_derivs ! deferred !!!! take a look to interface
 end type Fourier2d
@@ -83,14 +88,16 @@ CONTAINS
 !> @date Mar/2014
 !> @version 1.0 
 !-----------------------------------------------------------
-subroutine read_FOURIER2D(this,xy,f,klist)
+subroutine read_FOURIER2D(this,xy,f,kList,irrepList,parityList)
    ! initial declarations
    implicit none
    ! i/o variables
-   class(fourier2d),intent(inout) :: this
-   real(kind=8),dimension(:,:),intent(in) :: xy
-   real(kind=8),dimension(:,:),intent(in) :: f
-   integer(kind=4),dimension(:,:),intent(in) :: klist
+   class(fourier2d),intent(inout):: this
+   real(kind=8),dimension(:,:),intent(in):: xy
+   real(kind=8),dimension(:,:),intent(in):: f
+   integer(kind=4),dimension(:,:),intent(in):: kList
+   character(len=1),dimension(:):: parityList
+   character(len=2),dimension(:):: irrepList
    ! local variables
    integer(kind=4) :: ndata,nfunc
    ! run section
@@ -104,13 +111,13 @@ subroutine read_FOURIER2D(this,xy,f,klist)
          ! do nothing
    end select
    this%n=ndata
-   allocate(this%xy(ndata,2))
-   allocate(this%f(nfunc,ndata))
-   allocate(this%klist(ndata,2))
-   this%f = f
+   allocate( this%xy(ndata,2),       source=xy(:,:)       )
+   allocate( this%f(nfunc,ndata),    source=f(:,:)        )
+   allocate( this%kList(ndata,2),    source=kList(:,:)    )
+   allocate( this%parityList(ndata), source=parityList(:) )
+   allocate( this%irrepList(ndata),  source=irrepList(:)  )
    this%nfunc = nfunc
-   this%xy = xy
-   this%klist=klist
    return
 end subroutine read_fourier2d
+
 end module FOURIER2D_MOD

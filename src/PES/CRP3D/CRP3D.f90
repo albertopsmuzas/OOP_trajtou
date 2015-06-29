@@ -178,7 +178,9 @@ TYPE,EXTENDS(PES) :: CRP3D
    INTEGER(KIND=4):: max_order
    TYPE(Pair_pot),DIMENSION(:),ALLOCATABLE:: all_pairpots
    TYPE(Sitio),DIMENSION(:),ALLOCATABLE:: all_sites
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: klist
+   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: kList
+   character(len=1),dimension(:),allocatable:: parityList
+   character(len=2),dimension(:),allocatable:: irrepList
    CLASS(Function1d),ALLOCATABLE:: dampfunc
    CONTAINS
       ! Initialization block
@@ -873,6 +875,10 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
    ! Read fourier Kpoints
    CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=fourier_table,key='fourierKpoints')
    auxint=aot_table_length(L=conf,thandle=fourier_table)
+   allocate( this%irrepList(auxInt) )
+   allocate( this%parityList(auxInt) )
+   this%irrepList(:)='A1'
+   this%parityList(:)='+'
    SELECT CASE(auxint/=n_sites)
       CASE(.TRUE.)
          WRITE(0,*) "READ_CRP3D ERR: dimension mismatch between fourierKpoints and number of sitios"
@@ -1597,7 +1603,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu,errCode)
       CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
-   CALL interpolxy%READ(xy,f,this%klist)
+   CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
    CALL interpolxy%INTERPOL(system_surface)
    CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
@@ -1747,7 +1753,7 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
       CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
-   CALL interpolxy%READ(xy,f,this%klist)
+   CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
    CALL interpolxy%INTERPOL(system_surface)
    CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
    ! Corrections from the smoothing procedure
@@ -1821,7 +1827,7 @@ REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
       CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
-   CALL interpolxy%READ(xy,f,this%klist)
+   CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
    CALL interpolxy%INTERPOL(system_surface)
    CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
    ! Corrections from the smoothing procedure

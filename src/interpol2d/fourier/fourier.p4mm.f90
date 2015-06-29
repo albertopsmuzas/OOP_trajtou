@@ -13,14 +13,12 @@ use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
 IMPLICIT NONE
 
-TYPE,EXTENDS(Fourier2d) :: Fourierp4mm
+TYPE,EXTENDS(Fourier2d):: Fourierp4mm
    PRIVATE
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: coeff
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: termmap
    CONTAINS
-      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_FOURIERP4MM
-      PROCEDURE,PUBLIC :: GET_F_AND_DERIVS => GET_F_AND_DERIVS_FOURIERP4MM
-      PROCEDURE,PUBLIC :: SET_TERMMAP => SET_TERMMAP_FOURIERP4MM
+      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_FOURIERP4MM
+      PROCEDURE,PUBLIC:: GET_F_AND_DERIVS => GET_F_AND_DERIVS_FOURIERP4MM
 END TYPE Fourierp4mm
 ! variables and types, body
 CONTAINS
@@ -29,133 +27,117 @@ CONTAINS
 !###########################################################
 !
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfoup4mm(id,surf,k,r) 
+function termfoup4mm(surf,k,parity,irrep,r) result(answer)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: id
-   class(Surface),INTENT(IN) :: surf
-   INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: k
-   REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
+   class(surface),intent(in):: surf
+   integer(kind=4),dimension(2),intent(in):: k
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   real(kind=8),dimension(2),intent(in):: r
+   ! Dummy out variable
+   real(kind=8):: answer
    ! Local variables
-   REAL(KIND=8) :: g
-    INTEGER(KIND=4) ::i ! counters
-   ! Run section
+   real(kind=8):: g
+   ! Paramters
+   character(len=*),parameter:: routinename='termfoup4mm: '
+   ! Run section -------------------------------------------
    g=2.D0*PI/surf%norm_s1
-   SELECT CASE(id)
-      CASE(0)
-         termfoup4mm=1.D0
-      CASE(1)
-         termfoup4mm=dcos(g*dfloat(k(1))*r(1))+dcos(g*dfloat(k(1))*r(2))
-      CASE(2)
-         termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(1))*r(2))
-      CASE(3)
-         termfoup4mm=dcos(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))+&
-            dcos(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
-      CASE(4)
-         termfoup4mm=0.D0
-         DO i = 0, -k(1) ! k(1) is negative
-            termfoup4mm=termfoup4mm+dcos(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
-               +dcos(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
-         END DO
-      CASE DEFAULT
-         WRITE(0,*) "termfoup4mm ERR: Incorrect fourier term id: ", id
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END FUNCTION termfoup4mm
+   select case( irrep )
+   case('A1')
+      select case( parity )
+      case('+')
+         answer=dcos( g*dfloat(k(1))*r(1) )*dcos( g*dfloat(k(2))*r(2) )+&
+                dcos( g*dfloat(k(2))*r(1) )*dcos( g*dfloat(k(1))*r(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+   case default
+      write(0,*) 'ERR '//routinename//' irrep not implemented: "'//irrep//'"'
+      call exit(1)
+   end select
+   return
+end function termfoup4mm
 !###########################################################
 !# FUNCTION: termfoup4mm_dx 
 !###########################################################
 !> @brief 
 !! ! type brief explanation
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date ! type a date
-!> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfoup4mm_dx(id,surf,k,r) 
+function termfoup4mm_dx(surf,k,parity,irrep,r) result(answer)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: id
-   class(Surface),INTENT(IN) :: surf
-   INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: k
-   REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
+   class(surface),intent(in):: surf
+   integer(kind=4),dimension(2),intent(in):: k
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   real(kind=8),dimension(2),intent(in):: r
+   ! Dummy out variable
+   real(kind=8):: answer
    ! Local variables
-   REAL(KIND=8):: g
-   INTEGER(KIND=4) :: i ! counter
-   ! Run section
+   real(kind=8):: g
+   ! Paramters
+   character(len=*),parameter:: routinename='termfoup4mm: '
+   ! Run section -------------------------------------------
    g=2.D0*PI/surf%norm_s1
-   SELECT CASE(id)
-      CASE(0)
-         termfoup4mm_dx=0.D0
-      CASE(1)
-         termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))
-      CASE(2)
-         termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(1))*r(2))
-      CASE(3)
-         termfoup4mm_dx=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(1))*dcos(g*dfloat(k(2))*r(2))-&
-            g*dfloat(k(2))*dsin(g*dfloat(k(2))*r(1))*dcos(g*dfloat(k(1))*r(2))
-      CASE(4)
-         termfoup4mm_dx=0.D0
-          DO i = 0, -k(1)
-            termfoup4mm_dx=termfoup4mm_dx&
-               -g*dfloat(-k(1))*dsin(g*dfloat(-k(1))*r(1))*dcos(g*dfloat(i)*r(2))&
-               -g*dfloat(i)*dsin(g*dfloat(i)*r(1))*dcos(g*dfloat(-k(1))*r(2))
-         END DO
-      CASE DEFAULT
-         WRITE(0,*) "termfoup4mm_dx ERR: Incorrect fourier term id: ", id
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END FUNCTION termfoup4mm_dx
+   select case( irrep )
+   case('A1')
+      select case( parity )
+      case('+')
+         answer=-g*( dfloat(k(1))*dsin( g*dfloat(k(1))*r(1) )*dcos( g*dfloat(k(2))*r(2) )+&
+                     dfloat(k(2))*dsin( g*dfloat(k(2))*r(1) )*dcos( g*dfloat(k(1))*r(2) ) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+   case default
+      write(0,*) 'ERR '//routinename//' irrep not implemented: "'//irrep//'"'
+      call exit(1)
+   end select
+   return
+end function termfoup4mm_dx
 !###########################################################
 !# FUNCTION: termfoup4mm_dy
 !###########################################################
 !> @brief 
 !! ! type brief explanation
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date ! type a date
-!> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION termfoup4mm_dy(id,surf,k,r) 
-   ! Initial declarations   
-   IMPLICIT NONE
+function termfoup4mm_dy(surf,k,parity,irrep,r) result(answer)
+   ! Initial declarations
+   implicit none
    ! I/O variables
-   INTEGER(KIND=4),INTENT(IN) :: id
-   class(Surface),INTENT(IN) :: surf
-   INTEGER(KIND=4),DIMENSION(2),INTENT(IN) :: k
-   REAL(KIND=8),DIMENSION(2),INTENT(IN) :: r
+   class(surface),intent(in):: surf
+   integer(kind=4),dimension(2),intent(in):: k
+   character(len=1),intent(in):: parity
+   character(len=2),intent(in):: irrep
+   real(kind=8),dimension(2),intent(in):: r
+   ! Dummy out variable
+   real(kind=8):: answer
    ! Local variables
-   REAL(KIND=8):: g
-   INTEGER(KIND=4) :: i ! counters
-   ! Run section
+   real(kind=8):: g
+   ! Paramters
+   character(len=*),parameter:: routinename='termfoup4mm: '
+   ! Run section -------------------------------------------
    g=2.D0*PI/surf%norm_s1
-   SELECT CASE(id)
-      CASE(0)
-         termfoup4mm_dy=0.D0
-      CASE(1)
-         termfoup4mm_dy=-g*dfloat(k(1))*dsin(g*dfloat(k(1))*r(2))
-      CASE(2)
-         termfoup4mm_dy=-g*dfloat(k(1))*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(1))*r(2))
-      CASE(3)
-         termfoup4mm_dy=-g*dfloat(k(2))*dcos(g*dfloat(k(1))*r(1))*dsin(g*dfloat(k(2))*r(2))-&
-            g*dfloat(k(1))*dcos(g*dfloat(k(2))*r(1))*dsin(g*dfloat(k(1))*r(2))
-      CASE(4)
-         termfoup4mm_dy=0.D0
-            DO i = 0, -k(1)
-               termfoup4mm_dy=termfoup4mm_dy&
-               -g*dfloat(i)*dcos(g*dfloat(-k(1))*r(1))*dsin(g*dfloat(i)*r(2))&
-               -g*dfloat(-k(1))*dcos(g*dfloat(i)*r(1))*dsin(g*dfloat(-k(1))*r(2))
-            END DO
-      CASE DEFAULT
-         WRITE(0,*) "termfoup4mm_dy ERR: Incorrect fourier term id: ", id
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END FUNCTION termfoup4mm_dy
+   select case( irrep )
+   case('A1')
+      select case( parity )
+      case('+')
+         answer=-g*( dfloat(k(2))*dcos( g*dfloat(k(1))*r(1) )*dsin( g*dfloat(k(2))*r(2) )+&
+                     dfloat(k(1))*dcos( g*dfloat(k(2))*r(1) )*dsin( g*dfloat(k(1))*r(2) ) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+   case default
+      write(0,*) 'ERR '//routinename//' irrep not implemented: "'//irrep//'"'
+      call exit(1)
+   end select
+   return
+end function termfoup4mm_dy
 !###########################################################
 !# SUBROUTINE: INTERPOL_FOURIERP4MM 
 !###########################################################
@@ -181,10 +163,9 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
    ALLOCATE(tmtrx(this%n,this%n))
    ALLOCATE(inv_tmtrx(this%n,this%n))
    ALLOCATE(this%coeff(this%n,this%nfunc))
-   CALL this%SET_TERMMAP()
    DO i = 1, this%n ! loop over points
       DO j = 1, this%n ! loop over terms (one for each k point)
-         tmtrx(i,j)=termfoup4mm(this%termmap(j),surf,this%klist(j,:),this%xy(i,:)) 
+         tmtrx(i,j)=termfoup4mm( surf=surf,k=this%kList(j,:),parity=this%parityList(j),irrep=this%irrepList(j),r=this%xy(i,:) )
       END DO
    END DO
    CALL INV_MTRX(this%n,tmtrx,inv_tmtrx)
@@ -203,75 +184,6 @@ SUBROUTINE INTERPOL_FOURIERP4MM(this,surf,filename)
    END SELECT
    RETURN
 END SUBROUTINE INTERPOL_FOURIERP4MM
-!###########################################################
-!# SUBROUTINE: SET_TERMMAP_FOURIERP4MM 
-!###########################################################
-!> @brief
-!! Sets the map that identifies the kind of terms that should
-!! be used during the fourier interpolation. These terms depend
-!! on the kpoints chosen.
-!
-!> @warning
-!! - If the first coordinate of the Kpoint is negative, an average will be done instead for
-!!   that order
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date 28/Mar/2014 
-!> @version 1.0
-!-----------------------------------------------------------
-SUBROUTINE SET_TERMMAP_FOURIERP4MM(this)
-   ! Initial declarations   
-   IMPLICIT NONE
-   ! I/O variables
-   CLASS(Fourierp4mm),INTENT(INOUT)::this
-   ! Local variables
-   INTEGER(KIND=4) :: i !counters
-   CHARACTER(LEN=25),PARAMETER :: routinename="SET_TERMMAP_FOURIERP4MM: "
-   ! Run section
-   ALLOCATE(this%termmap(this%n))
-   DO i = 1, this%n
-      SELECT CASE(this%klist(i,1)==0 .AND. this%klist(i,2)==0)
-         CASE(.TRUE.)
-            this%termmap(i)=0
-            CYCLE
-         CASE DEFAULT
-            ! do nothing
-      END SELECT
-      !
-      SELECT CASE(this%klist(i,1)>0 .AND. this%klist(i,2)==0)
-         CASE(.TRUE.)
-            this%termmap(i)=1
-            CYCLE
-         CASE DEFAULT
-            ! do nothing
-      END SELECT
-      !
-      SELECT CASE(this%klist(i,1)>0 .AND. this%klist(i,2)==this%klist(i,1))
-         CASE(.TRUE.)
-            this%termmap(i)=2
-            CYCLE
-         CASE DEFAULT
-            ! do nothing
-      END SELECT
-      !
-      SELECT CASE(this%klist(i,2)<this%klist(i,1) .AND. this%klist(i,2)>0)
-         CASE(.TRUE.)
-            this%termmap(i)=3
-            CYCLE
-         CASE DEFAULT
-            ! do nothing
-      END SELECT
-      SELECT CASE(this%klist(i,1)<0)
-         CASE(.TRUE.)
-            this%termmap(i)=4
-            CYCLE
-         CASE DEFAULT
-            WRITE(0,*) "INTERPOL_FOURIER4MM ERR: Kpoint list has a bad item at position ",i
-            CALL EXIT(1)
-      END SELECT
-   END DO
-   RETURN
-END SUBROUTINE SET_TERMMAP_FOURIERP4MM
 !###########################################################
 !# SUBROUTINE: GET_F_AND_DERIVS_FOURIERP4MM 
 !###########################################################
@@ -298,8 +210,8 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
    ALLOCATE(terms(this%n))
    ALLOCATE(terms_dx(this%n))
    ALLOCATE(terms_dy(this%n))
-   SELECT CASE(size(v) == this%nfunc .AND. size(dvdu(:,1)) == this%nfunc .AND.&
-      size(dvdu(1,:)) == 2)
+   SELECT CASE( size(v) == this%nfunc .AND. size(dvdu(:,1)) == this%nfunc .AND.&
+                size(dvdu(1,:)) == 2)
       CASE(.FALSE.)
          WRITE(0,*) "GET_F_AND_DERIVS_FOURIERP4MM ERR: size mismatch in v and stored values of f"
          WRITE(0,*) "GET_F_AND_DERIVS_FOURIERP4MM ERR: nfunc: ", this%nfunc
@@ -311,9 +223,9 @@ SUBROUTINE GET_F_AND_DERIVS_FOURIERP4MM(this,surf,r,v,dvdu)
    END SELECT
    DO i = 1, this%nfunc
       DO j = 1, this%n
-         terms(j)=termfoup4mm(this%termmap(j),surf,this%klist(j,:),r)
-         terms_dx(j)=termfoup4mm_dx(this%termmap(j),surf,this%klist(j,:),r)
-         terms_dy(j)=termfoup4mm_dy(this%termmap(j),surf,this%klist(j,:),r)
+         terms(j)   =termfoup4mm( surf=surf,k=this%kList(j,:),parity=this%parityList(j),irrep=this%irrepList(j),r=r )
+         terms_dx(j)=termfoup4mm( surf=surf,k=this%kList(j,:),parity=this%parityList(j),irrep=this%irrepList(j),r=r )
+         terms_dy(j)=termfoup4mm( surf=surf,k=this%kList(j,:),parity=this%parityList(j),irrep=this%irrepList(j),r=r )
       END DO
       v(i)=dot_product(terms,this%coeff(:,i))
       dvdu(i,1)=dot_product(terms_dx,this%coeff(:,i))
