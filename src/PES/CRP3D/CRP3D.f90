@@ -338,8 +338,6 @@ SUBROUTINE SET_FOURIER_SYMMETRY_CRP3D(this,interpolxy)
    SELECT CASE(system_surface%getsymmlabel())
       CASE("p4mm")
          ALLOCATE(Fourierp4mm::interpolxy)
-      CASE("p6mm")
-         ALLOCATE(Fourierp6mm::interpolxy)
       CASE DEFAULT
          WRITE(0,*) "SET_FOURIER_SYMMETRY_CRP3D ERR: Incorrect surface symmlabel"
          WRITE(0,*) "Used: ",system_surface%getsymmlabel()
@@ -1604,8 +1602,9 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu,errCode)
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
-   CALL interpolxy%INTERPOL(system_surface)
-   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
+   call interpolXY%initializeTerms()
+   CALL interpolxy%INTERPOL()
+   CALL interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    v = v + potarr(1)
    dvdu(1)=dvdu(1)+derivarr(1,1)
@@ -1754,8 +1753,9 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
-   CALL interpolxy%INTERPOL(system_surface)
-   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
+   call interpolXY%initializeTerms()
+   CALL interpolxy%INTERPOL()
+   CALL interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    v = v + potarr(1)
    dvdu(1)=dvdu(1)+derivarr(1,1)
@@ -1828,8 +1828,9 @@ REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
    END DO
    CALL this%SET_FOURIER_SYMMETRY(interpolxy)
    CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
-   CALL interpolxy%INTERPOL(system_surface)
-   CALL interpolxy%GET_F_AND_DERIVS(system_surface,X,potarr,derivarr)
+   call interpolXY%initializeTerms()
+   CALL interpolxy%INTERPOL()
+   CALL interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    getpot_crp3d=v+potarr(1)
    RETURN

@@ -43,7 +43,7 @@ abstract interface
    function getValue_INTERPOL3D(this,x) result(answer)
       import Interpol3d
       class(Interpol3d),target,intent(in):: this
-      real(kind=8),dimension(:,3),intent(in):: x
+      real(kind=8),dimension(3),intent(in):: x
       real(kind=8):: answer
    end function getValue_INTERPOL3D
 end interface

@@ -59,7 +59,7 @@ type,abstract,extends(Interpol1d):: Fourier1d
    integer(kind=4),dimension(:),allocatable,public:: kList
    character(len=1),dimension(:),allocatable,public:: parityList
    character(len=2),dimension(:),allocatable,public:: irrepList
-   class(Termcalculator),allocatable,public:: term
+   class(TermCalculator),allocatable,public:: term
    ! private atributes
    real(kind=8),dimension(:),allocatable,private:: coeff
    real(kind=8),dimension(:,:),allocatable,private:: extracoeff

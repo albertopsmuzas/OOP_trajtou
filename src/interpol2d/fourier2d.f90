@@ -25,10 +25,10 @@ abstract interface
    !> @brief
    !! Just an example that child objects should override
    !-----------------------------------------------------------
-   function getvalue_termcalculator_example(this,kpoint,parity,irrep,x) result(answer)
+   function getvalue_termcalculator_example(this,k,parity,irrep,x) result(answer)
       import TermCalculator2d
       class(TermCalculator2d),intent(in):: this
-      integer(kind=4),intent(in):: kpoint
+      integer(kind=4),dimension(2),intent(in):: k
       real(kind=8),dimension(2),intent(in):: x
       character(len=1),intent(in):: parity
       character(len=2),intent(in):: irrep
@@ -49,10 +49,6 @@ end interface
 !> @param fgrid(:,:) - Function evaluated in a grid
 !> @param f - Array that stores couples @f$F(x_{i},y_{i})@f$. Non grid input.
 !> @param dfdz - Array that stores couples @f$\frac{\partial F(x_{i},y_{i})}{\partial z}@f$
-!
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date Feb/2014, Jul/2014
-!> @version 2.0 
 !---------------------------------------------------------------
 type,abstract :: Fourier2d
    ! public atributes
@@ -63,6 +59,7 @@ type,abstract :: Fourier2d
    integer(kind=4),dimension(:,:),allocatable,public:: kList
    character(len=1),dimension(:),allocatable,public:: parityList
    character(len=2),dimension(:),allocatable,public:: irrepList
+   class(termCalculator2d),allocatable:: term
 contains
    ! initialize block
    procedure,public,non_overridable :: read => read_FOURIER2D
@@ -77,22 +74,20 @@ abstract interface
    !# SUBROUTINE: INTERPOL_FOURIER2D 
    !###########################################################
    !-----------------------------------------------------------
-   subroutine interpol_FOURIER2D(this,surf,filename)
+   subroutine interpol_FOURIER2D(this,filename)
       import fourier2d
       import surface
       class(fourier2d),intent(inout) :: this
-      class(surface),intent(in) :: surf
       character(len=*),intent(in),optional :: filename
    end subroutine interpol_FOURIER2D
    !###########################################################
    !# SUBROUTINE: GET_F_AND_DERIVS 
    !###########################################################
    !-----------------------------------------------------------
-   subroutine get_f_and_derivs_FOURIER2D(this,surf,r,v,dvdu)
+   subroutine get_f_and_derivs_FOURIER2D(this,r,v,dvdu)
       import fourier2d
       import surface
       class(fourier2d),intent(in):: this
-      class(surface),intent(in):: surf
       real(kind=8),dimension(2),intent(in) :: r
       real(kind=8),dimension(:),intent(out) :: v
       real(kind=8),dimension(:,:),intent(out) :: dvdu
@@ -105,8 +100,8 @@ abstract interface
    !! child non-abstract classes
    !-----------------------------------------------------------
    subroutine initializeTerms_FOURIER2D(this)
-      import Fourier1d
-      class(fourier1d),intent(inout):: this
+      import Fourier2d
+      class(fourier2d),intent(inout):: this
    end subroutine initializeTerms_FOURIER2D
 end interface
 !////////////////////////////////////////////////////////////////

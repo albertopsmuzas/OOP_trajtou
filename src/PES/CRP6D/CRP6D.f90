@@ -16,11 +16,13 @@ use PES_MOD, only: PES
 use CRP3D_MOD, only: CRP3D
 use EXTRAPOL_TO_VACUUM_MOD, only: Vacuumpot
 use FOURIER_P4MM_MOD, only: Fourierp4mm
-use WYCKOFF_P4MM_MOD, only: WyckoffSitio, Wyckoffp4mm,TermsInfo
+use FOURIER3D_P4MM_MOD, only: Fourier3d_p4mm
+use WYCKOFF_P4MM_MOD, only: WyckoffSitio,Wyckoffp4mm,TermsInfo
+use FOURIER3D_P4MM_MOD, only: Fourier3d_p4mm
 use AOTUS_MODULE, only: flu_State, OPEN_CONFIG_FILE, CLOSE_CONFIG, AOT_GET_VAL
 use AOT_TABLE_MODULE, only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LENGTH, AOT_TABLE_GET_VAL
 #if DEBUG
-use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
+use DEBUG_MOD, only: verbose_write, debug_write
 #endif
 IMPLICIT NONE
 !/////////////////////////////////////////////////
@@ -42,7 +44,10 @@ TYPE,EXTENDS(PES):: CRP6D
    TYPE(Vacuumpot):: farpot
    CLASS(Function1d),ALLOCATABLE:: dumpfunc
    CHARACTER(LEN=30):: extrapol2vac_flag
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: xyklist
+   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: kList
+   character(len=1),dimension(:),allocatable:: parityList
+   character(len=2),dimension(:),allocatable:: irrepList
+
    CONTAINS
       ! Initialization block
       PROCEDURE,PUBLIC:: READ => READ_CRP6D
@@ -336,11 +341,12 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! f(3,:) smooth dvdr
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
-   CALL xyinterpol%READ(xy,f,this%xyklist)
-   CALL xyinterpol%INTERPOL(system_surface)
+   CALL xyinterpol%READ( xy=xy,f=f,kList=this%kList,irrepList=this%irrepList,parityList=this%parityList )
+   call xyInterpol%initializeTerms()
+   CALL xyinterpol%INTERPOL()
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,r(1:2),aux1,aux2)
+   CALL xyinterpol%GET_F_AND_DERIVS(r(1:2),aux1,aux2)
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
@@ -617,11 +623,12 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! f(3,:) smooth dvdr
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
-   CALL xyinterpol%READ(xy,f,this%xyklist)
-   CALL xyinterpol%INTERPOL(system_surface)
+   CALL xyinterpol%READ( xy=xy,f=f,kList=this%kList,irrepList=this%irrepList,parityList=this%parityList )
+   call xyInterpol%initializeTerms()
+   CALL xyinterpol%INTERPOL()
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(system_surface,x(1:2),aux1,aux2)
+   CALL xyinterpol%GET_F_AND_DERIVS(x(1:2),aux1,aux2)
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
@@ -998,7 +1005,7 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    INTEGER(KIND=4):: ierr
    INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table,dampfunc_table,param_table,extrapol_table
    INTEGER(KIND=4):: resize_table,wyckoff_table,inwyckoff_table,cut2d_table,files_table,kpoints_table
-   integer(kind=4):: phi_table,term_table,theta_table
+   integer(kind=4):: phi_table,term_table,theta_table,fourier_table
    INTEGER(KIND=4):: inkpoints_table
    ! Auxiliar, dummy variables
    INTEGER(KIND=4):: auxInt,auxInt2
@@ -1255,31 +1262,39 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    END DO
    CALL AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
    ! Get kpoints for Fourier interpolation
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=kpoints_table,key='fourierKpoints')
-   auxint=aot_table_length(L=conf,thandle=kpoints_table)
-   SELECT CASE(auxint/=this%nsites)
-      CASE(.TRUE.)
-         WRITE(0,*) "READ_CRP3D ERR: mismatch between number of kpoints and wyckoff sites"
-         CALL EXIT(1)
-      CASE(.FALSE.)
+   call aot_table_open( L=conf,parent=pes_table,thandle=fourier_table,key='fourierTerms' )
+   allocate( this%kList(this%nsites,2)    )
+   allocate( this%irrepList(this%nsites)  )
+   allocate( this%parityList(this%nsites) )
+   auxint=aot_table_length( L=conf,thandle=fourier_table )
+   select case(auxint/=this%nsites)
+      case(.true.)
+         write(0,*) "READ_CRP3D ERR: mismatch between number of kpoints and wyckoff sites"
+         call exit(1)
+      case(.false.)
          ! do nothing
-   END SELECT
-   ALLOCATE(this%xyklist(this%nsites,2))
-   DO i = 1, this%nsites
-      CALL AOT_TABLE_OPEN(L=conf,parent=kpoints_table,thandle=inkpoints_table,pos=i)
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inkpoints_table,pos=1,val=auxint)
-      this%xyklist(i,1)=auxint
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inkpoints_table,pos=2,val=auxint)
-      this%xyklist(i,2)=auxint
-      CALL AOT_TABLE_CLOSE(L=conf,thandle=inkpoints_table)
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=kpoints_table)
+   end select
+   do i=1,this%nSites
+      call aot_table_open( L=conf,parent=fourier_table,thandle=term_table,pos=i )
+      call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=1,val=auxString )
+      call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=2,val=auxString2 )
+      call aot_table_open( L=conf,parent=term_table,thandle=kpoints_table,pos=3 )
+      call aot_get_val( L=conf,errCode=iErr,thandle=kpoints_table,pos=1,val=auxInt )
+      call aot_get_val( L=conf,errCode=iErr,thandle=kpoints_table,pos=2,val=auxInt2 )
+      call aot_table_close( L=conf,thandle=kpoints_table )
+      call aot_table_close( L=conf,thandle=term_table )
+      this%kList(i,1)=auxInt
+      this%kList(i,2)=auxInt2
+      this%irrepList(i)=trim(auxString)
+      this%parityList(i)=trim(auxString2)
+   enddo
+   call aot_table_close( L=conf,thandle=fourier_table )
    ! ENDDDDDD!!!!!!
    CALL CLOSE_CONFIG(conf)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"xyklist found:")
+   CALL VERBOSE_WRITE(routinename,'List of Fourier terms:')
    DO i = 1, this%nsites
-      CALL VERBOSE_WRITE(routinename,this%xyklist(i,:))
+      write(*,*) this%irrepList(i)//' '//this%parityList(i),this%kList(i,:)
    END DO
 #endif
    RETURN

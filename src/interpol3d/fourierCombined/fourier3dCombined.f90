@@ -25,8 +25,8 @@ implicit none
 !----------------------------------------------------------------
 type,abstract:: TermCalculator3d
    ! public atributes
-   type(Fourier1d),allocatable,public:: angleFourier
-   type(Fourier2d),allocatable,public:: xyFourier
+   class(Fourier1d),allocatable,public:: angleFourier
+   class(Fourier2d),allocatable,public:: xyFourier
    contains
       procedure(getvalue_termcalculator_example),public,deferred:: getValue
       procedure(getvalue_termcalculator_example),public,deferred:: getDeriv1
@@ -63,7 +63,7 @@ end interface
 !----------------------------------------------------------------------------
 type,abstract,extends(Interpol3d):: Fourier3d
    ! public atributes
-   type(TermCalculator3d),allocatable,public:: term
+   class(TermCalculator3d),allocatable,public:: term
    integer(kind=4),dimension(:,:),allocatable,public:: kListXY
    character(len=1),dimension(:),allocatable,public:: parityListXY
    character(len=2),dimension(:),allocatable,public:: irrepListXY
@@ -78,7 +78,7 @@ type,abstract,extends(Interpol3d):: Fourier3d
       ! initialize block
       procedure(initializeTerms_FOURIER3D),public,deferred:: initializeTerms
       ! get block
-      procedure,public,non_overridable:: getValue => getvalue_FOURIER3D
+      procedure,public,non_overridable:: getValue  => getvalue_FOURIER3D
       procedure,public,non_overridable:: getDeriv1 => getDeriv1_FOURIER3D
       procedure,public,non_overridable:: getDeriv2 => getDeriv2_FOURIER3D
       procedure,public,non_overridable:: getDeriv3 => getDeriv3_FOURIER3D
@@ -90,7 +90,7 @@ type,abstract,extends(Interpol3d):: Fourier3d
       procedure,public,non_overridable:: interpol => interpol_FOURIER3D
       procedure,public,non_overridable:: add_morefuncs => add_more_funcs_FOURIER3D
       procedure,public,non_overridable:: get_allfuncs_and_derivs => get_allfunc_and_derivs_FOURIER3D
-end type FOURIER3D
+end type Fourier3d
 abstract interface
    !###########################################################
    !# SUBROUTINE: SET_IRREP_FOURIER3D
@@ -116,13 +116,13 @@ subroutine setKlist_FOURIER3D(this,kListXY,kListAngle)
    implicit none
    ! I/O variables
    class(Fourier3d),intent(inout):: this
-   integer(kind=4),dimension(:,:):: kListXY
-   integer(kind=4),dimension(:):: kListAngle
+   integer(kind=4),dimension(:,:),intent(in):: kListXY
+   integer(kind=4),dimension(:),intent(in):: kListAngle
    ! Local variables
    integer(kind=4):: n
    ! Run section
    n=size(kListXY(:,1))
-   allocate( this%kListXY(n,2),  source=kListXY(:,2)  )
+   allocate( this%kListXY(n,2),  source=kListXY(:,1:2)  )
    allocate( this%kListAngle(n), source=kListAngle(:) )
    return
 end subroutine setKlist_FOURIER3D
@@ -136,8 +136,8 @@ subroutine setParityList_FOURIER3D(this,parityListXY,parityListAngle)
    implicit none
    ! I/O variables
    class(Fourier3d),intent(inout):: this
-   character(len=1),dimension(:):: parityListXY
-   character(len=1),dimension(:):: parityListAngle
+   character(len=1),dimension(:),intent(in):: parityListXY
+   character(len=1),dimension(:),intent(in):: parityListAngle
    ! Local variables
    integer(kind=4):: n
    ! Run section
@@ -156,8 +156,8 @@ subroutine setIrrepList_FOURIER3D(this,irrepListXY,irrepListAngle)
    implicit none
    ! I/O variables
    class(Fourier3d),intent(inout):: this
-   character(len=2),dimension(:):: irrepListXY
-   character(len=2),dimension(:):: irrepListAngle
+   character(len=2),dimension(:),intent(in):: irrepListXY
+   character(len=2),dimension(:),intent(in):: irrepListAngle
    ! Local variables
    integer(kind=4):: n
    ! Run section
@@ -180,7 +180,7 @@ subroutine GET_ALLFUNC_AND_DERIVS_FOURIER3D(this,x,f,dfdx)
    class(Fourier3d),intent(in) :: this
    real(kind=8),dimension(3),intent(in) :: x
    real(kind=8),dimension(:),intent(out) :: f
-   real(kind=8),dimension(:,3),intent(out):: dfdx
+   real(kind=8),dimension(:,:),intent(out):: dfdx
    ! Local variables
    integer(kind=4) :: nfuncs
    integer(kind=4) :: i ! counters
@@ -198,12 +198,12 @@ subroutine GET_ALLFUNC_AND_DERIVS_FOURIER3D(this,x,f,dfdx)
          ! do nothing
    end select
    nfuncs=size(this%extrafuncs(:,1))+1
-   select case(size(f)/=nfuncs .or. size(dfdx(:,1))/=nfuncs)
+   select case( size(f)/=nfuncs .or. size(dfdx(:,1))/=nfuncs .or. size(dfdx(1,:)\=3 )
       case(.true.)
          write(0,*) "GET_ALLFUNCS_AND DERIVS ERR: size mismatch of output arguments"
          write(0,*) "nfuncs: ",nfuncs
          write(0,*) "size f: ", size(f)
-         write(0,*) "size dfdx: ",size(dfdx(:,1))
+         write(0,*) "size dfdx: ",size(dfdx(:,1)),size(dfdx(1,:))
          call EXIT(1)
       case(.false.)
          ! do nothing
@@ -214,17 +214,17 @@ subroutine GET_ALLFUNC_AND_DERIVS_FOURIER3D(this,x,f,dfdx)
    allocate(terms_dy(this%n))
    allocate(terms_dz(this%n))
    do i = 1, this%n
-      terms(i)=this%term%getValue( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                   l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms(i)=this%term%getValue( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),       irrepXY=this%irrepListXY(i),&
+                                   l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                    x=x )
-      terms_dx(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                       l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms_dx(i)=this%term%getDeriv1( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),       irrepXY=this%irrepListXY(i),&
+                                       l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                        x=x )
-      terms_dy(i)=this%term%getDeriv2( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                       l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms_dy(i)=this%term%getDeriv2( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),       irrepXY=this%irrepListXY(i),&
+                                       l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                        x=x )
-      terms_dz(i)=this%term%getDeriv3( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                       l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms_dz(i)=this%term%getDeriv3( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),       irrepXY=this%irrepListXY(i),&
+                                       l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                        x=x )
    end do
    f(1)=dot_product(terms,this%coeff)
@@ -295,8 +295,8 @@ subroutine INTERPOL_FOURIER3D(this)
    allocate(inv_terms(this%n,this%n))
    do i = 1, this%n ! loop over eq for different points
       do j = 1, this%n ! loop over coefficients
-         terms(i,j)=this%term%getValue( k=this%kListXY(j),    parityXY=this%parityListXY(j),  irrepXY=this%irrepListXY(j),&
-                                        l=this%kListAngle(j), parityAngle=parityListAngle(j), irrepAngle=irrepListAngle(j),&
+         terms(i,j)=this%term%getValue( k=this%kListXY(j,1:2), parityXY=this%parityListXY(j),       irrepXY=this%irrepListXY(j),&
+                                        l=this%kListAngle(j),  parityAngle=this%parityListAngle(j), irrepAngle=this%irrepListAngle(j),&
                                         x=this%x(i,:) )
       end do
    end do
@@ -336,8 +336,8 @@ function getValue_FOURIER3D(this,x) result(answer)
    ! Run section
    allocate(terms(this%n))
    do i = 1, this%n
-      terms(i)=this%term%getValue( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                   l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms(i)=this%term%getValue( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),       irrepXY=this%irrepListXY(i),&
+                                   l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                    x=x )
    end do
    answer=dot_product(terms,this%coeff)
@@ -364,8 +364,8 @@ function getDeriv1_FOURIER3D(this,x) result(answer)
    ! Run section
    allocate(terms(this%n))
    do i = 1, this%n
-      terms(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                    l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms(i)=this%term%getDeriv1( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),       irrepXY=this%irrepListXY(i),&
+                                    l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                     x=x )
    end do
    answer=dot_product(terms,this%coeff)
@@ -389,8 +389,8 @@ function getDeriv2_FOURIER3D(this,x) result(answer)
    ! Run section
    allocate(terms(this%n))
    do i = 1, this%n
-      terms(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                    l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms(i)=this%term%getDeriv1( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
+                                    l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                     x=x )
    end do
    answer=dot_product(terms,this%coeff)
@@ -414,8 +414,8 @@ function getDeriv3_FOURIER3D(this,x) result(answer)
    ! Run section
    allocate(terms(this%n))
    do i = 1, this%n
-      terms(i)=this%term%getDeriv1( k=this%kListXY(i),    parityXY=this%parityListXY(i),  irrepXY=this%irrepListXY(i),&
-                                    l=this%kListAngle(i), parityAngle=parityListAngle(i), irrepAngle=irrepListAngle(i),&
+      terms(i)=this%term%getDeriv1( k=this%kListXY(i,1:2), parityXY=this%parityListXY(i),       irrepXY=this%irrepListXY(i),&
+                                    l=this%kListAngle(i),  parityAngle=this%parityListAngle(i), irrepAngle=this%irrepListAngle(i),&
                                     x=x )
    end do
    answer=dot_product(terms,this%coeff)
