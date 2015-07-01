@@ -58,7 +58,7 @@ end subroutine initializeTerms_FOURIER1D_4MM
 !# FUNCTION: termfou1d_4mm
 !###########################################################
 !-----------------------------------------------------------
-function termfou1d_4mm(this,kpoint,parity,irrep,x) result(realNum)
+function termfou1d_4mm(this,kpoint,parity,irrep,x) result(answer)
    ! Initial declarations 
    implicit none
    ! I/O variables
@@ -68,7 +68,7 @@ function termfou1d_4mm(this,kpoint,parity,irrep,x) result(realNum)
    character(len=1),intent(in):: parity
    character(len=2),intent(in):: irrep
    ! Dummy output variable
-   real(kind=8):: realNum
+   real(kind=8):: answer
    ! Parameters
    character(len=*),parameter:: routinename='termfou1d_4mm: '
    ! Run section
@@ -84,7 +84,27 @@ function termfou1d_4mm(this,kpoint,parity,irrep,x) result(realNum)
       ! parity check
       select case( parity )
       case('+')
-         realNum=dcos(dfloat(kpoint)*x)
+         answer=dcos(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+   case('E','EE')
+      ! kpoint check
+      select case( mod(kpoint,2)==0 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('+')
+         answer=dcos(dfloat(kpoint)*x)
+      case('-')
+         answer=dsin(dfloat(kpoint)*x)
+      case('o')
+         answer=dsin(dfloat(kpoint)*x)+dcos(dfloat(kpoint)*x)
       case default
          write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
          call exit(1)
@@ -102,7 +122,7 @@ end function termfou1d_4mm
 !# FUNCTION: termfou1d_dx_4mm_A1
 !###########################################################
 !-----------------------------------------------------------
-function termfou1d_dx_4mm(this,kpoint,parity,irrep,x) result(realNum)
+function termfou1d_dx_4mm(this,kpoint,parity,irrep,x) result(answer)
    ! Initial declarations 
    implicit none
    ! I/O variables
@@ -112,14 +132,34 @@ function termfou1d_dx_4mm(this,kpoint,parity,irrep,x) result(realNum)
    character(len=1),intent(in):: parity
    character(len=2),intent(in):: irrep
    ! Dummy output variable
-   real(kind=8):: realNum
+   real(kind=8):: answer
    ! Parameters
    character(len=*),parameter:: routineName='termfou1d_dx_4mm: '
     select case( irrep )
    case('A1')
       select case( parity )
       case('+')
-         realNum=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+         answer=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+   case('E','EE')
+      ! kpoint check
+      select case( mod(kpoint,2)==0 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('+')
+         answer=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+      case('-')
+         answer=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
+      case('o')
+         answer=dfloat(kpoint)*( dcos(dfloat(kpoint)*x)-dsin(dfloat(kpoint)*x) )
       case default
          write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
          call exit(1)

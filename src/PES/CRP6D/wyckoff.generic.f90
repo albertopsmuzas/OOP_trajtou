@@ -103,7 +103,7 @@ type,abstract:: WyckoffSitio
    character(len=2),dimension(:,:),allocatable,public:: irrepList
    character(len=1),dimension(:,:),allocatable,public:: parityList
    integer(kind=4),dimension(:,:),allocatable,public:: kpointList
-
+   real(kind=8),dimension(:),allocatable,public:: phiList
    contains
       ! Initialization block
       procedure,public,non_overridable:: INITIALIZE => INITIALIZE_WYCKOFFSITIO
@@ -526,7 +526,7 @@ END SUBROUTINE INTERPOl_CUT2D
 !> @date 20/03/2014
 !> @version 1.0
 !-----------------------------------------------------------
-subroutine initialize_WYCKOFFSITIO(this,nphiPoints,fileNames,letter,myNumber,phiTerms,thetaTerms)
+subroutine initialize_WYCKOFFSITIO(this,nphiPoints,fileNames,letter,myNumber,phiTerms,thetaTerms,phiList)
    ! Initial declarations
    implicit none
    ! I/O variables
@@ -535,8 +535,9 @@ subroutine initialize_WYCKOFFSITIO(this,nphiPoints,fileNames,letter,myNumber,phi
    character(len=*),dimension(:),intent(in):: filenames
    character,intent(in):: letter
    integer(kind=4),intent(in):: mynumber
-   type(TermsInfo),dimension(:):: phiTerms
-   type(TermsInfo):: thetaTerms
+   type(TermsInfo),dimension(:),intent(in):: phiTerms
+   type(TermsInfo),intent(in):: thetaTerms
+   real(kind=8),dimension(:),intent(in):: phiList
    ! Local variables
    integer(kind=4):: i ! counters
    ! Parameters 
@@ -549,8 +550,7 @@ subroutine initialize_WYCKOFFSITIO(this,nphiPoints,fileNames,letter,myNumber,phi
    allocate( this%zrcut(this%n2dcuts) )
    allocate( this%nphipoints(this%nphicuts),source=nphipoints(:) )
    allocate( this%phiTerms(size(phiTerms(:))),source=phiTerms(:) )
-   do i=1,size( this%phiTerms(:) )
-   enddo
+   allocate( this%phiList(size(phiList)),source=phiList(:) )
    this%thetaTerms=thetaTerms
    SELECT CASE(this%n2dcuts==size(filenames(:)))
       CASE(.true.)

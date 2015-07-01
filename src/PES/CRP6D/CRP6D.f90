@@ -44,9 +44,13 @@ TYPE,EXTENDS(PES):: CRP6D
    TYPE(Vacuumpot):: farpot
    CLASS(Function1d),ALLOCATABLE:: dumpfunc
    CHARACTER(LEN=30):: extrapol2vac_flag
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: kList
-   character(len=1),dimension(:),allocatable:: parityList
-   character(len=2),dimension(:),allocatable:: irrepList
+   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: kListXY
+   character(len=1),dimension(:),allocatable:: parityListXY
+   character(len=2),dimension(:),allocatable:: irrepListXY
+   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: kListAngle
+   character(len=1),dimension(:),allocatable:: parityListAngle
+   character(len=2),dimension(:),allocatable:: irrepListAngle
+   integer(kind=4):: totalTerms=0
 
    CONTAINS
       ! Initialization block
@@ -301,18 +305,18 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    REAL(KIND=8),INTENT(OUT):: v
    REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
    ! Local variables
-   INTEGER(KIND=4):: i ! counters
+   INTEGER(KIND=4):: i,j,h ! counters
    REAL(KIND=8):: ma,mb
-   real(kind=8),dimension(:),allocatable:: r
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xy
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xyList
+   real(kind=8),dimension(:),allocatable:: phiList
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
    REAL(KIND=8),DIMENSION(6):: atomicx
    REAL(KIND=8),DIMENSION(2):: atomic_v
    REAL(KIND=8),DIMENSION(6):: atomic_dvdu
    REAL(KIND=8),DIMENSION(3):: dvdu_atomicA,dvdu_atomicB
-   TYPE(Fourierp4mm):: xyinterpol
+   TYPE(Fourier3d_p4mm):: fouInterpol
    CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
    SELECT CASE(this%is_smooth)
@@ -322,31 +326,35 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
          WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH())"
          CALl EXIT(1)
    END SELECT
-   allocate( r(size(x)),source=x )
-   r(:)=system_surface%project_iwscell( r(:) )
-   ALLOCATE(f(5,this%nsites))
-   ALLOCATE(xy(this%nsites,2))
-   DO i = 1, this%nsites 
-#ifdef DEBUG
-      CALL DEBUG_SEPARATOR1()
-      CALL DEBUG_WRITE(routinename,"WYCKOFF SITE: ",i)
-      CALL DEBUG_WRITE(routinename,"Letter: ",this%wyckoffsite(i)%id)
-#endif
-      CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(r(3:6),f(1,i),f(2:5,i))
-      xy(i,1)=this%wyckoffsite(i)%x
-      xy(i,2)=this%wyckoffsite(i)%y
-   END DO
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
    ! f(3,:) smooth dvdr
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
-   CALL xyinterpol%READ( xy=xy,f=f,kList=this%kList,irrepList=this%irrepList,parityList=this%parityList )
-   call xyInterpol%initializeTerms()
-   CALL xyinterpol%INTERPOL()
+   allocate( f(5,this%totalTerms)      )
+   allocate( xyList(this%totalTerms,2) )
+   allocate( phiList(this%totalTerms)  )
+   h=0
+   do i = 1, this%nsites
+      do j=1,size(this%wyckoffsite(i)%phiList)
+         h=h+1
+         xyList(h,1)=this%wyckoffSite(i)%x
+         xyList(h,2)=this%wyckoffSite(i)%y
+         phiList(h)=this%wyckoffSite(i)%phiList(j)
+         call this%wyckoffsite(i)%get_v_and_derivs( [x(3),x(4),x(5),phiList(h)],f(1,h),f(2:5,h) )
+      enddo
+   end do
+
+   call fouInterpol%read( x=xyList,f=f(:,1) )
+   call fouInterpol%add_moreFuncs( f=f(2:5,1:this%totalTerms) )
+   call fouInterpol%initializeTerms()
+   call fouInterpol%setKlist( kListXY=this%kListXY,kListAngle=this%kListAngle )
+   call fouInterpol%setParityList( parityListXY=this%parityListXY,parityListAngle=this%parityListAngle )
+   call fouInterpol%setIrrepList( irrepListXY=this%irrepListXY,irrepListAngle=this%irrepListAngle )
+   CALL fouInterpol%interpol()
    ALLOCATE(aux1(5))
-   ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(r(1:2),aux1,aux2)
+   ALLOCATE(aux2(5,3))
+   call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
@@ -357,11 +365,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! dvdu(3)=aux1(2)   ! dvdz
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
-   ! dvdu(6)=aux1(5)   ! dvdphi
-   CALL DEBUG_WRITE(routinename,"List of XY: ")
-   DO i = 1,this%nsites 
-     CALL DEBUG_WRITE(routinename,xy(i,:))
-   END DO
+   ! dvdu(6)=aux2(1,3) ! dvdphi
    CALL DEBUG_WRITE(routinename,"Smooth V at each wyckoff site:")
    CALL DEBUG_WRITE(routinename,f(1,:))
    CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each wyckoff site:")
@@ -404,24 +408,24 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    dvdu(2)=aux2(1,2)+dvdu_atomicA(2)+dvdu_atomicB(2)
    dvdu(3)=aux1(2)+dvdu_atomicA(3)+dvdu_atomicB(3)
    dvdu(4)=aux1(3)&
-      +(mb/(ma+mb))*dvdu_atomicA(1)*dcos(r(6))*dsin(r(5))&
-      +(mb/(ma+mb))*dvdu_atomicA(2)*dsin(r(6))*dsin(r(5))&
-      +(mb/(ma+mb))*dvdu_atomicA(3)*dcos(r(5))&
-      -(ma/(ma+mb))*dvdu_atomicB(1)*dcos(r(6))*dsin(r(5))&
-      -(ma/(ma+mb))*dvdu_atomicB(2)*dsin(r(6))*dsin(r(5))&
-      -(ma/(ma+mb))*dvdu_atomicB(3)*dcos(r(5))
+      +(mb/(ma+mb))*dvdu_atomicA(1)*dcos(x(6))*dsin(x(5))&
+      +(mb/(ma+mb))*dvdu_atomicA(2)*dsin(x(6))*dsin(x(5))&
+      +(mb/(ma+mb))*dvdu_atomicA(3)*dcos(x(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(1)*dcos(x(6))*dsin(x(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(2)*dsin(x(6))*dsin(x(5))&
+      -(ma/(ma+mb))*dvdu_atomicB(3)*dcos(x(5))
    dvdu(5)=aux1(4)&
-      +(mb/(ma+mb))*r(4)*dvdu_atomicA(1)*dcos(r(6))*dcos(r(5))&
-      +(mb/(ma+mb))*r(4)*dvdu_atomicA(2)*dsin(r(6))*dcos(r(5))&
-      -(mb/(ma+mb))*r(4)*dvdu_atomicA(3)*dsin(r(5))&
-      -(ma/(ma+mb))*r(4)*dvdu_atomicB(1)*dcos(r(6))*dcos(r(5))&
-      -(ma/(ma+mb))*r(4)*dvdu_atomicB(2)*dsin(r(6))*dcos(r(5))&
-      +(ma/(ma+mb))*r(4)*dvdu_atomicB(3)*dsin(r(5))
-   dvdu(6)=aux1(5)&
-      -(mb/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicA(1)*dsin(r(6))&
-      +(mb/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicA(2)*dcos(r(6))&
-      +(ma/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicB(1)*dsin(r(6))&
-      -(ma/(ma+mb))*r(4)*dsin(r(5))*dvdu_atomicB(2)*dcos(r(6))
+      +(mb/(ma+mb))*x(4)*dvdu_atomicA(1)*dcos(x(6))*dcos(x(5))&
+      +(mb/(ma+mb))*x(4)*dvdu_atomicA(2)*dsin(x(6))*dcos(x(5))&
+      -(mb/(ma+mb))*x(4)*dvdu_atomicA(3)*dsin(x(5))&
+      -(ma/(ma+mb))*x(4)*dvdu_atomicB(1)*dcos(x(6))*dcos(x(5))&
+      -(ma/(ma+mb))*x(4)*dvdu_atomicB(2)*dsin(x(6))*dcos(x(5))&
+      +(ma/(ma+mb))*x(4)*dvdu_atomicB(3)*dsin(x(5))
+   dvdu(6)=aux2(1,3)&
+      -(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(1)*dsin(x(6))&
+      +(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(2)*dcos(x(6))&
+      +(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(1)*dsin(x(6))&
+      -(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(2)*dcos(x(6))
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D
 !###########################################################
@@ -999,19 +1003,21 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    type(TermsInfo):: thetaTerms
    INTEGER(KIND=4):: n2dcuts
    INTEGER(KIND=4):: nthetablocks
+   real(kind=8),dimension(:),allocatable:: phiList
 
    ! Lua specifications
    TYPE(flu_State):: conf
    INTEGER(KIND=4):: ierr
    INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table,dampfunc_table,param_table,extrapol_table
    INTEGER(KIND=4):: resize_table,wyckoff_table,inwyckoff_table,cut2d_table,files_table,kpoints_table
-   integer(kind=4):: phi_table,term_table,theta_table,fourier_table
+   integer(kind=4):: phi_table,term_table,theta_table,fourier_table,magnitude_table,phiList_table
    INTEGER(KIND=4):: inkpoints_table
    ! Auxiliar, dummy variables
    INTEGER(KIND=4):: auxInt,auxInt2
    REAL(KIND=8):: auxReal
    CHARACTER(LEN=1024):: auxString,auxString2
    TYPE(Length):: len
+   type(Angle):: angl
    ! Parameters
    CHARACTER(LEN=*),PARAMETER:: routinename="READ_CRP6D: "
    ! Run section -----------------------
@@ -1184,6 +1190,19 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    END SELECT
    DO i = 1, this%nsites
       CALL AOT_TABLE_OPEN(L=conf,parent=wyckoff_table,thandle=inwyckoff_table,pos=i)
+      call aot_table_open( L=conf,parent=inWyckoff_table,thandle=phiList_table,key='phiList' )
+      allocate( phiList(aot_table_length(L=conf,thandle=phiList_table)) )
+      do k=1,size(phiList)
+         call aot_table_open( L=conf,parent=phiList_table,thandle=magnitude_table,pos=k )
+         call aot_get_val( L=conf,errCode=iErr,thandle=magnitude_table,pos=1,val=auxReal )
+         call aot_get_val( L=conf,errCode=iErr,thandle=magnitude_table,pos=2,val=auxString )
+         call angl%read( auxReal,trim(auxString) )
+         call angl%to_std()
+         phiList(k)=angl%getValue()
+         call aot_table_close( L=conf,thandle=magnitude_table )
+      enddo
+      this%totalTerms=this%totalTerms+size(phiList)
+      call aot_table_close( L=conf,thandle=phiList_table )
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='kind',val=wyckoff_letters(i))
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='n2dcuts',val=n2dcuts)
       ALLOCATE(cuts2d_files(n2dcuts))
@@ -1253,28 +1272,33 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          CALL AOT_TABLE_CLOSE(L=conf,thandle=cut2d_table)
       END DO
       CALL this%wyckoffsite(i)%INITIALIZE(mynumber=i,letter=wyckoff_letters(i),nphipoints=thetablocks_data(:),&
-                                          filenames=cuts2d_files(:),phiTerms=phiTerms,thetaTerms=thetaTerms)
+                                          filenames=cuts2d_files(:),phiTerms=phiTerms,thetaTerms=thetaTerms,  &
+                                          phiList=phiList(:) )
       CALL AOT_TABLE_CLOSE(L=conf,thandle=inwyckoff_table)
       deallocate(cuts2d_files)
       deallocate(thetablocks_data)
       deallocate(phiTerms)
+      deallocate(phiList)
       call thetaTerms%reboot()
    END DO
    CALL AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
    ! Get kpoints for Fourier interpolation
    call aot_table_open( L=conf,parent=pes_table,thandle=fourier_table,key='fourierTerms' )
-   allocate( this%kList(this%nsites,2)    )
-   allocate( this%irrepList(this%nsites)  )
-   allocate( this%parityList(this%nsites) )
+   allocate( this%kListXY(this%totalTerms,2)    )
+   allocate( this%irrepListXY(this%totalTerms)  )
+   allocate( this%parityListXY(this%totalTerms) )
+   allocate( this%kListAngle(this%totalTerms)    )
+   allocate( this%irrepListAngle(this%totalTerms)  )
+   allocate( this%parityListAngle(this%totalTerms) )
    auxint=aot_table_length( L=conf,thandle=fourier_table )
-   select case(auxint/=this%nsites)
+   select case(auxint/=this%totalTerms)
       case(.true.)
          write(0,*) "READ_CRP3D ERR: mismatch between number of kpoints and wyckoff sites"
          call exit(1)
       case(.false.)
          ! do nothing
    end select
-   do i=1,this%nSites
+   do i=1,this%totalTerms
       call aot_table_open( L=conf,parent=fourier_table,thandle=term_table,pos=i )
       call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=1,val=auxString )
       call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=2,val=auxString2 )
@@ -1282,11 +1306,16 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       call aot_get_val( L=conf,errCode=iErr,thandle=kpoints_table,pos=1,val=auxInt )
       call aot_get_val( L=conf,errCode=iErr,thandle=kpoints_table,pos=2,val=auxInt2 )
       call aot_table_close( L=conf,thandle=kpoints_table )
+      this%kListXY(i,1:2)=[auxInt,auxInt2]
+      this%irrepListXY(i)=trim(auxString)
+      this%parityListXY(i)=trim(auxString2)
+      call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=4,val=auxString )
+      call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=5,val=auxString2 )
+      call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=6,val=auxInt )
+      this%kListAngle(i)=auxInt
+      this%irrepListAngle(i)=trim(auxString)
+      this%parityListAngle(i)=trim(auxString2)
       call aot_table_close( L=conf,thandle=term_table )
-      this%kList(i,1)=auxInt
-      this%kList(i,2)=auxInt2
-      this%irrepList(i)=trim(auxString)
-      this%parityList(i)=trim(auxString2)
    enddo
    call aot_table_close( L=conf,thandle=fourier_table )
    ! ENDDDDDD!!!!!!
@@ -1294,8 +1323,9 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
 #ifdef DEBUG
    CALL VERBOSE_WRITE(routinename,'List of Fourier terms:')
    DO i = 1, this%nsites
-      write(*,*) this%irrepList(i)//' '//this%parityList(i),this%kList(i,:)
+      write(*,*) this%irrepListXY(i)//' '//this%parityListXY(i),this%kListXY(i,:),this%irrepListAngle(i)//' '//this%parityListAngle(i),this%kListAngle(i)
    END DO
+   call verbose_write(routinename,'Total number of terms: ',this%totalTerms)
 #endif
    RETURN
 END SUBROUTINE READ_CRP6D

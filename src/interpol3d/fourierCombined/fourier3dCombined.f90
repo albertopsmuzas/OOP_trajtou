@@ -198,7 +198,7 @@ subroutine GET_ALLFUNC_AND_DERIVS_FOURIER3D(this,x,f,dfdx)
          ! do nothing
    end select
    nfuncs=size(this%extrafuncs(:,1))+1
-   select case( size(f)/=nfuncs .or. size(dfdx(:,1))/=nfuncs .or. size(dfdx(1,:)\=3 )
+   select case( size(f)/=nfuncs .or. size(dfdx(:,1))/=nfuncs .or. size(dfdx(1,:))/=3 )
       case(.true.)
          write(0,*) "GET_ALLFUNCS_AND DERIVS ERR: size mismatch of output arguments"
          write(0,*) "nfuncs: ",nfuncs
