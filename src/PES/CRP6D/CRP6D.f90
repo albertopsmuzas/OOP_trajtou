@@ -310,6 +310,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xyList
    real(kind=8),dimension(:),allocatable:: phiList
+   real(kind=8),dimension(:,:),allocatable:: completeGeomList
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
    REAL(KIND=8),DIMENSION(6):: atomicx
@@ -334,6 +335,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    allocate( f(5,this%totalTerms)      )
    allocate( xyList(this%totalTerms,2) )
    allocate( phiList(this%totalTerms)  )
+   allocate( completeGeomList(this%totalTerms,3)  )
    h=0
    do i = 1, this%nsites
       do j=1,size(this%wyckoffsite(i)%phiList)
@@ -344,14 +346,23 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
          call this%wyckoffsite(i)%get_v_and_derivs( [x(3),x(4),x(5),phiList(h)],f(1,h),f(2:5,h) )
       enddo
    end do
-
-   call fouInterpol%read( x=xyList,f=f(:,1) )
+   completeGeomList(:,1:2)=xyList(:,:)
+   completeGeomList(:,3)=phiList(:)
+   write(*,*) 'patata'
+   call fouInterpol%read( x=completeGeomList(:,:),f=f(1,:) )
+   write(*,*) 'patata'
    call fouInterpol%add_moreFuncs( f=f(2:5,1:this%totalTerms) )
+   write(*,*) 'patata'
    call fouInterpol%initializeTerms()
+   write(*,*) 'patata'
    call fouInterpol%setKlist( kListXY=this%kListXY,kListAngle=this%kListAngle )
+   write(*,*) 'patata'
    call fouInterpol%setParityList( parityListXY=this%parityListXY,parityListAngle=this%parityListAngle )
+   write(*,*) 'patata'
    call fouInterpol%setIrrepList( irrepListXY=this%irrepListXY,irrepListAngle=this%irrepListAngle )
+   write(*,*) 'patata'
    CALL fouInterpol%interpol()
+   write(*,*) 'patata'
    ALLOCATE(aux1(5))
    ALLOCATE(aux2(5,3))
    call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
@@ -584,55 +595,49 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
-   CLASS(CRP6D),INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(6),INTENT(IN):: x
+   CLASS(CRP6D),TARGET,INTENT(IN):: this
+   REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
    REAL(KIND=8),INTENT(OUT):: v
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT):: dvdu
+   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
    ! Local variables
-   INTEGER(KIND=4):: i ! counters
+   INTEGER(KIND=4):: i,j,h ! counters
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xy
+   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xyList
+   real(kind=8),dimension(:),allocatable:: phiList
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
-   TYPE(Fourierp4mm):: xyinterpol
-   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP6D: "
+   TYPE(Fourier3d_p4mm):: fouInterpol
+   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_SMOOTH_CRP6D: "
    ! Run section
-   SELECT CASE(x(3) >= this%wyckoffsite(1)%zrcut(1)%getlastz()) 
-      CASE(.TRUE.)
-         v=this%farpot%getpot(x(4))
-         dvdu(1)=0.D0
-         dvdu(2)=0.D0
-         dvdu(3)=0.D0
-         dvdu(4)=this%farpot%getderiv(x(4))
-         dvdu(5)=0.D0
-         dvdu(6)=0.D0
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
-   ALLOCATE(f(5,this%nsites))
-   ALLOCATE(xy(this%nsites,2))
-   DO i = 1, this%nsites 
-#ifdef DEBUG
-      CALL VERBOSE_SEPARATOR1()
-      CALL VERBOSE_WRITE(routinename,"WYCKOFFSITE: ",i)
-      CALL VERBOSE_WRITE(routinename,"Letter:",this%wyckoffsite(i)%id)
-#endif
-      CALL this%wyckoffsite(i)%GET_V_AND_DERIVS(x(3:6),f(1,i),f(2:5,i))
-      xy(i,1)=this%wyckoffsite(i)%x
-      xy(i,2)=this%wyckoffsite(i)%y
-   END DO
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
    ! f(3,:) smooth dvdr
    ! f(4,:) smooth dvdtheta
    ! f(5,:) smooth dvdphi
-   CALL xyinterpol%READ( xy=xy,f=f,kList=this%kList,irrepList=this%irrepList,parityList=this%parityList )
-   call xyInterpol%initializeTerms()
-   CALL xyinterpol%INTERPOL()
+   allocate( f(5,this%totalTerms)      )
+   allocate( xyList(this%totalTerms,2) )
+   allocate( phiList(this%totalTerms)  )
+   h=0
+   do i = 1, this%nsites
+      do j=1,size(this%wyckoffsite(i)%phiList)
+         h=h+1
+         xyList(h,1)=this%wyckoffSite(i)%x
+         xyList(h,2)=this%wyckoffSite(i)%y
+         phiList(h)=this%wyckoffSite(i)%phiList(j)
+         call this%wyckoffsite(i)%get_v_and_derivs( [x(3),x(4),x(5),phiList(h)],f(1,h),f(2:5,h) )
+      enddo
+   end do
+
+   call fouInterpol%read( x=xyList,f=f(:,1) )
+   call fouInterpol%add_moreFuncs( f=f(2:5,1:this%totalTerms) )
+   call fouInterpol%initializeTerms()
+   call fouInterpol%setKlist( kListXY=this%kListXY,kListAngle=this%kListAngle )
+   call fouInterpol%setParityList( parityListXY=this%parityListXY,parityListAngle=this%parityListAngle )
+   call fouInterpol%setIrrepList( irrepListXY=this%irrepListXY,irrepListAngle=this%irrepListAngle )
+   CALL fouInterpol%interpol()
    ALLOCATE(aux1(5))
-   ALLOCATE(aux2(5,2))
-   CALL xyinterpol%GET_F_AND_DERIVS(x(1:2),aux1,aux2)
+   ALLOCATE(aux2(5,3))
+   call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
@@ -643,29 +648,36 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! dvdu(3)=aux1(2)   ! dvdz
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
-   ! dvdu(6)=aux1(5)   ! dvdphi
-   CALL VERBOSE_WRITE(routinename,"List of XY: ")
-   DO i = 1,this%nsites 
-     CALL VERBOSE_WRITE(routinename,xy(i,:))
-   END DO
-   CALL VERBOSE_WRITE(routinename,"Pots at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(1,:))
-   CALL VERBOSE_WRITE(routinename,"dv/dz at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(2,:))
-   CALL VERBOSE_WRITE(routinename,"dv/dr at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(3,:))
-   CALL VERBOSE_WRITE(routinename,"dv/dtheta at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(4,:))
-   CALL VERBOSE_WRITE(routinename,"dv/dphi at each wyckoff site:")
-   CALL VERBOSE_WRITE(routinename,f(5,:))
+   ! dvdu(6)=aux2(1,3) ! dvdphi
+   CALL DEBUG_WRITE(routinename,"Smooth V at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(1,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(2,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(3,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(4,:))
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dphi at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,f(5,:))
+   CALL DEBUG_WRITE(routinename,"Smooth interpolated values:")
+   CALL DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
+   CALL DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
+   CALL DEBUG_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
+   CALL DEBUG_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
+   CALL DEBUG_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
+   CALL DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
+   CALL DEBUG_WRITE(routinename,"dvdphi: ",aux2(1,3))   ! dvdphi
 #endif
+   !--------------------------------------
+   ! Results for the real potential
+   !-------------------------------------
    v=aux1(1)
    dvdu(1)=aux2(1,1)
    dvdu(2)=aux2(1,2)
    dvdu(3)=aux1(2)
    dvdu(4)=aux1(3)
    dvdu(5)=aux1(4)
-   dvdu(6)=aux1(5)
+   dvdu(6)=aux2(1,3)
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D
 !###########################################################
@@ -1206,7 +1218,7 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='kind',val=wyckoff_letters(i))
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='n2dcuts',val=n2dcuts)
       ALLOCATE(cuts2d_files(n2dcuts))
-      nthetablocks=aot_table_length(L=conf,thandle=inwyckoff_table)-6
+      nthetablocks=aot_table_length(L=conf,thandle=inwyckoff_table)-7
       ALLOCATE(thetablocks_data(nthetablocks))
       call aot_table_open(L=conf,parent=inwyckoff_table,thandle=theta_table,key='thetaFourierTerms')
       do k=1,nThetaBlocks
@@ -1290,10 +1302,12 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    allocate( this%kListAngle(this%totalTerms)    )
    allocate( this%irrepListAngle(this%totalTerms)  )
    allocate( this%parityListAngle(this%totalTerms) )
-   auxint=aot_table_length( L=conf,thandle=fourier_table )
+   auxInt=aot_table_length( L=conf,thandle=fourier_table )
    select case(auxint/=this%totalTerms)
       case(.true.)
-         write(0,*) "READ_CRP3D ERR: mismatch between number of kpoints and wyckoff sites"
+         write(0,*) "READ_CRP3D ERR: mismatch between number of Fourier terms and thetacuts: "
+         write(0,*) 'Number of theta cuts: ',this%totalTerms
+         write(0,*) 'Number of terms:',auxInt
          call exit(1)
       case(.false.)
          ! do nothing

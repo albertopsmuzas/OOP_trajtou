@@ -66,7 +66,7 @@ subroutine read_INTERPOL3D(this,x,f)
       write(0,*) "READ_INTERPOL3D: dimensions mismatch between x and f"
       call exit(1)
    end if
-   this%n=size(x)
+   this%n=size(x(:,1))
    allocate( this%x(this%n,3), source=x(:,:) )
    allocate( this%f(this%n),   source=f(:)   )
    return

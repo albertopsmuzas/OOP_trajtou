@@ -77,8 +77,9 @@ function termFou3d_p4mm(this,k,parityXY,irrepXY,l,parityAngle,irrepAngle,x) resu
    ! Parameters
    character(len=*),parameter:: routinename='termfou1d_4mm: '
    ! Run section
-   answer=this%xyFourier%term%getValue( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
-          this%angleFourier%term%getValue( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
+   write(*,*)'petete: ', allocated(this%xyFourier%term),allocated(this%angleFourier%term)
+   answer=this%xyFourier%getValue( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
+          this%angleFourier%getValue( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
    return
 end function termFou3d_p4mm
 !###########################################################
@@ -102,8 +103,8 @@ function termFou3d_dx_p4mm(this,k,parityXY,irrepXY,l,parityAngle,irrepAngle,x) r
    ! Parameters
    character(len=*),parameter:: routinename='termfou1d_4mm: '
    ! Run section
-   answer=this%xyFourier%term%getDeriv1( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
-          this%angleFourier%term%getValue( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
+   answer=this%xyFourier%getDeriv1( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
+          this%angleFourier%getValue( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
    return
 end function termFou3d_dx_p4mm
 !###########################################################
@@ -127,8 +128,8 @@ function termFou3d_dy_p4mm(this,k,parityXY,irrepXY,l,parityAngle,irrepAngle,x) r
    ! Parameters
    character(len=*),parameter:: routinename='termfou1d_4mm: '
    ! Run section
-   answer=this%xyFourier%term%getDeriv2( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
-          this%angleFourier%term%getValue( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
+   answer=this%xyFourier%getDeriv2( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
+          this%angleFourier%getValue( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
    return
 end function termFou3d_dy_p4mm
 !###########################################################
@@ -152,8 +153,8 @@ function termFou3d_dz_p4mm(this,k,parityXY,irrepXY,l,parityAngle,irrepAngle,x) r
    ! Parameters
    character(len=*),parameter:: routinename='termfou1d_4mm: '
    ! Run section
-   answer=this%xyFourier%term%getValue( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
-          this%angleFourier%term%getDeriv( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
+   answer=this%xyFourier%getValue( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
+          this%angleFourier%getDeriv( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
    return
 end function termFou3d_dz_p4mm
 

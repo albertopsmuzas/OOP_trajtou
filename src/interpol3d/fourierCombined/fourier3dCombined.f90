@@ -295,9 +295,11 @@ subroutine INTERPOL_FOURIER3D(this)
    allocate(inv_terms(this%n,this%n))
    do i = 1, this%n ! loop over eq for different points
       do j = 1, this%n ! loop over coefficients
+   write(*,*) 'pototo'
          terms(i,j)=this%term%getValue( k=this%kListXY(j,1:2), parityXY=this%parityListXY(j),       irrepXY=this%irrepListXY(j),&
                                         l=this%kListAngle(j),  parityAngle=this%parityListAngle(j), irrepAngle=this%irrepListAngle(j),&
                                         x=this%x(i,:) )
+   write(*,*) 'pototo'
       end do
    end do
    call INV_MTRX(this%n,terms,inv_terms)
