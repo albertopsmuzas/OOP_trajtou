@@ -348,23 +348,15 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    end do
    completeGeomList(:,1:2)=xyList(:,:)
    completeGeomList(:,3)=phiList(:)
-   write(*,*) 'patata'
    call fouInterpol%read( x=completeGeomList(:,:),f=f(1,:) )
-   write(*,*) 'patata'
-   call fouInterpol%add_moreFuncs( f=f(2:5,1:this%totalTerms) )
-   write(*,*) 'patata'
+   call fouInterpol%add_moreFuncs( f=f(2:4,1:this%totalTerms) )
    call fouInterpol%initializeTerms()
-   write(*,*) 'patata'
    call fouInterpol%setKlist( kListXY=this%kListXY,kListAngle=this%kListAngle )
-   write(*,*) 'patata'
    call fouInterpol%setParityList( parityListXY=this%parityListXY,parityListAngle=this%parityListAngle )
-   write(*,*) 'patata'
    call fouInterpol%setIrrepList( irrepListXY=this%irrepListXY,irrepListAngle=this%irrepListAngle )
-   write(*,*) 'patata'
    CALL fouInterpol%interpol()
-   write(*,*) 'patata'
-   ALLOCATE(aux1(5))
-   ALLOCATE(aux2(5,3))
+   allocate(aux1(4))
+   allocate(aux2(4,3))
    call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
 #ifdef DEBUG
    !-------------------------------------
@@ -385,8 +377,6 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    CALL DEBUG_WRITE(routinename,f(3,:))
    CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each wyckoff site:")
    CALL DEBUG_WRITE(routinename,f(4,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dphi at each wyckoff site:")
-   CALL DEBUG_WRITE(routinename,f(5,:))
    CALL DEBUG_WRITE(routinename,"Smooth interpolated values:")
    CALL DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
    CALL DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
@@ -394,7 +384,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    CALL DEBUG_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
    CALL DEBUG_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
    CALL DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
-   CALL DEBUG_WRITE(routinename,"dvdphi: ",aux1(5))   ! dvdphi
+   CALL DEBUG_WRITE(routinename,"dvdphi: ",aux2(1,3))   ! dvdphi
 #endif
    !--------------------------------------
    ! Results for the real potential
@@ -1334,13 +1324,6 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    call aot_table_close( L=conf,thandle=fourier_table )
    ! ENDDDDDD!!!!!!
    CALL CLOSE_CONFIG(conf)
-#ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'List of Fourier terms:')
-   DO i = 1, this%nsites
-      write(*,*) this%irrepListXY(i)//' '//this%parityListXY(i),this%kListXY(i,:),this%irrepListAngle(i)//' '//this%parityListAngle(i),this%kListAngle(i)
-   END DO
-   call verbose_write(routinename,'Total number of terms: ',this%totalTerms)
-#endif
    RETURN
 END SUBROUTINE READ_CRP6D
 !#######################################################################

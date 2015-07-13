@@ -11,8 +11,8 @@
 module FOURIER3D_MOD
 use INTERPOL3D_MOD, only: Interpol3d
 use MATHS_MOD, only: inv_mtrx
-use FOURIER1D_MOD, only: Fourier1d
-use FOURIER2D_MOD, only: Fourier2d
+use FOURIER1D_MOD, only: TermCalculator
+use FOURIER2D_MOD, only: TermCalculator2d
 #ifdef DEBUG
 use DEBUG_MOD, only: verbose_write, debug_write
 #endif
@@ -25,13 +25,13 @@ implicit none
 !----------------------------------------------------------------
 type,abstract:: TermCalculator3d
    ! public atributes
-   class(Fourier1d),allocatable,public:: angleFourier
-   class(Fourier2d),allocatable,public:: xyFourier
+   class(TermCalculator),allocatable,public:: angleFourier
+   class(TermCalculator2d),allocatable,public:: xyFourier
    contains
-      procedure(getvalue_termcalculator_example),public,deferred:: getValue
-      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv1
-      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv2
-      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv3
+      procedure(getvalue_termcalculator_example),public,deferred:: getValue  ! deferred
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv1 ! deferred
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv2 ! deferred
+      procedure(getvalue_termcalculator_example),public,deferred:: getDeriv3 ! deferred
 end type TermCalculator3d
 !
 abstract interface
@@ -295,11 +295,9 @@ subroutine INTERPOL_FOURIER3D(this)
    allocate(inv_terms(this%n,this%n))
    do i = 1, this%n ! loop over eq for different points
       do j = 1, this%n ! loop over coefficients
-   write(*,*) 'pototo'
          terms(i,j)=this%term%getValue( k=this%kListXY(j,1:2), parityXY=this%parityListXY(j),       irrepXY=this%irrepListXY(j),&
                                         l=this%kListAngle(j),  parityAngle=this%parityListAngle(j), irrepAngle=this%irrepListAngle(j),&
                                         x=this%x(i,:) )
-   write(*,*) 'pototo'
       end do
    end do
    call INV_MTRX(this%n,terms,inv_terms)

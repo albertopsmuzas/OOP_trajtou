@@ -10,8 +10,8 @@
 !########################################################
 module FOURIER3D_P4MM_MOD
 use FOURIER3D_MOD, only: TermCalculator3d,Fourier3d
-use FOURIER1D_4MM_MOD, only: Fourier1d_4mm
-use FOURIER_P4MM_MOD, only: Fourierp4mm
+use FOURIER1D_4MM_MOD, only: Term_4mm
+use FOURIER_P4MM_MOD, only: TermCalculator2d_p4mm
 implicit none
 !/////////////////////////////////////////////////////////////////
 ! TYPE: term_A1
@@ -52,8 +52,8 @@ subroutine initializeTerms_FOURIER3D_P4MM(this)
    class(Fourier3d_p4mm),intent(inout):: this
    ! Run section
    allocate( Term3d_p4mm::   this%term )
-   allocate( Fourierp4mm::   this%term%xyFourier )
-   allocate( Fourier1d_4mm:: this%term%angleFourier )
+   allocate( TermCalculator2d_p4mm::   this%term%xyFourier )
+   allocate( Term_4mm:: this%term%angleFourier )
    return
 end subroutine initializeTerms_FOURIER3D_P4MM
 !###########################################################
@@ -77,7 +77,6 @@ function termFou3d_p4mm(this,k,parityXY,irrepXY,l,parityAngle,irrepAngle,x) resu
    ! Parameters
    character(len=*),parameter:: routinename='termfou1d_4mm: '
    ! Run section
-   write(*,*)'petete: ', allocated(this%xyFourier%term),allocated(this%angleFourier%term)
    answer=this%xyFourier%getValue( x=x(1:2),k=k,irrep=irrepXY,parity=parityXY )*&
           this%angleFourier%getValue( x=x(3),kpoint=l,irrep=irrepAngle,parity=parityAngle )
    return
