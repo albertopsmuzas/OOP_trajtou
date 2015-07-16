@@ -162,6 +162,8 @@ function termfou1d_4mm(this,kpoint,parity,irrep,x) result(answer)
          answer=dsin(dfloat(kpoint)*x)
       case('o')
          answer=dsin(dfloat(kpoint)*x)+dcos(dfloat(kpoint)*x)
+      case('n')
+         answer=dsin(dfloat(kpoint)*x)-dcos(dfloat(kpoint)*x)
       case default
          write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
          call exit(1)
@@ -273,6 +275,8 @@ function termfou1d_dx_4mm(this,kpoint,parity,irrep,x) result(answer)
          answer=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
       case('o')
          answer=dfloat(kpoint)*( dcos(dfloat(kpoint)*x)-dsin(dfloat(kpoint)*x) )
+      case('n')
+         answer=dfloat(kpoint)*( dcos(dfloat(kpoint)*x)+dsin(dfloat(kpoint)*x) )
       case default
          write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
          call exit(1)
