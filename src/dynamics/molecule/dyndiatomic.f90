@@ -375,6 +375,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
    ! Some formats
 10 FORMAT(I7,1X,A10,1X,I5,1X,I5,1X,15(F15.5,1X)) ! format to print in status files
 11 FORMAT(I7,1X,6(F10.5,1X)) ! format to print in turning points file
+12 format(7(F15.5,1X),6(F15.5,1X),6(F15.5,1X),6(F15.5,1X))
    ! HEY HO!, LET'S GO!!! -------------------------
    molecule => this%thisinicond%trajs(idtraj)
    ma=system_mass(1)
@@ -689,7 +690,7 @@ SUBROUTINE DO_DYNAMICS_DYNDIATOMIC(this,idtraj)
             SELECT CASE((this%nfollow.NE.0).AND.(in_list))
                CASE(.TRUE.)
                   atomiccoord(:)=from_molecular_to_atomic(molecule%r(:))
-                  WRITE(this%wufo,*) t,dt_did,molecule%E,molecule%Ecm,&
+                  WRITE(this%wufo,12) t,dt_did,molecule%E,molecule%Ecm,&
                      molecule%Eint,v,L2,molecule%r(:),molecule%p(:),atomiccoord
                CASE(.FALSE.)
                   ! do nothing
