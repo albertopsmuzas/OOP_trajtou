@@ -369,13 +369,13 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux2(1,3) ! dvdphi
-   CALL DEBUG_WRITE(routinename,"Smooth V at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth V at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(1,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(2,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(3,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(4,:))
    CALL DEBUG_WRITE(routinename,"Smooth interpolated values:")
    CALL DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
@@ -594,10 +594,11 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xyList
    real(kind=8),dimension(:),allocatable:: phiList
+   real(kind=8),dimension(:,:),allocatable:: completeGeomList
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
    REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
    TYPE(Fourier3d_p4mm):: fouInterpol
-   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_SMOOTH_CRP6D: "
+   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
@@ -607,6 +608,7 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    allocate( f(5,this%totalTerms)      )
    allocate( xyList(this%totalTerms,2) )
    allocate( phiList(this%totalTerms)  )
+   allocate( completeGeomList(this%totalTerms,3)  )
    h=0
    do i = 1, this%nsites
       do j=1,size(this%wyckoffsite(i)%phiList)
@@ -617,16 +619,17 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
          call this%wyckoffsite(i)%get_v_and_derivs( [x(3),x(4),x(5),phiList(h)],f(1,h),f(2:5,h) )
       enddo
    end do
-
-   call fouInterpol%read( x=xyList,f=f(:,1) )
-   call fouInterpol%add_moreFuncs( f=f(2:5,1:this%totalTerms) )
+   completeGeomList(:,1:2)=xyList(:,:)
+   completeGeomList(:,3)=phiList(:)
+   call fouInterpol%read( x=completeGeomList(:,:),f=f(1,:) )
+   call fouInterpol%add_moreFuncs( f=f(2:4,1:this%totalTerms) )
    call fouInterpol%initializeTerms()
    call fouInterpol%setKlist( kListXY=this%kListXY,kListAngle=this%kListAngle )
    call fouInterpol%setParityList( parityListXY=this%parityListXY,parityListAngle=this%parityListAngle )
    call fouInterpol%setIrrepList( irrepListXY=this%irrepListXY,irrepListAngle=this%irrepListAngle )
    CALL fouInterpol%interpol()
-   ALLOCATE(aux1(5))
-   ALLOCATE(aux2(5,3))
+   allocate(aux1(4))
+   allocate(aux2(4,3))
    call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
 #ifdef DEBUG
    !-------------------------------------
@@ -639,16 +642,14 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux2(1,3) ! dvdphi
-   CALL DEBUG_WRITE(routinename,"Smooth V at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth V at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(1,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(2,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(3,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each wyckoff site:")
+   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each thetaCut:")
    CALL DEBUG_WRITE(routinename,f(4,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dphi at each wyckoff site:")
-   CALL DEBUG_WRITE(routinename,f(5,:))
    CALL DEBUG_WRITE(routinename,"Smooth interpolated values:")
    CALL DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
    CALL DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
@@ -658,9 +659,6 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    CALL DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
    CALL DEBUG_WRITE(routinename,"dvdphi: ",aux2(1,3))   ! dvdphi
 #endif
-   !--------------------------------------
-   ! Results for the real potential
-   !-------------------------------------
    v=aux1(1)
    dvdu(1)=aux2(1,1)
    dvdu(2)=aux2(1,2)
@@ -1203,7 +1201,6 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          phiList(k)=angl%getValue()
          call aot_table_close( L=conf,thandle=magnitude_table )
       enddo
-      this%totalTerms=this%totalTerms+size(phiList)
       call aot_table_close( L=conf,thandle=phiList_table )
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='kind',val=wyckoff_letters(i))
       CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='n2dcuts',val=n2dcuts)
@@ -1286,22 +1283,13 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    CALL AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
    ! Get kpoints for Fourier interpolation
    call aot_table_open( L=conf,parent=pes_table,thandle=fourier_table,key='fourierTerms' )
+   this%totalTerms=aot_table_length( L=conf,thandle=fourier_table )
    allocate( this%kListXY(this%totalTerms,2)    )
    allocate( this%irrepListXY(this%totalTerms)  )
    allocate( this%parityListXY(this%totalTerms) )
    allocate( this%kListAngle(this%totalTerms)    )
    allocate( this%irrepListAngle(this%totalTerms)  )
    allocate( this%parityListAngle(this%totalTerms) )
-   auxInt=aot_table_length( L=conf,thandle=fourier_table )
-   select case(auxint/=this%totalTerms)
-      case(.true.)
-         write(0,*) "READ_CRP3D ERR: mismatch between number of Fourier terms and thetacuts: "
-         write(0,*) 'Number of theta cuts: ',this%totalTerms
-         write(0,*) 'Number of terms:',auxInt
-         call exit(1)
-      case(.false.)
-         ! do nothing
-   end select
    do i=1,this%totalTerms
       call aot_table_open( L=conf,parent=fourier_table,thandle=term_table,pos=i )
       call aot_get_val( L=conf,ErrCode=iErr,thandle=term_table,pos=1,val=auxString )

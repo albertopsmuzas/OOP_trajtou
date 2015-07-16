@@ -89,7 +89,7 @@ function termfou1d_M45(this,kpoint,parity,irrep,x) result(answer)
          case(2)
             answer=dsin(dfloat(kpoint)*x)
          case default
-            write(0,*) "termfou1d_m45 ERR: incorrect Kpoint-parity combination"
+            write(0,*) "termfou1d_m45 ERR: incorrect point-parity combination"
             call exit(1)
          end select
 

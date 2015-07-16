@@ -82,6 +82,36 @@ function termFoup4mm(this,k,parity,irrep,x) result(answer)
          call exit(1)
       end select
 
+   case('A2')
+      select case( parity )
+      case('+')
+         answer=-dsin( g*dfloat(k(1))*x(1) )*dsin( g*dfloat(k(2))*x(2) )+&
+                 dsin( g*dfloat(k(2))*x(1) )*dsin( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
+   case('B1')
+      select case( parity )
+      case('+')
+         answer=dcos( g*dfloat(k(1))*x(1) )*dcos( g*dfloat(k(2))*x(2) )-&
+                dcos( g*dfloat(k(2))*x(1) )*dcos( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
+   case('B2')
+      select case( parity )
+      case('+')
+         answer=dsin( g*dfloat(k(1))*x(1) )*dsin( g*dfloat(k(2))*x(2) )-&
+                dsin( g*dfloat(k(2))*x(1) )*dsin( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
    case('EE','E')
       select case( parity )
       case('-')
@@ -91,6 +121,7 @@ function termFoup4mm(this,k,parity,irrep,x) result(answer)
          write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
          call exit(1)
       end select
+
    case default
       write(0,*) 'ERR '//routinename//' irrep not implemented: "'//irrep//'"'
       call exit(1)
@@ -130,6 +161,37 @@ function termfoup4mm_dx(this,k,parity,irrep,x) result(answer)
          write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
          call exit(1)
       end select
+
+   case('A2')
+      select case( parity )
+      case('+')
+         answer=-g*dfloat(k(1))*dcos( g*dfloat(k(1))*x(1) )*dsin( g*dfloat(k(2))*x(2) )+&
+                 g*dfloat(k(2))*dcos( g*dfloat(k(2))*x(1) )*dsin( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
+   case('B1')
+      select case( parity )
+      case('+')
+         answer=-g*dfloat(k(1))*dsin( g*dfloat(k(1))*x(1) )*dcos( g*dfloat(k(2))*x(2) )+&
+                 g*dfloat(k(2))*dsin( g*dfloat(k(2))*x(1) )*dcos( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
+   case('B2')
+      select case( parity )
+      case('+')
+         answer=g*dfloat(k(1))*dcos( g*dfloat(k(1))*x(1) )*dsin( g*dfloat(k(2))*x(2) )-&
+                g*dfloat(k(2))*dcos( g*dfloat(k(2))*x(1) )*dsin( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
    case('EE','E')
       select case( parity )
       case('-')
@@ -178,6 +240,37 @@ function termfoup4mm_dy(this,k,parity,irrep,x) result(answer)
          write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
          call exit(1)
       end select
+
+   case('A2')
+      select case( parity )
+      case('+')
+         answer=-g*dfloat(k(2))*dsin( g*dfloat(k(1))*x(1) )*dcos( g*dfloat(k(2))*x(2) )+&
+                 g*dfloat(k(1))*dsin( g*dfloat(k(2))*x(1) )*dcos( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
+   case('B1')
+      select case( parity )
+      case('+')
+         answer=-g*dfloat(k(2))*dcos( g*dfloat(k(1))*x(1) )*dsin( g*dfloat(k(2))*x(2) )+&
+                 g*dfloat(k(1))*dcos( g*dfloat(k(2))*x(1) )*dsin( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
+   case('B2')
+      select case( parity )
+      case('+')
+         answer=g*dfloat(k(2))*dsin( g*dfloat(k(1))*x(1) )*dcos( g*dfloat(k(2))*x(2) )-&
+                g*dfloat(k(1))*dsin( g*dfloat(k(2))*x(1) )*dcos( g*dfloat(k(1))*x(2) )
+      case default
+         write(0,*) 'ERR '//routinename//' parity and irrep selection is not compatible'
+         call exit(1)
+      end select
+
    case('EE','E')
       select case( parity )
       case('-')

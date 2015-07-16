@@ -327,7 +327,7 @@ where
 \end_inset
 
 , 
-\begin_inset Formula $\boldsymbol{a}\in\mathcal{V}\,:\,F(\boldsymbol{x}+\boldsymbol{a})=F(\boldsymbol{x})$
+\begin_inset Formula $\boldsymbol{a}\in\mathcal{V}\,:\, F(\boldsymbol{x}+\boldsymbol{a})=F(\boldsymbol{x})$
 \end_inset
 
 .
@@ -846,7 +846,7 @@ status collapsed
 
 \begin_inset Formula 
 \[
-F(\theta)=\sum_{l\ge0}\left[C_{l}^{\oplus}\cos\left(\frac{2\pi}{a}\cdot l\theta\right)+C_{l}^{\ominus}\sin\left(\frac{2\pi}{a}\cdot l\theta\right)\right]\,;\,F(\theta+a)=F(\theta)
+F(\theta)=\sum_{l\ge0}\left[C_{l}^{\oplus}\cos\left(\frac{2\pi}{a}\cdot l\theta\right)+C_{l}^{\ominus}\sin\left(\frac{2\pi}{a}\cdot l\theta\right)\right]\,;\, F(\theta+a)=F(\theta)
 \]
 
 \end_inset
@@ -984,7 +984,7 @@ status open
 
 \begin_inset Formula 
 \[
-F(\theta)=\sum_{l\ge0}\left[C_{l}^{\oplus}\cos\left(l\theta\right)+C_{l}^{\ominus}\sin\left(l\theta\right)\right]=\sum_{l\ge0}\sum_{\forall\odot}C_{l}^{\odot}f_{l}^{\odot}\left(\theta\right)\,;\,F(\theta+2\pi)=F(\theta)
+F(\theta)=\sum_{l\ge0}\left[C_{l}^{\oplus}\cos\left(l\theta\right)+C_{l}^{\ominus}\sin\left(l\theta\right)\right]=\sum_{l\ge0}\sum_{\forall\odot}C_{l}^{\odot}f_{l}^{\odot}\left(\theta\right)\,;\, F(\theta+2\pi)=F(\theta)
 \]
 
 \end_inset
@@ -4497,7 +4497,7 @@ status collapsed
 \begin_inset Formula $\begin{array}{cc}
 0 & \iff l\in[0]_{4}\\
 \frac{1}{2}\left[\cos\left(l\theta\right)+\sin(l\theta)\right] & \iff l\in[1]_{4}\\
-\cos(l\theta) & \iff l\in[2]_{4}\\
+\sin(l\theta) & \iff l\in[2]_{4}\\
 \frac{1}{2}\left[\cos\left(l\theta\right)-\sin(l\theta)\right] & \iff l\in[3]_{4}
 \end{array}$
 \end_inset
@@ -4822,7 +4822,7 @@ status collapsed
  
 \begin_inset Formula 
 \[
-F(\underline{x}_{\mathcal{A}})=\underset{\underline{k}_{\mathcal{G}}\in\mathbb{\mathfrak{R}}^{+}}{\sum}\left[C_{\underline{k}_{\mathcal{G}}}^{\oplus}\cos\left(\underline{k}_{\mathcal{G}}^{T}\underline{\underline{M}}\underline{x}_{\mathcal{A}}\right)+C_{\underline{k}_{\mathcal{G}}}^{\ominus}\sin\left(\underline{k}_{\mathcal{G}}^{T}\underline{\underline{M}}\underline{x}_{\mathcal{A}}\right)\right]\,;\,F(\underline{x}_{\mathcal{A}}+\underline{\underline{K_{aux}}}\underline{k}_{\mathcal{G}})=F(\underline{x}_{\mathcal{A}})
+F(\underline{x}_{\mathcal{A}})=\underset{\underline{k}_{\mathcal{G}}\in\mathbb{\mathfrak{R}}^{+}}{\sum}\left[C_{\underline{k}_{\mathcal{G}}}^{\oplus}\cos\left(\underline{k}_{\mathcal{G}}^{T}\underline{\underline{M}}\underline{x}_{\mathcal{A}}\right)+C_{\underline{k}_{\mathcal{G}}}^{\ominus}\sin\left(\underline{k}_{\mathcal{G}}^{T}\underline{\underline{M}}\underline{x}_{\mathcal{A}}\right)\right]\,;\, F(\underline{x}_{\mathcal{A}}+\underline{\underline{K_{aux}}}\underline{k}_{\mathcal{G}})=F(\underline{x}_{\mathcal{A}})
 \]
 
 \end_inset
@@ -5643,7 +5643,7 @@ Conceptual form:
 \end_inset
 
  , where 
-\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\,a\mod n=m\}$
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
 \end_inset
 
  
@@ -5846,7 +5846,7 @@ Conceptual form:
 \end_inset
 
  , where 
-\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\,a\mod n=m\}$
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
 \end_inset
 
  
@@ -6018,7 +6018,7 @@ Conceptual form:
 \end_inset
 
  , where 
-\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\,a\mod n=m\}$
+\begin_inset Formula $[m]_{n}=\{a\in\mathbb{Z}\,:\, a\mod n=m\}$
 \end_inset
 
  

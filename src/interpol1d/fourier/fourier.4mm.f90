@@ -78,6 +78,7 @@ function termfou1d_4mm(this,kpoint,parity,irrep,x) result(answer)
       select case( mod(kpoint,4)/=0 )
       case(.true.)
          write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
       case(.false.)
          ! do nothing
       end select
@@ -89,11 +90,67 @@ function termfou1d_4mm(this,kpoint,parity,irrep,x) result(answer)
          write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
          call exit(1)
       end select
+
+   case('A2')
+      ! kpoint check
+      select case( mod(kpoint,4)/=0 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('-')
+         answer=dsin(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case('B1')
+      ! kpoint check
+      select case( mod(kpoint,4)/=2 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('+')
+         answer=dcos(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case('B2')
+      ! kpoint check
+      select case( mod(kpoint,4)/=2 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('-')
+         answer=dsin(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
    case('E','EE')
       ! kpoint check
       select case( mod(kpoint,2)==0 )
       case(.true.)
          write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
       case(.false.)
          ! do nothing
       end select
@@ -144,11 +201,67 @@ function termfou1d_dx_4mm(this,kpoint,parity,irrep,x) result(answer)
          write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
          call exit(1)
       end select
+
+   case('A2')
+      ! kpoint check
+      select case( mod(kpoint,4)/=0 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('-')
+         answer=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case('B1')
+      ! kpoint check
+      select case( mod(kpoint,4)/=2 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('+')
+         answer=-dfloat(kpoint)*dsin(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
+   case('B2')
+      ! kpoint check
+      select case( mod(kpoint,4)/=2 )
+      case(.true.)
+         write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
+      case(.false.)
+         ! do nothing
+      end select
+      ! parity check
+      select case( parity )
+      case('-')
+         answer=dfloat(kpoint)*dcos(dfloat(kpoint)*x)
+      case default
+         write(0,*) routinename//'ERR: parity "'//parity//'" not implemented and/or does not exist'
+         call exit(1)
+      end select
+
    case('E','EE')
       ! kpoint check
       select case( mod(kpoint,2)==0 )
       case(.true.)
          write(0,*) 'ERR '//routinename//' bad kpoint number'
+         call exit(1)
       case(.false.)
          ! do nothing
       end select
