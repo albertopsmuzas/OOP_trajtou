@@ -21,6 +21,8 @@ type:: SubPeakCRP6D
    real(kind=8):: thetaOut
    integer(kind=4),dimension(3):: rovibrState
    real(kind=8):: prob
+   real(kind=8):: deviation
+   integer(kind=4):: ntrajs
    real(kind=8):: dE
 end type SubPeakCRP6D
 !======================================================
@@ -57,6 +59,8 @@ TYPE :: Allowed_peaksCRP6D
    REAL(KIND=8):: E
    REAL(KIND=8),DIMENSION(6):: conic
    TYPE(PeakCRP6D),DIMENSION(:),ALLOCATABLE:: peaks
+   integer(kind=4):: totAllowedScatt
+   integer(kind=4):: totScatt
    character(len=24):: fileNameAllowed='OUTANA6DallowedPeaks.out'
    character(len=21):: fileNameSeen='OUTANA6DseenPeaks.out'
    character(len=25):: fileNameUnmapped='OUTANA6DunmappedTrajs.out'
@@ -64,7 +68,7 @@ TYPE :: Allowed_peaksCRP6D
       ! private tools section
       procedure,private:: getPeakId => getPeakId_ALLOWEDPEAKSCRP6D
       procedure,private:: addNewPeak => addNewPeak_ALLOWEDPEAKSCRP6D
-      procedure,private:: addProbToSubPeak => addProbToSubPeak_ALLOWEDPEAKSCRP6D
+      procedure,private:: addCountToSubPeak => addCountToSubPeak_ALLOWEDPEAKSCRP6D
       ! public tools section
       PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: getEnvOrder => getEnvOrder_ALLOWEDPEAKSCRP6D
@@ -75,6 +79,7 @@ TYPE :: Allowed_peaksCRP6D
       PROCEDURE,PUBLIC:: PRINT_LABMOMENTA_AND_ANGLES => PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSCRP6D
       PROCEDURE,PUBLIC:: isAllowed => isAllowed_ALLOWEDPEAKSCRP6D
       procedure,public:: quantizeRovibrState => quantizeRovibrState_ALLOWEDPEAKSCRP6D
+      procedure,public:: doSubPeakStatistics => doSubPeakStatistics_ALLOWEDPEAKSCRP6D
 END TYPE Allowed_peaksCRP6D
 !=======================================================
 CONTAINS
@@ -238,7 +243,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
          select case( this%isAllowed(diffState=g(:),rovibrState=rovibrState,diffEnergy=dE) )
          case(.true.) ! Allowed peak: add to list
             call this%addNewPeak(g, peakId=peakId)
-            call this%addProbToSubPeak( peakId=peakId,rovibrState=rovibrState )
+            call this%addCountToSubPeak( peakId=peakId,rovibrState=rovibrState )
             allowedScatt=allowedScatt+1
          case(.false.)
             write(wuUnmap,formatUnmap) id,g(:),rovibrState(:)
@@ -254,17 +259,40 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D(this)
       end select
    enddo
    totTrajs=this%inicond%ntraj-this%inicond%nstart+1
+   this%totScatt=totScatt
+   this%totAllowedScatt=allowedScatt
    write(*,'("===========================================================")')
    write(*,'("ASSIGN PEAKS TO TRAJS: total trajs: ",I10)')             totTrajs
-   write(*,'("ASSIGN PEAKS TO TRAJS: scattered trajs: ",I10)')         totScatt
-   write(*,'("ASSIGN PEAKS TO TRAJS: allowed scattered trajs: ",I10)') allowedScatt
+   write(*,'("ASSIGN PEAKS TO TRAJS: scattered trajs: ",I10)') this%totScatt
+   write(*,'("ASSIGN PEAKS TO TRAJS: allowed scattered trajs: ",I10)') this%totAllowedScatt
    write(*,'("ASSIGN PEAKS TO TRAJS: probability: ",F10.5)')           dfloat(allowedScatt)/dfloat(totTrajs)
    write(*,'("===========================================================")')
    close(unit=ruScatt)
    close(unit=wuUnmap)
    call deleteIfEmptyFile( this%fileNameUnmapped )
+   call this%doSubPeakStatistics()
    return
 end subroutine assignTrajsToPeaks_ALLOWEDPEAKSCRP6D
+!####################################################################################
+! SUBROUTINE: doSubPeakStatistics_ALLOWEDPEAKSGROW
+!####################################################################################
+!------------------------------------------------------------------------------------
+subroutine doSubPeakStatistics_ALLOWEDPEAKSCRP6D(this)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Allowed_peaksCRP6D),intent(inout):: this
+   ! Local variables
+   integer(kind=4):: nPeaks
+   integer(kind=4):: i,j ! counters
+   ! Run section ------------------------------------
+   nPeaks=size( this%peaks(:) )   
+   do i=1,nPeaks
+      this%peaks(i)%subPeaks(:)%prob=dfloat(this%peaks(i)%subPeaks(:)%ntrajs)/dfloat(this%totAllowedScatt)
+      this%peaks(i)%subPeaks(:)%deviation=dsqrt(this%peaks(i)%subPeaks(:)%prob*(1.d0-this%peaks(i)%subPeaks(:)%prob)/dfloat(this%totAllowedScatt-1))
+   enddo
+   return
+   end subroutine doSubPeakStatistics_ALLOWEDPEAKSCRP6D
 !####################################################################################
 ! FUNCTION: EVALUATE_PEAK ###########################################################
 !####################################################################################
@@ -525,14 +553,14 @@ subroutine addNewPeak_ALLOWEDPEAKSCRP6D(this,g,peakId)
    return
 end subroutine addNewPeak_ALLOWEDPEAKSCRP6D
 !############################################################
-! SUBROUTINE: addProbToPeak_ALLOWEDPEAKSCRP6D
+! SUBROUTINE: addCountToPeak_ALLOWEDPEAKSCRP6D
 !############################################################
 !> @brief
 !! Adds probability to a given subpeak. If it does not exist, this
 !! routine will initialize it. Subpeaks are classified by their quantum
 !! state.
 !------------------------------------------------------------
-subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
+subroutine addCountToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    ! Initial declarations
    implicit none
    ! I/O variables
@@ -541,7 +569,7 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    integer(kind=4),dimension(3),intent(in):: rovibrState
    ! Local variables
    real(kind=8):: initE,kz,masa,theta_in,pinit_par
-   integer(kind=4):: N,newCol,oldCol
+   integer(kind=4):: newCol,oldCol
    type(subPeakCRP6D),dimension(:),allocatable:: auxListSubPeaks
    logical:: isNew
    integer(kind=4):: i ! counter
@@ -550,7 +578,6 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    masa=sum(system_mass(:))
    initE=this%inicond%evirot%getValue()
 	theta_in=this%inicond%vz_angle%getvalue()
-   N=size( this%inicond%trajs(:) )
 	pinit_par = (1.d0/dtan(theta_in))*dsqrt(2.d0*masa*this%inicond%E_norm%getvalue())
    i=1
    isNew=.true.
@@ -558,9 +585,7 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
    case(.true.)
       oldCol=0
       newCol=oldCol+1
-
       allocate( this%peaks(peakId)%subPeaks(newCol) )
-
    case(.false.)
       oldCol=size( this%peaks(peakId)%subPeaks )
       newCol=oldCol+1
@@ -573,12 +598,9 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
          call move_alloc( from=this%peaks(peakId)%subPeaks, to=auxListSubPeaks )
          allocate( this%peaks(peakId)%subPeaks(neWcol) )
          this%peaks(peakId)%subPeaks(1:oldCol) = auxListSubPeaks(1:oldCol)
-
       case(.false.)
          ! do nothing
-
       end select
-
    end select
 
    select case( isNew )
@@ -587,17 +609,15 @@ subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D(this,peakId,rovibrState)
       this%peaks(peakId)%subPeaks(newCol)%dE=evaluateEnergyRovibrState(rovibrState)-initE
       kz=dsqrt( 2.d0*masa*this%inicond%E_norm%getValue()-2.d0*pinit_par*this%peaks(peakId)%dkx &
                 -this%peaks(peakId)%dkxy**2.d0-2.d0*masa*this%peaks(peakId)%subPeaks(newCol)%dE )
-      this%peaks(peakId)%subPeaks(newCol)%prob=1.d0/N
       this%peaks(peakId)%subPeaks(newCol)%phiOut=datan( this%peaks(peakId)%dky/kz )
       this%peaks(peakId)%subPeaks(newCol)%thetaOut=datan( kz/norm2([this%peaks(peakId)%dkx+pinit_par,this%peaks(peakId)%dky]) )
-
+      this%peaks(peakId)%subPeaks(newCol)%ntrajs=1
    case(.false.)
-      this%peaks(peakId)%subPeaks(i-1)%prob=this%peaks(peakId)%subPeaks(i-1)%prob+1.d0/N
-
+      this%peaks(peakId)%subPeaks(i-1)%ntrajs=this%peaks(peakId)%subPeaks(i-1)%ntrajs+1
    end select
 
    return
-end subroutine addProbToSubPeak_ALLOWEDPEAKSCRP6D
+end subroutine addCountToSubPeak_ALLOWEDPEAKSCRP6D
 !#######################################################
 ! SUBROUTINE: printAllowedPeaks_ALLOWEDPEAKSCRP6D
 !#######################################################
@@ -678,12 +698,15 @@ subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D(this)
    class(Allowed_PeaksCRP6D),intent(in):: this
    ! Local variables
    integer(kind=4),parameter:: wuSeen=123
-   character(len=*),parameter:: formatSeen='(6(I10,1X),6(F10.5,1X))'
+   character(len=*),parameter:: formatSeen='(6(I10,1X),6(F10.5,1X),F10.5)'
    integer(kind=4):: i,j ! counters
    ! Run section --------------------------------------------
    open(unit=wuSeen,file=this%fileNameSeen,status='replace',action='write')
    write(wuSeen,'("# --------------------------------------- SEEN PEAKS ----------------------------------------------------------------")')
    write(wuSeen,'("# Format: diffOrder/n,m,V,J,mJ/Azimuthal angle/Deflection from perp. surf./Deflection from surf./dKxy(au)/dE(au)/prob")')
+   write(wuSeen,'("# Total scattered trajectories: ",I15)') this%totScatt
+   write(wuSeen,'("# Total physical scattered trajectories (probabilities based on this number): ",I15)')  this%totAllowedScatt
+   write(wuSeen,'("# Format: diffOrder/n,m,V,J,mJ/Azimuthal angle/Deflection from perp. surf./Deflection from surf./dKxy(au)/dE(au)/prob/deviat")')
    write(wuSeen,'("# -------------------------------------------------------------------------------------------------------------------")')
    do i=1,size( this%peaks )
       select case( allocated(this%peaks(i)%subPeaks) )
@@ -691,7 +714,9 @@ subroutine printSeenPeaks_ALLOWEDPEAKSCRP6D(this)
          do j =1,size( this%peaks(i)%subPeaks )
             write(wuSeen,formatSeen) this%peaks(i)%diffOrder,this%peaks(i)%g(:),this%peaks(i)%subPeaks(j)%rovibrState(:),&
                                      this%peaks(i)%psiOut,this%peaks(i)%subPeaks(j)%PhiOut,this%peaks(i)%subPeaks(j)%thetaOut,&
-                                     this%peaks(i)%dkxy,this%peaks(i)%subPeaks(j)%dE,this%peaks(i)%subPeaks(j)%prob
+                                     this%peaks(i)%dkxy,this%peaks(i)%subPeaks(j)%dE,this%peaks(i)%subPeaks(j)%prob,&
+                                     this%peaks(i)%subPeaks(j)%deviation
+
          enddo
       case(.false.)
          ! do nothing. do not print anything
