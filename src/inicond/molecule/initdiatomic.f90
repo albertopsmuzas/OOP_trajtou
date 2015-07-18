@@ -1081,13 +1081,6 @@ SUBROUTINE SET_PERIOD_INITDIATOMIC(this)
    ! Run section
    mu = product(system_mass(1:2))/sum(system_mass(1:2))
    erot=dfloat(this%init_qn(2)*(this%init_qn(2)+1))/(2.D0*mu)
-   SELECT CASE(erot>=this%evirot%getvalue())
-      CASE(.TRUE.)
-         WRITE(0,*) "SET_PERIOD_INITDIATOMIC ERR: wrong evirot+quantum state value. Rotational energy > rovibr energy"
-         CALL EXIT(1)
-      CASE(.FALSE.)
-         ! do nothing
-   END SELECT
    ALLOCATE(x(this%vibrpot%n))
    ALLOCATE(f(this%vibrpot%n))
    DO i = 1, this%vibrpot%n
