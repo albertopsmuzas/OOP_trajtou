@@ -141,7 +141,6 @@ subroutine GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       end do
       call DEBUG_WRITE(routinename,"At Phi: (deg)",philistdeg)
       call DEBUG_WRITE(routinename,"At Phi: (rad)",philist)
-      call DEBUG_WRITE(routinename,"Klist: ",phicut(i)%getklist())
       call DEBUG_WRITE(routinename,"f: ",f)
       call DEBUG_WRITE(routinename,"dfdz: ",aux(1,:))
       call DEBUG_WRITE(routinename,"dfdr: ",aux(2,:))

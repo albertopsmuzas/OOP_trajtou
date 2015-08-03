@@ -8381,14 +8381,6 @@ type,extends(PES):: PES_H2LiF001
       ! Enquire block
       procedure,public:: is_allowed                  => is_allowed_PES_H2LiF001
 end type PES_H2LiF001
-
-private initialize_PES_H2LiF001,set_smooth_PES_H2LiF001,get_v_and_derivs_PES_H2LiF001,get_v_and_derivs_pure_PES_H2LiF001,&
-        get_atomicPot_and_derivs_PES_H2LiF001,smooth_PES_H2LiF001,interpol_PES_H2LiF001,extract_vacuumSurf_PES_H2LiF001,&
-        add_vacuumSurf_PES_H2LiF001,interpol_new_RZgrid_PES_H2LiF001,plot1d_theta_PES_H2LiF001,&
-        plot1d_atomic_interac_theta_PES_H2LiF001,plot1d_phi_PES_H2LiF001,plot1d_atomic_interac_phi_PES_H2LiF001,&
-        plot1d_R_PES_H2LiF001,plot1d_Z_PES_H2LiF001,plot_XYmap_PES_H2LiF001,plot_RZmap_PES_H2LiF001,&
-        plot_atomic_interac_RZ_PES_H2LiF001,is_allowed_PES_H2LiF001,from_molecular_to_atomic
-
 contains
 !###########################################################
 !# SUBROUTINE: GET_ATOMICPOT_AND_DERIVS_PES_H2LiF001
