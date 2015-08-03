@@ -3761,13 +3761,21 @@ subroutine initialize_PES_HLIF001_NS(this,filename,tablename)
    ! Local variables
    real(kind=8),dimension(129):: commonGrid
    integer(kind=4):: i ! counter
+   integer(kind=4),save:: invoked
+   data invoked/0/
    ! HEY HO!, LET'S GO!! ------------------
    call this%set_pesType('CRP3D')
    call this%set_alias('H_on_LiF001')
    call this%set_dimensions(3)
    allocate( this%all_pairpots(2) )
-   ! Create surface
-   call sysLiF001Surf%initialize('dummyString')
+   ! Create surface if this was the first call.
+   select case( invoked )
+   case(0)
+      call sysLiF001Surf%initialize('dummyString')
+      invoked=1
+   case default
+      ! do nothing
+   end select
    ! Pair potential for Li
    this%all_pairpots(1)%alias='Pairpot_Li'
    this%all_pairpots(1)%vasint=-7.1343585831139720d0
@@ -9687,22 +9695,22 @@ IMPLICIT NONE
 ! TYPE: CRP6D
 !
 !-------------------------------------------------
-TYPE,EXTENDS(PES):: PES_H2LiF001
-   INTEGER(KIND=4):: nsites
-   INTEGER(KIND=4):: natomic
-   LOGICAL:: is_interpolated=.FALSE.
-   LOGICAL:: is_homonucl=.FALSE.
-   LOGICAL:: is_smooth=.FALSE.
-   LOGICAL:: is_shifted=.FALSE.
-   LOGICAL:: is_resized=.FALSE.
-   REAL(KIND=8):: zvacuum
-   INTEGER(KIND=4),DIMENSION(2):: grid=[0,0]
-   CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE:: wyckoffsite
-   TYPE(CRP3D),DIMENSION(:),ALLOCATABLE:: atomiccrp
-   TYPE(Vacuumpot):: farpot
-   CLASS(Function1d),ALLOCATABLE:: dumpfunc
-   CHARACTER(LEN=30):: extrapol2vac_flag
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: kListXY
+type,extends(PES):: PES_H2LiF001
+   integer(kind=4):: nsites=4
+   integer(kind=4):: natomic=1
+   logical:: is_interpolated=.false.
+   logical:: is_homonucl=.false.
+   logical:: is_smooth=.false.
+   logical:: is_shifted=.false.
+   logical:: is_resized=.false.
+   real(kind=8):: zvacuum
+   integer(kind=4),dimension(2):: grid=[25,50]
+   type(Wyckoffp4mm),dimension(:),allocatable:: wyckoffSite
+   type(Pes_HLiF001_NS),dimension(:),allocatable:: atomicCrp
+   type(VacuumPot):: farpot
+   type(Logistic_func):: dumpfunc
+   character(len=30):: extrapol2vac_flag
+   integer(kind=4),dimension(:,:),allocatable:: kListXY
    character(len=1),dimension(:),allocatable:: parityListXY
    character(len=2),dimension(:),allocatable:: irrepListXY
    INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: kListAngle
@@ -9712,42 +9720,32 @@ TYPE,EXTENDS(PES):: PES_H2LiF001
 
    CONTAINS
       ! Initialization block
-      PROCEDURE,PUBLIC:: READ => READ_CRP6D
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_CRP6D
+      procedure,public:: initialize => INITIALIZE_CRP6D
       ! Set block
-      PROCEDURE,PUBLIC:: SET_SMOOTH => SET_SMOOTH_CRP6D
+      procedure,public:: SET_SMOOTH => SET_SMOOTH_CRP6D
       ! Get block
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_CRP6D
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_CRP6D
+      procedure,public:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
+      procedure,public:: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_CRP6D
+      procedure,public:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
       ! Tools block
-      PROCEDURE,PUBLIC:: SMOOTH => SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: SMOOTH_EXTRA => SMOOTH_EXTRA_CRP6D
-      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_CRP6D
-      PROCEDURE,PUBLIC:: RAWINTERPOL => RAWINTERPOL_CRP6D
-      PROCEDURE,PUBLIC:: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
-      PROCEDURE,PUBLIC:: ADD_VACUUMSURF => ADD_VACUUMSURF_CRP6D
-      PROCEDURE,PUBLIC:: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
-      PROCEDURE,PUBLIC:: CHEAT_CARTWHEEL_ONTOP => CHEAT_CARTWHEEL_ONTOP_CRP6D
+      procedure,public:: SMOOTH => SMOOTH_CRP6D
+      procedure,public:: INTERPOL => INTERPOL_CRP6D
+      procedure,public:: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
+      procedure,public:: ADD_VACUUMSURF => ADD_VACUUMSURF_CRP6D
+      procedure,public:: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
       ! Plot toolk
-      PROCEDURE,PUBLIC:: PLOT1D_THETA => PLOT1D_THETA_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_PHI => PLOT1D_PHI_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_R => PLOT1D_R_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_Z => PLOT1D_Z_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_XYMAP => PLOT_XYMAP_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_RZMAP => PLOT_RZMAP_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
+      procedure,public:: PLOT1D_THETA => PLOT1D_THETA_CRP6D
+      procedure,public:: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
+      procedure,public:: PLOT1D_PHI => PLOT1D_PHI_CRP6D
+      procedure,public:: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
+      procedure,public:: PLOT1D_R => PLOT1D_R_CRP6D
+      procedure,public:: PLOT1D_Z => PLOT1D_Z_CRP6D
+      procedure,public:: PLOT_XYMAP => PLOT_XYMAP_CRP6D
+      procedure,public:: PLOT_RZMAP => PLOT_RZMAP_CRP6D
+      procedure,public:: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
       ! Enquire block
-      PROCEDURE,PUBLIC:: is_allowed => is_allowed_CRP6D
-END TYPE CRP6D
+      procedure,public:: is_allowed => is_allowed_CRP6D
+end type PES_H2LiF001
 CONTAINS
 !###########################################################
 !# SUBROUTINE: INITIALIZE_CRP6D
