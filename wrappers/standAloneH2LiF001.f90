@@ -3759,21 +3759,13 @@ subroutine initialize_PES_HLIF001_NS(this,filename,tablename)
    ! Local variables
    real(kind=8),dimension(129):: commonGrid
    integer(kind=4):: i ! counter
-   integer(kind=4),save:: invoked
-   data invoked/0/
    ! HEY HO!, LET'S GO!! ------------------
    call this%set_pesType('CRP3D')
    call this%set_alias('H_on_LiF001')
    call this%set_dimensions(3)
    allocate( this%all_pairpots(2) )
    ! Create surface if this was the first call.
-   select case( invoked )
-   case(0)
-      call sysLiF001Surf%initialize('dummyString')
-      invoked=1
-   case default
-      ! do nothing
-   end select
+   call sysLiF001Surf%initialize('dummyString')
    ! Pair potential for Li
    this%all_pairpots(1)%alias='Pairpot_Li'
    this%all_pairpots(1)%vasint=-7.1343585831139720d0
@@ -10149,9 +10141,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    integer(kind=4):: i
    real(kind=8),dimension(14,14):: gridPot1414
    real(kind=8),dimension(14,16):: gridPot1416
-   integer(kind=4),save:: invoked ! 0 if this was the first call. 1 if not.
    ! Parameters
-   data invoked/0/
    character(len=*),parameter:: routinename="READ_PES_H2LiF001: "
    real(kind=8),dimension(14),parameter:: gridR14=[ 0.7558904532d0,0.9448630664d0,1.1338356797d0,1.2283219864d0,&
                                                     1.3228082930d0,1.4172945997d0,1.5117809063d0,1.6062672130d0,&
@@ -10177,7 +10167,7 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
                                            -0.2500191955d0,-0.2485072327d0,-0.2446916237d0,-0.2392079371d0,-0.2250493114d0,&
                                            -0.1828462465d0,-0.1423982815d0,-0.1082070069d0,-0.0810442795d0,-0.0564546003d0 ],&
                                        surfaceEnergy=-7.09306998104d0 )
-   call this%dumpFunc%read([3.d0,4.d0])
+   call this%dumpFunc%read([2.d0,2.5d0])
    this%zvacuum=13.2280829302d0
    allocate( this%wyckoffSite(4) )
    allocate( this%atomicCrp(1) )
@@ -10193,19 +10183,12 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    this%kListXY(:,2)=[0,0,0,0,1,0,0,0,1,1]
    ! Angle interpol
    allocate( this%irrepListAngle(10) )
-   this%irrepListAngle(:)=['A1','A1','A1','A1','A1','B1','A1','A1','B2','B2']
+   this%irrepListAngle(:)=['A1','A1','A1','A1','A1','B1','A1','A1','EE','B2']
    allocate( this%parityListAngle(10) )
    this%parityListAngle(:)=['+','+','+','+','+','+','+','+','o','-']
    allocate( this%kListAngle(10) )
    this%kListAngle(:)=[0,4,0,4,0,2,4,0,1,2]
-
-   select case( invoked ) ! check if this routine has been initialized before
-   case(0)
-      call sysLiF001Surf%initialize('dummyString')
-      invoked=1
-   case default
-      ! do nothing
-   end select
+   call sysLiF001Surf%initialize('dummyString')
    ! Create wyckoff sites//////////////////////////////////
    ! Wickoff Top Li -----------> 'a'
    this%wyckoffSite(1)%id='a'
@@ -10220,23 +10203,35 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    allocate( this%wyckoffSite(1)%zrCut(5) )
    this%wyckoffSite(1)%zrCut(:)%x=0.d0
    this%wyckoffSite(1)%zrCut(:)%y=0.d0
-   allocate( this%wyckoffSite(1)%phiTerms(3) )
+   allocate( this%wyckoffSite(1)%phiList(1:2),source=[0.d0,0.785398163397d0] )
    allocate( this%wyckoffSite(1)%thetaTerms%irrepList(3) )
-   this%wyckoffSite(1)%thetaTerms%irrepList(3)=['A1','A1','A1']
-   allocate( this%wyckoffSite(1)%thetaTerms%parityList(3), source=['+','+','+'] )
-   allocate( this%wyckoffSite(1)%thetaTerms%kpointList(3), source=[0,2,4] )
+   this%wyckoffSite(1)%thetaTerms%irrepList(:)=['A1','A1','A1']
+   allocate( this%wyckoffSite(1)%thetaTerms%parityList(3) )
+   this%wyckoffSite(1)%thetaTerms%parityList(:)=['+','+','+']
+   allocate( this%wyckoffSite(1)%thetaTerms%kpointList(3) )
+   this%wyckoffSite(1)%thetaTerms%kpointList(:)=[0,2,4]
+   allocate( this%wyckoffSite(1)%phiTerms(3) )
    ! theta 0
-   allocate( this%wyckoffSite(1)%phiTerms(1)%irrepList(1), source=['A1'] )
-   allocate( this%wyckoffSite(1)%phiTerms(1)%parityList(1),source=['+'] )
-   allocate( this%wyckoffSite(1)%phiTerms(1)%kpointList(1),source=[0] )
+   allocate( this%wyckoffSite(1)%phiTerms(1)%irrepList(1) )
+   this%wyckoffSite(1)%phiTerms(1)%irrepList(1)='A1'
+   allocate( this%wyckoffSite(1)%phiTerms(1)%parityList(1) )
+   this%wyckoffSite(1)%phiTerms(1)%parityList(1)='+'
+   allocate( this%wyckoffSite(1)%phiTerms(1)%kpointList(1) )
+   this%wyckoffSite(1)%phiTerms(1)%kpointList(1)=0
    ! theta 45
-   allocate( this%wyckoffSite(1)%phiTerms(2)%irrepList(2), source=['A1','A1'] )
-   allocate( this%wyckoffSite(1)%phiTerms(2)%parityList(2),source=['+','+']  )
-   allocate( this%wyckoffSite(1)%phiTerms(2)%kpointList(2),source=[0,4] )
+   allocate( this%wyckoffSite(1)%phiTerms(2)%irrepList(2) )
+   this%wyckoffSite(1)%phiTerms(2)%irrepList(:)=['A1','A1']
+   allocate( this%wyckoffSite(1)%phiTerms(2)%parityList(2) )
+   this%wyckoffSite(1)%phiTerms(2)%parityList(:)=['+','+']
+   allocate( this%wyckoffSite(1)%phiTerms(2)%kpointList(2) )
+   this%wyckoffSite(1)%phiTerms(2)%kpointList(:)=[0,4]
    ! theta 90
-   allocate( this%wyckoffSite(1)%phiTerms(3)%irrepList(2), source=['A1','A1'] )
-   allocate( this%wyckoffSite(1)%phiTerms(3)%parityList(2),source=['+','+']  )
-   allocate( this%wyckoffSite(1)%phiTerms(3)%kpointList(2),source=[0,4] )
+   allocate( this%wyckoffSite(1)%phiTerms(3)%irrepList(2) )
+   this%wyckoffSite(1)%phiTerms(3)%irrepList(:)=['A1','A1']
+   allocate( this%wyckoffSite(1)%phiTerms(3)%parityList(2) )
+   this%wyckoffSite(1)%phiTerms(3)%parityList(:)=['+','+']
+   allocate( this%wyckoffSite(1)%phiTerms(3)%kpointList(2) )
+   this%wyckoffSite(1)%phiTerms(3)%kpointList(:)=[0,4]
    ! Reading zrcuts
    this%wyckoffSite(1)%zrcut(1)%alias='Top_Li_0_0'
    this%wyckoffSite(1)%zrCut(1)%theta=0.d0
@@ -10509,22 +10504,35 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    allocate( this%wyckoffSite(2)%zrCut(5) )
    this%wyckoffSite(2)%zrCut(:)%x=2.7216780628885480d0
    this%wyckoffSite(2)%zrCut(:)%y=2.7216780628885480d0
+   allocate( this%wyckoffSite(2)%phiList(1:2),source=[0.d0,0.785398163397d0] )
    allocate( this%wyckoffSite(2)%phiTerms(3) )
-   allocate( this%wyckoffSite(2)%thetaTerms%irrepList(3), source=['A1','A1','A1'] )
-   allocate( this%wyckoffSite(2)%thetaTerms%parityList(3), source=['+','+','+'] )
-   allocate( this%wyckoffSite(2)%thetaTerms%kpointList(3), source=[0,2,4] )
+   allocate( this%wyckoffSite(2)%thetaTerms%irrepList(3) )
+   this%wyckoffSite(2)%thetaTerms%irrepList(:)=['A1','A1','A1']
+   allocate( this%wyckoffSite(2)%thetaTerms%parityList(3) )
+   this%wyckoffSite(2)%thetaTerms%parityList(:)=['+','+','+']
+   allocate( this%wyckoffSite(2)%thetaTerms%kpointList(3) )
+   this%wyckoffSite(2)%thetaTerms%kpointList(:)=[0,2,4]
    ! theta 0
-   allocate( this%wyckoffSite(2)%phiTerms(1)%irrepList(1), source=['A1'] )
-   allocate( this%wyckoffSite(2)%phiTerms(1)%parityList(1),source=['+'] )
-   allocate( this%wyckoffSite(2)%phiTerms(1)%kpointList(1),source=[0] )
+   allocate( this%wyckoffSite(2)%phiTerms(1)%irrepList(1) )
+   this%wyckoffSite(2)%phiTerms(1)%irrepList(1)='A1'
+   allocate( this%wyckoffSite(2)%phiTerms(1)%parityList(1) )
+   this%wyckoffSite(2)%phiTerms(1)%parityList(1)='+'
+   allocate( this%wyckoffSite(2)%phiTerms(1)%kpointList(1) )
+   this%wyckoffSite(2)%phiTerms(1)%kpointList(1)=0
    ! theta 45
-   allocate( this%wyckoffSite(2)%phiTerms(2)%irrepList(2), source=['A1','A1'] )
-   allocate( this%wyckoffSite(2)%phiTerms(2)%parityList(2),source=['+','+']  )
-   allocate( this%wyckoffSite(2)%phiTerms(2)%kpointList(2),source=[0,4] )
+   allocate( this%wyckoffSite(2)%phiTerms(2)%irrepList(2) )
+   this%wyckoffSite(2)%phiTerms(2)%irrepList(:)=['A1','A1']
+   allocate( this%wyckoffSite(2)%phiTerms(2)%parityList(2) )
+   this%wyckoffSite(2)%phiTerms(2)%parityList(:)=['+','+']
+   allocate( this%wyckoffSite(2)%phiTerms(2)%kpointList(2) )
+   this%wyckoffSite(2)%phiTerms(2)%kpointList(:)=[0,4]
    ! theta 90
-   allocate( this%wyckoffSite(2)%phiTerms(3)%irrepList(2), source=['A1','A1'] )
-   allocate( this%wyckoffSite(2)%phiTerms(3)%parityList(2),source=['+','+']  )
-   allocate( this%wyckoffSite(2)%phiTerms(3)%kpointList(2),source=[0,4] )
+   allocate( this%wyckoffSite(2)%phiTerms(3)%irrepList(2) )
+   this%wyckoffSite(2)%phiTerms(3)%irrepList(:)=['A1','A1']
+   allocate( this%wyckoffSite(2)%phiTerms(3)%parityList(2) )
+   this%wyckoffSite(2)%phiTerms(3)%parityList(:)=['+','+']
+   allocate( this%wyckoffSite(2)%phiTerms(3)%kpointList(2) )
+   this%wyckoffSite(2)%phiTerms(3)%kpointList(:)=[0,4]
    ! reading zrcuts
    this%wyckoffSite(2)%zrcut(1)%alias='Top_F_0_0'
    this%wyckoffSite(2)%zrCut(1)%theta=0.d0
@@ -10815,18 +10823,28 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    allocate( this%wyckoffSite(3)%zrCut(4) )
    this%wyckoffSite(3)%zrCut(:)%x=2.7216780628885480d0
    this%wyckoffSite(3)%zrCut(:)%y=0.d0
+   allocate( this%wyckoffSite(3)%phiList(1:3),source=[0.d0,0.785398163397d0,1.57079632679d0] )
    allocate( this%wyckoffSite(3)%phiTerms(2) )
-   allocate( this%wyckoffSite(3)%thetaTerms%irrepList(2), source=['A1','A1'] )
-   allocate( this%wyckoffSite(3)%thetaTerms%parityList(2), source=['+','+'] )
-   allocate( this%wyckoffSite(3)%thetaTerms%kpointList(2), source=[0,2] )
+   allocate( this%wyckoffSite(3)%thetaTerms%irrepList(2) )
+   this%wyckoffSite(3)%thetaTerms%irrepList(:)=['A1','A1']
+   allocate( this%wyckoffSite(3)%thetaTerms%parityList(2) )
+   this%wyckoffSite(3)%thetaTerms%parityList(:)=['+','+']
+   allocate( this%wyckoffSite(3)%thetaTerms%kpointList(2) )
+   this%wyckoffSite(3)%thetaTerms%kpointList(:)=[0,2]
    ! theta 0
-   allocate( this%wyckoffSite(3)%phiTerms(1)%irrepList(1), source=['A1'] )
-   allocate( this%wyckoffSite(3)%phiTerms(1)%parityList(1),source=['+'] )
-   allocate( this%wyckoffSite(3)%phiTerms(1)%kpointList(1),source=[0] )
+   allocate( this%wyckoffSite(3)%phiTerms(1)%irrepList(1) )
+   this%wyckoffSite(3)%phiTerms(1)%irrepList(1)='A1'
+   allocate( this%wyckoffSite(3)%phiTerms(1)%parityList(1) )
+   this%wyckoffSite(3)%phiTerms(1)%parityList(1)='+'
+   allocate( this%wyckoffSite(3)%phiTerms(1)%kpointList(1) )
+   this%wyckoffSite(3)%phiTerms(1)%kpointList(1)=0
    ! theta 90
-   allocate( this%wyckoffSite(3)%phiTerms(2)%irrepList(3), source=['A1','A1','A1'] )
-   allocate( this%wyckoffSite(3)%phiTerms(2)%parityList(3),source=['+','+','+']  )
-   allocate( this%wyckoffSite(3)%phiTerms(2)%kpointList(3),source=[0,2,4] )
+   allocate( this%wyckoffSite(3)%phiTerms(2)%irrepList(3) )
+   this%wyckoffSite(3)%phiTerms(2)%irrepList(:)=['A1','A1','A1']
+   allocate( this%wyckoffSite(3)%phiTerms(2)%parityList(3) )
+   this%wyckoffSite(3)%phiTerms(2)%parityList(:)=['+','+','+']
+   allocate( this%wyckoffSite(3)%phiTerms(2)%kpointList(3) )
+   this%wyckoffSite(3)%phiTerms(2)%kpointList(:)=[0,2,4]
    ! Reading zrcuts
    this%wyckoffSite(3)%zrcut(1)%alias='Hollow_0_0'
    this%wyckoffSite(3)%zrCut(1)%theta=0.d0
@@ -11056,22 +11074,35 @@ subroutine initialize_PES_H2LiF001(this,filename,tablename)
    allocate( this%wyckoffSite(4)%zrCut(7) )
    this%wyckoffSite(4)%zrCut(:)%x=1.36083903144d0
    this%wyckoffSite(4)%zrCut(:)%y=1.36083903144d0
+   allocate( this%wyckoffSite(4)%phiList(1:3),source=[0.d0,0.942477796077d0,2.51327412287d0] )
    allocate( this%wyckoffSite(4)%phiTerms(3) )
-   allocate( this%wyckoffSite(4)%thetaTerms%irrepList(3), source=['AA','AA','AA'] )
-   allocate( this%wyckoffSite(4)%thetaTerms%parityList(3), source=['+','+','-'] )
-   allocate( this%wyckoffSite(4)%thetaTerms%kpointList(3), source=[0,2,2] )
+   allocate( this%wyckoffSite(4)%thetaTerms%irrepList(3) )
+   this%wyckoffSite(4)%thetaTerms%irrepList(:)=['AA','AA','AA']
+   allocate( this%wyckoffSite(4)%thetaTerms%parityList(3) )
+   this%wyckoffSite(4)%thetaTerms%parityList(:)=['+','+','-']
+   allocate( this%wyckoffSite(4)%thetaTerms%kpointList(3) )
+   this%wyckoffSite(4)%thetaTerms%kpointList(:)=[0,2,2]
    ! theta 0
-   allocate( this%wyckoffSite(4)%phiTerms(1)%irrepList(1), source=['Ap'] )
-   allocate( this%wyckoffSite(4)%phiTerms(1)%parityList(1),source=['+'] )
-   allocate( this%wyckoffSite(4)%phiTerms(1)%kpointList(1),source=[0] )
+   allocate( this%wyckoffSite(4)%phiTerms(1)%irrepList(1) )
+   this%wyckoffSite(4)%phiTerms(1)%irrepList(1)='Ap'
+   allocate( this%wyckoffSite(4)%phiTerms(1)%parityList(1) )
+   this%wyckoffSite(4)%phiTerms(1)%parityList(1)='+'
+   allocate( this%wyckoffSite(4)%phiTerms(1)%kpointList(1) )
+   this%wyckoffSite(4)%phiTerms(1)%kpointList(1)=0
    ! theta 90
-   allocate( this%wyckoffSite(4)%phiTerms(2)%irrepList(3), source=['Ap','Ap','Ap'] )
-   allocate( this%wyckoffSite(4)%phiTerms(2)%parityList(3),source=['+','-','+']  )
-   allocate( this%wyckoffSite(4)%phiTerms(2)%kpointList(3),source=[0,2,4] )
+   allocate( this%wyckoffSite(4)%phiTerms(2)%irrepList(3) )
+   this%wyckoffSite(4)%phiTerms(2)%irrepList(:)=['Ap','Ap','Ap']
+   allocate( this%wyckoffSite(4)%phiTerms(2)%parityList(3) )
+   this%wyckoffSite(4)%phiTerms(2)%parityList(:)=['+','-','+']
+   allocate( this%wyckoffSite(4)%phiTerms(2)%kpointList(3) )
+   this%wyckoffSite(4)%phiTerms(2)%kpointList(:)=[0,2,4]
    ! theta 135
-   allocate( this%wyckoffSite(4)%phiTerms(3)%irrepList(3), source=['Ap','Ap','Ap'] )
-   allocate( this%wyckoffSite(4)%phiTerms(3)%parityList(3),source=['+','o','-']  )
-   allocate( this%wyckoffSite(4)%phiTerms(3)%kpointList(3),source=[0,1,2] )
+   allocate( this%wyckoffSite(4)%phiTerms(3)%irrepList(3) )
+   this%wyckoffSite(4)%phiTerms(3)%irrepList(:)=['Ap','Ap','Ap']
+   allocate( this%wyckoffSite(4)%phiTerms(3)%parityList(3) )
+   this%wyckoffSite(4)%phiTerms(3)%parityList(:)=['+','o','-']
+   allocate( this%wyckoffSite(4)%phiTerms(3)%kpointList(3) )
+   this%wyckoffSite(4)%phiTerms(3)%kpointList(:)=[0,1,2]
    ! First zrcuts
    this%wyckoffSite(4)%zrcut(1)%alias='Bridge_0_0'
    this%wyckoffSite(4)%zrCut(1)%theta=0.d0
