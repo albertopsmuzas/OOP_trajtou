@@ -48,9 +48,100 @@ TYPE,EXTENDS(Inicond):: InitSurfaceGrowDiatomic
       ! Initialization block
       procedure,public:: INITIALIZE => INITIALIZE_INITSURFACEGROW
       procedure,public:: generate_trajs => generate_trajs_INITSURFACEGROW
+      procedure,public:: generate_trajs_from_file => generate_trajs_from_file_INITSURFACEGROW
 END TYPE InitSurfaceGrowDiatomic
 !////////////////////////////////////////////////////
 CONTAINS
+!#################################################################################
+!# SUBROUTINE: GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW ##########################
+!#################################################################################
+!> @brief
+!! Initializes trajectories Initdiatomic from a Grow output file
+!
+!> @param[in] this - Initial conditions for molecules to be used
+!--------------------------------------------------------------------
+SUBROUTINE GENERATE_TRAJS_INITSURFACEGROW(this,fileName)
+   ! Initial declarations
+   IMPLICIT NONE
+   ! I/O variables
+   CLASS(InitSurfaceGrowDiatomic),INTENT(INOUT):: this
+   CHARACTER(LEN=*),INTENT(IN) :: fileName
+   ! IMPORTANT: unit used to write
+   INTEGER(KIND=4),PARAMETER:: wunit=923
+   integer(kind=4),parameter:: runit=922
+   ! Local variables
+   INTEGER :: i ! counters
+   real(kind=8),dimension(12):: phaseSpaceVect
+   REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint,Epar
+   real(kind=8),dimension(6):: p,r
+   ! Parameters
+   character(len=*),parameter:: formatFile='("# Format: id/Etot/X,Y,Z,R(a.u.)/THETA,PHI(rad)/Px,Py,Pz,pr,ptheta,pphi(a.u.)")'
+   character(len=*),parameter:: routinename = "GENERATE_TRAJS_ATOMS: "
+   ! YIPPIEE KI YAY !! -------------------
+   delta = this%vpar_angle%getvalue()
+   alpha = this%vz_angle%getvalue()
+   masa = sum(system_mass(1:2))
+   mu = product(system_mass(1:2))/masa
+   Enorm = this%E_norm%getvalue()
+   Epar = Enorm/(dtan(alpha)**2.d0)
+   Eint = this%evirot%getvalue()
+   ALLOCATE(DiatomicGrow::this%trajs(this%ntraj))
+   open(unit=runit,file=fileName,status='old',action='read')
+   do i=1,this%ntraj
+      call this%trajs(i)%initialize()
+      read(runit,*)
+      read(runit,*)
+      read(runit,*) 
+      read(runit,*)
+      read(runit,*) this%trajs(i)%init_r(1:3)
+      read(runit,*) this%trajs(i)%init_r(4:6)
+      read(runit,*)
+      read(runit,*) this%trajs(i)%init_p(1:3) ! velocities!
+      read(runit,*) this%trajs(i)%init_p(4:6) ! velocities!
+      this%trajs(i)%init_p(1:3)=this%trajs(i)%init_p(1:3)*system_mass(1)/dsqrt(pmass2au)
+      this%trajs(i)%init_p(4:6)=this%trajs(i)%init_p(4:6)*system_mass(2)/dsqrt(pmass2au)
+      phaseSpaceVect(1:6)=this%trajs(i)%init_r(:)
+      phaseSpaceVect(7:12)=this%trajs(i)%init_p(:)
+      phaseSpaceVect(:)=from_atomic_to_molecular_phaseSpace(atomcoord=phaseSpaceVect)
+      this%trajs(i)%init_r(:)=phaseSpaceVect(1:6)
+      this%trajs(i)%init_p(:)=phaseSpaceVect(7:12)
+      this%trajs(i)%init_p(1)=dcos(delta)*dsqrt(2.d0*masa*Epar)
+      this%trajs(i)%init_p(2)=dsin(delta)*dsqrt(2.d0*masa*Epar)
+      this%trajs(i)%init_p(3)=-dsqrt(2.d0*masa*Enorm)
+      p(:)=this%trajs(i)%init_p(:)
+      r(:)=this%trajs(i)%init_r(:)
+      !write(*,*) 0.5d0*(p(4)**2.d0)/mu+0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+this%vibrPot%getPot(r(4))
+   enddo
+   close(runit)
+   ! Print if the option was given
+   SELECT CASE(this%control_out)
+      CASE(.TRUE.)
+         OPEN(wunit,FILE=this%output_file,STATUS="replace")
+         WRITE(wunit,'("# FILE CREATED BY : GENERATE_TRAJS_ATOMS =================================================================")')
+         WRITE(wunit,formatFile) 
+         WRITE(wunit,'("# Perpendicular Energy (a.u.) / (eV): ",F10.5," / ",F10.5)') Enorm,Enorm*au2ev
+         WRITE(wunit,'("# Initial internal energy (a.u.) / (eV) : ",F10.5," / ",F10.5)') Eint,Eint*au2ev
+         WRITE(wunit,'("# Initial center of mass energy (a.u.) / (eV) : ",F10.5," / ",F10.5)') Enorm/(DSIN(alpha)**2.D0),&
+            (Enorm/(DSIN(alpha)**2.D0))*au2ev
+         WRITE(wunit,'("# Initial Rovibrational state: ",3(I5,1X))') this%init_qn(:)
+         WRITE(wunit,'("# MASS (a.u.) / proton_mass : ",F10.5," / ",F10.5)')  masa,masa/pmass2au
+         WRITE(wunit,'("# Reduced MASS (a.u.) / proton_mass : ",F10.5," / ",F10.5)') mu,mu/pmass2au
+         WRITE(wunit,'("# Incidence angle (deg): ",F10.5)')  alpha*180.D0/PI
+         WRITE(wunit,'("# Parallel velocity direction (deg): ",F10.5)') delta*180.D0/PI
+         WRITE(wunit,'("# =======================================================================================================")')
+         DO i=this%nstart,this%ntraj
+            WRITE(wunit,'(1X,I10,F16.7,2(6F16.7))') i,this%trajs(i)%E,this%trajs(i)%init_r,this%trajs(i)%init_p
+         END DO
+         CLOSE(wunit)
+#ifdef DEBUG
+         CALL VERBOSE_WRITE(routinename,"Outputfile generated: ",this%output_file)
+#endif
+      CASE(.FALSE.)
+         ! do nothing
+   END SELECT
+   RETURN
+END SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW
+
 !###########################################################
 !# SUBROUTINE: INITIALIZE_DIATOMICGROW #########################
 !###########################################################

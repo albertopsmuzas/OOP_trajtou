@@ -67,18 +67,16 @@ CONTAINS
 !# SUBROUTINE: GENERATE_TRAJS_FROM_FILE 
 !###########################################################
 !> @brief
-!! Initializes trajectories Initdiatomic form an output file
+!! Initializes trajectories Initdiatomic from an output file
 !
-!> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date Jul/2014
-!> @version 1.0
+!> @param[in] this - Initial conditions for molecules to be used
 !-----------------------------------------------------------
-SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC(this,filename)
+SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITDIATOMIC(this,fileName)
    ! Initial declarations   
    IMPLICIT NONE
    ! I/O variables
    CLASS(Initdiatomic),INTENT(INOUT):: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   CHARACTER(LEN=*),INTENT(IN) :: fileName
    ! IMPORTANT: unit used to read
    INTEGER(KIND=4) :: runit=148
    ! Local variables
