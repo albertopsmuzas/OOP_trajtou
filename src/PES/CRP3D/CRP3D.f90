@@ -591,12 +591,14 @@ SUBROUTINE READ_STANDARD_PAIRPOT(pairpot,filename)
    ! Local variables ----------------------------
    INTEGER :: i
    CHARACTER(LEN=14), PARAMETER :: routinename = "READ_PAIRPOT: "
+   character(len=1024):: auxString
    ! Run section ---------------------------------
    pairpot%filename=filename
    OPEN(10,FILE=pairpot%filename,STATUS='OLD')
    READ(10,*) ! dummy line
    READ(10,*) ! dummy line
-   READ(10,*) pairpot%alias
+   READ(10,*) auxString
+   pairpot%alias=trim(auxString)
    READ(10,*) pairpot%vasint
    READ(10,*) pairpot%dz1
    READ(10,*) pairpot%dz2
@@ -650,12 +652,14 @@ SUBROUTINE READ_STANDARD_SITIO(site,filename)
    ! Local variables
    INTEGER:: i ! counter
    CHARACTER(LEN=*),PARAMETER:: routinename = "READ_SITIO: "
+   character(len=1024):: auxString
    !
    site%filename=filename
    OPEN (10,file=site%filename,status="old")
    READ(10,*) ! dummy line
    READ(10,*) ! dummy line
-   READ(10,*) site%alias
+   READ(10,*) auxString
+   site%alias=trim(auxString)
    READ(10,*) site%x, site%y
    READ(10,*) site%n
    READ(10,*) site%dz1
