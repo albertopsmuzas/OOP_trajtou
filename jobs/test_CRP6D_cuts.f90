@@ -9,8 +9,6 @@ implicit none
 type(Crp6d):: thispes
 !type(Crp6d):: thisrawpes
 character(len=1024):: luaFile
-real(kind=4),dimension(2):: timearr
-real(kind=4):: timer
 real(kind=8),dimension(6) :: r
 real(kind=8),parameter:: ucell=5.44335612578d0
 ! STEP 1: READ CRP6D INPUT FILES
@@ -123,11 +121,4 @@ r=[0.d0,0.d0,1.88972613289d0,1.42d0,pi/2.d0,0.d0]
 call thispes%plot1d_z( npoints=500,X=r(:),L=20.d0,filename='zCutTopLi.hel.dat' )
 r=[0.d0,0.d0,1.88972613289d0,1.42d0,pi/2.d0,pi/6.d0]
 call thispes%plot1d_z( npoints=500,X=r(:),L=20.d0,filename='zCutTopLi.tilt.dat' )
-
-
-call verbose_write("****************** RUN TIME ***************************")
-call verbose_write('',"User time: ",real(timearr(1),kind=8))
-call verbose_write('',"System time: ", real(timearr(2),kind=8))
-call verbose_write('',"Total time: ",real(timer,kind=8))
-call verbose_write("******************************************************")
 end program TEST_CRP6D

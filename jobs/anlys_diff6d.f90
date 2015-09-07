@@ -7,8 +7,6 @@ IMPLICIT NONE
 ! Variables
 TYPE(Allowed_peaksCRP6D):: anlyDiff
 CHARACTER(LEN=1024):: auxString
-real(kind=8):: morseEd, morseWidth
-integer(kind=4):: dJ
 REAL(KIND=4),DIMENSION(2):: timearr
 REAL(KIND=4):: timer
 ! HEY HO, LET'S GO --------------------------------------
@@ -30,7 +28,7 @@ SELECT CASE(command_argument_count())
 
    CASE DEFAULT
       WRITE(0,*) "ERR: Bad number of arguments: ",command_argument_count()
-      WRITE(0,*) "FOUR arguments needed: lua config file, dJ, morseEd, morseWidth"
+      WRITE(0,*) "ONE arguments needed: lua config file"
       CALL EXIT(1)
 END SELECT
 ! Time

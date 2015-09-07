@@ -13,7 +13,8 @@ objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier
 				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
 				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o link_fourier2d.o exponential.o xexponential.o\
 				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o\
-				diffractionAtomSurf.o initSurfaceGrowDiatomic.o diffractionGrow.o interpol3d.o fourier3dCombined.o fourier3d.p4mm.o
+				diffractionAtomSurf.o interpol3d.o fourier3dCombined.o fourier3d.p4mm.o
+				#initSurfaceGrowDiatomic.o diffractionGrow.o 
 				
 
 # Where to find fortran files:

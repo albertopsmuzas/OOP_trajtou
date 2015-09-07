@@ -8,8 +8,6 @@ TYPE(CRP6D) :: thispes
 TYPE(CRP6D) :: thisrawpes
 REAL(KIND=8),DIMENSION(6) :: pos
 CHARACTER(LEN=1024):: luaFile
-REAL(KIND=4),DIMENSION(2):: timearr
-REAL(KIND=4):: timer
 ! STEP 1: READ CRP6D INPUT FILES & INITIALIZE EVERYTHING
 SELECT CASE(command_argument_count())
    CASE(1)

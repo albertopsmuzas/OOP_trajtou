@@ -1,7 +1,7 @@
 # Compile options
 F = gfortran
-CF = $(F) -cpp -J mod -I mod -c -Wall -Wtabs -O2 -ffree-line-length-none
-LF = $(F) -cpp -I mod -Wall -Wtabs -O2 -ffree-line-length-none
+CF = $(F) -cpp -J mod -I mod -c -Wall -Wtabs -O2 -ffree-line-length-none -fcheck=all -g
+LF = $(F) -cpp -I mod -Wall -Wtabs -O2 -ffree-line-length-none -fcheck=all -g
 
 # Some paths to find files
 vpath %.f90 jobs
