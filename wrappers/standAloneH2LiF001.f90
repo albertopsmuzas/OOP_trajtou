@@ -2841,6 +2841,8 @@ contains
    ! initialize block
    procedure,public,non_overridable :: read => read_FOURIER2D
    procedure(initializeTerms_FOURIER2D),public,deferred:: initializeTerms
+   ! destructor block
+   procedure,public:: cleanTerms => cleanTerms_FOURIER2D
    ! tools block
    procedure(interpol_FOURIER2D),public,deferred :: interpol  ! deferred !!!! take a look to interface
    procedure(get_f_and_derivs_FOURIER2D),public,deferred :: get_f_and_derivs ! deferred !!!! take a look to interface
@@ -2883,6 +2885,17 @@ abstract interface
 end interface
 !////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNC: cleanTerms_FOURIER2D
+!###########################################################
+!
+!-----------------------------------------------------------
+subroutine cleanTerms_FOURIER2D(this)
+   implicit none
+   class(Fourier2d),intent(inout):: this
+   deallocate( this%term )
+end subroutine cleanTerms_FOURIER2D
+!###########################################################
 !###########################################################
 !# SUBROUTINE: READ_FOURIER2D
 !###########################################################
@@ -4484,6 +4497,7 @@ SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001_NS(this,X,v,dvdu,errCode)
    dvdu(1)=dvdu(1)+derivarr(1,1)
    dvdu(2)=dvdu(2)+derivarr(1,2)
    dvdu(3)=dvdu(3)+potarr(2)
+   call interpolXY%cleanTerms()
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001_NS
 !############################################################
@@ -5531,6 +5545,8 @@ type,abstract,extends(Interpol1d):: Fourier1d
    contains
       ! initialize block
       procedure(initializeTerms_FOURIER1D),public,deferred:: initializeTerms
+      ! destructor block
+      procedure,public:: cleanTerms => cleanTerms_FOURIER1D
       ! get block
       procedure,public,non_overridable:: getValue => getvalue_FOURIER1D
       procedure,public,non_overridable:: getDeriv => getderiv_FOURIER1D
@@ -5564,6 +5580,19 @@ ABSTRACT INTERFACE
 END INTERFACE
 !/////////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+! SUBROUTINE: cleanTerms_FOURIER1D
+!###########################################################
+subroutine cleanTerms_FOURIER1D(this)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Fourier1d),intent(inout):: this
+   ! Run section
+   deallocate( this%term )
+   return
+end subroutine
+!###########################################################
 !###########################################################
 !# FUNCTION: getklist_FOURIER1D
 !###########################################################
@@ -9549,6 +9578,7 @@ subroutine GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
       end do
       allocate(aux(2,3))
       call phicut(i)%GET_ALLFUNCS_AND_DERIVS(phi,aux(1,:),aux(2,:))
+      call phiCut(i)%cleanTerms()
       f(i)=aux(1,1)
       dfdz(i)=aux(1,2)
       dfdr(i)=aux(1,3)
@@ -9580,6 +9610,7 @@ subroutine GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    dvdu(3)=aux(2,1) ! dvdtheta
    dvdu(4)=aux(1,4) ! dvdphi
    deallocate(aux)
+   call thetaCut%cleanTerms()
    return
 end subroutine GET_V_AND_DERIVS_WYCKOFFP4MM
 end module WYCKOFF_P4MM_MOD

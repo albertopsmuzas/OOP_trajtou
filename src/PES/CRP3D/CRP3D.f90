@@ -1614,6 +1614,7 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu,errCode)
    dvdu(1)=dvdu(1)+derivarr(1,1)
    dvdu(2)=dvdu(2)+derivarr(1,2)
    dvdu(3)=dvdu(3)+potarr(2)
+   call interpolXY%cleanTerms()
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CRP3D
 !############################################################

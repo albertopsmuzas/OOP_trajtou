@@ -67,6 +67,8 @@ contains
    ! tools block
    procedure(interpol_FOURIER2D),public,deferred :: interpol  ! deferred !!!! take a look to interface
    procedure(get_f_and_derivs_FOURIER2D),public,deferred :: get_f_and_derivs ! deferred !!!! take a look to interface
+   ! destructor block
+   procedure,public:: cleanTerms => cleanTerms_FOURIER2D
 end type Fourier2d
 
 abstract interface
@@ -106,6 +108,16 @@ abstract interface
 end interface
 !////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNC: cleanTerms_FOURIER2D
+!###########################################################
+!
+!-----------------------------------------------------------
+subroutine cleanTerms_FOURIER2D(this)
+   implicit none
+   class(Fourier2d),intent(inout):: this
+   deallocate( this%term )
+end subroutine cleanTerms_FOURIER2D
 !###########################################################
 !# SUBROUTINE: READ_FOURIER2D 
 !###########################################################

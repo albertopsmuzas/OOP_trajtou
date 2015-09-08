@@ -67,6 +67,8 @@ type,abstract,extends(Interpol1d):: Fourier1d
    contains
       ! initialize block
       procedure(initializeTerms_FOURIER1D),public,deferred:: initializeTerms
+      ! destructor block
+      procedure,public:: cleanTerms => cleanTerms_FOURIER1D
       ! get block
       procedure,public,non_overridable:: getValue => getvalue_FOURIER1D
       procedure,public,non_overridable:: getDeriv => getderiv_FOURIER1D
@@ -100,6 +102,18 @@ ABSTRACT INTERFACE
 END INTERFACE
 !/////////////////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+! SUBROUTINE: cleanTerms_FOURIER1D
+!###########################################################
+subroutine cleanTerms_FOURIER1D(this)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Fourier1d),intent(inout):: this
+   ! Run section
+   deallocate( this%term )
+   return
+end subroutine
 !###########################################################
 !# FUNCTION: getklist_FOURIER1D 
 !###########################################################

@@ -175,7 +175,8 @@ subroutine GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
          thetalist(i)=this%zrcut(h)%theta 
       end do
       allocate(aux(2,3))
-      call phicut(i)%GET_ALLFUNCS_AND_DERIVS(phi,aux(1,:),aux(2,:))
+      call phiCut(i)%GET_ALLFUNCS_AND_DERIVS(phi,aux(1,:),aux(2,:))
+      call phiCut(i)%cleanTerms()
       f(i)=aux(1,1)
       dfdz(i)=aux(1,2)
       dfdr(i)=aux(1,3)
@@ -188,7 +189,7 @@ subroutine GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    aux(3,:)=dfdphi(:)
    call thetaCut%read(thetalist,f)
    call thetaCut%add_morefuncs(aux)
-   call thetaCut%setKlist     ( this%thetaTerms%kpointList(:)    )
+   call thetaCut%setKlist     ( this%thetaTerms%kpointList(:) )
    call thetaCut%setParityList( this%thetaTerms%parityList(:) )
    call thetaCut%setIrrepList ( this%thetaTerms%irrepList(:)  )
    call thetaCut%initializeTerms()
@@ -235,6 +236,7 @@ subroutine GET_V_AND_DERIVS_WYCKOFFP4MM(this,x,v,dvdu)
    dvdu(3)=aux(2,1) ! dvdtheta
    dvdu(4)=aux(1,4) ! dvdphi
    deallocate(aux)
+   call thetaCut%cleanTerms()
    return
 end subroutine GET_V_AND_DERIVS_WYCKOFFP4MM
 end module WYCKOFF_P4MM_MOD
