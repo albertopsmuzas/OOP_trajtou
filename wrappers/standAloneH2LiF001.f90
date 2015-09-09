@@ -2829,6 +2829,7 @@ end interface
 !---------------------------------------------------------------
 type,abstract :: Fourier2d
    ! public atributes
+   real(kind=8),dimension(:,:),allocatable :: coeff
    integer(kind=4),public :: n
    integer(kind=4),public :: nfunc
    real(kind=8),dimension(:,:),allocatable,public :: xy
@@ -2843,6 +2844,7 @@ contains
    procedure(initializeTerms_FOURIER2D),public,deferred:: initializeTerms
    ! destructor block
    procedure,public:: cleanTerms => cleanTerms_FOURIER2D
+   procedure,public:: cleanAll => cleanAll_FOURIER2D
    ! tools block
    procedure(interpol_FOURIER2D),public,deferred :: interpol  ! deferred !!!! take a look to interface
    procedure(get_f_and_derivs_FOURIER2D),public,deferred :: get_f_and_derivs ! deferred !!!! take a look to interface
@@ -2885,6 +2887,24 @@ abstract interface
 end interface
 !////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNC: cleanAll_FOURIER2D
+!###########################################################
+!> @brief
+!! Cleans all allocatable atributes od the object
+!-----------------------------------------------------------
+subroutine cleanAll_FOURIER2D(this)
+   implicit none
+   class(Fourier2d),intent(inout):: this
+   deallocate( this%term )
+   deallocate( this%xy )
+   deallocate( this%f )
+   deallocate( this%kList )
+   deallocate( this%parityList )
+   deallocate( this%irrepList )
+   deallocate( this%coeff )
+   return
+end subroutine cleanAll_FOURIER2D
 !###########################################################
 !# FUNC: cleanTerms_FOURIER2D
 !###########################################################
@@ -2977,8 +2997,6 @@ end type TermCalculator2d_p4mm
 !! Extends Fourier2d interpolation for p4mm symmetry
 !---------------------------------------------------------
 TYPE,EXTENDS(Fourier2d):: Fourierp4mm
-   PRIVATE
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: coeff
    CONTAINS
       PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_FOURIERP4MM
       PROCEDURE,PUBLIC:: GET_F_AND_DERIVS => GET_F_AND_DERIVS_FOURIERP4MM
@@ -4497,7 +4515,7 @@ SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001_NS(this,X,v,dvdu,errCode)
    dvdu(1)=dvdu(1)+derivarr(1,1)
    dvdu(2)=dvdu(2)+derivarr(1,2)
    dvdu(3)=dvdu(3)+potarr(2)
-   call interpolXY%cleanTerms()
+   call interpolXY%cleanAll()
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_PES_HLIF001_NS
 !############################################################
