@@ -56,11 +56,11 @@ CONTAINS
 !# SUBROUTINE: GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW ##########################
 !#################################################################################
 !> @brief
-!! Initializes trajectories Initdiatomic from a Grow output file
+!! Initializes trajectories Initdiatomic from a Grow output file. (init.raw.dat)
 !
 !> @param[in] this - Initial conditions for molecules to be used
 !--------------------------------------------------------------------
-SUBROUTINE GENERATE_TRAJS_INITSURFACEGROW(this,fileName)
+SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW(this,fileName)
    ! Initial declarations
    IMPLICIT NONE
    ! I/O variables
@@ -305,6 +305,21 @@ SUBROUTINE INITIALIZE_INITSURFACEGROW(this,filename)
          CALL EXIT(1)
    END SELECT
    CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   ! get integration parameters
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='extrapolation',val=auxstring)
+   this%extrapol=trim(auxstring)
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='timeStep')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=2,val=auxstring)
+   CALL this%delta_t%READ(auxreal,trim(auxstring))
+   CALL this%delta_t%TO_STD()
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=magnitude_table)
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inicond_table,key='precision',val=this%eps)
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,'Extrapolation used: '//this%extrapol)
+   CALL VERBOSE_WRITE(routinename,'Initial time step (a.u.): ',this%delta_t%getvalue())
+   CALL VERBOSE_WRITE(routinename,'Precision during integration (dimensionless factor): ',this%eps)
+#endif
    ! get direction angle
    CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=magnitude_table,key='directionAngle')
    CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=magnitude_table,pos=1,val=auxreal)
@@ -333,6 +348,46 @@ SUBROUTINE INITIALIZE_INITSURFACEGROW(this,filename)
    CALL VERBOSE_WRITE(routinename,"Incidence angle respect to surface plane in radians: ",this%vz_angle%getvalue())
    CALL VERBOSE_WRITE(routinename,"Angle between trajectory and S1 vector in radians",this%vpar_angle%getvalue())
    CALL VERBOSE_WRITE(routinename,"Initial Z in au: ",this%init_z%getvalue())
+#endif
+   ! get control random initial XY position
+   CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=control_table,key='randomXY')
+   CALL AOT_TABLE_OPEN(L=conf,parent=control_table,thandle=auxtable,key='X')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=1,val=this%control_posX)
+   SELECT CASE(this%control_posX)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=2,val=this%impact_x)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=auxtable)
+   CALL AOT_TABLE_OPEN(L=conf,parent=control_table,thandle=auxtable,key='Y')
+   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=1,val=this%control_posY)
+   SELECT CASE(this%control_posY)
+      CASE(.TRUE.)
+         ! do nothing
+      CASE(.FALSE.)
+         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=auxtable,pos=2,val=this%impact_y)
+   END SELECT
+   CALL AOT_TABLE_CLOSE(L=conf,thandle=auxtable)
+   IF(((this%impact_x > 1.D0).OR.(this%impact_x < 0.D0)).AND.(.NOT.this%control_posX)) THEN
+      WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: X impact parameter outside range 0-1"
+      CALL EXIT(1)
+   ELSE IF(((this%impact_y > 1.D0).OR.(this%impact_y < 0.D0)).AND.(.NOT.this%control_posy))THEN
+      WRITE(0,*) "INITIALIZE_INITDIATOMIC ERR: Y impact parameter outside range 0-1"
+      CALL EXIT(1)
+   END IF
+   ! Some debugging messages
+#ifdef DEBUG
+   CALL VERBOSE_WRITE(routinename,"Random X impact parameter?: ",this%control_posX)
+   CALL VERBOSE_WRITE(routinename,"Random Y impact parameter?: ",this%control_posY)
+   IF (this%control_posX.eqv..false. .and. this%control_posY.eqv..false.) THEN
+      CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_x)
+      CALL VERBOSE_WRITE(routinename,"Impact param Y: ",this%impact_x)
+   ELSE IF (.not.this%control_posX) THEN
+      CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_x)
+   ELSE IF (.not.this%control_posY) THEN
+      CALL VERBOSE_WRITE(routinename,"Impact param X: ",this%impact_y)
+   END IF
 #endif
    ! get output control
    CALL AOT_TABLE_OPEN(L=conf,parent=inicond_table,thandle=out_table,key='outputFile')

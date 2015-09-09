@@ -8172,6 +8172,8 @@ type,abstract:: Interpol3d
    contains
       ! Initialization block
       procedure,non_overridable,public:: read => read_INTERPOL3D
+      ! destructor block
+      procedure(cleanAll_INTERPOL3D),deferred,public:: cleanAll ! child types, override this
       ! Get functions block
       procedure(getValue_INTERPOL3D),public,deferred:: getValue  ! child types, override this
       procedure(getValue_INTERPOL3D),public,deferred:: getDeriv1 ! child types, override this
@@ -8180,6 +8182,17 @@ type,abstract:: Interpol3d
 end type Interpol3d
 !//////////////////////////////////////////////////////////////////////
 abstract interface
+   !###########################################################
+   !# SUBROUTINE: cleanAll_INTERPOL3D
+   !###########################################################
+   !> @brief
+   !! Interface dubroutine. It should be used to clean all allocatable
+   !! information on this class
+   !-----------------------------------------------------------
+   subroutine cleanAll_INTERPOL3D(this)
+      import Interpol3d
+      class(Interpol3d),intent(inout):: this
+   end subroutine cleanAll_INTERPOL3D
    !###########################################################
    !# FUNCTION: getvalue_interpol1d
    !###########################################################
@@ -8295,6 +8308,8 @@ type,abstract,extends(Interpol3d):: Fourier3d
    contains
       ! initialize block
       procedure(initializeTerms_FOURIER3D),public,deferred:: initializeTerms
+      ! destructor block
+      procedure,public,non_overridable:: cleanAll => cleanAll_FOURIER3D
       ! get block
       procedure,public,non_overridable:: getValue  => getvalue_FOURIER3D
       procedure,public,non_overridable:: getDeriv1 => getDeriv1_FOURIER3D
@@ -8324,6 +8339,32 @@ abstract interface
 end interface
 !/////////////////////////////////////////////////////////////////////////////
 contains
+!###################################################################
+!# SUBROUTINE: cleanAll_FOURIER3D
+!###################################################################
+!> @brief
+!! Deallocates all allocatable information of this object.
+!-------------------------------------------------------------------
+subroutine cleanAll_FOURIER3D(this)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   class(Fourier3d),intent(inout):: this
+   ! Run section ----------------------------
+   deallocate( this%term )
+   deallocate( this%kListXY )
+   deallocate( this%parityListXY )
+   deallocate( this%irrepListXY )
+   deallocate( this%kListAngle )
+   deallocate( this%parityListAngle )
+   deallocate( this%irrepListAngle )
+   deallocate( this%x )
+   deallocate( this%f )
+   deallocate( this%coeff )
+   deallocate( this%extraFuncs )
+   deallocate( this%extraCoeff )
+   return
+end subroutine cleanAll_FOURIER3D
 !###################################################################
 !# SUBROUTINE: setKlist_FOURIER3D
 !###################################################################
@@ -9844,6 +9885,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_PES_H2LiF001(this,x,v,dvdu)
    allocate(aux1(4))
    allocate(aux2(4,3))
    call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
+   call fouInterpol%cleanAll()
    !--------------------------------------
    ! Results for the real potential
    !-------------------------------------
