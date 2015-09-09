@@ -1,6 +1,6 @@
 F = ifort
-CF = $(F) -cpp -I mod -module mod -c -O2 -traceback -CB -gen-interfaces -warn truncated-source
-LF = $(F) -cpp -I mod -O2
+CF = $(F) -cpp -I mod -module mod -c -O2 -traceback -CB -gen-interfaces -warn truncated-source -g
+LF = $(F) -cpp -I mod -O2 -g
 
 # Some paths to find files
 vpath %.f90 jobs

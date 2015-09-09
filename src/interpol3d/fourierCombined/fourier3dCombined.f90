@@ -77,6 +77,8 @@ type,abstract,extends(Interpol3d):: Fourier3d
    contains
       ! initialize block
       procedure(initializeTerms_FOURIER3D),public,deferred:: initializeTerms
+      ! destructor block
+      procedure,public,non_overridable:: cleanAll => cleanAll_FOURIER3D
       ! get block
       procedure,public,non_overridable:: getValue  => getvalue_FOURIER3D
       procedure,public,non_overridable:: getDeriv1 => getDeriv1_FOURIER3D
@@ -106,6 +108,32 @@ abstract interface
 end interface
 !/////////////////////////////////////////////////////////////////////////////
 contains
+!###################################################################
+!# SUBROUTINE: cleanAll_FOURIER3D
+!###################################################################
+!> @brief
+!! Deallocates all allocatable information of this object.
+!-------------------------------------------------------------------
+subroutine cleanAll_FOURIER3D(this)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   class(Fourier3d),intent(inout):: this
+   ! Run section ----------------------------
+   deallocate( this%term )
+   deallocate( this%kListXY )
+   deallocate( this%parityListXY )
+   deallocate( this%irrepListXY )
+   deallocate( this%kListAngle )
+   deallocate( this%parityListAngle )
+   deallocate( this%irrepListAngle )
+   deallocate( this%x )
+   deallocate( this%f )
+   deallocate( this%coeff )
+   deallocate( this%extraFuncs )
+   deallocate( this%extraCoeff )
+   return
+end subroutine cleanAll_FOURIER3D
 !###################################################################
 !# SUBROUTINE: setKlist_FOURIER3D
 !###################################################################

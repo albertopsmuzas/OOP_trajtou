@@ -26,6 +26,8 @@ type,abstract:: Interpol3d
    contains
       ! Initialization block
       procedure,non_overridable,public:: read => read_INTERPOL3D
+      ! destructor block
+      procedure(cleanAll_INTERPOL3D),deferred,public:: cleanAll ! child types, override this
       ! Get functions block
       procedure(getValue_INTERPOL3D),public,deferred:: getValue  ! child types, override this
       procedure(getValue_INTERPOL3D),public,deferred:: getDeriv1 ! child types, override this
@@ -34,6 +36,17 @@ type,abstract:: Interpol3d
 end type Interpol3d
 !//////////////////////////////////////////////////////////////////////
 abstract interface
+   !###########################################################
+   !# SUBROUTINE: cleanAll_INTERPOL3D
+   !###########################################################
+   !> @brief
+   !! Interface dubroutine. It should be used to clean all allocatable
+   !! information on this class
+   !-----------------------------------------------------------
+   subroutine cleanAll_INTERPOL3D(this)
+      import Interpol3d
+      class(Interpol3d),intent(inout):: this
+   end subroutine cleanAll_INTERPOL3D
    !###########################################################
    !# FUNCTION: getvalue_interpol1d
    !###########################################################

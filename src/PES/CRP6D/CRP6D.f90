@@ -358,6 +358,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    allocate(aux1(4))
    allocate(aux2(4,3))
    call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
+   call fouInterpol%cleanAll()
 #ifdef DEBUG
    !-------------------------------------
    ! Results for the smooth potential
