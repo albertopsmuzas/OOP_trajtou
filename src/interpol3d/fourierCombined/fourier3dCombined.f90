@@ -32,6 +32,7 @@ type,abstract:: TermCalculator3d
       procedure(getvalue_termcalculator_example),public,deferred:: getDeriv1 ! deferred
       procedure(getvalue_termcalculator_example),public,deferred:: getDeriv2 ! deferred
       procedure(getvalue_termcalculator_example),public,deferred:: getDeriv3 ! deferred
+      procedure,public,non_overridable:: destructor => destructor_TERMCALCULATOR3D
 end type TermCalculator3d
 !
 abstract interface
@@ -109,6 +110,19 @@ end interface
 !/////////////////////////////////////////////////////////////////////////////
 contains
 !###################################################################
+!# SUBROUTINE: destructor_TERMCALCULATOR3D
+!###################################################################
+subroutine destructor_TERMCALCULATOR3D(this)
+   ! initial declarations
+   implicit none
+   ! I/O variables
+   class(TermCalculator3d),intent(inout):: this
+   ! Run section ----------------------
+   deallocate(this%angleFourier)
+   deallocate(this%xyFourier)
+   return
+end subroutine destructor_TERMCALCULATOR3D
+!###################################################################
 !# SUBROUTINE: cleanAll_FOURIER3D
 !###################################################################
 !> @brief
@@ -120,6 +134,7 @@ subroutine cleanAll_FOURIER3D(this)
    ! I/O variables
    class(Fourier3d),intent(inout):: this
    ! Run section ----------------------------
+   call this%term%destructor()
    deallocate( this%term )
    deallocate( this%kListXY )
    deallocate( this%parityListXY )

@@ -30,8 +30,6 @@ end type TermCalculator2d_p4mm
 !! Extends Fourier2d interpolation for p4mm symmetry
 !---------------------------------------------------------
 TYPE,EXTENDS(Fourier2d):: Fourierp4mm
-   PRIVATE
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: coeff
    CONTAINS
       PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_FOURIERP4MM
       PROCEDURE,PUBLIC:: GET_F_AND_DERIVS => GET_F_AND_DERIVS_FOURIERP4MM

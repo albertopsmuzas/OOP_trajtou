@@ -52,6 +52,7 @@ end interface
 !---------------------------------------------------------------
 type,abstract :: Fourier2d
    ! public atributes
+   real(kind=8),dimension(:,:),allocatable :: coeff
    integer(kind=4),public :: n
    integer(kind=4),public :: nfunc
    real(kind=8),dimension(:,:),allocatable,public :: xy
@@ -69,6 +70,7 @@ contains
    procedure(get_f_and_derivs_FOURIER2D),public,deferred :: get_f_and_derivs ! deferred !!!! take a look to interface
    ! destructor block
    procedure,public:: cleanTerms => cleanTerms_FOURIER2D
+   procedure,public:: cleanAll => cleanAll_FOURIER2D
 end type Fourier2d
 
 abstract interface
@@ -108,6 +110,24 @@ abstract interface
 end interface
 !////////////////////////////////////////////////////////////////
 CONTAINS
+!###########################################################
+!# FUNC: cleanAll_FOURIER2D
+!###########################################################
+!> @brief
+!! Cleans all allocatable atributes od the object
+!-----------------------------------------------------------
+subroutine cleanAll_FOURIER2D(this)
+   implicit none
+   class(Fourier2d),intent(inout):: this
+   deallocate( this%term )
+   deallocate( this%xy )
+   deallocate( this%f )
+   deallocate( this%kList )
+   deallocate( this%parityList )
+   deallocate( this%irrepList )
+   deallocate( this%coeff )
+   return
+end subroutine cleanAll_FOURIER2D
 !###########################################################
 !# FUNC: cleanTerms_FOURIER2D
 !###########################################################
