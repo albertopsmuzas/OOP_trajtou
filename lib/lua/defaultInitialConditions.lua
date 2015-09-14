@@ -28,6 +28,7 @@ local initialConditions={
 	internalState={v=0,J=0,mJ='Average'},
 	internalEnergy={0.0,'au'},
 	timeStep={0.0,'au'},
+	pecision=1e-6,
 	extrapolation='Rational',
 }
 return initialConditions

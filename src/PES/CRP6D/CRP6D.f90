@@ -2192,6 +2192,8 @@ SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    INTEGER :: yinpoints, nydelta
    INTEGER :: i, j ! counters
    REAL(KIND=8) :: v ! potential
+   ! write unit
+   integer(kind=4),parameter:: wunit=11
    ! GABBA, GABBA HEY! ---------
    xmin = init_point(4)
    ymin = init_point(3)
@@ -2207,7 +2209,11 @@ SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   OPEN(11,file=filename,status="replace")
+   OPEN(unit=wunit,file=filename,status="replace")
+   write(wunit,*) '# Initial geometry: ',init_point(:)
+   write(wunit,*) '# X length (bohr): ',Lx
+   write(wunit,*) '# Y length (bohr): ',Ly
+   write(wunit,*) '# Grid: ',nxpoints,nypoints
    r(4) = xmin
    r(3) = ymin
    r(1:2)=init_point(1:2)
@@ -2217,40 +2223,40 @@ SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    DO i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
       CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(4),r(3),v,dvdu(:)
+      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
    END DO
    r(3) = ymax
    CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(4),r(3),v,dvdu(:)
+   WRITE(wunit,*) r(4),r(3),v,dvdu(:)
    ! inpoints in XY
    DO i = 1, xinpoints
       r(4) = xmin+DFLOAT(i)*xdelta
       r(3) = ymin
       CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(4),r(3),v,dvdu(:)
+      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
       DO j = 1, yinpoints
          r(3) = ymin + DFLOAT(j)*ydelta
          CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-         WRITE(11,*) r(4),r(3),v,dvdu(:)
+         WRITE(wunit,*) r(4),r(3),v,dvdu(:)
       END DO
       r(3) = ymax
       CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(4),r(3),v,dvdu(:)
+      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
    END DO
    ! Last point in XY plane
    r(4) = xmax
    r(3) = ymax
    CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(4),r(3),v,dvdu(:)
+   WRITE(wunit,*) r(4),r(3),v,dvdu(:)
    DO i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
       CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(4),r(3),v,dvdu(:)
+      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
    END DO
    r(3) = ymax
    CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(4),r(3),v,dvdu(:)
-   CLOSE(11)
+   WRITE(wunit,*) r(4),r(3),v,dvdu(:)
+   CLOSE(wunit)
    RETURN
 END SUBROUTINE PLOT_RZMAP_CRP6D
 !#######################################################################
