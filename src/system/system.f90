@@ -442,6 +442,7 @@ FUNCTION from_atomic_to_molecular_phaseSpace(atomcoord) result(molcoord)
    molCoord(10)=dpx*stheta*cphi+dpy*stheta*sphi+dpz*ctheta ! pr
    molCoord(11)=molCoord(4)*(dpx*ctheta*cphi+dpy*ctheta*sphi-dpz*stheta) ! ptheta
    molCoord(12)=molCoord(4)*stheta*(dpy*cphi-dpx*sphi) ! pphi
+   molCoord(:)=correctSphPoint(molCoord(:))
    RETURN
 END FUNCTION from_atomic_to_molecular_phaseSpace
 !###############################################################################################
