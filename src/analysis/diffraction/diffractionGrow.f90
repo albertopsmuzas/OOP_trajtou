@@ -90,7 +90,7 @@ subroutine initialize_ALLOWEDPEAKSGROW(this)
    class(Allowed_peaksGROW),intent(out):: this
    ! Run section
    call this%inicond%initialize()
-   call this%inicond%generate_trajs_from_file('init.raw.dat')
+   call this%inicond%generate_trajs_from_file('start1.dat')
    return
 end subroutine
 !######################################################################
