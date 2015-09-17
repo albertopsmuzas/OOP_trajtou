@@ -318,12 +318,12 @@ PURE FUNCTION from_molecular_to_atomic(molcoord) result(atomcoord)
    masa=sum(system_mass(:))
    nua=system_mass(1)/masa
    nub=system_mass(2)/masa
-   atomcoord(1)=molcoord(1)+nub*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
-   atomcoord(2)=molcoord(2)+nub*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
-   atomcoord(3)=molcoord(3)+nub*molcoord(4)*dcos(molcoord(5))
-   atomcoord(4)=molcoord(1)-nua*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
-   atomcoord(5)=molcoord(2)-nua*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
-   atomcoord(6)=molcoord(3)-nua*molcoord(4)*dcos(molcoord(5))
+   atomcoord(1)=molcoord(1)-nub*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(2)=molcoord(2)-nub*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(3)=molcoord(3)-nub*molcoord(4)*dcos(molcoord(5))
+   atomcoord(4)=molcoord(1)+nua*molcoord(4)*dcos(molcoord(6))*dsin(molcoord(5))
+   atomcoord(5)=molcoord(2)+nua*molcoord(4)*dsin(molcoord(6))*dsin(molcoord(5))
+   atomcoord(6)=molcoord(3)+nua*molcoord(4)*dcos(molcoord(5))
    RETURN
 END FUNCTION from_molecular_to_atomic
 
@@ -346,27 +346,27 @@ FUNCTION from_molecular_to_atomic_phaseSpace(molcoord) result(atomcoord)
    cphi=dcos(molCoord(6))
    sphi=dsin(molCoord(6))
    ! Transformation of position coordinates
-   atomcoord(1)=molcoord(1)+nub*molCoord(4)*cphi*stheta
-   atomcoord(2)=molcoord(2)+nub*molCoord(4)*sphi*stheta
-   atomcoord(3)=molcoord(3)+nub*molCoord(4)*ctheta
-   atomcoord(4)=molcoord(1)-nua*molCoord(4)*cphi*stheta
-   atomcoord(5)=molcoord(2)-nua*molCoord(4)*sphi*stheta
-   atomcoord(6)=molcoord(3)-nua*molCoord(4)*ctheta
+   atomcoord(1)=molcoord(1)-nub*molCoord(4)*cphi*stheta
+   atomcoord(2)=molcoord(2)-nub*molCoord(4)*sphi*stheta
+   atomcoord(3)=molcoord(3)-nub*molCoord(4)*ctheta
+   atomcoord(4)=molcoord(1)+nua*molCoord(4)*cphi*stheta
+   atomcoord(5)=molcoord(2)+nua*molCoord(4)*sphi*stheta
+   atomcoord(6)=molcoord(3)+nua*molCoord(4)*ctheta
    ! Transformation matrix for momenta
    select case( stheta == 0.d0 )
    case(.true.)
-      atomCoord(7)=nua*molCoord(7)+molCoord(11)*cphi*ctheta/molCoord(4)
-      atomCoord(8)=nua*molCoord(8)+molCoord(11)*sphi*ctheta/molCoord(4)
-      atomCoord(10)=nub*molCoord(7)-molCoord(11)*cphi*ctheta/molCoord(4)
-      atomCoord(11)=nub*molCoord(8)-molCoord(11)*sphi*ctheta/molCoord(4)
+      atomCoord(7)=nua*molCoord(7)-molCoord(11)*cphi*ctheta/molCoord(4)
+      atomCoord(8)=nua*molCoord(8)-molCoord(11)*sphi*ctheta/molCoord(4)
+      atomCoord(10)=nub*molCoord(7)+molCoord(11)*cphi*ctheta/molCoord(4)
+      atomCoord(11)=nub*molCoord(8)+molCoord(11)*sphi*ctheta/molCoord(4)
    case(.false.)
-      atomCoord(7)=nua*molCoord(7)+cphi*stheta*molCoord(10)-molCoord(12)*sphi/(molCoord(4)*stheta)+molCoord(11)*cphi*ctheta/molCoord(4)
-      atomCoord(8)=nua*molCoord(8)+sphi*stheta*molCoord(10)+molCoord(12)*cphi/(molCoord(4)*stheta)+molCoord(11)*sphi*ctheta/molCoord(4)
-      atomCoord(10)=nub*molCoord(7)-cphi*stheta*molCoord(10)+molCoord(12)*sphi/(molCoord(4)*stheta)-molCoord(11)*cphi*ctheta/molCoord(4)
-      atomCoord(11)=nub*molCoord(8)-sphi*stheta*molCoord(10)-molCoord(12)*cphi/(molCoord(4)*stheta)-molCoord(11)*sphi*ctheta/molCoord(4)
+      atomCoord(7)=nua*molCoord(7)-cphi*stheta*molCoord(10)+molCoord(12)*sphi/(molCoord(4)*stheta)-molCoord(11)*cphi*ctheta/molCoord(4)
+      atomCoord(8)=nua*molCoord(8)-sphi*stheta*molCoord(10)-molCoord(12)*cphi/(molCoord(4)*stheta)-molCoord(11)*sphi*ctheta/molCoord(4)
+      atomCoord(10)=nub*molCoord(7)+cphi*stheta*molCoord(10)-molCoord(12)*sphi/(molCoord(4)*stheta)+molCoord(11)*cphi*ctheta/molCoord(4)
+      atomCoord(11)=nub*molCoord(8)+sphi*stheta*molCoord(10)+molCoord(12)*cphi/(molCoord(4)*stheta)+molCoord(11)*sphi*ctheta/molCoord(4)
    end select
-   atomCoord(9)=nua*molCoord(9)+ctheta*molCoord(10)-molCoord(11)*stheta/molCoord(4)
-   atomCoord(12)=nub*molCoord(9)-ctheta*molCoord(10)+molCoord(11)*stheta/molCoord(4)
+   atomCoord(9)=nua*molCoord(9)-ctheta*molCoord(10)+molCoord(11)*stheta/molCoord(4)
+   atomCoord(12)=nub*molCoord(9)+ctheta*molCoord(10)-molCoord(11)*stheta/molCoord(4)
    return
 END FUNCTION from_molecular_to_atomic_phaseSpace
 !###########################################################################
@@ -386,22 +386,21 @@ PURE FUNCTION from_atomic_to_molecular(atomcoord) result(molcoord)
    ! Dummy function variable
    REAL(KIND=8),DIMENSION(6):: molcoord
    ! Local variables
-   REAL(KIND=8):: masa
+   REAL(KIND=8):: masa,mu,nua,nub
    ! Run section
    masa=sum(system_mass(:))
-   molcoord(1)=(1.D0/(masa))*(atomcoord(1)*system_mass(1)+atomcoord(4)*system_mass(2))
-   molcoord(2)=(1.D0/(masa))*(atomcoord(2)*system_mass(1)+atomcoord(5)*system_mass(2))
-   molcoord(3)=(1.D0/(masa))*(atomcoord(3)*system_mass(1)+atomcoord(6)*system_mass(2))
-   molcoord(4)=dsqrt((atomcoord(1)-atomcoord(4))**2.D0+&
-      (atomcoord(2)-atomcoord(5))**2.D0+(atomcoord(3)-atomcoord(6))**2.D0)
-   molcoord(5)=dacos((atomcoord(3)-atomcoord(6))/molcoord(4))
-   molcoord(6)=datan2((atomcoord(2)-atomcoord(5)),(atomcoord(1)-atomcoord(4)))
-   SELECT CASE(molcoord(6)<0.d0)
-      CASE(.true.)
-         molcoord(6)=molcoord(6)+2.d0*pi
-      CASE(.false.)
-         ! do nothing
-   END SELECT
+   mu=product(system_mass(:))/masa
+   nua=system_mass(1)/masa
+   nub=system_mass(2)/masa
+   ! Spatial coordinates
+   molCoord(1)=nua*atomCoord(1)+nub*atomCoord(4) ! xcm
+   molCoord(2)=nua*atomCoord(2)+nub*atomCoord(5) ! ycm
+   molCoord(3)=nua*atomCoord(3)+nub*atomCoord(6) ! zcm
+   molCoord(4)=dsqrt((atomCoord(4)-atomCoord(1))**2.d0+(atomCoord(5)-atomCoord(2))**2.d0+(atomCoord(6)-atomCoord(3))**2.d0)
+   molCoord(5)=dacos((atomCoord(6)-atomCoord(3))/molCoord(4)) ! theta
+   molCoord(6)=datan2((atomCoord(5)-atomCoord(2))/(molCoord(4)*dsin(molCoord(5))),&
+                       (atomCoord(4)-atomCoord(1))/(molCoord(4)*dsin(molCoord(5)))) ! phi
+   return
 END FUNCTION from_atomic_to_molecular
 
 FUNCTION from_atomic_to_molecular_phaseSpace(atomcoord) result(molcoord)
