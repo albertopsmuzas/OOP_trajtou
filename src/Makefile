@@ -1,24 +1,104 @@
 # Include general rules
-include make.inc
+include $(OOPTRAJTOUPATH)/make.compiler.inc
+include $(OOPTRAJTOUPATH)/include/make.general.inc
 # Add here all folder names in src
-folderlist= debug units surface PES interpol1d interpol1d/cubicsplines maths PES/CRP3D interpol2d interpol2d/fourier \
-				inicond inicond/atom inicond/molecule dynamics dynamics/atom interpol2d/bicsplines PES/CRP6D interpol1d/fourier functions\
-				dynamics/molecule utils analysis analysis/diffraction integrator system inicond/atomSurf dynamics/atomSurf PES/Specific\
-				PES/Specific/HLiF001 PES/Specific/H2LiF001 interpol3d interpol3d/fourierCombined
+folderlist= debug\
+			  	system\
+			  	units\
+			  	surface\
+			  	PES\
+			  	maths\
+			  	utils\
+			  	functions\
+			  	integrator\
+			  	interpol1d\
+			  	interpol1d/fourier\
+			  	interpol1d/cubicsplines\
+			  	interpol2d\
+			  	interpol2d/fourier\
+			  	interpol2d/bicsplines\
+			  	interpol3d\
+			  	interpol3d/fourierCombined\
+			  	PES/CRP3D\
+			  	PES/CRP6D\
+				PES/Specific/HLiF001\
+			  	PES/Specific/H2LiF001\
+			  	PES/Specific\
+				inicond\
+			  	inicond/atom\
+			  	inicond/molecule\
+			  	inicond/atomSurf\
+			  	dynamics\
+			  	dynamics/atom\
+			  	dynamics/atomSurf\
+				dynamics/molecule\
+			  	analysis\
+			  	analysis/diffraction
 
 # Object list. There should be a rule for each object in this list
-objectlist= debug.o units.o surface.o PES.o CRP3D.o interpol1d.o maths.o fourier2d.o fourier.p4mm.o cubicsplines.o \
-				inicond.o initatom.o dynamics.o dynatom.o bicsplines.o CRP6D.o fourier1d.o wyckoff.generic.o wyckoff.p4mm.o \
-				extrapol.o interpolgrid2d.o fourier.4mm.o fourier.2.o fourier.mm2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o \
-				function1d.o logistic.o one.o link_PES.o link_interpol1d.o initdiatomic.o dyndiatomic.o link_function1d.o linear.o\
-				drawtraj.o link_inicond.o diffractionCRP3D.o diffractionCRP6D.o link_fourier2d.o exponential.o xexponential.o\
-				xplusnexponential.o integrator_o1.o link_integrator.o bulirsch_stoer.o system.o initAtomSurf.o dynAtomSurf.o\
-				diffractionAtomSurf.o interpol3d.o fourier3dCombined.o fourier3d.p4mm.o initSurfaceGrowDiatomic.o diffractionGrow.o 
+objectlist= debug.o\
+			  	units.o\
+			  	surface.o\
+			  	PES.o\
+			  	CRP3D.o\
+			  	interpol1d.o\
+			  	maths.o\
+			  	fourier2d.o\
+			  	fourier.p4mm.o\
+			  	cubicsplines.o\
+				inicond.o\
+			  	initatom.o\
+			  	dynamics.o\
+			  	dynatom.o\
+			  	bicsplines.o\
+			  	CRP6D.o\
+			  	fourier1d.o\
+			  	wyckoff.generic.o\
+			  	wyckoff.p4mm.o\
+				extrapol.o\
+			  	interpolgrid2d.o\
+			  	fourier.4mm.o\
+			  	fourier.2.o\
+			  	fourier.mm2.o\
+			  	fourier.e.o\
+			  	fourier.m.o\
+			  	fourier.m45.o\
+			  	fourier.m45m1352.o\
+				function1d.o\
+			  	logistic.o\
+			  	one.o\
+			  	link_PES.o\
+			  	link_interpol1d.o\
+			  	initdiatomic.o\
+			  	dyndiatomic.o\
+			  	link_function1d.o\
+			  	linear.o\
+				drawtraj.o\
+			  	link_inicond.o\
+			  	diffractionCRP3D.o\
+			  	diffractionCRP6D.o\
+			  	link_fourier2d.o\
+			  	exponential.o\
+			  	xexponential.o\
+				xplusnexponential.o\
+			  	integrator_o1.o\
+			  	link_integrator.o\
+			  	bulirsch_stoer.o\
+			  	system.o\
+			  	initAtomSurf.o\
+			  	dynAtomSurf.o\
+				diffractionAtomSurf.o\
+			  	interpol3d.o\
+			  	fourier3dCombined.o\
+			  	fourier3d.p4mm.o\
+			  	initSurfaceGrowDiatomic.o\
+			  	diffractionGrow.o 
 				
-
 # Where to find fortran files:
 vpath %.f90 $(folderlist)
+.PHONY: default all clean
 
+# Fundamental targets
 default: all
 all: libaotus.a libtrajtou.a
 
@@ -107,6 +187,5 @@ wyckoff.generic.o: debug.o fourier1d.o bicsplines.o
 wyckoff.p4mm.o: wyckoff.generic.o fourier.4mm.o fourier.mm2.o fourier.2.o fourier.e.o fourier.m.o fourier.m45.o fourier.m45m1352.o
 extrapol.o: units.o debug.o maths.o
 # Clean rule
-.PHONY: clean
 clean:
 	rm -f ../bin/*.o ../mod/*.mod ../lib/*.a

@@ -1,5 +1,3 @@
 #!/bin/bash
-cd $OOPTRAJTOUPATH/src
-make
-cd ..
-make
+cd $OOPTRAJTOUPATH
+make trajtouJobs

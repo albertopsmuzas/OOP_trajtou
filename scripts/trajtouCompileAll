@@ -1,6 +1,4 @@
 #!/bin/bash
-cd $OOPTRAJTOUPATH/src
+cd $OOPTRAJTOUPATH
 make clean
-make
-cd ..
-make
+make trajtouJobs

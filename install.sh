@@ -21,6 +21,7 @@ select debugmode in no yes Abort;do
 	case $debugmode in
 		yes)
 			debugmode=on
+			ln -s debugVersion debugVersion
 			break;;
 		no)
 			debugmode=off
@@ -45,15 +46,10 @@ select compiler in $selections Abort;do
 			echo Checking $compiler existence...
 			which $compiler
 			if [[ $? != 0 ]];then echo $compiler is not in your path;exit 1;fi
-			if [[ ! -f make.inc.$compiler ]];then echo make.inc.$compiler does not exist;exit 1;fi
-			if [[ ! -f src/make.inc.$compiler ]];then echo src/make.inc.$compiler does not exist;exit 1;fi
-			echo Adding debugmode flag to make.inc files:
-			echo "# Debug option" > src/make.inc
-			echo debugmode=$debugmode >> src/make.inc
+			if [[ ! -f include/make.${compiler}.inc ]];then echo include/make.${compiler}.inc does not exist;exit 1;fi
 			echo Creating new make.inc file
-			ln -s make.inc.$compiler make.inc
-			echo Creating a new src/make.inc file
-			cat src/make.inc.$compiler >> src/make.inc
+			ln -s include/make.${compiler}.inc make.compiler.inc
+			
 			break;;
 		"")
 			echo Incorrect option. Chose another time:;;
@@ -116,13 +112,16 @@ fi
 case $module in
 	yes)
 		filename=$HOME/privatemodules/ooptrajtou/${versionFlag}
-		if [[ ! -f $HOME/privatemodules ]];then
+		if [[ ! -d $HOME/privatemodules ]];then
 			echo $HOME/privatemodules was not found. A new folder will be created.
 			echo Remember to load use.own module to access modules in this folder.
 			mkdir $HOME/privatemodules
 		fi
-		mkdir $HOME/privatemodules/ooptrajtou
-		echo A new private module will be installed at $filename
+		if [[ ! -d $HOME/privatemodules/ooptrajtou ]];then
+			echo $HOME/privatemodules/ooptrajtou was not found. A new folder will be created.
+			mkdir $HOME/privatemodules/ooptrajtou
+			echo A new private module will be installed at $filename
+		fi
 #------- creating file -----------------------
 cat << EOF > $filename
 #%Module 1.0
@@ -131,10 +130,11 @@ cat << EOF > $filename
 append-path    PATH             $defaultPath/bin
 append-path    PATH             $defaultPath/scripts
 append-path    LD_LIBRARY_PATH  $defaultPath/lib
-append-path		MANPATH          $defaultPath/doc/man
+append-path    MANPATH          $defaultPath/doc/man
 setenv         OOPTRAJTOUPATH   $defaultPath
-setenv			OOPTRAJTOUPES	  $pesPath
-setenv			LUA_PATH			  $defaultPath/lib/lua/?.lua
+setenv         OOPTRAJTOUPES    $pesPath
+setenv         OOPTRAJTOU_DEBUG $debugmode
+setenv         LUA_PATH         $defaultPath/lib/lua/?.lua
 module-whatis  "Sets OOPTRAJTOUPATH environmental variable and adds paths so that OOPTRAJTOU libraries and binaries can be used"
 EOF
 #------- end file -----------------------------
@@ -147,9 +147,9 @@ cat << EOF > $filename
 #!/bin/bash
 # Source file to use OOPtrajtou program
 export OOPTRAJTOUPATH=$defaultPath
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OOPTRAJTOUPATH/lib
 export PATH=$PATH:$OOPTRAJTOUPATH/bin:$OOPTRAJTOUPATH/scripts
 export OOPTRAJTOUPES=$pesPath
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$OOPTRAJTOUPATH/lib
 export LUA_PATH=$LUA_PATH:$defaultPath/lib/lua/?.lua
 EOF
 #------- end file -----------------------------
@@ -160,24 +160,13 @@ EOF
 		echo To source this file in every shell, add one of the previous commands to your $HOME/.bashrc file
 		;;	
 esac
-# Store installed version info -------------
-echo Version: $versionFlag > version.txt
-echo Source: $filename >> version.txt
 #/////// Install complements ////////////////
-# Install harald-aotus lib
-cd src/utils/haraldkl-aotus-707f4da5293b
-./waf configure build
-cd build
-mv *.mod $defaultPath/mod/.
-mv libflu.a $defaultPath/lib/.
-mv liblualib.a $defaultPath/lib/.
-mv libaotus.a $defaultPath/lib/.
-mv lua $defaultPath/bin
-cd $defaultPath
-# Compiling section ---------------------
-echo Installing src objects:
-cd src; make;cd ..
-echo Link executable jobs with library:
-make
-echo OOPtrajtou was installed successfully!!!
-echo Enjoy your time!
+make "OOPTRAJTOUPATH=$defaultPath" "OOPTRAJTOU_DEBUG=$debugmode" trajtouJobs
+if [[ $? == 0 ]]; then
+	echo Version: $versionFlag > version.txt
+	echo Source: $filename >> version.txt
+	echo OOPtrajtou was installed successfully!!!
+	echo Enjoy your time!
+else
+	echo There may be errors in the compilation. Good Luck
+fi

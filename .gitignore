@@ -1,5 +1,6 @@
 *.swp
 */*.swp
 */*/*.swp
-make.inc
+make.compiler.inc
 version.txt
+debugVersion
