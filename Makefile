@@ -41,7 +41,9 @@ joblist = test_inicond3dInput.x\
 			 anlys_growMolec.x\
 			 test_inicondGrowMolec.x\
 			 test_inicondGrowMolecFromFile.x\
-			 trajtouGetCut_ZR_crp6d.x
+			 trajtouGetCut_ZR_crp6d.x\
+			 trajtouGetInfo_vacuumpot.x\
+			 trajtouGetInfo_crp6d_vacuumpot.x
 # Rules 
 trajtouJobs: trajtouSrc $(joblist) 
 trajtouSrc:
