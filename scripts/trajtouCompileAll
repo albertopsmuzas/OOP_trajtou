@@ -1,4 +1,6 @@
 #!/bin/bash
+env | grep OOPTRAJTOUPATH >/dev/null
+if [[ $? != 0 ]]; then echo OOPTRAJTOUPATH is not an environmental variable;exit 1;fi
 cd $OOPTRAJTOUPATH
 make clean
 make trajtouJobs

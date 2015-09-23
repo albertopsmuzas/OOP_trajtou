@@ -1,6 +1,9 @@
 ##################################################
 # MAKE_FILE FOR  OOP TRAJTOU #####################
 ##################################################
+ifeq ($(OOPTRAJTOUPATH),) 
+	export OOPTRAJTOUPATH=$(PWD)
+endif
 include $(OOPTRAJTOUPATH)/make.compiler.inc
 include $(OOPTRAJTOUPATH)/include/make.general.inc
 .PHONY : trajtouJobs clean trajtouSrc
@@ -42,8 +45,8 @@ joblist = test_inicond3dInput.x\
 			 test_inicondGrowMolec.x\
 			 test_inicondGrowMolecFromFile.x\
 			 trajtouGetCut_ZR_crp6d.x\
-			 trajtouGetInfo_vacuumpot.x\
-			 trajtouGetInfo_crp6d_vacuumpot.x
+			 trajtouGetInfo_vacuumPot.x\
+			 trajtouGetInfo_crp6d_vacuumPot.x
 # Rules 
 trajtouJobs: trajtouSrc $(joblist) 
 trajtouSrc:

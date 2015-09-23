@@ -1,6 +1,3 @@
-ifeq ($(OOPTRAJTOUPATH,)
-	export OOPTRAJTOUPATH=$(PWD)
-endif
 vpath %.o $(OOPTRAJTOUPATH)/bin
 vpath %.a $(OOPTRAJTOUPATH)/lib
 vpath %.x $(OOPTRAJTOUPATH)/bin

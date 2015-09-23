@@ -1,5 +1,6 @@
 #!/bin/bash
-if [[ -z $OOPTRAJTOUPATH ]];then echo OOPTRAJTOUPATH does not exist.;exit 1;fi
+env | grep OOPTRAJTOUPATH >/dev/null
+if [[ $? != 0 ]]; then echo OOPTRAJTOUPATH is not an environmental variable;exit 1;fi
 if [[ ! -f $OOPTRAJTOUPATH/version.txt ]];then echo $OOPTRAJTOUPATH/version.txt does not exist.;echo de-install program manually;exit 1;fi
 echo De-installing OOPtrajtou program with specifications:
 trajtouVersion
