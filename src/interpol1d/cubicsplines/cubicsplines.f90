@@ -33,17 +33,18 @@ TYPE,EXTENDS(Interpol1d) :: Csplines
    REAL(KIND=8),DIMENSION(:),ALLOCATABLE,PUBLIC :: xroot
    CONTAINS
       ! Public procedures
-      PROCEDURE,PUBLIC :: INTERPOL => INTERPOL_CUBIC_SPLINES
-      PROCEDURE,PUBLIC :: REINTERPOL => REINTERPOL_CSPLINES
-      PROCEDURE,PUBLIC :: getvalue => get_csplines_value
-      PROCEDURE,PUBLIC :: getderiv => get_csplines_dfdx_value
-      PROCEDURE,PUBLIC :: getderiv2 => get_csplines_df2dx2_value
-      PROCEDURE,PUBLIC :: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CSPLINES
-      PROCEDURE,PUBLIC :: SET_MINIMUM => SET_MINIMUM_CSPLINES
-      PROCEDURE,PUBLIC :: SET_XROOT => SET_XROOT_CSPLINES
+      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_CUBIC_SPLINES
+      PROCEDURE,PUBLIC:: REINTERPOL => REINTERPOL_CSPLINES
+      PROCEDURE,PUBLIC:: getvalue => get_csplines_value
+      PROCEDURE,PUBLIC:: getderiv => get_csplines_dfdx_value
+      PROCEDURE,PUBLIC:: getderiv2 => get_csplines_df2dx2_value
+      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CSPLINES
+      PROCEDURE,PUBLIC:: SET_MINIMUM => SET_MINIMUM_CSPLINES
+      PROCEDURE,PUBLIC:: SET_XROOT => SET_XROOT_CSPLINES
+      procedure,public:: printCoeffInfo => printCoeffInfo_CSPLINES
       ! Private procedures
-      PROCEDURE,PRIVATE :: SET_SECOND_DERIVS => DSPLIN
-      PROCEDURE,PRIVATE :: SET_COEFF => SET_CUBIC_SPLINES_COEFF
+      PROCEDURE,PRIVATE:: SET_SECOND_DERIVS => DSPLIN
+      PROCEDURE,PRIVATE:: SET_COEFF => SET_CUBIC_SPLINES_COEFF
 END TYPE Csplines
 !//////////////////////////////////////////////////////////////////////
 CONTAINS
@@ -70,8 +71,8 @@ SUBROUTINE REINTERPOL_CSPLINES(this,dz1,id1,dz2,id2)
    ! Run section
    SELECT CASE(this%is_initialized)
       CASE(.FALSE.)
-         WRITE(0,*) "REINTERPOL_CSPLINES ERR: use INTERPOL intead of REINTERPOL, this csplines &
-                     job was not prior initialized"
+         WRITE(0,*) "REINTERPOL_CSPLINES ERR: use INTERPOL intead of REINTERPOL"
+         WRITE(0,*) "this csplines job was not prior initialized"
          CALL EXIT(1)
       CASE(.TRUE.)
          ! do nothing
@@ -775,4 +776,45 @@ SUBROUTINE GET_V_AND_DERIVS_CSPLINES(this,x,pot,deriv,shift)
    deriv = 3.D0*(a*((r-z1)**2.D0))+2.D0*b*(r-z1)+c
    RETURN
 END SUBROUTINE GET_V_AND_DERIVS_CSPLINES
+! #########################################
+! SUBROUTINE: printCoeffInfo
+! -----------------------------------------
+subroutine printCoeffInfo_CSPLINES(this,fileName,prefix)
+   ! Initial declarations
+   implicit none
+   ! I/O variables
+   class(Csplines),intent(in):: this
+   character(len=*),optional,intent(in):: fileName
+   character(len=*),optional,intent(in):: prefix
+   ! Local variables
+   integer(kind=4):: i,wunit ! counter
+   integer(kind=4),parameter:: thisWunit=120
+   integer(kind=4),parameter:: stdWunit=6
+   ! YOU ARE NOT YOU, YOU ARE ME! (Schwarzenegger dixit)
+   if (present(fileName) .and. present(prefix) ) then
+      wunit=thisWunit
+      open(unit=wunit,file=trim(prefix)//trim(fileName),status='replace',action='write')
+   elseif ( present(fileName) .and. .not.present(prefix) ) then
+      wunit=thisWunit
+      open(unit=wunit,file=trim(fileName),status='replace',action='write')
+   elseif ( .not.present(fileName) ) then
+      wunit=stdWunit
+   endif
+   write(wunit,*) '# Coefficients for cubic splines: '
+   write(wunit,*) '# Formulae: f(x)=a*(x-q)^3+b*(x-q)^2+c*(x-q)+d'
+   write(wunit,*) '# Coefficients in order: (a,b,c,d). One set per line'
+   write(wunit,*) '# Parameter "q" is the initial point at which the ith spline starts'
+   write(wunit,*) '# Grid in X: ',this%x(:)
+   do i=1,size( this%coeff(:,1) )
+      write(wunit,*) this%coeff(i,:)
+   enddo
+   select case( present(fileName) )
+   case(.true.)
+      close(unit=wunit)
+   case(.false.)
+      ! do nothing
+   end select
+   return
+end subroutine printCoeffInfo_CSPLINES
+
 END MODULE CUBICSPLINES_MOD

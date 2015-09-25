@@ -79,11 +79,11 @@
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="org.eclipse.cdt.managedbuilder.core.GCCManagedMakePerProjectProfile"/>
 		</scannerConfigBuildInfo>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
 		<buildTargets>
 			<target name="compile libtrajtou.a" path="src" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments/>
 				<buildTarget>libtrajtou.a</buildTarget>
 				<stopOnError>false</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
@@ -91,21 +91,22 @@
 			</target>
 			<target name="compile libaotus.a" path="src" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments/>
 				<buildTarget>libaotus.a</buildTarget>
 				<stopOnError>false</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="link_jobs2lib" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="trajtouJobs" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildTarget>link_jobs2lib</buildTarget>
+				<buildArguments/>
+				<buildTarget>trajtouJobs</buildTarget>
 				<stopOnError>false</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
 			<target name="clean" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
+				<buildArguments/>
 				<buildTarget>clean</buildTarget>
 				<stopOnError>false</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
@@ -113,5 +114,4 @@
 			</target>
 		</buildTargets>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
