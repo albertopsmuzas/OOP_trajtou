@@ -22,7 +22,8 @@ joblist = test_inicond3dInput.x\
 			 cheat_CRP6D_cartwheelinput.x\
 			 cart2surf.x\
 			 test_inicond6dInput.x\
-			 drawtraj6d.x anlys_diff3d.x\
+			 drawtraj6d.x\
+			 anlys_diff3d.x\
 			 anlys_diff6d.x\
 			 anlys_diffAtomSurf.x\
 			 test_systemInput.x\
@@ -47,7 +48,9 @@ joblist = test_inicond3dInput.x\
 			 trajtouGetCut_ZR_crp6d.x\
 			 trajtouGetInfo_vacuumPot.x\
 			 trajtouGetInfo_crp6d_vacuumPot.x\
-			 trajtouGetInfo_vacuumPotCoeff.x
+			 trajtouGetInfo_vacuumPotCoeff.x\
+			 trajtouGetGraph_vacuumPot.x\
+			 trajtouGetGraph_vacuumPotShifted.x
 # Rules 
 trajtouJobs: trajtouSrc $(joblist) 
 trajtouSrc:
