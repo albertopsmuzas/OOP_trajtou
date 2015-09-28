@@ -21,4 +21,10 @@ program trajtouGetInfo_vacuumPot
    write(*,*) 'Equilibrium radius, Req. (bohr): ',thisPot%getReq()
    write(*,*) 'Potential at Req., V(Req) (hartree): ',thisPot%getPotMin()
    write(*,*) 'Energy shift to put V=0 at vacuum level, (hartree): ',thisPot%getScaleFactor()
+   write(*,*) 'First grid point: ',thisPot%rPot%x(1)
+   write(*,*) 'Last grid point: ',thisPot%rPot%x(thisPot%rPot%n)
+   write(*,*) 'Potential at first grid point: ',thisPot%getPot(thisPot%rPot%x(1))
+   write(*,*) 'Potential at last grid point: ',thisPot%getPot(thisPot%rPot%x(thisPot%rPot%n))
+   write(*,*) 'First derivative at first grid point: ',thisPot%getDeriv(thisPot%rPot%x(1))
+   write(*,*) 'First derivative at last grid point: ',thisPot%getDeriv(thisPot%rPot%x(thisPot%rPot%n))
 end program trajtouGetInfo_vacuumPot
