@@ -42,6 +42,13 @@ TYPE,EXTENDS(Dynamics):: Dynatom
    INTEGER(KIND=4),PRIVATE:: wust=806 ! write unit for stopped trajs
    INTEGER(KIND=4),PRIVATE:: wutp=807 ! write unit for turning points
    INTEGER(KIND=4),PRIVATE:: wufo=808 ! write unit for trajectory step by step
+   character(len=21):: fileScatt='OUTDYN3Dscattered.out'
+   character(len=22):: filePatho='OUTDYN3Dpathologic.out'
+   character(len=19):: fileTimeOut='OUTDYN3Dtimeout.out'
+   character(len=19):: fileTrapped='OUTDYN3Dtrapped.out'
+   character(len=20):: fileAds='OUTDYN3Dadsorbed.out'
+   character(len=20):: fileAbs='OUTDYN3Dabsorbed.out'
+   character(len=19):: fileStop='OUTDYN3Dstopped.out'
 
    CONTAINS
       ! Initialization block
@@ -283,13 +290,13 @@ SUBROUTINE RUN_DYNATOM(this)
    CHARACTER(LEN=20),PARAMETER :: routinename = "RUN_DYNAMICS_ATOMS: "
    ! HEY HO! LET'S GO !!! ------
    ! Check files for all traj status
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wusc,"OUTDYN3Dscattered.out","SCATTERED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wupa,"OUTDYN3Dpatologic.out","PATOLOGIC TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wuto,"OUTDYN3Dtimeout.out","TIME-OUT TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wutr,"OUTDYN3Dtrapped.out","TRAPPED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wuad,"OUTDYN3Dadsorbed.out","ADSORBED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wuab,"OUTDYN3Dabsorbed.out","ABSORBED TRAJS")
-   CALL FILE_TRAJSTATUS_DYNATOM(this%wust,"OUTDYN3Dstopped.out","STOPPED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wusc,this%fileScatt,"SCATTERED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wupa,this%filePatho,"PATOLOGIC TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wuto,this%fileTimeOut,"TIME-OUT TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wutr,this%fileTrapped,"TRAPPED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wuad,this%fileAds,"ADSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wuab,this%fileAbs,"ABSORBED TRAJS")
+   CALL FILE_TRAJSTATUS_DYNATOM(this%wust,this%fileStop,"STOPPED TRAJS")
    ! Check turning points file
    CALL FILE_TURNING_DYNATOM(this%wutp)
    ! Run trajectories one by one
@@ -308,6 +315,13 @@ SUBROUTINE RUN_DYNATOM(this)
    CLOSE(this%wuab)
    CLOSE(this%wust)
    CLOSE(this%wutp)
+   call deleteIfEmptyFile(this%fileScatt)
+   call deleteIfEmptyFile(this%filePatho)
+   call deleteIfEmptyFile(this%fileTimeOut)
+   call deleteIfEmptyFile(this%fileTrapped)
+   call deleteIfEmptyFile(this%fileAds)
+   call deleteIfEmptyFile(this%fileAbs)
+   call deleteIfEmptyFile(this%fileStop)
    RETURN
 END SUBROUTINE RUN_DYNATOM
 !##############################################################
