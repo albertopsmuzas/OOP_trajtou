@@ -50,7 +50,8 @@ joblist = test_inicond3dInput.x\
 			 trajtouGetInfo_crp6d_vacuumPot.x\
 			 trajtouGetInfo_vacuumPotCoeff.x\
 			 trajtouGetGraph_vacuumPot.x\
-			 trajtouGetGraph_vacuumPotShifted.x
+			 trajtouGetGraph_vacuumPotShifted.x\
+			 trajtouXYcut_crp3d.x
 # Rules 
 trajtouJobs: trajtouSrc $(joblist) 
 trajtouSrc:
