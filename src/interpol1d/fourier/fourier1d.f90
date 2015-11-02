@@ -145,7 +145,7 @@ function getParityList_FOURIER1D(this) result(charArray)
    ! Dummy output variable
    character(len=1),dimension(:),allocatable:: charArray
    ! Run section
-   allocate( charArray(size(this%ParityList)),source=this%parityList(:) )
+   allocate( charArray(size(this%ParityList)) ); charArray(:) = this%parityList(:)
    return
 end function getParityList_FOURIER1D
 !###########################################################
@@ -190,7 +190,7 @@ subroutine setParityList_FOURIER1D(this,parityList)
    class(Fourier1d),intent(inout):: this
    character(len=1),dimension(:):: parityList
    ! Run section
-   allocate( this%parityList(size(parityList)),source=parityList(:) )
+   allocate( this%parityList(size(parityList)) ); this%parityList(:) = parityList(:)
    return
 end subroutine setParityList_FOURIER1D
 !###################################################################
@@ -205,7 +205,7 @@ subroutine setIrrepList_FOURIER1D(this,irrepList)
    class(Fourier1d),intent(inout):: this
    character(len=2),dimension(:):: irrepList
    ! Run section
-   allocate( this%irrepList(size(irrepList)),source=irrepList(:) )
+   allocate( this%irrepList(size(irrepList)) ); this%irrepList(:) = irrepList(:)
    return
 end subroutine setIrrepList_FOURIER1D
 !###########################################################

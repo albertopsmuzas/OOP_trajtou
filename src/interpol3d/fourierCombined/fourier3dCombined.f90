@@ -185,8 +185,8 @@ subroutine setParityList_FOURIER3D(this,parityListXY,parityListAngle)
    integer(kind=4):: n
    ! Run section
    n=size(parityListXY)
-   allocate( this%parityListXY(n),    source=parityListXY(:)    )
-   allocate( this%parityListAngle(n), source=parityListAngle(:) )
+   allocate( this%parityListXY(n) );    this%parityListXY(:)=parityListXY(:)
+   allocate( this%parityListAngle(n) ); this%parityListAngle(:)=parityListAngle(:)
    return
 end subroutine setParityList_FOURIER3D
 !###################################################################
@@ -205,8 +205,8 @@ subroutine setIrrepList_FOURIER3D(this,irrepListXY,irrepListAngle)
    integer(kind=4):: n
    ! Run section
    n=size( irrepListXY )
-   allocate( this%irrepListXY(n),    source=irrepListXY(:)    )
-   allocate( this%irrepListAngle(n), source=irrepListAngle(:) )
+   allocate( this%irrepListXY(n) );    this%irrepListXY(:)=irrepListXY(:)
+   allocate( this%irrepListAngle(n) ); this%irrepListAngle(:)=irrepListAngle(:)
    return
 end subroutine setIrrepList_FOURIER3D
 !###########################################################

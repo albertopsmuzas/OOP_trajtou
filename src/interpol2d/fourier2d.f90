@@ -183,8 +183,8 @@ subroutine read_FOURIER2D(this,xy,f,kList,irrepList,parityList)
    allocate( this%xy(ndata,2),       source=xy(:,:)       )
    allocate( this%f(nfunc,ndata),    source=f(:,:)        )
    allocate( this%kList(ndata,2),    source=kList(:,:)    )
-   allocate( this%parityList(ndata), source=parityList(:) )
-   allocate( this%irrepList(ndata),  source=irrepList(:)  )
+   allocate( this%parityList(ndata) ); this%parityList(:)= parityList(:)
+   allocate( this%irrepList(ndata)  ); this%irrepList(:) = irrepList(:)  
    this%nfunc = nfunc
    return
 end subroutine read_fourier2d
