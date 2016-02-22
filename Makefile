@@ -46,6 +46,7 @@ joblist = test_inicond3dInput.x\
 			 test_inicondGrowMolec.x\
 			 test_inicondGrowMolecFromFile.x\
 			 trajtouGetCut_ZR_crp6d.x\
+			 trajtouGetCut_Z_crp3d.x\
 			 trajtouGetInfo_vacuumPot.x\
 			 trajtouGetInfo_crp6d_vacuumPot.x\
 			 trajtouGetInfo_vacuumPotCoeff.x\
