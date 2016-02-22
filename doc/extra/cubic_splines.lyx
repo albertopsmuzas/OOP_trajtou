@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -20,13 +20,13 @@ tabs-within-sections
 \font_roman default
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -37,15 +37,24 @@ tabs-within-sections
 \use_hyperref false
 \papersize a4paper
 \use_geometry true
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -92,10 +101,10 @@ The idea is to construct a function defined as:
 \begin_inset Formula 
 \begin{equation}
 S(x)=\begin{cases}
-s_{1}(x) & if\,\,\, x_{1}\le x<x_{2}\\
-s_{2}(x) & if\,\,\, x_{2}\le x<x_{3}\\
+s_{1}(x) & if\,\,\,x_{1}\le x<x_{2}\\
+s_{2}(x) & if\,\,\,x_{2}\le x<x_{3}\\
 \vdots & \vdots\\
-s_{N-1}(x) & if\,\,\, x_{N-1}\le x<x_{N}
+s_{N-1}(x) & if\,\,\,x_{N-1}\le x<x_{N}
 \end{cases}\label{eq:S(x)}
 \end{equation}
 
@@ -106,7 +115,7 @@ s_{N-1}(x) & if\,\,\, x_{N-1}\le x<x_{N}
 
 \begin_layout Standard
 where 
-\begin_inset Formula $\{\left(x_{i},\, y_{i}\right)\}_{i=1}^{N}$
+\begin_inset Formula $\{\left(x_{i},\,y_{i}\right)\}_{i=1}^{N}$
 \end_inset
 
  is the set of data that we want to interpolate.
@@ -147,7 +156,7 @@ Each
 
 \begin_layout Standard
 So, we have a system of 4N-4 variables 
-\begin_inset Formula $\{a_{i},\, b_{i},\, c_{i},\, d_{i}\}$
+\begin_inset Formula $\{a_{i},\,b_{i},\,c_{i},\,d_{i}\}$
 \end_inset
 
 
@@ -158,17 +167,17 @@ Boundary conditions
 \end_layout
 
 \begin_layout Standard
-The following conditions are desiderable:
+The following conditions are desirable:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
 \begin{array}{cc}
-s_{i}(x_{i+1})=s_{i+1}(x_{i+1})\,\,\, for\,\,\, i=1,\,2,\,...,\, N-2 & Continuity\, condition\\
-s_{i}'(x_{i+1})=s_{i+1}'(x_{i+1})\,\,\, for\, i=1,\,2,\,...,\, N-2 & Smoothness\, condition\,1\\
-s_{i}''(x_{i+1})=s_{i+1}''(x_{i+1})\,\,\, for\, i=1,\,2,\,...,\, N-2 & Smooothness\, condition\,2\\
-S(x_{i})=y_{i}\,\,\, for\,\,\, i=1,2,\,...,\, N-1 & S(x)\, interpolates\,\left\{ (x_{i},y_{i})\right\} _{i=1}^{N}
+s_{i}(x_{i+1})=s_{i+1}(x_{i+1})\,\,\,for\,\,\,i=1,\,2,\,...,\,N-2 & Continuity\,condition\\
+s_{i}'(x_{i+1})=s_{i+1}'(x_{i+1})\,\,\,for\,i=1,\,2,\,...,\,N-2 & Smoothness\,condition\,1\\
+s_{i}''(x_{i+1})=s_{i+1}''(x_{i+1})\,\,\,for\,i=1,\,2,\,...,\,N-2 & Smooothness\,condition\,2\\
+S(x_{i})=y_{i}\,\,\,for\,\,\,i=1,2,\,...,\,N-1 & S(x)\,interpolates\,\left\{ (x_{i},y_{i})\right\} _{i=1}^{N}
 \end{array}
 \]
 
@@ -205,7 +214,7 @@ From condition
 \begin_layout Standard
 \begin_inset Formula 
 \[
-s_{i}(x_{i})=y_{i}\,\Rightarrow\, y_{i}=a_{i}(x_{i}-x_{i})^{3}+b_{i}(x_{i}-x_{i})^{2}+c_{i}(x_{i}-x_{i})+d_{i}
+s_{i}(x_{i})=y_{i}\,\Rightarrow\,y_{i}=a_{i}(x_{i}-x_{i})^{3}+b_{i}(x_{i}-x_{i})^{2}+c_{i}(x_{i}-x_{i})+d_{i}
 \]
 
 \end_inset
@@ -319,7 +328,7 @@ Now, let's work the equations:
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula $s_{i}''(x)=6a_{i}(x-x_{i})+2b_{i}\,\Rightarrow\, s_{i}''(x_{i})=2b_{i}\,\overset{+cond:\,\ref{eq:cond4}}{\Longrightarrow}\,6a_{i}h_{i}+s_{i}''(x_{i})=s_{i+1}''(x_{i+1})$
+\begin_inset Formula $s_{i}''(x)=6a_{i}(x-x_{i})+2b_{i}\,\Rightarrow\,s_{i}''(x_{i})=2b_{i}\,\overset{+cond:\,\ref{eq:cond4}}{\Longrightarrow}\,6a_{i}h_{i}+s_{i}''(x_{i})=s_{i+1}''(x_{i+1})$
 \end_inset
 
 
@@ -765,7 +774,7 @@ M_{N-1}
 \vdots\\
 \frac{1}{h_{N-3}}y_{N-3}-\delta_{N-3}y_{N-2}+\frac{1}{h_{N-2}}y_{N-1}\\
 \frac{1}{h_{N-2}}y_{N-2}-\delta_{N-2}y_{N-1}+\frac{1}{h_{N-1}}y_{N}
-\end{bmatrix}_{(N-2)\times1}\,\,\,;\,\,\, M_{1}=\lambda_{2}M_{2}+\lambda_{3}M_{3}\,\,;\,\, M_{N}=\lambda_{N-2}M_{N-2}+\lambda_{N-1}M_{N-1}
+\end{bmatrix}_{(N-2)\times1}\,\,\,;\,\,\,M_{1}=\lambda_{2}M_{2}+\lambda_{3}M_{3}\,\,;\,\,M_{N}=\lambda_{N-2}M_{N-2}+\lambda_{N-1}M_{N-1}
 \]
 
 \end_inset
