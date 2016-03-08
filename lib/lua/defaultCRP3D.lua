@@ -7,7 +7,7 @@ local CRP3D={
       dimensions=3,                                            -- Number of dimensions
       surfaceInput='INsurface.inp',                            -- Surface input filename
       maxEnvironment=0,                                        -- Max environment involved in corrugation extraction
-      dampFunction={kind='None',param={}},                     -- Damp function used to soften PES at far distances
+      dampFunction={kind='fullCRP',param={}},                     -- Damp function used to soften PES at far distances
       pairPotentials={},                                       -- List of file names
       sitios={},										                  --	List of file names
       fourierKpoints={},                                       -- List of integer 2D points, e.g.: {0,0}, {0,1} ...

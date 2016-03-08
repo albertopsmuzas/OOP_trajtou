@@ -8,7 +8,7 @@ local CRP6D={
 		crp3dPes={},                             -- CRP3D tables needed.
 		surfaceInput='surfacefile',              -- Surface input filename
 		resize={r=0,z=0},                               -- If we want a new denser grid for ZR-cuts
-		dampFunction={kind='None',param={}},              -- Damp funtion used to soften CRP3D additions & substractions at far distances
+		dampFunction={kind='fullCRP',param={}},              -- Damp funtion used to soften CRP3D additions & substractions at far distances
 		extrapolFunction={kind='None',upToZ={0.e0,'au'}}, -- Function used to extrapolate to the vacuum. For Z>upToZ, we have vacuum potential
 		vacuumFunction={kind='Numerical',source='None'},  -- Source for vacuum potential
 		fourierKpoints={},                                -- List of integer points, e.g.: {0,0}, {0,1} ...
