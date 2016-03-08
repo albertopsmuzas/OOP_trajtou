@@ -67,6 +67,7 @@ objectlist= debug.o\
 				function1d.o\
 			  	logistic.o\
 			  	one.o\
+				zero.o\
 			  	link_PES.o\
 			  	link_interpol1d.o\
 			  	initdiatomic.o\

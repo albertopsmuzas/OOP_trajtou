@@ -1114,11 +1114,13 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=2,val=param_damp(2))
          CALL AOT_TABLE_CLOSE(L=conf,thandle=param_table)
          CALL this%dumpfunc%READ(param_damp)
-      CASE("None") 
+      CASE("fullCRP") 
          ALLOCATE(One_func::this%dumpfunc)
+      CASE("fullRaw") 
+         ALLOCATE(Zero_func::this%dumpfunc)
       CASE DEFAULT
          WRITE(0,*) "READ_CRP6D ERR: Keyword for dumping function needed"
-         WRITE(*,*) "Currently implemented: Logistic, None"
+         WRITE(*,*) "Currently implemented: Logistic, fullCRP, fullRaw"
          CALL EXIT(1)
    END SELECT
    CALL AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)

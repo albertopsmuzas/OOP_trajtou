@@ -846,11 +846,13 @@ SUBROUTINE READ_CRP3D(this,filename,tablename)
          END DO
          CALL this%dampfunc%READ(param)
          CALL AOT_TABLE_CLOSE(L=conf,thandle=param_table)
-      CASE("None")
+      CASE("FullCRP")
          ALLOCATE(One_func::this%dampfunc)
+      CASE("FullRaw")
+         ALLOCATE(Zero_func::this%dampfunc)
       CASE DEFAULT
          WRITE(0,*) "READ_CRP3D ERR: dampfunction keyword is not implemented"
-         WRITE(0,*) "Implemented ones: Logistic, None"
+         WRITE(0,*) "Implemented ones: Logistic, fullCRP, fullRaw"
          WRITE(0,*) "Case sensitive"
          CALL EXIT(1)
    END SELECT
