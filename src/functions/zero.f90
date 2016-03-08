@@ -15,11 +15,11 @@ IMPLICIT NONE
 !> @date Jun/2016
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE,EXTENDS(Function1d) :: ZERO_func
+TYPE,EXTENDS(Function1d) :: Zero_func
 CONTAINS
    PROCEDURE,PUBLIC :: getvalue => getvalue_ZERO
    PROCEDURE,PUBLIC :: getderiv => getderiv_ZERO
-END TYPE ZERO_func
+END TYPE Zero_func
 !/////////////////////////////////////////////////////////////////
 CONTAINS
 !###########################################################

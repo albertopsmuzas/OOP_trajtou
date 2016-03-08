@@ -152,13 +152,14 @@ interpol3d.o: debug.o
 fourier3dCombined.o: debug.o interpol3d.o maths.o fourier1d.o fourier2d.o
 fourier3d.p4mm.o: debug.o fourier3dCombined.o fourier.4mm.o fourier.p4mm.o  
 # 1D Functions section -------------------------------------------------------------------
-link_function1d.o: function1d.o one.o logistic.o linear.o exponential.o xexponential.o xplusnexponential.o
+link_function1d.o: function1d.o one.o zero.o logistic.o linear.o exponential.o xexponential.o xplusnexponential.o
 function1d.o:
 exponential.o: function1d.o
 xexponential.o: function1d.o
 xplusnexponential.o: function1d.o
 logistic.o: function1d.o
 one.o: function1d.o
+zero.o: function1d.o
 linear.o: function1d.o
 # Initial conditions section -------------------------------------------------------------
 link_inicond.o: inicond.o initatom.o initdiatomic.o
