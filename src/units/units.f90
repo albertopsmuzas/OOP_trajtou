@@ -13,8 +13,8 @@
 !! - Write subroutines to go from a.u. to other units. This way
 !!   output units in oautput files could be managed.
 !##########################################################
-MODULE UNITS_MOD
-IMPLICIT NONE
+module UNITS_MOD
+implicit none
 !//////////////////////////////////////////////////////////////////////
 ! TYPE: Quantity
 ! --------------
@@ -30,15 +30,15 @@ IMPLICIT NONE
 !> @version 1.0
 !> @see length, mass, energy, angle, time
 !----------------------------------------------------------------------
-TYPE :: Quantity
-   PRIVATE
-   CHARACTER(LEN=10) :: units
-   REAL(KIND=8) :: mag
-CONTAINS
-   PROCEDURE,PUBLIC :: READ => READ_QUANTITY_FROM_ARGUMENTS
-   PROCEDURE,PUBLIC :: getvalue => get_magnitude_quantity
-   PROCEDURE,PUBLIC :: getunits => get_units_quantity
-END TYPE Quantity
+type :: Quantity
+   private
+   character(len=10) :: units
+   real(kind=8) :: mag
+contains
+   procedure,public :: READ => READ_QUANTITY_FROM_ARGUMENTS
+   procedure,public :: getvalue => get_magnitude_quantity
+   procedure,public :: getunits => get_units_quantity
+end type Quantity
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Length
 ! ---------------
@@ -52,11 +52,11 @@ END TYPE Quantity
 !> @version 1.0
 !> @see  quantity
 !----------------------------------------------------------------------
-TYPE, EXTENDS(Quantity) :: Length
-CONTAINS
-   PROCEDURE,PUBLIC :: TO_STD => LENGTH_AU
-   PROCEDURE,PUBLIC :: TO_ANGST => TO_ANGST_LENGTH
-END TYPE Length
+type, extends(Quantity) :: Length
+contains
+   procedure,public :: TO_STD => LENGTH_AU
+   procedure,public :: TO_ANGST => TO_ANGST_LENGTH
+end type Length
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Temperature
 ! --------------------
@@ -70,10 +70,10 @@ END TYPE Length
 !> @version 1.0
 !> @see  quantity
 !----------------------------------------------------------------------
-TYPE,EXTENDS(Quantity) :: Temperature
-CONTAINS
-   PROCEDURE,PUBLIC:: TO_STD => TO_KELVIN_UNITS
-END TYPE Temperature
+type,extends(Quantity) :: Temperature
+contains
+   procedure,public:: TO_STD => TO_KELVIN_UNITS
+end type Temperature
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Energy
 ! ---------------
@@ -87,10 +87,10 @@ END TYPE Temperature
 !> @version 1.0
 !> @see quantity
 !----------------------------------------------------------------------
-TYPE, EXTENDS(Quantity) :: Energy
-CONTAINS
-   PROCEDURE,PUBLIC :: TO_STD => ENERGY_AU
-END TYPE Energy
+type, extends(Quantity) :: Energy
+contains
+   procedure,public :: TO_STD => ENERGY_AU
+end type Energy
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Mass
 ! -------------
@@ -104,10 +104,10 @@ END TYPE Energy
 !> @version 1.0
 !> @see quantity
 !----------------------------------------------------------------------
-TYPE, EXTENDS(Quantity) :: Mass
-CONTAINS
-   PROCEDURE,PUBLIC :: TO_STD => MASS_AU
-END TYPE Mass
+type, extends(Quantity) :: Mass
+contains
+   procedure,public :: TO_STD => MASS_AU
+end type Mass
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Time
 ! -------------
@@ -121,10 +121,10 @@ END TYPE Mass
 !> @version 1.0
 !> @see quantity
 !----------------------------------------------------------------------
-TYPE, EXTENDS(Quantity) :: Time
-CONTAINS
-   PROCEDURE,PUBLIC :: TO_STD => TIME_AU
-END TYPE Time
+type, extends(Quantity) :: Time
+contains
+   procedure,public :: TO_STD => TIME_AU
+end type Time
 !//////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Angle
 ! --------------
@@ -138,31 +138,31 @@ END TYPE Time
 !> @version 1.0
 !> @see quantity
 !----------------------------------------------------------------------
-TYPE, EXTENDS(Quantity) :: angle
-CONTAINS
-   PROCEDURE,PUBLIC :: TO_STD => TO_RAD
-   PROCEDURE,PUBLIC :: TO_DEG
-END TYPE
+type, extends(Quantity) :: angle
+contains
+   procedure,public :: TO_STD => TO_RAD
+   procedure,public :: TO_DEG
+end type
 !//////////////////////////////////////////////////////////////////////
 ! Conversion factors:
-REAL(KIND=8),PARAMETER:: au2ev = 27.21138386D0
-REAL(KIND=8),PARAMETER:: au2kcalmol = 627.503D0
-REAL(KIND=8),PARAMETER:: au2kjmol = 2.6255D3
-REAL(KIND=8),PARAMETER:: au2angst = 0.52917720859D0
-REAL(KIND=8),PARAMETER:: au2fs = 0.02418884326505D0
-REAL(KIND=8),PARAMETER:: au2ps = 2.418884326505D-5
-REAL(KIND=8),PARAMETER:: hmass2au = 1837.15264409D0
-REAL(KIND=8),PARAMETER:: dmass2au = 3671.482934845d0
-REAL(KIND=8),PARAMETER:: pmass2au = 1836.15267247d0
+real(kind=8),parameter:: au2ev = 27.21138386D0
+real(kind=8),parameter:: au2kcalmol = 627.503D0
+real(kind=8),parameter:: au2kjmol = 2.6255D3
+real(kind=8),parameter:: au2angst = 0.52917720859D0
+real(kind=8),parameter:: au2fs = 0.02418884326505D0
+real(kind=8),parameter:: au2ps = 2.418884326505D-5
+real(kind=8),parameter:: hmass2au = 1837.15264409D0
+real(kind=8),parameter:: dmass2au = 3671.482934845d0
+real(kind=8),parameter:: pmass2au = 1836.15267247d0
 real(kind=8),parameter:: dalton2au=1822.88848325d0
 real(kind=8),parameter:: kelvinParam=273.15d0
 real(kind=8),parameter:: fahrenheitParam=459.67d0
 real(kind=8),parameter:: boltzmann=8.617332478d-5/au2ev
-REAL(KIND=8),PARAMETER:: pi=dacos(-1.D0)
+real(kind=8),parameter:: pi=dacos(-1.D0)
 !//////////////////////////////////////////////////////////////////////
 
 ! MODULE CONTAINS:
-CONTAINS
+contains
 !###########################################################
 !# SUBROUTINE: READ_QUANTITY_FROM_ARGUMENTS ################
 !###########################################################
@@ -178,53 +178,53 @@ CONTAINS
 !> @date 06/Nov/2013
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE READ_QUANTITY_FROM_ARGUMENTS(quant,mag,units)
+subroutine READ_QUANTITY_FROM_ARGUMENTS(quant,mag,units)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Quantity),INTENT(OUT) :: quant
-   REAL(KIND=8),INTENT(IN) :: mag
-   CHARACTER(LEN=*),INTENT(IN) :: units
+   class(Quantity),intent(out) :: quant
+   real(kind=8),intent(in) :: mag
+   character(len=*),intent(in) :: units
    ! Run section
    ! Check variable type
-   SELECT TYPE (quant)
-   TYPE IS (Quantity)
-      WRITE(0,*) "READ_QUANT_FROM_ARGUMENTS ERR: Pure Quantities're not allowed. &
+   select type (quant)
+   type is (Quantity)
+      write(0,*) "READ_QUANT_FROM_ARGUMENTS ERR: Pure Quantities're not allowed. &
       & Declare it with a specific sub-type instead (length, time, etc.)"
-      CALL EXIT(1)
-   END SELECT
+      call EXIT(1)
+   end select
    quant%mag=mag
    quant%units=units
-   RETURN
-END SUBROUTINE READ_QUANTITY_FROM_ARGUMENTS
+   return
+end subroutine READ_QUANTITY_FROM_ARGUMENTS
 !###########################################################
 !# FUNCTION: get_magnitude_quantity ########################
 !###########################################################
 ! - Typical get function
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION get_magnitude_quantity(quant) 
+real(kind=8) function get_magnitude_quantity(quant) 
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Quantity),INTENT(IN) :: quant
+   class(Quantity),intent(in) :: quant
    ! Run section
    get_magnitude_quantity=quant%mag
-   RETURN
-END FUNCTION get_magnitude_quantity
+   return
+end function get_magnitude_quantity
 !###########################################################
 !# FUNCTION: get_units_quantity ############################
 !###########################################################
 ! - Typical get function
 !-----------------------------------------------------------
-CHARACTER(LEN=10) FUNCTION get_units_quantity(quant) 
+character(len=10) function get_units_quantity(quant) 
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Quantity),INTENT(IN) :: quant
+   class(Quantity),intent(in) :: quant
    ! Run section
    get_units_quantity=quant%units
-   RETURN
-END FUNCTION get_units_quantity
+   return
+end function get_units_quantity
 !###########################################################
 !# SUBROUTINE: GO TO RAD ####################################
 !############################################################
@@ -237,24 +237,24 @@ END FUNCTION get_units_quantity
 !> @date 06/Nov/2013
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE TO_RAD(this)
+subroutine TO_RAD(this)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(angle), INTENT(INOUT) :: this
+   class(angle), intent(inout) :: this
    ! GO, GO, GO !!!------
-   IF (this%units.EQ."rad") THEN
-      RETURN
-   ELSE IF (this%units.EQ."deg") THEN
+   if (this%units.eq."rad") then
+      return
+   else if (this%units.eq."deg") then
       this%mag = this%mag*(pi/180.D0)
-   ELSE
-      WRITE(0,*) "TO_RAD ERR: incorrect kind"
-      WRITE(0,*) "Supported ones: deg, rad"
-      CALL EXIT(1)
-   END IF
+   else
+      write(0,*) "TO_RAD ERR: incorrect kind"
+      write(0,*) "Supported ones: deg, rad"
+      call EXIT(1)
+   end if
    this%units = "rad"
-   RETURN
-END SUBROUTINE TO_RAD
+   return
+end subroutine TO_RAD
 !############################################################
 !# SUBROUTINE: TO DEG #######################################
 !############################################################
@@ -267,25 +267,25 @@ END SUBROUTINE TO_RAD
 !> @date 06/Nov/2013
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE TO_DEG(this)
+subroutine TO_DEG(this)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(angle), INTENT(INOUT) :: this
+   class(angle), intent(inout) :: this
    ! GO, GO, GO !!!------
-   SELECT CASE(this%units)
-      CASE("deg")
-         RETURN
-      CASE("rad")
+   select case(this%units)
+      case("deg")
+         return
+      case("rad")
          this%mag = this%mag*180.D0/pi
          this%units = "deg"
-      CASE DEFAULT
-         WRITE(0,*) "TO_DEG ERR: incorrect kind"
-         WRITE(0,*) "Supported ones: rad, deg"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END SUBROUTINE TO_DEG
+      case default
+         write(0,*) "TO_DEG ERR: incorrect kind"
+         write(0,*) "Supported ones: rad, deg"
+         call EXIT(1)
+   end select
+   return
+end subroutine TO_DEG
 !############################################################
 !# SUBROUTINE: LENGTH_AU ####################################
 !############################################################
@@ -298,49 +298,49 @@ END SUBROUTINE TO_DEG
 !> @date 06/Nov/2013
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE LENGTH_AU(this)
-   IMPLICIT NONE
+subroutine LENGTH_AU(this)
+   implicit none
    ! I/O variables
-   CLASS(length), INTENT(INOUT) :: this
+   class(length), intent(inout) :: this
    ! Run section
-   SELECT CASE(this%units)
-      CASE("angst")
+   select case(this%units)
+      case("angst")
          this%mag = this%mag / au2angst
          this%units = "au"
-      CASE("au")
+      case("au")
          ! do nothing
-      CASE DEFAULT
-         WRITE(0,*) "TO_ANGST ERR: incorrect units"
-         WRITE(0,*) "Supported ones: angst, au"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END SUBROUTINE LENGTH_AU
+      case default
+         write(0,*) "TO_ANGST ERR: incorrect units"
+         write(0,*) "Supported ones: angst, au"
+         call EXIT(1)
+   end select
+   return
+end subroutine LENGTH_AU
 !###########################################################
 !# SUBROUTINE: TO_ANGST_LENGTH 
 !###########################################################
 !> @brief
 !! simple units change function. From au to angstroem units
 !-----------------------------------------------------------
-SUBROUTINE TO_ANGST_LENGTH(this)
+subroutine TO_ANGST_LENGTH(this)
    ! Initial declarations     
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Length),INTENT(INOUT):: this
+   class(Length),intent(inout):: this
    ! Run section
-   SELECT CASE(this%units)
-      CASE('angst','Angst')
+   select case(this%units)
+      case('angst','Angst')
          ! do nothing
-      CASE('au','bohr','bohrs','Bohr','Bohrs')
+      case('au','bohr','bohrs','Bohr','Bohrs')
          this%mag = this%mag*au2angst
          this%units = "angst"
-      CASE DEFAULT
-         WRITE(0,*) "TO_ANGST ERR: incorrect units"
-         WRITE(0,*) "Supported ones: angst, au"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END SUBROUTINE TO_ANGST_LENGTH
+      case default
+         write(0,*) "TO_ANGST ERR: incorrect units"
+         write(0,*) "Supported ones: angst, au"
+         call EXIT(1)
+   end select
+   return
+end subroutine TO_ANGST_LENGTH
 !###########################################################
 !# SUBROUTINE: TO_CELSIUS_UNITS
 !###########################################################
@@ -417,27 +417,28 @@ end subroutine mass_au
 !> @date 06/Nov/2013
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE ENERGY_AU(this)
-        IMPLICIT NONE
-        ! I/O variables
-        CLASS(energy), INTENT(INOUT) :: this
-        ! GO, GO, GO !!!
-        IF (this%units.EQ."ev") THEN
-                this%mag = this%mag/au2ev
-        ELSE IF (this%units.EQ."kcalmol") THEN
-                this%mag = this%mag/au2kcalmol
-        ELSE IF (this%units.EQ."kjmol") THEN
-                this%mag = this%mag/au2kjmol
-        ELSE IF (this%units.EQ."au") THEN
-                RETURN
-        ELSE
-                WRITE(0,*) "ENERGY_AU ERR: incorrect units"
-                WRITE(0,*) "Supported ones: ev, kcalmol, kjmol, au"
-                CALL EXIT(1)
-        END IF
-        this%units = "au"
-        RETURN
-END SUBROUTINE ENERGY_AU
+subroutine ENERGY_AU(this)
+   implicit none
+   ! I/O variables
+   class(energy), intent(inout) :: this
+   ! GO, GO, GO !!!
+   select case ( this%units )
+   case('ev','eV','electronVolts','electronvolts')
+      this%mag = this%mag/au2ev
+   case('kcalmol')
+      this%mag = this%mag/au2kcalmol
+   case('kjmol')
+      this%mag = this%mag/au2kjmol
+   case('au')
+      return
+   case default
+      write(0,*) "ENERGY_AU ERR: incorrect units"
+      write(0,*) "Supported ones: ev, kcalmol, kjmol, au"
+      call EXIT(1)
+   end select
+   this%units = "au"
+   return
+end subroutine ENERGY_AU
 !############################################################
 !# SUBROUTINE: TIME_AU ######################################
 !############################################################
@@ -450,24 +451,24 @@ END SUBROUTINE ENERGY_AU
 !> @date 06/Nov/2013
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE TIME_AU(this)
+subroutine TIME_AU(this)
    ! Initial declarations
-        IMPLICIT NONE
+        implicit none
         ! I/O variables
-        CLASS(time), INTENT(INOUT) :: this
+        class(time), intent(inout) :: this
         ! GO, GO, GO !!!
-        IF (this%units.EQ."ps") THEN
+        if (this%units.eq."ps") then
                 this%mag = this%mag/au2ps
-        ELSE IF (this%units.EQ."fs") THEN
+        else if (this%units.eq."fs") then
                 this%mag = this%mag/au2fs
-        ELSE IF (this%units.EQ."au") THEN
-                RETURN
-        ELSE
-                WRITE(0,*) "TIME_AU ERR: incorrect units"
-                WRITE(0,*) "Supported ones: fs, ps, au"
-                CALL EXIT(1)
-        END IF
+        else if (this%units.eq."au") then
+                return
+        else
+                write(0,*) "TIME_AU ERR: incorrect units"
+                write(0,*) "Supported ones: fs, ps, au"
+                call EXIT(1)
+        end if
         this%units = "au"
-        RETURN
-END SUBROUTINE TIME_AU
-END MODULE UNITS_MOD
+        return
+end subroutine TIME_AU
+end module UNITS_MOD
