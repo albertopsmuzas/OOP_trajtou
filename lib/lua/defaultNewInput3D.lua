@@ -7,12 +7,16 @@
 --
 --*****************************************************
 -- New input block
-local newInput={
+local newInput3d={
   vacuumPot={0.0,'au'},
   rumplingList={units='au'},
-  gridInfo={nPoints=0,units='au',kind='Manual',
-    points={},
-  }, 
+  gridInfo={nPoints=0,units='au',kind='Manual',points={}}, 
+  pairpotFiles={}, -- should be given with the same order as in rumplingList
+  -- example: 
+  -- pairpotFiles={ {inp='fooRaw.dat',out='foo.dat'}, {inp='foo2Raw.dat',out='foo2.dat'}, etc. }
+  sitioFiles={},
+  -- example: 
+  -- sitioFiles={ {inp='fooRaw.dat',out='foo.dat'}, {inp='foo2Raw.dat',out='foo2.dat'}, etc. }
 }
 -- Output newInput
-return newInput
+return newInput3d

@@ -10,11 +10,11 @@
 program trajtouGenerateCRP3DInput
 ! Initial declarations
 use DEBUG_MOD
-use INPUTGEN_MOD, only: NewInput
+use NEWINPUT3D_MOD, only: NewInput3d
 implicit none
 ! Variables
 real(kind=4),dimension(2):: timeArr
-type(NewInput):: thisInput
+type(NewInput3d):: thisInput
 real(kind=4):: timer
 character(len=1024):: luaFile
 ! GABBA GABBA HEY! ===============================

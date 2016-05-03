@@ -8,7 +8,7 @@
 !
 !> @see pes_mod, surface_mod, interpol1d_mod
 !##########################################################
-MODULE CRP3D_MOD
+module CRP3D_MOD
    use PES_MOD
    use SYSTEM_MOD
    use CUBICSPLINES_MOD
@@ -22,7 +22,7 @@ MODULE CRP3D_MOD
    use DEBUG_MOD, only: VERBOSE_WRITE, DEBUG_WRITE
 #endif
 ! Initial declarations
-IMPLICIT NONE
+implicit none
 !/////////////////////////////////////////////////////////////////
 ! TYPE: CRP3D_details
 !> @brief
@@ -41,19 +41,19 @@ IMPLICIT NONE
 !> @date Jul/2014
 !> @version 1.0
 !----------------------------------------------------------------
-TYPE :: CRP3D_details
-PRIVATE
-   REAL(KIND=8):: vasint 
-   REAL(KIND=8):: dfin 
-   INTEGER(KIND=4):: nrumpling 
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: rumpling 
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE :: zeropos 
-   INTEGER(KIND=4) :: nzgrid 
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: zgrid 
-   REAL(KIND=8):: first, last 
-   CONTAINS
-      PROCEDURE,PUBLIC :: READ => READ_CRP3D_details
-END TYPE CRP3D_details
+type :: CRP3D_details
+private
+   real(kind=8):: vasint 
+   real(kind=8):: dfin 
+   integer(kind=4):: nrumpling 
+   real(kind=8),dimension(:),allocatable:: rumpling 
+   integer(kind=4),dimension(:),allocatable :: zeropos 
+   integer(kind=4) :: nzgrid 
+   real(kind=8),dimension(:),allocatable :: zgrid 
+   real(kind=8):: first, last 
+   contains
+      procedure,public :: READ => READ_CRP3D_details
+end type CRP3D_details
 !///////////////////////////////////////////////////////////////////////////////
 ! TYPE: Symmetric point
 ! ---------------------
@@ -77,26 +77,27 @@ END TYPE CRP3D_details
 !> @version 1.0
 !> @date 21/Jan/2014
 !------------------------------------------------------------------------------
-TYPE :: Symmpoint
-   PRIVATE
-   CHARACTER(LEN=:),ALLOCATABLE:: filename
-   CHARACTER(LEN=:),ALLOCATABLE:: alias
-   INTEGER(KIND=4):: n
-   REAL(KIND=8):: x
-   REAL(KIND=8):: y
-   CHARACTER(LEN=10):: units_z
-   CHARACTER(LEN=10):: units_v
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: z
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: v
-   REAL(KIND=8):: dz1
-   REAL(KIND=8):: dz2
-   TYPE(Csplines),PUBLIC:: interz 
-   CONTAINS
-      PROCEDURE,PUBLIC:: READ_RAW => READ_SYMMPOINT_RAW
-      PROCEDURE,PUBLIC:: GET_SYMM_RAW => GET_SYMMETRIZED_RAW_INPUT
-      PROCEDURE,PUBLIC:: PLOT_DATA => PLOT_DATA_SYMMPOINT
-      PROCEDURE,PUBLIC:: PLOT => PLOT_INTERPOL_SYMMPOINT
-END TYPE Symmpoint
+type :: SymmPoint
+   ! private part
+   character(len=:),allocatable,private:: filename
+   character(len=:),allocatable,private:: alias
+   character(len=10),private:: units_z
+   character(len=10),private:: units_v
+   real(kind=8),dimension(:),allocatable,private:: v
+   real(kind=8),private:: dz1
+   real(kind=8),private:: dz2
+   ! public part
+   integer(kind=4),public:: n
+   real(kind=8),public:: x
+   real(kind=8),public:: y
+   real(kind=8),dimension(:),allocatable,public:: z
+   type(Csplines),public:: interz 
+   contains
+      procedure,public:: initializeRaw => initializeRaw_SymmPoint
+      procedure,public:: GET_SYMM_RAW => GET_SYMMETRIZED_RAW_INPUT
+      procedure,public:: PLOT_DATA => PLOT_DATA_SYMMPOINT
+      procedure,public:: PLOT => PLOT_INTERPOL_SYMMPOINT
+end type Symmpoint
 !///////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Pair potential  
 ! -----------------------
@@ -119,17 +120,17 @@ END TYPE Symmpoint
 !> @version 1.0
 !> @date 21/Jan/2014
 !------------------------------------------------------------------------------
-TYPE,EXTENDS(Symmpoint) :: Pair_pot
-   PRIVATE
-   INTEGER(KIND=4):: id 
-   REAL(KIND=8):: vasint
-	REAL(KIND=8):: rumpling
-   CONTAINS
+type,extends(SymmPoint) :: Pair_pot
+   private
+   integer(kind=4):: id 
+   real(kind=8):: vasint
+	real(kind=8):: rumpling
+   contains
       ! Initialization block
-      PROCEDURE,PUBLIC:: READ => READ_STANDARD_PAIRPOT
+      procedure,public:: READ => READ_STANDARD_PAIRPOT
       ! Tools block
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_PAIRPOT
-END TYPE Pair_pot
+      procedure,public:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_PAIRPOT
+end type Pair_pot
 !/////////////////////////////////////////////////////////////////////
 ! SUBTYPE: Sitio
 ! --------------
@@ -143,12 +144,12 @@ END TYPE Pair_pot
 !> @version 1.0
 !> @date 21/Jan/2014
 !------------------------------------------------------------------------------
-TYPE,EXTENDS(Symmpoint) :: Sitio
-   PRIVATE
-	REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: dvdx,dvdy,dvdz 
-   CONTAINS
-      PROCEDURE,PUBLIC:: READ => READ_STANDARD_SITIO
-END TYPE Sitio
+type,extends(Symmpoint) :: Sitio
+   private
+	real(kind=8),dimension(:),allocatable:: dvdx,dvdy,dvdz 
+   contains
+      procedure,public:: READ => READ_STANDARD_SITIO
+end type Sitio
 !////////////////////////////////////////////////////////////////////////////////
 ! SUBTYPE: CRP3D
 ! ------------
@@ -174,46 +175,46 @@ END TYPE Sitio
 !
 !> @see newinput
 !------------------------------------------------------------------------------
-TYPE,EXTENDS(PES) :: CRP3D
-   INTEGER(KIND=4):: max_order
-   TYPE(Pair_pot),DIMENSION(:),ALLOCATABLE:: all_pairpots
-   TYPE(Sitio),DIMENSION(:),ALLOCATABLE:: all_sites
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: kList
+type,extends(PES) :: CRP3D
+   integer(kind=4):: max_order
+   type(Pair_pot),dimension(:),allocatable:: all_pairpots
+   type(Sitio),dimension(:),allocatable:: all_sites
+   integer(kind=4),dimension(:,:),allocatable:: kList
    character(len=1),dimension(:),allocatable:: parityList
    character(len=2),dimension(:),allocatable:: irrepList
-   CLASS(Function1d),ALLOCATABLE:: dampfunc
-   CONTAINS
+   class(Function1d),allocatable:: dampfunc
+   contains
       ! Initialization block
-      PROCEDURE,PUBLIC:: READ => READ_CRP3D
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_CRP3D
+      procedure,public:: READ => READ_CRP3D
+      procedure,public:: INITIALIZE => INITIALIZE_CRP3D
       ! Get block 
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_CORRECTION => GET_V_AND_DERIVS_CORRECTION_CRP3D
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP3D
-      PROCEDURE,PUBLIC:: GET_REPUL_CORRECTIONS => GET_REPUL_CORRECTIONS_CRP3D
-      PROCEDURE,PUBLIC:: getpot => getpot_crp3d
-      PROCEDURE,PUBLIC:: getrumpling => getrumpling_CRP3D
+      procedure,public:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP3D
+      procedure,public:: GET_V_AND_DERIVS_CORRECTION => GET_V_AND_DERIVS_CORRECTION_CRP3D
+      procedure,public:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP3D
+      procedure,public:: GET_REPUL_CORRECTIONS => GET_REPUL_CORRECTIONS_CRP3D
+      procedure,public:: getpot => getpot_crp3d
+      procedure,public:: getrumpling => getrumpling_CRP3D
       ! Enquire block
-      PROCEDURE,PUBLIC:: is_allowed => is_allowed_CRP3D
+      procedure,public:: is_allowed => is_allowed_CRP3D
       ! Tools block
-      PROCEDURE,PUBLIC:: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
-      PROCEDURE,PUBLIC:: SMOOTH => SMOOTH_CRP3D
-      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_Z_CRP3D
-      PROCEDURE,PUBLIC:: RAWINTERPOL => RAWINTERPOL_Z_CRP3D
-      PROCEDURE,PUBLIC:: SET_FOURIER_SYMMETRY => SET_FOURIER_SYMMETRY_CRP3D
+      procedure,public:: EXTRACT_VASINT => EXTRACT_VASINT_CRP3D
+      procedure,public:: SMOOTH => SMOOTH_CRP3D
+      procedure,public:: INTERPOL => INTERPOL_Z_CRP3D
+      procedure,public:: RAWINTERPOL => RAWINTERPOL_Z_CRP3D
+      procedure,public:: SET_FOURIER_SYMMETRY => SET_FOURIER_SYMMETRY_CRP3D
       ! Plot tools
-      PROCEDURE,PUBLIC:: PLOT_XYMAP => PLOT_XYMAP_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_XYMAP_CORRECTION => PLOT_XYMAP_CORRECTION_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_DIRECTION1D_SMOOTH => PLOT_DIRECTION1D_SMOOTH_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_DIRECTION1D_CORRECTION => PLOT_DIRECTION1D_CORRECTION_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_SITIOS => PLOT_SITIOS_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_PAIRPOTS => PLOT_PAIRPOTS_CRP3D
-      PROCEDURE,PUBLIC:: PLOT_Z => PLOT_Z_CRP3D
-END TYPE CRP3D
+      procedure,public:: PLOT_XYMAP => PLOT_XYMAP_CRP3D
+      procedure,public:: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_CRP3D
+      procedure,public:: PLOT_XYMAP_CORRECTION => PLOT_XYMAP_CORRECTION_CRP3D
+      procedure,public:: PLOT_DIRECTION1D => PLOT_DIRECTION1D_CRP3D
+      procedure,public:: PLOT_DIRECTION1D_SMOOTH => PLOT_DIRECTION1D_SMOOTH_CRP3D
+      procedure,public:: PLOT_DIRECTION1D_CORRECTION => PLOT_DIRECTION1D_CORRECTION_CRP3D
+      procedure,public:: PLOT_SITIOS => PLOT_SITIOS_CRP3D
+      procedure,public:: PLOT_PAIRPOTS => PLOT_PAIRPOTS_CRP3D
+      procedure,public:: PLOT_Z => PLOT_Z_CRP3D
+end type CRP3D
 !///////////////////////////////////////////////////////////////////////////
-CONTAINS
+contains
 !###########################################################
 !# SUBROUTINE: READ_CRP3D_details 
 !###########################################################
@@ -224,99 +225,99 @@ CONTAINS
 !> @date Jul/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE READ_CRP3D_details(this,filename)
+subroutine READ_CRP3D_details(this,filename)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D_details),INTENT(OUT):: this
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   class(CRP3D_details),intent(out):: this
+   character(len=*),intent(in) :: filename
    ! WARNING: unit used to read
-   INTEGER(KIND=4) :: runit=233
+   integer(kind=4) :: runit=233
    ! Local variables
-   INTEGER(KIND=4) :: i,k ! counters
-   TYPE(Energy):: en
-   TYPE(Length):: len
-   REAL(KIND=8) :: raux,raux2
-   CHARACTER(LEN=10) :: units
-   CHARACTER(LEN=20),PARAMETER :: routinename="READ_CRP3D_details: "
-   CHARACTER(LEN=4) :: control
-   LOGICAL:: exists_zero
+   integer(kind=4) :: i,k ! counters
+   type(Energy):: en
+   type(Length):: len
+   real(kind=8) :: raux,raux2
+   character(len=10) :: units
+   character(len=20),parameter :: routinename="READ_CRP3D_details: "
+   character(len=4) :: control
+   logical:: exists_zero
    ! Run section
-   OPEN (runit,FILE=filename,STATUS="old",ACTION="read")
-   READ(runit,*) ! dummy line
-   READ(runit,*) raux,units
-   CALL en%READ(raux,units)
-   CALL en%TO_STD()
+   open (runit,file=filename,status="old",action="read")
+   read(runit,*) ! dummy line
+   read(runit,*) raux,units
+   call en%READ(raux,units)
+   call en%TO_STD()
    this%vasint=en%getvalue()
-   READ(runit,*) this%nrumpling
-   ALLOCATE(this%rumpling(this%nrumpling))
+   read(runit,*) this%nrumpling
+   allocate(this%rumpling(this%nrumpling))
    this%dfin = 0.D0
-   DO i=1,this%nrumpling
-      READ(runit,*) raux,units
-      CALL len%READ(raux,units)
-      CALL len%TO_STD()
+   do i=1,this%nrumpling
+      read(runit,*) raux,units
+      call len%READ(raux,units)
+      call len%TO_STD()
       this%rumpling(i)=len%getvalue()
-   END DO
+   end do
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Rumplings: ",this%rumpling(:))
+   call VERBOSE_WRITE(routinename,"Rumplings: ",this%rumpling(:))
 #endif
-   READ(runit,*) this%nzgrid,control,raux,raux2,units
-   ALLOCATE(this%zgrid(this%nzgrid))
-   CALL len%READ(raux,units)
-   CALL len%TO_STD()
+   read(runit,*) this%nzgrid,control,raux,raux2,units
+   allocate(this%zgrid(this%nzgrid))
+   call len%READ(raux,units)
+   call len%TO_STD()
    this%first=len%getvalue()
-   CALL len%READ(raux2,units)
-   CALL len%TO_STD()
+   call len%READ(raux2,units)
+   call len%TO_STD()
    this%last=len%getvalue()
-   SELECT CASE(control)
-      CASE("MANU") ! manual grid input
-         DO i = 1, this%nzgrid
-            READ(runit,*) raux
-            CALL len%READ(raux,units)
-            CALL len%TO_STD()
+   select case(control)
+      case("MANU") ! manual grid input
+         do i = 1, this%nzgrid
+            read(runit,*) raux
+            call len%READ(raux,units)
+            call len%TO_STD()
             this%zgrid(i)=len%getvalue()
-         END DO
-         CALL ORDER_VECT(this%zgrid)
-         ALLOCATE(this%zeropos(this%nrumpling))
-         FORALL(i=1:this%nrumpling) this%zeropos(i)=0
-         DO i=1,this%nzgrid
-            DO k=1,this%nrumpling
-               SELECT CASE(this%zgrid(i)==this%rumpling(k))
-                  CASE(.TRUE.)
+         end do
+         call ORDER_VECT(this%zgrid)
+         allocate(this%zeropos(this%nrumpling))
+         forall(i=1:this%nrumpling) this%zeropos(i)=0
+         do i=1,this%nzgrid
+            do k=1,this%nrumpling
+               select case(this%zgrid(i)==this%rumpling(k))
+                  case(.true.)
                      this%zeropos(k)=i
-                  CASE(.FALSE.)
+                  case(.false.)
                      ! do nothing
-               END SELECT
-            END DO
-         END DO
-         exists_zero=.TRUE.
-         DO k=1,this%nrumpling
-            SELECT CASE(this%zeropos(k))
-               CASE(0)
-                  exists_zero=.FALSE.
-               CASE DEFAULT
+               end select
+            end do
+         end do
+         exists_zero=.true.
+         do k=1,this%nrumpling
+            select case(this%zeropos(k))
+               case(0)
+                  exists_zero=.false.
+               case default
                   ! do nothing
-            END SELECT
-         END DO
-         SELECT CASE(exists_zero)
-            CASE(.FALSE.)
-               WRITE(0,*) "READ_CRP3D_details ERR: Manual grid does not have a rumpling point in the grid"
-               CALL EXIT(1)
-            CASE(.TRUE.)
+            end select
+         end do
+         select case(exists_zero)
+            case(.false.)
+               write(0,*) "READ_CRP3D_details ERR: Manual grid does not have a rumpling point in the grid"
+               call EXIT(1)
+            case(.true.)
                ! do nothing
-         END SELECT
+         end select
       !
-      CASE DEFAULT
-         WRITE(0,*) "READ_CRP3D_details ERR: wrong grid control keyword"
-         WRITE(0,*) "You geave: ", control
-         WRITE(0,*) "Implemented ones: MANU"
-         WRITE(0,*) "Warning: case-sensitive"
-         CALL EXIT(1)
-   END SELECT
+      case default
+         write(0,*) "READ_CRP3D_details ERR: wrong grid control keyword"
+         write(0,*) "You geave: ", control
+         write(0,*) "Implemented ones: MANU"
+         write(0,*) "Warning: case-sensitive"
+         call EXIT(1)
+   end select
 
-   CLOSE(runit)
-   RETURN
-END SUBROUTINE READ_CRP3D_details
+   close(runit)
+   return
+end subroutine READ_CRP3D_details
 !###########################################################
 !# SUBROUTINE: SET_FOURIER_SYMMETRY_CRP3D
 !###########################################################
@@ -328,24 +329,24 @@ END SUBROUTINE READ_CRP3D_details
 !> @date Jul/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SET_FOURIER_SYMMETRY_CRP3D(this,interpolxy)
+subroutine SET_FOURIER_SYMMETRY_CRP3D(this,interpolxy)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(IN):: this
-   CLASS(Fourier2d),ALLOCATABLE,INTENT(INOUT):: interpolxy
+   class(CRP3D),intent(in):: this
+   class(Fourier2d),allocatable,intent(inout):: interpolxy
    ! Run section
-   SELECT CASE(system_surface%getsymmlabel())
-      CASE("p4mm")
-         ALLOCATE(Fourierp4mm::interpolxy)
-      CASE DEFAULT
-         WRITE(0,*) "SET_FOURIER_SYMMETRY_CRP3D ERR: Incorrect surface symmlabel"
-         WRITE(0,*) "Used: ",system_surface%getsymmlabel()
-         WRITE(0,*) "Implemented ones: p4mm, p6mm"
-         CALL EXIT(1)
-   END SELECT
-   RETURN
-END SUBROUTINE SET_FOURIER_SYMMETRY_CRP3D
+   select case(system_surface%getsymmlabel())
+      case("p4mm")
+         allocate(Fourierp4mm::interpolxy)
+      case default
+         write(0,*) "SET_FOURIER_SYMMETRY_CRP3D ERR: Incorrect surface symmlabel"
+         write(0,*) "Used: ",system_surface%getsymmlabel()
+         write(0,*) "Implemented ones: p4mm, p6mm"
+         call EXIT(1)
+   end select
+   return
+end subroutine SET_FOURIER_SYMMETRY_CRP3D
 !###########################################################
 !# SUBROUTINE: INITIALIZE_CRP3D 
 !###########################################################
@@ -361,30 +362,30 @@ END SUBROUTINE SET_FOURIER_SYMMETRY_CRP3D
 !> @date Jun/2014 
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INITIALIZE_CRP3D(this,filename,tablename)
+subroutine INITIALIZE_CRP3D(this,filename,tablename)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(OUT):: this
-   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename,tablename
+   class(CRP3D),intent(out):: this
+   character(len=*),optional,intent(in):: filename,tablename
    ! Local variables
-   CHARACTER(LEN=:),ALLOCATABLE:: auxstring
+   character(len=:),allocatable:: auxstring
    ! Run section
-   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
-      CASE(.TRUE.)
+   select case(allocated(system_inputfile) .or. .not.present(filename))
+      case(.true.)
          auxstring=trim(system_inputfile)
-      CASE(.FALSE.)
+      case(.false.)
          auxstring=trim(filename)
-   END SELECT
-   SELECT CASE(present(tablename))
-      CASE(.TRUE.) ! present tablename
-         CALL this%READ(filename=trim(auxstring),tablename=trim(tablename))
-      CASE(.FALSE.) ! not present tablename
-         CALL this%READ(filename=trim(auxstring),tablename='pes')
-   END SELECT
-   CALL this%INTERPOL()
-   RETURN
-END SUBROUTINE INITIALIZE_CRP3D
+   end select
+   select case(present(tablename))
+      case(.true.) ! present tablename
+         call this%READ(filename=trim(auxstring),tablename=trim(tablename))
+      case(.false.) ! not present tablename
+         call this%READ(filename=trim(auxstring),tablename='pes')
+   end select
+   call this%INTERPOL()
+   return
+end subroutine INITIALIZE_CRP3D
 !###########################################################
 !# SUBROUTINE: GET_REPUL_CORRECTIONS_CRP3D 
 !###########################################################
@@ -395,37 +396,37 @@ END SUBROUTINE INITIALIZE_CRP3D
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_REPUL_CORRECTIONS_CRP3D(this,P,v,dvdz,dvdx,dvdy)
+subroutine GET_REPUL_CORRECTIONS_CRP3D(this,P,v,dvdz,dvdx,dvdy)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(3),INTENT(IN) :: P
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdx,dvdy,dvdz ! corrections to the derivatives
+   class(CRP3D),intent(in) :: this
+   real(kind=8),dimension(3),intent(in) :: P
+   real(kind=8),dimension(:),intent(out) :: v
+   real(kind=8),dimension(:),intent(out):: dvdx,dvdy,dvdz ! corrections to the derivatives
    ! Local variables
-   INTEGER(KIND=4) :: npairpots
-   INTEGER(KIND=4) :: l,k ! counters
-   REAL(KIND=8) :: aux1,aux2,aux3,aux4
+   integer(kind=4) :: npairpots
+   integer(kind=4) :: l,k ! counters
+   real(kind=8) :: aux1,aux2,aux3,aux4
    ! Run section
    npairpots=size(this%all_pairpots)
-   FORALL(l=1:npairpots)
+   forall(l=1:npairpots)
       v(l)=0.D0
       dvdz(l)=0.D0
       dvdx(l)=0.D0
       dvdy(l)=0.D0
-   END FORALL
-   DO l = 1, npairpots
-      DO k = 0, this%max_order
-         CALL INTERACTION_AENV(k,P,this%all_pairpots(l),this%dampfunc,aux1,aux2,aux3,aux4)
+   end forall
+   do l = 1, npairpots
+      do k = 0, this%max_order
+         call INTERACTION_AENV(k,P,this%all_pairpots(l),this%dampfunc,aux1,aux2,aux3,aux4)
          v(l)=v(l)+aux1
          dvdz(l)=dvdz(l)+aux2
          dvdx(l)=dvdx(l)+aux3
          dvdy(l)=dvdy(l)+aux4
-      END DO
-   END DO
-   RETURN
-END SUBROUTINE GET_REPUL_CORRECTIONS_CRP3D
+      end do
+   end do
+   return
+end subroutine GET_REPUL_CORRECTIONS_CRP3D
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_PAIRPOT 
 !###########################################################
@@ -436,23 +437,23 @@ END SUBROUTINE GET_REPUL_CORRECTIONS_CRP3D
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_PAIRPOT(this,x,v,dvdu)
+subroutine GET_V_AND_DERIVS_PAIRPOT(this,x,v,dvdu)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Pair_pot),INTENT(IN):: this
-   REAL(KIND=8),INTENT(IN) :: x
-   REAL(KIND=8),INTENT(OUT) :: v,dvdu
+   class(Pair_pot),intent(in):: this
+   real(kind=8),intent(in) :: x
+   real(kind=8),intent(out) :: v,dvdu
    ! Run section
-   SELECT CASE(X>this%z(this%n)-this%rumpling)
-      CASE(.TRUE.)
+   select case(X>this%z(this%n)-this%rumpling)
+      case(.true.)
          v=0.D0
          dvdu=0.D0
-      CASE(.FALSE.)
-         CALL this%interz%GET_V_AND_DERIVS(x,v,dvdu,this%rumpling)
-   END SELECT
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_PAIRPOT
+      case(.false.)
+         call this%interz%GET_V_AND_DERIVS(x,v,dvdu,this%rumpling)
+   end select
+   return
+end subroutine GET_V_AND_DERIVS_PAIRPOT
 !###########################################################
 !# FUNCTION: getrumpling_CRP3D 
 !###########################################################
@@ -463,18 +464,18 @@ END SUBROUTINE GET_V_AND_DERIVS_PAIRPOT
 !> @date MAy/2014
 !> @version 1.0
 !-----------------------------------------------------------
-REAL(KIND=8) FUNCTION getrumpling_CRP3D(this,toptype) 
+real(kind=8) function getrumpling_CRP3D(this,toptype) 
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(IN):: this
-   INTEGER(KIND=4),INTENT(IN) :: toptype
+   class(CRP3D),intent(in):: this
+   integer(kind=4),intent(in) :: toptype
    ! Run section
    getrumpling_CRP3D=this%all_pairpots(toptype)%rumpling
-   RETURN
-END FUNCTION getrumpling_CRP3D
+   return
+end function getrumpling_CRP3D
 !######################################################################
-! SUBROUTINE: READ_SYMMPOINT_RAW ######################################
+! SUBROUTINE: initializeRaw_SymmPoint #################################
 !######################################################################
 !> @brief 
 !! Initializes all data contained in a generic Symmpoint type variable 
@@ -499,57 +500,65 @@ END FUNCTION getrumpling_CRP3D
 !!    -# lines 4~4+N: @b real(kind=8),@b real(kind=8); cuples @f$(Z_{i},V(Z_{i}))@f$. They should
 !!                    be consistent with the previous choice of units. There is no need of a specific ordering
 !!                    of the data
+!!
+!! - This way of initializing a generic SymmPoint sets dz2=0.d0
 !
 !> @see units_mod, debug_mod, maths_mod
 !---------------------------------------------------------------------- 
-SUBROUTINE READ_SYMMPOINT_RAW(symmraw,filename)
-   IMPLICIT NONE
+subroutine initializeRaw_SymmPoint(this,fileName)
+   implicit none
    ! I/O Variables ----------------
-   CLASS(Symmpoint),INTENT(INOUT) :: symmraw
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   class(SymmPoint),intent(inout):: this
+   character(len=*),intent(in):: fileName
    ! Local variables
-   INTEGER :: i ! Counter
-   REAL(KIND=8) :: aux_r1, aux_r2
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: aux_v1,aux_v2
-   CHARACTER(LEN=20), PARAMETER :: routinename = "READ_SYMMPOINT_RAW: "
-   TYPE(Length) :: x,y,z
-   TYPE(Energy) :: v
-   CHARACTER(LEN=10) :: units1,units2
+   integer:: i ! Counter
+   real(kind=8):: aux_r1, aux_r2
+   real(kind=8),dimension(:),allocatable :: aux_v1,aux_v2
+   character(len=20),parameter:: routinename = "READ_SYMMPOINT_RAW: "
+   type(Length):: x,y,z
+   type(Energy):: v
+   character(len=10):: units1,units2
    ! FIRE IN THE HOLE!
-   symmraw%filename=filename
-   OPEN(10,FILE=symmraw%filename,STATUS="OLD")
-      READ(10,*) aux_r1,aux_r2,units1
-      CALL x%READ(aux_r1,units1)
-      CALL y%READ(aux_r2,units1)
-      symmraw%x = x%getvalue()
-      symmraw%y = y%getvalue()
+   this%filename=filename
+   open(10,file=this%filename,status="OLD")
+      read(10,*) aux_r1,aux_r2,units1
+      call x%READ(aux_r1,units1)
+      call y%READ(aux_r2,units1)
+      this%x = x%getvalue()
+      this%y = y%getvalue()
       ! ------
-      READ(10,*) symmraw%n
-      READ(10,*) units1, units2
-      ALLOCATE(symmraw%v(symmraw%n))
-      ALLOCATE(symmraw%z(symmraw%n))
-      ALLOCATE(aux_v1(symmraw%n))
-      ALLOCATE(aux_v2(symmraw%n))
-      DO i=1,symmraw%n
-         READ(10,*) aux_r1,aux_r2
-         CALL z%READ(aux_r1,units1)
-         CALL v%READ(aux_r2,units2)
-         CALL z%TO_STD() ! go to standard units (a.u.)
-         CALL v%TO_STD() ! go to standard units (a.u.)
+      read(10,*) this%n
+      read(10,*) units1, units2
+      allocate(this%v(this%n))
+      allocate(this%z(this%n))
+      allocate(aux_v1(this%n))
+      allocate(aux_v2(this%n))
+      do i=1,this%n
+         read(10,*) aux_r1,aux_r2
+         call z%READ(aux_r1,units1)
+         call v%READ(aux_r2,units2)
+         call z%TO_STD() ! go to standard units (a.u.)
+         call v%TO_STD() ! go to standard units (a.u.)
          aux_v1(i) = z%getvalue()
          aux_v2(i) = v%getvalue()
-      END DO
-   CLOSE(10)
-   CALL ORDER(aux_v1,aux_v2) ! Should order Z(i) and V(i)
-   symmraw%z = aux_v1
-   symmraw%v = aux_v2
-   symmraw%units_z = z%getunits()
-   symmraw%units_v = v%getunits()
-   ! Write status message
+      end do
+   close(10)
+   call ORDER(aux_v1,aux_v2) ! Should order Z(i) and V(i)
+   this%z = aux_v1
+   this%v = aux_v2
+   this%units_z = z%getunits()
+   this%units_v = v%getunits()
+   ! Raw interpolation
+   call this%interZ%READ(x=this%z, f=this%v)
+   call this%interZ%INTERPOL(dz1=0.d0,id1=0,dz2=0.d0,id2=1)
+   this%dz1=this%interZ%getderiv2(x=this%z(1))
+   this%dz2=0.d0
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename, symmraw%filename, "Done")
+   ! Write status message
+   call VERBOSE_WRITE(routinename, symmraw%filename, "Done")
 #endif
-END SUBROUTINE READ_SYMMPOINT_RAW
+   return
+end subroutine initializeRaw_SymmPoint
 !###########################################################
 !# SUBROUTINE: READ_STANDARD_PAIRPOT #######################
 !###########################################################
@@ -582,40 +591,40 @@ END SUBROUTINE READ_SYMMPOINT_RAW
 !> @see 
 !! debug_mod
 !-----------------------------------------------------------
-SUBROUTINE READ_STANDARD_PAIRPOT(pairpot,filename)
+subroutine READ_STANDARD_PAIRPOT(pairpot,filename)
       ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables ------------------------------
-   CLASS(Pair_pot),INTENT(INOUT) :: pairpot
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   class(Pair_pot),intent(inout) :: pairpot
+   character(len=*),intent(in) :: filename
    ! Local variables ----------------------------
-   INTEGER :: i
-   CHARACTER(LEN=14), PARAMETER :: routinename = "READ_PAIRPOT: "
+   integer :: i
+   character(len=14), parameter :: routinename = "READ_PAIRPOT: "
    character(len=1024):: auxString
    ! Run section ---------------------------------
    pairpot%filename=filename
-   OPEN(10,FILE=pairpot%filename,STATUS='OLD')
-   READ(10,*) ! dummy line
-   READ(10,*) ! dummy line
-   READ(10,*) auxString
+   open(10,file=pairpot%filename,status='OLD')
+   read(10,*) ! dummy line
+   read(10,*) ! dummy line
+   read(10,*) auxString
    pairpot%alias=trim(auxString)
-   READ(10,*) pairpot%vasint
-   READ(10,*) pairpot%dz1
-   READ(10,*) pairpot%dz2
-   READ(10,*) pairpot%id,pairpot%rumpling
-   READ(10,*) pairpot%n
-   ALLOCATE(pairpot%z(1:pairpot%n))
-   ALLOCATE(pairpot%v(1:pairpot%n))
-   DO i=1, pairpot%n
-      READ(10,*) pairpot%z(i), pairpot%v(i)
-   END DO
-   CLOSE(10)
-   CALL pairpot%interz%READ(pairpot%z,pairpot%v)
+   read(10,*) pairpot%vasint
+   read(10,*) pairpot%dz1
+   read(10,*) pairpot%dz2
+   read(10,*) pairpot%id,pairpot%rumpling
+   read(10,*) pairpot%n
+   allocate(pairpot%z(1:pairpot%n))
+   allocate(pairpot%v(1:pairpot%n))
+   do i=1, pairpot%n
+      read(10,*) pairpot%z(i), pairpot%v(i)
+   end do
+   close(10)
+   call pairpot%interz%READ(pairpot%z,pairpot%v)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,pairpot%filename,pairpot%alias)
+      call VERBOSE_WRITE(routinename,pairpot%filename,pairpot%alias)
 #endif
-   RETURN
-END SUBROUTINE READ_STANDARD_PAIRPOT
+   return
+end subroutine READ_STANDARD_PAIRPOT
 !###########################################################
 !# SUBROUTINE: READ_STANDARD_SITIO #########################
 !###########################################################
@@ -644,38 +653,38 @@ END SUBROUTINE READ_STANDARD_PAIRPOT
 !!    -# line 8~8+N: @b real(kind=8),@b real(kind=8); couples @f$(Z_{i},V(Z_{i})), Z_{i}<Z_{i+1}@f$ in a.u.
 !
 !-----------------------------------------------------------
-SUBROUTINE READ_STANDARD_SITIO(site,filename)
-   IMPLICIT NONE
+subroutine READ_STANDARD_SITIO(site,filename)
+   implicit none
    ! I/O variables
-   CLASS(Sitio),INTENT(INOUT):: site
-   CHARACTER(LEN=*),INTENT(IN):: filename
+   class(Sitio),intent(inout):: site
+   character(len=*),intent(in):: filename
    ! Local variables
-   INTEGER:: i ! counter
-   CHARACTER(LEN=*),PARAMETER:: routinename = "READ_SITIO: "
+   integer:: i ! counter
+   character(len=*),parameter:: routinename = "READ_SITIO: "
    character(len=1024):: auxString
    !
    site%filename=filename
-   OPEN (10,file=site%filename,status="old")
-   READ(10,*) ! dummy line
-   READ(10,*) ! dummy line
-   READ(10,*) auxString
+   open (10,file=site%filename,status="old")
+   read(10,*) ! dummy line
+   read(10,*) ! dummy line
+   read(10,*) auxString
    site%alias=trim(auxString)
-   READ(10,*) site%x, site%y
-   READ(10,*) site%n
-   READ(10,*) site%dz1
-   READ(10,*) site%dz2
-   ALLOCATE(site%z(1:site%n))
-   ALLOCATE(site%v(1:site%n))
-   DO i=1, site%n
-      READ(10,*) site%z(i), site%v(i)
-   END DO
-   CLOSE(10)
-   CALL site%interz%READ(site%z,site%v)
+   read(10,*) site%x, site%y
+   read(10,*) site%n
+   read(10,*) site%dz1
+   read(10,*) site%dz2
+   allocate(site%z(1:site%n))
+   allocate(site%v(1:site%n))
+   do i=1, site%n
+      read(10,*) site%z(i), site%v(i)
+   end do
+   close(10)
+   call site%interz%READ(site%z,site%v)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,site%filename,site%alias)
+   call VERBOSE_WRITE(routinename,site%filename,site%alias)
 #endif
-   RETURN
-END SUBROUTINE READ_STANDARD_SITIO
+   return
+end subroutine READ_STANDARD_SITIO
 !####################################################################
 ! SUBROUTINE:  GET_SYMMETRIZED_RAW_INPUT ############################
 !####################################################################
@@ -704,45 +713,45 @@ END SUBROUTINE READ_STANDARD_SITIO
 !
 !> @see symmetrize, maths_mod, units_mod
 !--------------------------------------------------------------------
-SUBROUTINE GET_SYMMETRIZED_RAW_INPUT(symmraw,zero,vtop,filename)
-	IMPLICIT NONE
+subroutine GET_SYMMETRIZED_RAW_INPUT(symmraw,zero,vtop,filename)
+	implicit none
 	! I/O variable ---------------------------
-	CLASS(Symmpoint),INTENT(INOUT) :: symmraw
-   TYPE(Length),INTENT(INOUT) :: zero
-	TYPE(Energy),INTENT(INOUT) :: vtop
-	CHARACTER(LEN=*),INTENT(IN) :: filename 
+	class(Symmpoint),intent(inout) :: symmraw
+   type(Length),intent(inout) :: zero
+	type(Energy),intent(inout) :: vtop
+	character(len=*),intent(in) :: filename 
 	! Local variable -------------------------
-	REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: x,v
-	INTEGER :: n
-	INTEGER :: i ! Counter
-   CHARACTER(LEN=27),PARAMETER :: routinename="GEN_SYMMETRIZED_RAW_INPUT: "
+	real(kind=8),dimension(:),allocatable :: x,v
+	integer :: n
+	integer :: i ! Counter
+   character(len=27),parameter :: routinename="GEN_SYMMETRIZED_RAW_INPUT: "
 	! GABBA GABBA HEY! ------------------------
-	CALL zero%TO_STD()
-	CALL vtop%TO_STD()
-	CALL SYMMETRIZE(symmraw%n,symmraw%z,symmraw%v,zero%getvalue(),vtop%getvalue(),n,x,v)
-	DEALLOCATE(symmraw%z)
-	DEALLOCATE(symmraw%v)
+	call zero%TO_STD()
+	call vtop%TO_STD()
+	call SYMMETRIZE(symmraw%n,symmraw%z,symmraw%v,zero%getvalue(),vtop%getvalue(),n,x,v)
+	deallocate(symmraw%z)
+	deallocate(symmraw%v)
 	symmraw%n = n
-	ALLOCATE(symmraw%z(1:symmraw%n))
-	ALLOCATE(symmraw%v(1:symmraw%n))
-	DO i=1, symmraw%n
+	allocate(symmraw%z(1:symmraw%n))
+	allocate(symmraw%v(1:symmraw%n))
+	do i=1, symmraw%n
 		symmraw%z(i)=x(i)
 		symmraw%v(i)=v(i)
-	END DO
+	end do
 	! Store data in filename ----------------
-	OPEN(11,FILE=filename,STATUS="replace")
-	WRITE(11,*) symmraw%x, symmraw%y, ' au    <----(X,Y) location in a.u.'
-	WRITE(11,*) symmraw%n , " SYMM job with V(z) > (a.u.) ", vtop%getvalue()
-	WRITE(11,*) "au         au       <---- everything in a.u."
-	DO i=1, symmraw%n
-		WRITE(11,*) symmraw%z(i), symmraw%v(i)
-	END DO
-	CLOSE(11)
+	open(11,file=filename,status="replace")
+	write(11,*) symmraw%x, symmraw%y, ' au    <----(X,Y) location in a.u.'
+	write(11,*) symmraw%n , " SYMM job with V(z) > (a.u.) ", vtop%getvalue()
+	write(11,*) "au         au       <---- everything in a.u."
+	do i=1, symmraw%n
+		write(11,*) symmraw%z(i), symmraw%v(i)
+	end do
+	close(11)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Symmetrized input generated: ",filename)
+   call VERBOSE_WRITE(routinename,"Symmetrized input generated: ",filename)
 #endif
-	RETURN
-END SUBROUTINE GET_SYMMETRIZED_RAW_INPUT
+	return
+end subroutine GET_SYMMETRIZED_RAW_INPUT
 !###########################################################
 !# SUBROUTINE: READ_CRP3D
 !###########################################################
@@ -753,178 +762,178 @@ END SUBROUTINE GET_SYMMETRIZED_RAW_INPUT
 !> @date Dec/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE READ_CRP3D(this,filename,tablename)
-   IMPLICIT NONE
+subroutine READ_CRP3D(this,filename,tablename)
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(OUT) :: this 
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   CHARACTER(LEN=*),INTENT(IN):: tablename
+   class(CRP3D),intent(out) :: this 
+   character(len=*),intent(in) :: filename
+   character(len=*),intent(in):: tablename
    ! Local variables
-   INTEGER(KIND=4) :: n_pairpots,n_sites
-   CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: files_pairpots,files_sites
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param
-   INTEGER(KIND=4):: ierr
-   INTEGER(KIND=4) :: i ! counter
+   integer(kind=4) :: n_pairpots,n_sites
+   character(len=1024),dimension(:),allocatable:: files_pairpots,files_sites
+   real(kind=8),dimension(:),allocatable:: param
+   integer(kind=4):: ierr
+   integer(kind=4) :: i ! counter
    ! Lua-related variables
-   TYPE(flu_State):: conf ! Lua state
-   INTEGER(KIND=4):: pes_table,pairpot_table,sitio_table,dampfunc_table,param_table,fourier_table ! tables
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: subtables
+   type(flu_State):: conf ! Lua state
+   integer(kind=4):: pes_table,pairpot_table,sitio_table,dampfunc_table,param_table,fourier_table ! tables
+   integer(kind=4),dimension(:),allocatable:: subtables
    ! Auxiliar (dummy) variables
-   INTEGER(KIND=4):: auxint
-   CHARACTER(LEN=1024):: auxstring
+   integer(kind=4):: auxint
+   character(len=1024):: auxstring
    ! Parameters
-   CHARACTER(LEN=*),PARAMETER :: routinename="READ_CRP3D: "
+   character(len=*),parameter :: routinename="READ_CRP3D: "
    ! HEY HO!, LET'S GO!! ------------------
    ! Open Lua file
-   CALL OPEN_CONFIG_FILE(L=conf,filename=filename,ErrCode=ierr)
-   SELECT CASE(ierr)
-      CASE(0)
+   call OPEN_CONFIG_FILE(L=conf,filename=filename,ErrCode=ierr)
+   select case(ierr)
+      case(0)
          ! do nothing
-      CASE DEFAULT
-         WRITE(0,*) "READ_CRP3D ERR: error reading Lua config file: ",filename
-         CALL EXIT(1)
-   END SELECT
+      case default
+         write(0,*) "READ_CRP3D ERR: error reading Lua config file: ",filename
+         call EXIT(1)
+   end select
    ! Open PES table
-   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
+   call AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
    ! Set pestype (kind)
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
-   CALL this%SET_PESTYPE(trim(auxstring))
-   SELECT CASE(trim(auxstring))
-      CASE('CRP3D')
+   call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
+   call this%SET_PESTYPE(trim(auxstring))
+   select case(trim(auxstring))
+      case('CRP3D')
          ! do nothing
-      CASE DEFAULT
-         WRITE(0,*) "READ_CRP3D ERR: wrong type of PES. Expected: CRP3D. Encountered: "//trim(auxstring)
-         CALL EXIT(1)
-   END SELECT
+      case default
+         write(0,*) "READ_CRP3D ERR: wrong type of PES. Expected: CRP3D. Encountered: "//trim(auxstring)
+         call EXIT(1)
+   end select
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'Type of PES: '//trim(auxstring))
+   call VERBOSE_WRITE(routinename,'Type of PES: '//trim(auxstring))
 #endif
    ! Set alias (name)
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
-   CALL this%SET_ALIAS(trim(auxstring))
+   call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
+   call this%SET_ALIAS(trim(auxstring))
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'PES Name: '//trim(auxstring))
+   call VERBOSE_WRITE(routinename,'PES Name: '//trim(auxstring))
 #endif
    ! Set dimensions
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
-   CALL this%SET_DIMENSIONS(auxint)
+   call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
+   call this%SET_DIMENSIONS(auxint)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
+   call VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
 #endif
    ! Set max environment
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='maxEnvironment',val=auxint)
+   call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='maxEnvironment',val=auxint)
    this%max_order=auxint
    ! Set pair potentials
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=pairpot_table,key='pairPotentials')
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=pairpot_table,key='pairPotentials')
    n_pairpots=aot_table_length(L=conf,thandle=pairpot_table)
-   ALLOCATE(files_pairpots(n_pairpots))
-   ALLOCATE(this%all_pairpots(n_pairpots))
-   DO i = 1, n_pairpots
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pairpot_table,pos=i,val=files_pairpots(i))
-      CALL this%all_pairpots(i)%READ(trim(files_pairpots(i)))
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=pairpot_table)
+   allocate(files_pairpots(n_pairpots))
+   allocate(this%all_pairpots(n_pairpots))
+   do i = 1, n_pairpots
+      call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pairpot_table,pos=i,val=files_pairpots(i))
+      call this%all_pairpots(i)%READ(trim(files_pairpots(i)))
+   end do
+   call AOT_TABLE_CLOSE(L=conf,thandle=pairpot_table)
    ! Set damping function
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=dampfunc_table,key='dampFunction')
-   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=dampfunc_table,key='kind',val=auxstring)
-   SELECT CASE(trim(auxstring))
-      CASE("Logistic")
-         ALLOCATE(Logistic_func::this%dampfunc)
-         ALLOCATE(param(2))
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=dampfunc_table,key='dampFunction')
+   call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=dampfunc_table,key='kind',val=auxstring)
+   select case(trim(auxstring))
+      case("Logistic")
+         allocate(Logistic_func::this%dampfunc)
+         allocate(param(2))
          ! open param table
-         CALL AOT_TABLE_OPEN(L=conf,parent=dampfunc_table,thandle=param_table,key='param')
+         call AOT_TABLE_OPEN(L=conf,parent=dampfunc_table,thandle=param_table,key='param')
          auxint=aot_table_length(L=conf,thandle=param_table)
-         SELECT CASE(auxint/=2) 
-            CASE(.TRUE.)
-               WRITE(0,*) "READ_CRP3D ERR: wrong number of parameters in pes.dampFunc.param table"
-               CALL EXIT(1)
-            CASE(.FALSE.)
+         select case(auxint/=2) 
+            case(.true.)
+               write(0,*) "READ_CRP3D ERR: wrong number of parameters in pes.dampFunc.param table"
+               call EXIT(1)
+            case(.false.)
                ! do nothing
-         END SELECT
-         DO i = 1, 2
-            CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=i,val=param(i))
-         END DO
-         CALL this%dampfunc%READ(param)
-         CALL AOT_TABLE_CLOSE(L=conf,thandle=param_table)
-      CASE("fullCRP")
-         ALLOCATE(One_func::this%dampfunc)
-      CASE("fullRaw")
-         ALLOCATE(Zero_func::this%dampfunc)
-      CASE DEFAULT
-         WRITE(0,*) "READ_CRP3D ERR: dampfunction keyword is not implemented"
-         WRITE(0,*) "Implemented ones: Logistic, fullCRP, fullRaw"
-         WRITE(0,*) "Case sensitive"
-         CALL EXIT(1)
-   END SELECT
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
+         end select
+         do i = 1, 2
+            call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=i,val=param(i))
+         end do
+         call this%dampfunc%READ(param)
+         call AOT_TABLE_CLOSE(L=conf,thandle=param_table)
+      case("fullCRP")
+         allocate(One_func::this%dampfunc)
+      case("fullRaw")
+         allocate(Zero_func::this%dampfunc)
+      case default
+         write(0,*) "READ_CRP3D ERR: dampfunction keyword is not implemented"
+         write(0,*) "Implemented ones: Logistic, fullCRP, fullRaw"
+         write(0,*) "Case sensitive"
+         call EXIT(1)
+   end select
+   call AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'Damping function used: '//trim(auxstring))
-   SELECT CASE(allocated(param))
-      CASE(.TRUE.)
-         CALL VERBOSE_WRITE(routinename,'Damping function parameters: ',param(:))
-      CASE(.FALSE.)
+   call VERBOSE_WRITE(routinename,'Damping function used: '//trim(auxstring))
+   select case(allocated(param))
+      case(.true.)
+         call VERBOSE_WRITE(routinename,'Damping function parameters: ',param(:))
+      case(.false.)
          ! do nothing
-   END SELECT
+   end select
 #endif
    ! Set sitios
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=sitio_table,key='sitios')
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=sitio_table,key='sitios')
    n_sites=aot_table_length(L=conf,thandle=sitio_table)
-   ALLOCATE(files_sites(n_sites))
-   ALLOCATE(this%all_sites(n_sites))
-   DO i = 1, n_sites
-      CALl AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=sitio_table,pos=i,val=files_sites(i))
-      CALL this%all_sites(i)%READ(trim(files_sites(i))) 
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=sitio_table)
+   allocate(files_sites(n_sites))
+   allocate(this%all_sites(n_sites))
+   do i = 1, n_sites
+      call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=sitio_table,pos=i,val=files_sites(i))
+      call this%all_sites(i)%READ(trim(files_sites(i))) 
+   end do
+   call AOT_TABLE_CLOSE(L=conf,thandle=sitio_table)
    ! Read fourier Kpoints
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=fourier_table,key='fourierKpoints')
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=fourier_table,key='fourierKpoints')
    auxint=aot_table_length(L=conf,thandle=fourier_table)
    allocate( this%irrepList(auxInt) )
    allocate( this%parityList(auxInt) )
    this%irrepList(:)='A1'
    this%parityList(:)='+'
-   SELECT CASE(auxint/=n_sites)
-      CASE(.TRUE.)
-         WRITE(0,*) "READ_CRP3D ERR: dimension mismatch between fourierKpoints and number of sitios"
-         WRITE(0,*) 'Number of Fourier Kpoints: ',auxint
-         WRITE(0,*) 'Number of sitios: ',n_sites
-         CALL EXIT(1)
-      CASE(.FALSE.)
+   select case(auxint/=n_sites)
+      case(.true.)
+         write(0,*) "READ_CRP3D ERR: dimension mismatch between fourierKpoints and number of sitios"
+         write(0,*) 'Number of Fourier Kpoints: ',auxint
+         write(0,*) 'Number of sitios: ',n_sites
+         call EXIT(1)
+      case(.false.)
          ! do nothing
-   END SELECT
-   ALLOCATE(this%klist(n_sites,2))
-   ALLOCATE(subtables(n_sites))
-   DO i = 1, n_sites
-      CALL AOT_TABLE_OPEN(L=conf,parent=fourier_table,thandle=subtables(i),pos=i)
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=1,val=auxint)
+   end select
+   allocate(this%klist(n_sites,2))
+   allocate(subtables(n_sites))
+   do i = 1, n_sites
+      call AOT_TABLE_OPEN(L=conf,parent=fourier_table,thandle=subtables(i),pos=i)
+      call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=1,val=auxint)
       this%klist(i,1)=auxint
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=2,val=auxint)
+      call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=subtables(i),pos=2,val=auxint)
       this%klist(i,2)=auxint
-      CALL AOT_TABLE_CLOSE(L=conf,thandle=subtables(i))
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=fourier_table)
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=pes_table)
-   CALL CLOSE_CONFIG(conf)
+      call AOT_TABLE_CLOSE(L=conf,thandle=subtables(i))
+   end do
+   call AOT_TABLE_CLOSE(L=conf,thandle=fourier_table)
+   call AOT_TABLE_CLOSE(L=conf,thandle=pes_table)
+   call CLOSE_CONFIG(conf)
    ! VERBOSE PRINT 
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Maximum environmental order: ",this%max_order)
-   CALL VERBOSE_WRITE(routinename,"Number of pair potentials: ",n_pairpots)
-   CALL VERBOSE_WRITE(routinename,"Pair potentials input files:")
-   DO i = 1, n_pairpots
-      CALL VERBOSE_WRITE(routinename,trim(files_pairpots(i)))
-   END DO
-   CALL VERBOSE_WRITE(routinename,"Number of sitios: ",n_sites)
-   CALL VERBOSE_WRITE(routinename,"Sitios input files:")
-   DO i = 1, n_sites
-      CALL VERBOSE_WRITE(routinename,trim(files_sites(i)))
-   END DO
-   CALL VERBOSE_WRITE(routinename,"List of Kpoints for Fourier interpolation: ")
-   DO i = 1, n_sites
-      CALL VERBOSE_WRITE(routinename,this%klist(i,:))
-   END DO
+   call VERBOSE_WRITE(routinename,"Maximum environmental order: ",this%max_order)
+   call VERBOSE_WRITE(routinename,"Number of pair potentials: ",n_pairpots)
+   call VERBOSE_WRITE(routinename,"Pair potentials input files:")
+   do i = 1, n_pairpots
+      call VERBOSE_WRITE(routinename,trim(files_pairpots(i)))
+   end do
+   call VERBOSE_WRITE(routinename,"Number of sitios: ",n_sites)
+   call VERBOSE_WRITE(routinename,"Sitios input files:")
+   do i = 1, n_sites
+      call VERBOSE_WRITE(routinename,trim(files_sites(i)))
+   end do
+   call VERBOSE_WRITE(routinename,"List of Kpoints for Fourier interpolation: ")
+   do i = 1, n_sites
+      call VERBOSE_WRITE(routinename,this%klist(i,:))
+   end do
 #endif
-   RETURN
-END SUBROUTINE READ_CRP3D
+   return
+end subroutine READ_CRP3D
 !#######################################################################
 !# SUBROUTINE: EXTRACT_VASINT_CRP3D ######################################
 !#######################################################################
@@ -946,44 +955,44 @@ END SUBROUTINE READ_CRP3D
 !> @date 04/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------------------
-SUBROUTINE EXTRACT_VASINT_CRP3D(this)
+subroutine EXTRACT_VASINT_CRP3D(this)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(INOUT) :: this
+   class(CRP3D),intent(inout) :: this
    ! Local variables
-   INTEGER(KIND=4) :: npairpots, nsites
-   INTEGER(KIND=4) :: i,j ! counters
-   REAL(KIND=8) :: control_vasint
-   CHARACTER(LEN=22) :: routinename="EXTRACT_VASINT_CRP3D: "
+   integer(kind=4) :: npairpots, nsites
+   integer(kind=4) :: i,j ! counters
+   real(kind=8) :: control_vasint
+   character(len=22) :: routinename="EXTRACT_VASINT_CRP3D: "
    ! Run section ------------------------
    npairpots=size(this%all_pairpots)
    control_vasint=this%all_pairpots(1)%vasint
-   DO i = 1, npairpots
-      IF (this%all_pairpots(1)%vasint/=control_vasint) THEN
-         WRITE(0,*) "EXTRACT_VASINT_CRP3D ERR: Incoherences in vasint values found"
-         WRITE(0,*) "EXTRACT_VASINT_CRP3D ERR: vasint's value at pairpot",1,control_vasint
-         WRITE(0,*) "EXTRACT_VASINT_CRP3D ERR: vasint's value at pairpot",i,control_vasint
-         CALL EXIT(1)
-      END IF
-      DO j = 1, this%all_pairpots(i)%n
+   do i = 1, npairpots
+      if (this%all_pairpots(1)%vasint/=control_vasint) then
+         write(0,*) "EXTRACT_VASINT_CRP3D ERR: Incoherences in vasint values found"
+         write(0,*) "EXTRACT_VASINT_CRP3D ERR: vasint's value at pairpot",1,control_vasint
+         write(0,*) "EXTRACT_VASINT_CRP3D ERR: vasint's value at pairpot",i,control_vasint
+         call EXIT(1)
+      end if
+      do j = 1, this%all_pairpots(i)%n
          this%all_pairpots(i)%interz%f(j)=this%all_pairpots(i)%interz%f(j)-this%all_pairpots(i)%vasint
-      END DO
+      end do
 #ifdef DEBUG
-      CALL DEBUG_WRITE(routinename,"Vasint extracted from pair potential ",i)
+      call DEBUG_WRITE(routinename,"Vasint extracted from pair potential ",i)
 #endif
-   END DO
+   end do
    nsites=size(this%all_sites)
-   DO i = 1, nsites
-      DO j = 1, this%all_sites(i)%n
+   do i = 1, nsites
+      do j = 1, this%all_sites(i)%n
          this%all_sites(i)%interz%f(j)=this%all_sites(i)%interz%f(j)-this%all_pairpots(1)%vasint
-      END DO
+      end do
 #ifdef DEBUG
-      CALL DEBUG_WRITE(routinename,"Vasint extracted from pair site ",i)
+      call DEBUG_WRITE(routinename,"Vasint extracted from pair site ",i)
 #endif
-   END DO
-   RETURN
-END SUBROUTINE EXTRACT_VASINT_CRP3D
+   end do
+   return
+end subroutine EXTRACT_VASINT_CRP3D
 !############################################################
 ! SUBROUTINE: SMOOTH_CRP3D ####################################
 !############################################################
@@ -1004,41 +1013,41 @@ END SUBROUTINE EXTRACT_VASINT_CRP3D
 !
 !> @see extract_vasint_CRP3D, initialize_CRP3D_pes
 !-----------------------------------------------------------
-SUBROUTINE SMOOTH_CRP3D(this)
+subroutine SMOOTH_CRP3D(this)
    ! Initial declaraitons
-   IMPLICIT NONE
-   CLASS(CRP3D),INTENT(INOUT):: this
+   implicit none
+   class(CRP3D),intent(inout):: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(3):: A
-   INTEGER(KIND=4):: i,j ! counters
-   INTEGER(KIND=4):: npairpots,nsites
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: v,dvdzr,dummy
-   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_CRP3D: "
+   real(kind=8),dimension(3):: A
+   integer(kind=4):: i,j ! counters
+   integer(kind=4):: npairpots,nsites
+   real(kind=8),dimension(:),allocatable:: v,dvdzr,dummy
+   character(len=*),parameter:: routinename="SMOOTH_CRP3D: "
    ! Run section ----------
    nsites = size(this%all_sites)
    npairpots = size(this%all_pairpots)
-   ALLOCATE(v(npairpots))
-   ALLOCATE(dvdzr(npairpots))
-   ALLOCATE(dummy(npairpots))
-   DO i = 1, nsites ! loop over sites
+   allocate(v(npairpots))
+   allocate(dvdzr(npairpots))
+   allocate(dummy(npairpots))
+   do i = 1, nsites ! loop over sites
       A(1) = this%all_sites(i)%x
       A(2) = this%all_sites(i)%y
-      DO j = 1, this%all_sites(i)%n ! loop over pairs v,z
+      do j = 1, this%all_sites(i)%n ! loop over pairs v,z
          A(3)=this%all_sites(i)%z(j)
-         CALL this%GET_REPUL_CORRECTIONS(A,v,dvdzr,dummy,dummy)
+         call this%GET_REPUL_CORRECTIONS(A,v,dvdzr,dummy,dummy)
          this%all_sites(i)%interz%f(j)=this%all_sites(i)%interz%f(j)-sum(v)
-         IF (j.EQ.1) THEN
+         if (j.eq.1) then
             this%all_sites(i)%dz1=this%all_sites(i)%dz1-sum(dvdzr) ! correct first derivative
-         ELSE IF (j.EQ.this%all_sites(i)%n) THEN
+         else if (j.eq.this%all_sites(i)%n) then
             this%all_sites(i)%dz2=this%all_sites(i)%dz2-sum(dvdzr) ! correct first derivative
-         END IF
-      END DO
+         end if
+      end do
 #ifdef DEBUG
-      CALL VERBOSE_WRITE(routinename,"Site smoothed: ",i)
+      call VERBOSE_WRITE(routinename,"Site smoothed: ",i)
 #endif
-   END DO
-   RETURN
-END SUBROUTINE SMOOTH_CRP3D
+   end do
+   return
+end subroutine SMOOTH_CRP3D
 !############################################################
 ! SUBROUTINE: INTERPOL_Z_CRP3D ################################
 !############################################################
@@ -1052,32 +1061,32 @@ END SUBROUTINE SMOOTH_CRP3D
 !> @date 05/Feb/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INTERPOL_Z_CRP3D(this)
+subroutine INTERPOL_Z_CRP3D(this)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(INOUT) :: this
+   class(CRP3D),intent(inout) :: this
    ! Local variables
-   INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8) :: dz1,dz2
-   INTEGER(KIND=4) :: i ! counters
+   integer(kind=4) :: nsites,npairpots
+   real(kind=8) :: dz1,dz2
+   integer(kind=4) :: i ! counters
    ! Run secton------------------------
    nsites=size(this%all_sites)
    npairpots=size(this%all_pairpots)
-   CALL this%EXTRACT_VASINT()
-   DO i = 1, npairpots ! loop pairpots
+   call this%EXTRACT_VASINT()
+   do i = 1, npairpots ! loop pairpots
       dz1=this%all_pairpots(i)%dz1
       dz2=this%all_pairpots(i)%dz2
-      CALL this%all_pairpots(i)%interz%INTERPOL(dz1,1,dz2,1)
-   END DO
-   CALL this%SMOOTH()
-   DO i = 1, nsites
+      call this%all_pairpots(i)%interz%INTERPOL(dz1,1,dz2,1)
+   end do
+   call this%SMOOTH()
+   do i = 1, nsites
       dz1=this%all_sites(i)%dz1
       dz2=this%all_sites(i)%dz2
-      CALL this%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
-   END DO
-   RETURN
-END SUBROUTINE INTERPOL_Z_CRP3D
+      call this%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
+   end do
+   return
+end subroutine INTERPOL_Z_CRP3D
 !############################################################
 ! SUBROUTINE: RAWINTERPOL_Z_CRP3D ################################
 !############################################################
@@ -1091,31 +1100,31 @@ END SUBROUTINE INTERPOL_Z_CRP3D
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE RAWINTERPOL_Z_CRP3D(this)
+subroutine RAWINTERPOL_Z_CRP3D(this)
    ! Initial declarations
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D) :: this
+   class(CRP3D) :: this
    ! Local variables
-   INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8) :: dz1,dz2
-   INTEGER(KIND=4) :: i ! counters
+   integer(kind=4) :: nsites,npairpots
+   real(kind=8) :: dz1,dz2
+   integer(kind=4) :: i ! counters
    ! Run secton------------------------
    nsites=size(this%all_sites)
    npairpots=size(this%all_pairpots)
-   CALL this%EXTRACT_VASINT()
-   DO i = 1, npairpots ! loop pairpots
+   call this%EXTRACT_VASINT()
+   do i = 1, npairpots ! loop pairpots
       dz1=this%all_pairpots(i)%dz1
       dz2=this%all_pairpots(i)%dz2
-      CALL this%all_pairpots(i)%interz%INTERPOL(dz1,1,dz2,1)
-   END DO
-   DO i = 1, nsites
+      call this%all_pairpots(i)%interz%INTERPOL(dz1,1,dz2,1)
+   end do
+   do i = 1, nsites
       dz1=this%all_sites(i)%dz1
       dz2=this%all_sites(i)%dz2
-      CALL this%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
-   END DO
-   RETURN
-END SUBROUTINE RAWINTERPOL_Z_CRP3D
+      call this%all_sites(i)%interz%INTERPOL(dz1,1,dz2,1) 
+   end do
+   return
+end subroutine RAWINTERPOL_Z_CRP3D
 !##################################################################
 !# SUBROUTINE: INTERACTION_AP #####################################
 !##################################################################
@@ -1145,29 +1154,29 @@ END SUBROUTINE RAWINTERPOL_Z_CRP3D
 !
 !> @see extra documentation
 !------------------------------------------------------------------
-SUBROUTINE INTERACTION_AP(A,P,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_corr)
-   IMPLICIT NONE
+subroutine INTERACTION_AP(A,P,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_corr)
+   implicit none
    ! I/O VAriables --------------------------------------------
-   REAL(KIND=8),DIMENSION(3),INTENT(IN):: A, P
-   TYPE(Pair_pot),INTENT(IN):: pairpot
-   CLASS(Function1d),INTENT(IN):: dampfunc
-   REAL(KIND=8),INTENT(OUT):: interac,dvdz_corr,dvdx_corr,dvdy_corr
+   real(kind=8),dimension(3),intent(in):: A, P
+   type(Pair_pot),intent(in):: pairpot
+   class(Function1d),intent(in):: dampfunc
+   real(kind=8),intent(out):: interac,dvdz_corr,dvdx_corr,dvdy_corr
    ! Local variables ------------------------------------------
-   REAL(KIND=8):: r ! distance
-   REAL(KIND=8):: v,pre
-   REAL(KIND=8):: aux ! dv/dr
-   CHARACTER(LEN=*),PARAMETER:: routinename = "INTERACTION_AP: "
+   real(kind=8):: r ! distance
+   real(kind=8):: v,pre
+   real(kind=8):: aux ! dv/dr
+   character(len=*),parameter:: routinename = "INTERACTION_AP: "
    ! GABBA, GABBA HEY! ----------------------------------------
    ! Find the distance between A and P, in a.u.
    r=dsqrt((A(1)-P(1))**2.D0+(A(2)-P(2))**2.D0+(A(3)-P(3))**2.D0)
-   CALL pairpot%GET_V_AND_DERIVS(r,v,aux)
+   call pairpot%GET_V_AND_DERIVS(r,v,aux)
    interac=v*dampfunc%getvalue(r)
    pre=aux*dampfunc%getvalue(r)+v*dampfunc%getderiv(r)
    dvdz_corr=pre*(A(3)-P(3))/r
    dvdx_corr=pre*(A(1)-P(1))/r
    dvdy_corr=pre*(A(2)-P(2))/r
-   RETURN
-END SUBROUTINE INTERACTION_AP
+   return
+end subroutine INTERACTION_AP
 !##################################################################
 !# SUBROUTINE: INTERACTION_AENV ###################################
 !##################################################################
@@ -1189,46 +1198,46 @@ END SUBROUTINE INTERACTION_AP
 !> @date Feb/2014;Jun/2014
 !> @version 2.0
 !------------------------------------------------------------------
-SUBROUTINE INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+subroutine INTERACTION_AENV(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   INTEGER,INTENT(IN):: n
-   REAL(KIND=8),DIMENSION(3),INTENT(IN):: A
-   TYPE(Pair_pot),INTENT(IN):: pairpot
-   CLASS(Function1d),INTENT(IN):: dampfunc
-   REAL(KIND=8),INTENT(OUT):: interac, dvdz_term, dvdx_term, dvdy_term
+   integer,intent(in):: n
+   real(kind=8),dimension(3),intent(in):: A
+   type(Pair_pot),intent(in):: pairpot
+   class(Function1d),intent(in):: dampfunc
+   real(kind=8),intent(out):: interac, dvdz_term, dvdx_term, dvdy_term
    ! Run section
-   SELECT CASE(system_surface%getsymmlabel())
-      CASE("p4mm")
-         CALL INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
-      CASE("p6mm")
-         CALL INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
-      CASE DEFAULT
-         WRITE(0,*) "INTERACTION_AENV ERR: wrong surface symmlabel or it's not been implemented yet"
-         WRITE(0,*) "Surface reads: ",system_surface%getsymmlabel()
-         WRITE(0,*) "Implemented ones: p4mm, p6mm"
-         CALL EXIT(1)      
-   END SELECT
-   RETURN
-END SUBROUTINE INTERACTION_AENV
-SUBROUTINE INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
-   IMPLICIT NONE
+   select case(system_surface%getsymmlabel())
+      case("p4mm")
+         call INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+      case("p6mm")
+         call INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+      case default
+         write(0,*) "INTERACTION_AENV ERR: wrong surface symmlabel or it's not been implemented yet"
+         write(0,*) "Surface reads: ",system_surface%getsymmlabel()
+         write(0,*) "Implemented ones: p4mm, p6mm"
+         call EXIT(1)      
+   end select
+   return
+end subroutine INTERACTION_AENV
+subroutine INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+   implicit none
    ! I/O VAriables ------------------------------------------
-   INTEGER,INTENT(IN) :: n
-   REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
-   TYPE(Pair_pot),INTENT(IN) :: pairpot
-   CLASS(Function1d),INTENT(IN) :: dampfunc
-   REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
+   integer,intent(in) :: n
+   real(kind=8),dimension(3),intent(in) :: A
+   type(Pair_pot),intent(in) :: pairpot
+   class(Function1d),intent(in) :: dampfunc
+   real(kind=8),intent(out) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
-   REAL(KIND=8),DIMENSION(3) :: P
-   REAL(KIND=8),DIMENSION(3) :: ghost_A ! A in cartesians, but inside unitcell
-   REAL(KIND=8),DIMENSION(2) :: aux
-   REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
-   REAL(KIND=8) :: atomx, atomy
-   INTEGER :: pairid
-   INTEGER :: i, k ! Counters
-   CHARACTER(LEN=18), PARAMETER :: routinename = "INTERACTION_AENV: "
+   real(kind=8),dimension(3) :: P
+   real(kind=8),dimension(3) :: ghost_A ! A in cartesians, but inside unitcell
+   real(kind=8),dimension(2) :: aux
+   real(kind=8) :: dummy1, dummy2, dummy3, dummy4
+   real(kind=8) :: atomx, atomy
+   integer :: pairid
+   integer :: i, k ! Counters
+   character(len=18), parameter :: routinename = "INTERACTION_AENV: "
    ! SUSY IS A HEADBANGER !!!! -------------------
    ! Defining some aliases to make the program simpler:
    pairid = pairpot%id
@@ -1240,30 +1249,30 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
    ghost_A(1:2)=system_surface%project_unitcell(A(1:2))
    ghost_A(3)=A(3)
 
-   SELECT CASE(n)
-      CASE(0)
-         DO i=1, system_surface%atomtype(pairid)%n
+   select case(n)
+      case(0)
+         do i=1, system_surface%atomtype(pairid)%n
             P(:)=system_surface%atomtype(pairid)%atom(i,:)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac=interac+dummy1
             dvdz_term=dvdz_term+dummy2
             dvdx_term=dvdx_term+dummy3
             dvdy_term=dvdy_term+dummy4
-         END DO
-         RETURN
+         end do
+         return
 
-      CASE(1 :)
-         DO i=1, system_surface%atomtype(pairid)%n
+      case(1 :)
+         do i=1, system_surface%atomtype(pairid)%n
             atomx=system_surface%atomtype(pairid)%atom(i,1)
             atomy=system_surface%atomtype(pairid)%atom(i,2)
             P(3)=system_surface%atomtype(pairid)%atom(i,3)
-            DO k= -n,n
+            do k= -n,n
                aux(1)=dfloat(n)
                aux(2)=dfloat(k)
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac=interac+dummy1
                dvdz_term=dvdz_term+dummy2
                dvdx_term=dvdx_term+dummy3
@@ -1274,19 +1283,19 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
                dvdy_term = dvdy_term+dummy4
-            END DO
-            DO k= -n+1, n-1
+            end do
+            do k= -n+1, n-1
                aux(1)=dfloat(k)
                aux(2)=dfloat(n)
                aux=system_surface%surf2cart(aux)
                P(1) =atomx+aux(1)
                P(2) =atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1297,37 +1306,37 @@ SUBROUTINE INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
                dvdy_term = dvdy_term+dummy4
-            END DO
-         END DO
-         RETURN
+            end do
+         end do
+         return
 
-      CASE DEFAULT
-         WRITE(0,*) "INTERACTION_AENV ERR: Wrong environment order."
-         CALL EXIT(1)
-   END SELECT
-END SUBROUTINE INTERACTION_AENV_OCTA
-SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
-   IMPLICIT NONE
+      case default
+         write(0,*) "INTERACTION_AENV ERR: Wrong environment order."
+         call EXIT(1)
+   end select
+end subroutine INTERACTION_AENV_OCTA
+subroutine INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_term,dvdy_term)
+   implicit none
    ! I/O VAriables ------------------------------------------
-   INTEGER,INTENT(IN) :: n
-   REAL(KIND=8),DIMENSION(3),INTENT(IN) :: A
-   TYPE(Pair_pot),INTENT(IN) :: pairpot
-   CLASS(Function1d),INTENT(IN) :: dampfunc
-   REAL(KIND=8),INTENT(OUT) :: interac, dvdz_term, dvdx_term, dvdy_term
+   integer,intent(in) :: n
+   real(kind=8),dimension(3),intent(in) :: A
+   type(Pair_pot),intent(in) :: pairpot
+   class(Function1d),intent(in) :: dampfunc
+   real(kind=8),intent(out) :: interac, dvdz_term, dvdx_term, dvdy_term
    ! Local variables ----------------------------------------
-   REAL(KIND=8),DIMENSION(3) :: P
-   REAL(KIND=8),DIMENSION(3) :: ghost_A ! A in cartesians, but inside unitcell
-   REAL(KIND=8),DIMENSION(2) :: aux
-   REAL(KIND=8) :: dummy1, dummy2, dummy3, dummy4
-   REAL(KIND=8) :: atomx, atomy
-   INTEGER :: pairid
-   INTEGER :: i, k ! Counters
-   CHARACTER(LEN=18), PARAMETER :: routinename = "INTERACTION_AENV: "
+   real(kind=8),dimension(3) :: P
+   real(kind=8),dimension(3) :: ghost_A ! A in cartesians, but inside unitcell
+   real(kind=8),dimension(2) :: aux
+   real(kind=8) :: dummy1, dummy2, dummy3, dummy4
+   real(kind=8) :: atomx, atomy
+   integer :: pairid
+   integer :: i, k ! Counters
+   character(len=18), parameter :: routinename = "INTERACTION_AENV: "
    ! SUSY IS A HEADBANGER !!!! -------------------
    ! Defining some aliases to make the program simpler:
    pairid = pairpot%id
@@ -1338,19 +1347,19 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
    ! ghost A definition
    ghost_A(1:2)=system_surface%project_unitcell(A(1:2))
    ghost_A(3)=A(3)
-   SELECT CASE(n)
-      CASE(0)
-         DO i=1, system_surface%atomtype(pairid)%n
+   select case(n)
+      case(0)
+         do i=1, system_surface%atomtype(pairid)%n
             P(:)=system_surface%atomtype(pairid)%atom(i,:)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac=interac+dummy1
             dvdz_term=dvdz_term+dummy2
             dvdx_term=dvdx_term+dummy3
             dvdy_term=dvdy_term+dummy4
-         END DO
-         RETURN
-      CASE(1)
-         DO i=1, system_surface%atomtype(pairid)%n
+         end do
+         return
+      case(1)
+         do i=1, system_surface%atomtype(pairid)%n
             atomx=system_surface%atomtype(pairid)%atom(i,1)
             atomy=system_surface%atomtype(pairid)%atom(i,2)
             P(3)=system_surface%atomtype(pairid)%atom(i,3)
@@ -1361,7 +1370,7 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
             aux=system_surface%surf2cart(aux)
             P(1) =atomx+aux(1)
             P(2) =atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1372,7 +1381,7 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
             aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1383,7 +1392,7 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
             aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1394,7 +1403,7 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
             aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1405,7 +1414,7 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
             aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1416,25 +1425,25 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
             aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
             dvdy_term = dvdy_term+dummy4
-         END DO
-         RETURN
-      CASE(2 :)
-         DO i=1, system_surface%atomtype(pairid)%n
+         end do
+         return
+      case(2 :)
+         do i=1, system_surface%atomtype(pairid)%n
             atomx=system_surface%atomtype(pairid)%atom(i,1)
             atomy=system_surface%atomtype(pairid)%atom(i,2)
             P(3)=system_surface%atomtype(pairid)%atom(i,3)
-            DO k= 1,n-1
+            do k= 1,n-1
                aux(1)=dfloat(k)
                aux(2)=dfloat(n-k)
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac=interac+dummy1
                dvdz_term=dvdz_term+dummy2
                dvdx_term=dvdx_term+dummy3
@@ -1445,19 +1454,19 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
                dvdy_term = dvdy_term+dummy4
-            END DO
-            DO k= 0, n-1
+            end do
+            do k= 0, n-1
                aux(1)=dfloat(n)
                aux(2)=dfloat(-k)
                aux=system_surface%surf2cart(aux)
                P(1) =atomx+aux(1)
                P(2) =atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1468,7 +1477,7 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1479,7 +1488,7 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
@@ -1490,19 +1499,19 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
                aux=system_surface%surf2cart(aux)
                P(1)=atomx+aux(1)
                P(2)=atomy+aux(2)
-               CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+               call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
                interac = interac+dummy1
                dvdz_term = dvdz_term+dummy2
                dvdx_term = dvdx_term+dummy3
                dvdy_term = dvdy_term+dummy4
-            END DO
+            end do
             !
             aux(1)=dfloat(-n)
             aux(2)=dfloat(n)
             aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
@@ -1513,19 +1522,19 @@ SUBROUTINE INTERACTION_AENV_HEXA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
             aux=system_surface%surf2cart(aux)
             P(1)=atomx+aux(1)
             P(2)=atomy+aux(2)
-            CALL INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
+            call INTERACTION_AP(ghost_A,P,pairpot,dampfunc,dummy1,dummy2,dummy3,dummy4)
             interac = interac+dummy1
             dvdz_term = dvdz_term+dummy2
             dvdx_term = dvdx_term+dummy3
             dvdy_term = dvdy_term+dummy4
-         END DO
-         RETURN
+         end do
+         return
 
-      CASE DEFAULT
-         WRITE(0,*) "INTERACTION_AENV ERR: Wrong environment order."
-         CALL EXIT(1)
-   END SELECT
-END SUBROUTINE INTERACTION_AENV_HEXA
+      case default
+         write(0,*) "INTERACTION_AENV ERR: Wrong environment order."
+         call EXIT(1)
+   end select
+end subroutine INTERACTION_AENV_HEXA
 !############################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_CRP3D #########################
 !############################################################
@@ -1547,43 +1556,43 @@ END SUBROUTINE INTERACTION_AENV_HEXA
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu,errCode)
-   IMPLICIT NONE
+subroutine GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu,errCode)
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),TARGET,INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN):: X
-   REAL(KIND=8),INTENT(OUT):: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
+   class(CRP3D),target,intent(in):: this
+   real(kind=8),dimension(:),intent(in):: X
+   real(kind=8),intent(out):: v
+   real(kind=8),dimension(:),intent(out):: dvdu
    integer(kind=1),optional,intent(out):: errCode
    ! Local variables
-   INTEGER(KIND=4):: nsites,npairpots
-   CLASS(Fourier2d),ALLOCATABLE:: interpolxy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: pot,dvdz,dvdx,dvdy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: potarr
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f,derivarr ! arguments to the xy interpolation
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xy ! arguments to the xy interpolation
-   INTEGER :: i ! counters
+   integer(kind=4):: nsites,npairpots
+   class(Fourier2d),allocatable:: interpolxy
+   real(kind=8),dimension(:),allocatable:: pot,dvdz,dvdx,dvdy
+   real(kind=8),dimension(:),allocatable:: potarr
+   real(kind=8),dimension(:,:),allocatable:: f,derivarr ! arguments to the xy interpolation
+   real(kind=8),dimension(:,:),allocatable:: xy ! arguments to the xy interpolation
+   integer :: i ! counters
    ! Pointers
-	REAL(KIND=8),POINTER:: zmax
-   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP3D: "
+	real(kind=8),pointer:: zmax
+   character(len=*),parameter:: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%z(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
    ! GABBA, GABBA HEY! ----------------------
-   SELECT CASE(X(3)>zmax)
-      CASE(.TRUE.)
+   select case(X(3)>zmax)
+      case(.true.)
          dvdu = (/0.D0,0.D0,0.D0/)
          v = 0.D0
-         RETURN
-      CASE(.FALSE.)
+         return
+      case(.false.)
          ! do nothing
-   END SELECT
+   end select
    ! Initialization section
-   ALLOCATE(pot(npairpots))
-   ALLOCATE(dvdz(npairpots))
-   ALLOCATE(dvdx(npairpots))
-   ALLOCATE(dvdy(npairpots))
-   CALL this%GET_REPUL_CORRECTIONS(X,pot,dvdz,dvdx,dvdy)
+   allocate(pot(npairpots))
+   allocate(dvdz(npairpots))
+   allocate(dvdx(npairpots))
+   allocate(dvdy(npairpots))
+   call this%GET_REPUL_CORRECTIONS(X,pot,dvdz,dvdx,dvdy)
    v=sum(pot)
    dvdu(1)=sum(dvdx)
    dvdu(2)=sum(dvdy)
@@ -1593,32 +1602,32 @@ SUBROUTINE GET_V_AND_DERIVS_CRP3D(this,X,v,dvdu,errCode)
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
    ! f(1,i) ==> v values interpolated for Z at site "i"
    ! f(2,i) ==> dvdz values interpolated for Z at site "i"
-   ALLOCATE(f(2,nsites))
-   ALLOCATE(xy(nsites,2))
+   allocate(f(2,nsites))
+   allocate(xy(nsites,2))
    ! potarr(1) ==> v interpolated at X,Y for a given Z
    ! potarr(2) ==> dvdz interpolated at X,Y for a given Z
-   ALLOCATE(potarr(2))
+   allocate(potarr(2))
    ! derivarr(1,1:2) ==> dvdx, dvdy interpolated at X,Y
    ! derivarr(2,1:2) ==> d(dvdz)/dx, d(dvdz)/dy interpolated at X,Y. This is not needed
-   ALLOCATE(derivarr(2,2))
-   DO i=1,nsites
+   allocate(derivarr(2,2))
+   do i=1,nsites
       xy(i,1)=this%all_sites(i)%x
       xy(i,2)=this%all_sites(i)%y
-      CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
-   END DO
-   CALL this%SET_FOURIER_SYMMETRY(interpolxy)
-   CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
+      call this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
+   end do
+   call this%SET_FOURIER_SYMMETRY(interpolxy)
+   call interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
    call interpolXY%initializeTerms()
-   CALL interpolxy%INTERPOL()
-   CALL interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
+   call interpolxy%INTERPOL()
+   call interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    v = v + potarr(1)
    dvdu(1)=dvdu(1)+derivarr(1,1)
    dvdu(2)=dvdu(2)+derivarr(1,2)
    dvdu(3)=dvdu(3)+potarr(2)
    call interpolXY%cleanAll()
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_CRP3D
+   return
+end subroutine GET_V_AND_DERIVS_CRP3D
 !############################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_CORRECTION_CRP3D ############
 !############################################################
@@ -1640,53 +1649,53 @@ END SUBROUTINE GET_V_AND_DERIVS_CRP3D
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D(this,X,v,dvdu)
-   IMPLICIT NONE
+subroutine GET_V_AND_DERIVS_CORRECTION_CRP3D(this,X,v,dvdu)
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),TARGET,INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
+   class(CRP3D),target,intent(in) :: this
+   real(kind=8),dimension(3), intent(in) :: X
+   real(kind=8),dimension(:),intent(out) :: v
+   real(kind=8),dimension(3),intent(out) :: dvdu
    ! Local variables
-   INTEGER(KIND=4) :: npairpots
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dvdz,dvdx,dvdy
-   INTEGER :: i ! counters
+   integer(kind=4) :: npairpots
+   real(kind=8),dimension(:),allocatable :: pot,dvdz,dvdx,dvdy
+   integer :: i ! counters
    ! Pointers
-	REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
+	real(kind=8), pointer :: zmax
+   character(len=24),parameter :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
-   SELECT CASE(size(v)==npairpots+1)
-      CASE(.TRUE.)
+   select case(size(v)==npairpots+1)
+      case(.true.)
          ! do nothing
-      CASE(.FALSE.)
-         WRITE(*,*) "GET_V_AND_DERIVS_CORRECTION_CRP3D ERR: wrong number of dimensions array v"
-         CALL EXIT(1)
-   END SELECT
+      case(.false.)
+         write(*,*) "GET_V_AND_DERIVS_CORRECTION_CRP3D ERR: wrong number of dimensions array v"
+         call EXIT(1)
+   end select
    ! GABBA, GABBA HEY! ----------------------
-   SELECT CASE(X(3)>zmax)
-      CASE(.TRUE.)
+   select case(X(3)>zmax)
+      case(.true.)
          dvdu = (/0.D0,0.D0,0.D0/)
-         FORALL(i=1:npairpots+1) v(i) = 0.D0
-         RETURN
-      CASE(.FALSE.)
+         forall(i=1:npairpots+1) v(i) = 0.D0
+         return
+      case(.false.)
          ! do nothing
-   END SELECT
+   end select
    ! Initializing variables
-   ALLOCATE(pot(npairpots))
-   ALLOCATE(dvdz(npairpots))
-   ALLOCATE(dvdx(npairpots))
-   ALLOCATE(dvdy(npairpots))
-   FORALL(i=1:npairpots+1) v(i) = 0.D0
+   allocate(pot(npairpots))
+   allocate(dvdz(npairpots))
+   allocate(dvdx(npairpots))
+   allocate(dvdy(npairpots))
+   forall(i=1:npairpots+1) v(i) = 0.D0
    ! Compute
-   CALL this%GET_REPUL_CORRECTIONS(X,pot,dvdz,dvdx,dvdy)
+   call this%GET_REPUL_CORRECTIONS(X,pot,dvdz,dvdx,dvdy)
    v(1)=sum(pot)
-   FORALL(i=2:npairpots+1) v(i)=pot(i-1)
+   forall(i=2:npairpots+1) v(i)=pot(i-1)
    dvdu(1)=sum(dvdx)
    dvdu(2)=sum(dvdy)
    dvdu(3)=sum(dvdz)
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D
+   return
+end subroutine GET_V_AND_DERIVS_CORRECTION_CRP3D
 !############################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_SMOOTH_CRP3D #########################
 !############################################################
@@ -1709,67 +1718,67 @@ END SUBROUTINE GET_V_AND_DERIVS_CORRECTION_CRP3D
 !> @date Jun/2014
 !> @version 1.0
 !------------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
-   IMPLICIT NONE
+subroutine GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),TARGET,INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(3),INTENT(OUT) :: dvdu
+   class(CRP3D),target,intent(in) :: this
+   real(kind=8),dimension(3), intent(in) :: X
+   real(kind=8),intent(out) :: v
+   real(kind=8),dimension(3),intent(out) :: dvdu
    ! Local variables
-   CLASS(Fourier2d),ALLOCATABLE:: interpolxy
-   INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),DIMENSION(3) :: deriv
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-   INTEGER :: i ! counters
+   class(Fourier2d),allocatable:: interpolxy
+   integer(kind=4) :: nsites,npairpots
+   real(kind=8),dimension(3) :: deriv
+   real(kind=8),dimension(:),allocatable :: potarr
+   real(kind=8),dimension(:,:),allocatable :: f,derivarr ! arguments to the xy interpolation
+   real(kind=8),dimension(:,:),allocatable :: xy ! arguments to the xy interpolation
+   integer :: i ! counters
    ! Pointers
-	REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
+	real(kind=8), pointer :: zmax
+   character(len=24),parameter :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
    ! GABBA, GABBA HEY! ----------------------
-   IF (X(3).GT.zmax) THEN
+   if (X(3).gt.zmax) then
       dvdu = 0.D0
       v = 0.D0
-      RETURN
-   END IF
+      return
+   end if
    !
    v = 0.D0 ! Initialization value
-   FORALL(i=1:3) 
+   forall(i=1:3) 
       dvdu(i) = 0.D0 ! Initialization value
       deriv(i) = 0.D0 ! Initialization value
-   END FORALL 
+   end forall 
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
    ! f(1,i) ==> v values interpolated for Z at site "i"
    ! f(2,i) ==> dvdz values interpolated for Z at site "i"
-   ALLOCATE(f(2,nsites))
-   ALLOCATE(xy(nsites,2))
+   allocate(f(2,nsites))
+   allocate(xy(nsites,2))
    ! potarr(1) ==> v interpolated at X,Y for a given Z
    ! potarr(2) ==> dvdz interpolated at X,Y for a given Z
-   ALLOCATE(potarr(2))
+   allocate(potarr(2))
    ! derivarr(1,1:2) ==> dvdx, dvdy interpolated at X,Y
    ! derivarr(2,1:2) ==> d(dvdz)/dx, d(dvdz)/dy interpolated at X,Y. It is not needed
-   ALLOCATE(derivarr(2,2))
-   DO i=1,nsites
+   allocate(derivarr(2,2))
+   do i=1,nsites
       xy(i,1)=this%all_sites(i)%x
       xy(i,2)=this%all_sites(i)%y
-      CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
-   END DO
-   CALL this%SET_FOURIER_SYMMETRY(interpolxy)
-   CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
+      call this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
+   end do
+   call this%SET_FOURIER_SYMMETRY(interpolxy)
+   call interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
    call interpolXY%initializeTerms()
-   CALL interpolxy%INTERPOL()
-   CALL interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
+   call interpolxy%INTERPOL()
+   call interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    v = v + potarr(1)
    dvdu(1)=dvdu(1)+derivarr(1,1)
    dvdu(2)=dvdu(2)+derivarr(1,2)
    dvdu(3)=dvdu(3)+potarr(2)
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D
+   return
+end subroutine GET_V_AND_DERIVS_SMOOTH_CRP3D
 !############################################################
 !# FUNCTION: getpot_crp3d ###################################
 !############################################################
@@ -1788,60 +1797,60 @@ END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP3D
 !> @date 06/Feb/2014
 !> @version 1.0
 !------------------------------------------------------------
-REAL(KIND=8) FUNCTION getpot_crp3d(this,X)
-   IMPLICIT NONE
+real(kind=8) function getpot_crp3d(this,X)
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),TARGET,INTENT(IN) :: this
-	REAL(KIND=8),DIMENSION(3), INTENT(IN) :: X
+   class(CRP3D),target,intent(in) :: this
+	real(kind=8),dimension(3), intent(in) :: X
    ! Local variables
-   CLASS(Fourier2d),ALLOCATABLE:: interpolxy
-   REAL(KIND=8):: v
-   INTEGER(KIND=4) :: nsites,npairpots
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: pot,dummy
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: potarr
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: f,derivarr ! arguments to the xy interpolation
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE :: xy ! arguments to the xy interpolation
-   INTEGER :: i ! counters
+   class(Fourier2d),allocatable:: interpolxy
+   real(kind=8):: v
+   integer(kind=4) :: nsites,npairpots
+   real(kind=8),dimension(:),allocatable :: pot,dummy
+   real(kind=8),dimension(:),allocatable :: potarr
+   real(kind=8),dimension(:,:),allocatable :: f,derivarr ! arguments to the xy interpolation
+   real(kind=8),dimension(:,:),allocatable :: xy ! arguments to the xy interpolation
+   integer :: i ! counters
    ! Pointers
-   REAL(KIND=8), POINTER :: zmax
-   CHARACTER(LEN=24),PARAMETER :: routinename="GET_V_AND_DERIVS_CRP3D: "
+   real(kind=8), pointer :: zmax
+   character(len=24),parameter :: routinename="GET_V_AND_DERIVS_CRP3D: "
    zmax => this%all_sites(1)%interz%x(this%all_sites(1)%n)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
    ! GABBA, GABBA HEY! ----------------------
-   ALLOCATE(pot(npairpots))
-   ALLOCATE(dummy(npairpots))
-   SELECT CASE(X(3)>zmax)
-      CASE(.TRUE.)
+   allocate(pot(npairpots))
+   allocate(dummy(npairpots))
+   select case(X(3)>zmax)
+      case(.true.)
          getpot_crp3d=0.D0
-         RETURN
-      CASE(.FALSE.)
+         return
+      case(.false.)
          ! do nothing
-   END SELECT
+   end select
    !
-   CALL this%GET_REPUL_CORRECTIONS(X,pot,dummy,dummy,dummy)
+   call this%GET_REPUL_CORRECTIONS(X,pot,dummy,dummy,dummy)
    v=sum(pot)
    ! Now, we have all the repulsive interaction and corrections to the derivarives
    ! stored in v(:) and dvdu(:) respectively.
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
-   ALLOCATE(f(2,nsites))
-   ALLOCATE(xy(nsites,2))
-   ALLOCATE(potarr(2))
-   ALLOCATE(derivarr(2,2))
-   DO i=1,nsites
+   allocate(f(2,nsites))
+   allocate(xy(nsites,2))
+   allocate(potarr(2))
+   allocate(derivarr(2,2))
+   do i=1,nsites
       xy(i,1)=this%all_sites(i)%x
       xy(i,2)=this%all_sites(i)%y
-      CALL this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
-   END DO
-   CALL this%SET_FOURIER_SYMMETRY(interpolxy)
-   CALL interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
+      call this%all_sites(i)%interz%GET_V_AND_DERIVS(X(3),f(1,i),f(2,i))
+   end do
+   call this%SET_FOURIER_SYMMETRY(interpolxy)
+   call interpolxy%READ( xy=xy,f=f,kList=this%klist,irrepList=this%irrepList(:),parityList=this%parityList )
    call interpolXY%initializeTerms()
-   CALL interpolxy%INTERPOL()
-   CALL interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
+   call interpolxy%INTERPOL()
+   call interpolxy%GET_F_AND_DERIVS(X,potarr,derivarr)
    ! Corrections from the smoothing procedure
    getpot_crp3d=v+potarr(1)
-   RETURN
-END FUNCTION getpot_crp3d
+   return
+end function getpot_crp3d
 !######################################################################
 ! SUBROUTINE: PLOT_DATA_SYMMPOINT #####################################
 !######################################################################
@@ -1849,21 +1858,21 @@ END FUNCTION getpot_crp3d
 !! Creates a data file called "filename" with the data z(i) and v(i) 
 !! for a Symmpoint type variable
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_DATA_SYMMPOINT(this,filename)
-   IMPLICIT NONE
+subroutine PLOT_DATA_SYMMPOINT(this,filename)
+   implicit none
    ! I/O Variables ----------------------
-   CLASS(Symmpoint), INTENT(IN) :: this
-   CHARACTER(LEN=*), INTENT(IN) :: filename
+   class(Symmpoint), intent(in) :: this
+   character(len=*), intent(in) :: filename
    ! Local variables --------------------
-   INTEGER :: i ! Counter
+   integer :: i ! Counter
    ! GABBA GABBA HEY!! ------------------
-   OPEN(11, FILE=filename, STATUS="replace")
-   DO i=1,this%n
-      WRITE(11,*) this%z(i),this%v(i)
-   END DO
-   CLOSE (11)
-   WRITE(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
-END SUBROUTINE PLOT_DATA_SYMMPOINT
+   open(11, file=filename, status="replace")
+   do i=1,this%n
+      write(11,*) this%z(i),this%v(i)
+   end do
+   close (11)
+   write(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
+end subroutine PLOT_DATA_SYMMPOINT
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_CRP3D
 !#######################################################################
@@ -1885,22 +1894,22 @@ END SUBROUTINE PLOT_DATA_SYMMPOINT
 !> @date 08/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_XYMAP_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
-   IMPLICIT NONE
-   CLASS(CRP3D),INTENT(IN) :: this
-   REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
-   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
-   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
-   REAL*8,INTENT(IN) :: Lx ! Length of X axis 
-   REAL*8,INTENT(IN) :: Ly ! Length of X axis 
+subroutine PLOT_XYMAP_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+   implicit none
+   class(CRP3D),intent(in) :: this
+   real*8,dimension(3),intent(in) :: init_xyz ! Initial position to start the scan (in a.u.)
+   integer,intent(in) :: nxpoints, nypoints ! number of points in XY plane
+   character(len=*),intent(in) :: filename ! filename
+   real*8,intent(in) :: Lx ! Length of X axis 
+   real*8,intent(in) :: Ly ! Length of X axis 
    ! Local variables
-   REAL*8 :: xmin, ymin, xmax, ymax, z
-   REAL*8, DIMENSION(3) :: r, dvdu
-   REAL*8 :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta
-   INTEGER :: yinpoints, nydelta
-   INTEGER :: i, j ! counters
-   REAL*8 :: v ! potential
+   real*8 :: xmin, ymin, xmax, ymax, z
+   real*8, dimension(3) :: r, dvdu
+   real*8 :: xdelta, ydelta
+   integer :: xinpoints, nxdelta
+   integer :: yinpoints, nydelta
+   integer :: i, j ! counters
+   real*8 :: v ! potential
 	! GABBA, GABBA HEY! ---------
    xmin = init_xyz(1)
    ymin = init_xyz(2)
@@ -1917,53 +1926,53 @@ SUBROUTINE PLOT_XYMAP_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    r(1) = xmin
    r(2) = ymin
    r(3) = z
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1),r(2),v,dvdu(:)
-   DO i =1, yinpoints
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1),r(2),v,dvdu(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v,dvdu(:)
-   END DO
+      call this%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1), r(2), v,dvdu(:)
+   end do
    r(2) = ymax
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v,dvdu(:)
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1), r(2), v,dvdu(:)
    ! inpoints in XY
-   DO i = 1, xinpoints
+   do i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
       r(3) = z
-      CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v,dvdu(:)
-      DO j = 1, yinpoints
+      call this%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1), r(2), v,dvdu(:)
+      do j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
-         CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-         WRITE(11,*) r(1), r(2), v,dvdu(:)
-      END DO
+         call this%GET_V_AND_DERIVS(r,v,dvdu)
+         write(11,*) r(1), r(2), v,dvdu(:)
+      end do
       r(2) = ymax
-      CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v,dvdu(:)
-   END DO
+      call this%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1), r(2), v,dvdu(:)
+   end do
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
    r(3) = z
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v,dvdu(:)
-   DO i =1, yinpoints
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1), r(2), v,dvdu(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v,dvdu(:)
-   END DO
+      call this%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1), r(2), v,dvdu(:)
+   end do
    r(2) = ymax
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v,dvdu(:)
-   CLOSE(11)
-   RETURN
-END SUBROUTINE PLOT_XYMAP_CRP3D
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1), r(2), v,dvdu(:)
+   close(11)
+   return
+end subroutine PLOT_XYMAP_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_CORRECTION_CRP3D
 !#######################################################################
@@ -1986,25 +1995,25 @@ END SUBROUTINE PLOT_XYMAP_CRP3D
 !> @date 08/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
-   IMPLICIT NONE
-   CLASS(CRP3D),INTENT(IN) :: this
-   REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
-   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
-   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
-   REAL*8,INTENT(IN) :: Lx ! Length of X axis 
-   REAL*8,INTENT(IN) :: Ly ! Length of X axis 
+subroutine PLOT_XYMAP_CORRECTION_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+   implicit none
+   class(CRP3D),intent(in) :: this
+   real*8,dimension(3),intent(in) :: init_xyz ! Initial position to start the scan (in a.u.)
+   integer,intent(in) :: nxpoints, nypoints ! number of points in XY plane
+   character(len=*),intent(in) :: filename ! filename
+   real*8,intent(in) :: Lx ! Length of X axis 
+   real*8,intent(in) :: Ly ! Length of X axis 
    ! Local variables
-   REAL*8 :: xmin, ymin, xmax, ymax, z
-   REAL*8, DIMENSION(3) :: r, dvdu
-   REAL*8 :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta, npairpots
-   INTEGER :: yinpoints, nydelta
-   INTEGER :: i, j ! counters
-   REAL*8,DIMENSION(:),ALLOCATABLE :: v ! potential
+   real*8 :: xmin, ymin, xmax, ymax, z
+   real*8, dimension(3) :: r, dvdu
+   real*8 :: xdelta, ydelta
+   integer :: xinpoints, nxdelta, npairpots
+   integer :: yinpoints, nydelta
+   integer :: i, j ! counters
+   real*8,dimension(:),allocatable :: v ! potential
 	! GABBA, GABBA HEY! ---------
    npairpots=size(this%all_pairpots)
-   ALLOCATE(v(npairpots+1))
+   allocate(v(npairpots+1))
    xmin = init_xyz(1)
    ymin = init_xyz(2)
    z = init_xyz(3)
@@ -2020,53 +2029,53 @@ SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D(this,filename,init_xyz,nxpoints,nypoints,
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    r(1) = xmin
    r(2) = ymin
    r(3) = z
-   CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v(:)
-   DO i =1, yinpoints
+   call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   write(11,*) r(1), r(2), v(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v(:)
-   END DO
+      call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      write(11,*) r(1), r(2), v(:)
+   end do
    r(2) = ymax
-   CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v(:)
+   call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   write(11,*) r(1), r(2), v(:)
    ! inpoints in XY
-   DO i = 1, xinpoints
+   do i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
       r(3) = z
-      CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v(:)
-      DO j = 1, yinpoints
+      call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      write(11,*) r(1), r(2), v(:)
+      do j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
-         CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-         WRITE(11,*) r(1), r(2), v(:)
-      END DO
+         call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+         write(11,*) r(1), r(2), v(:)
+      end do
       r(2) = ymax
-      CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v(:)
-   END DO
+      call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      write(11,*) r(1), r(2), v(:)
+   end do
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
    r(3) = z
-   CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v(:)
-   DO i =1, yinpoints
+   call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   write(11,*) r(1), r(2), v(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v(:)
-   END DO
+      call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      write(11,*) r(1), r(2), v(:)
+   end do
    r(2) = ymax
-   CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v(:)
-   CLOSE(11)
-   RETURN
-END SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D
+   call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   write(11,*) r(1), r(2), v(:)
+   close(11)
+   return
+end subroutine PLOT_XYMAP_CORRECTION_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_SMOOTH_CRP3D
 !#######################################################################
@@ -2089,22 +2098,22 @@ END SUBROUTINE PLOT_XYMAP_CORRECTION_CRP3D
 !> @date 08/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_XYMAP_SMOOTH_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
-   IMPLICIT NONE
-   CLASS(CRP3D),INTENT(IN) :: this
-   REAL*8,DIMENSION(3),INTENT(IN) :: init_xyz ! Initial position to start the scan (in a.u.)
-   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
-   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
-   REAL*8,INTENT(IN) :: Lx ! Length of X axis 
-   REAL*8,INTENT(IN) :: Ly ! Length of X axis 
+subroutine PLOT_XYMAP_SMOOTH_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,Ly)
+   implicit none
+   class(CRP3D),intent(in) :: this
+   real*8,dimension(3),intent(in) :: init_xyz ! Initial position to start the scan (in a.u.)
+   integer,intent(in) :: nxpoints, nypoints ! number of points in XY plane
+   character(len=*),intent(in) :: filename ! filename
+   real*8,intent(in) :: Lx ! Length of X axis 
+   real*8,intent(in) :: Ly ! Length of X axis 
    ! Local variables
-   REAL*8 :: xmin, ymin, xmax, ymax, z
-   REAL*8, DIMENSION(3) :: r, dvdu
-   REAL*8 :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta
-   INTEGER :: yinpoints, nydelta
-   INTEGER :: i, j ! counters
-   REAL*8 :: v ! potential
+   real*8 :: xmin, ymin, xmax, ymax, z
+   real*8, dimension(3) :: r, dvdu
+   real*8 :: xdelta, ydelta
+   integer :: xinpoints, nxdelta
+   integer :: yinpoints, nydelta
+   integer :: i, j ! counters
+   real*8 :: v ! potential
 	! GABBA, GABBA HEY! ---------
    xmin = init_xyz(1)
    ymin = init_xyz(2)
@@ -2121,53 +2130,53 @@ SUBROUTINE PLOT_XYMAP_SMOOTH_CRP3D(this,filename,init_xyz,nxpoints,nypoints,Lx,L
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    r(1) = xmin
    r(2) = ymin
    r(3) = z
-   CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
-   DO i =1, yinpoints
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1), r(2), v
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
-   END DO
+      call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1), r(2), v
+   end do
    r(2) = ymax
-   CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1), r(2), v
    ! inpoints in XY
-   DO i = 1, xinpoints
+   do i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
       r(3) = z
-      CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
-      DO j = 1, yinpoints
+      call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1), r(2), v
+      do j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
-         CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-         WRITE(11,*) r(1), r(2), v
-      END DO
+         call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+         write(11,*) r(1), r(2), v
+      end do
       r(2) = ymax
-      CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
-   END DO
+      call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1), r(2), v
+   end do
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
    r(3) = z
-   CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
-   DO i =1, yinpoints
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1), r(2), v
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1), r(2), v
-   END DO
+      call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1), r(2), v
+   end do
    r(2) = ymax
-   CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1), r(2), v
-   CLOSE(11)
-   RETURN
-END SUBROUTINE PLOT_XYMAP_SMOOTH_CRP3D
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1), r(2), v
+   close(11)
+   return
+end subroutine PLOT_XYMAP_SMOOTH_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_DIRECTION1D_CRP3D ###################################
 !#######################################################################
@@ -2190,25 +2199,25 @@ END SUBROUTINE PLOT_XYMAP_SMOOTH_CRP3D
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_DIRECTION1D_CRP3D(this,filename,npoints,angle,z,L)
-   IMPLICIT NONE
+subroutine PLOT_DIRECTION1D_CRP3D(this,filename,npoints,angle,z,L)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP3D),INTENT(IN) :: this
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*), INTENT(IN) :: filename
-   REAL*8, INTENT(IN) :: z, angle
+   class(CRP3D),intent(in) :: this
+   integer, intent(in) :: npoints
+   character(len=*), intent(in) :: filename
+   real*8, intent(in) :: z, angle
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL*8 :: delta,L,v,s,alpha
-   REAL*8 :: xmax, xmin, ymax, ymin 
-   REAL*8, DIMENSION(3) :: r, dvdu
-   INTEGER :: i ! Counter
-   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   integer :: inpoints, ndelta
+   real*8 :: delta,L,v,s,alpha
+   real*8 :: xmax, xmin, ymax, ymin 
+   real*8, dimension(3) :: r, dvdu
+   integer :: i ! Counter
+   character(len=24), parameter :: routinename = "PLOT_DIRECTION1D_CRP3D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    ! Change alpha to radians
    alpha = angle * PI / 180.D0
    !
@@ -2222,30 +2231,30 @@ SUBROUTINE PLOT_DIRECTION1D_CRP3D(this,filename,npoints,angle,z,L)
    ndelta=npoints-1
    delta=L/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(1) = xmin
    r(2) = ymin
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
       r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
       s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-      CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
-   END DO
+      call this%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   end do
    ! Final value
    r(1) = xmax
    r(2) = ymax
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT_DIRECTION1D_CRP3D
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT_DIRECTION1D_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_DIRECTION1D_CORRECTION_CRP3D ###################################
 !#######################################################################
@@ -2268,28 +2277,28 @@ END SUBROUTINE PLOT_DIRECTION1D_CRP3D
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(this,filename,npoints,angle,z,L)
-   IMPLICIT NONE
+subroutine PLOT_DIRECTION1D_CORRECTION_CRP3D(this,filename,npoints,angle,z,L)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP3D),INTENT(IN) :: this
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*), INTENT(IN) :: filename
-   REAL*8, INTENT(IN) :: z, angle
+   class(CRP3D),intent(in) :: this
+   integer, intent(in) :: npoints
+   character(len=*), intent(in) :: filename
+   real*8, intent(in) :: z, angle
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta,npairpots
-   REAL*8 :: delta,L,s,alpha
-   REAL*8 :: xmax, xmin, ymax, ymin 
-   REAL*8, DIMENSION(3) :: r, dvdu
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE :: v
-   INTEGER :: i ! Counter
-   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   integer :: inpoints, ndelta,npairpots
+   real*8 :: delta,L,s,alpha
+   real*8 :: xmax, xmin, ymax, ymin 
+   real*8, dimension(3) :: r, dvdu
+   real(kind=8),dimension(:),allocatable :: v
+   integer :: i ! Counter
+   character(len=24), parameter :: routinename = "PLOT_DIRECTION1D_CRP3D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    npairpots=size(this%all_pairpots)
-   ALLOCATE(v(npairpots+1))
+   allocate(v(npairpots+1))
    ! Change alpha to radians
    alpha = angle * PI / 180.D0
    !
@@ -2303,30 +2312,30 @@ SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D(this,filename,npoints,angle,z,L)
    ndelta=npoints-1
    delta=L/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(1) = xmin
    r(2) = ymin
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-   CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) s, v(:)
+   call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   write(11,*) s, v(:)
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
       r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
       s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-      CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-      WRITE(11,*) s, v(:)
-   END DO
+      call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+      write(11,*) s, v(:)
+   end do
    ! Final value
    r(1) = xmax
    r(2) = ymax
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-   CALL this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
-   WRITE(11,*) s, v(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D
+   call this%GET_V_AND_DERIVS_CORRECTION(r,v,dvdu)
+   write(11,*) s, v(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT_DIRECTION1D_CORRECTION_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_Z_CRP3D #############################################
 !#######################################################################
@@ -2344,26 +2353,26 @@ END SUBROUTINE PLOT_DIRECTION1D_CORRECTION_CRP3D
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_Z_CRP3D(this,npoints,xyz,L,filename)
-   IMPLICIT NONE
+subroutine PLOT_Z_CRP3D(this,npoints,xyz,L,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP3D),INTENT(IN):: this
-   INTEGER,INTENT(IN):: npoints
-   CHARACTER(LEN=*),INTENT(IN):: filename
-   REAL(KIND=8),DIMENSION(3),INTENT(IN):: xyz
+   class(CRP3D),intent(in):: this
+   integer,intent(in):: npoints
+   character(len=*),intent(in):: filename
+   real(kind=8),dimension(3),intent(in):: xyz
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8):: delta,L
-   REAL(KIND=8):: zmax, zmin 
-   REAL(KIND=8),DIMENSION(3):: r, dvdu
-   REAL(KIND=8):: v
-   INTEGER:: i ! Counter
-   CHARACTER(LEN=*),PARAMETER:: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   integer :: inpoints, ndelta
+   real(kind=8):: delta,L
+   real(kind=8):: zmax, zmin 
+   real(kind=8),dimension(3):: r, dvdu
+   real(kind=8):: v
+   integer:: i ! Counter
+   character(len=*),parameter:: routinename = "PLOT_DIRECTION1D_CRP3D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_Z_CRP3D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT_Z_CRP3D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    r(1)=xyz(1)
    r(2)=xyz(2)
@@ -2374,24 +2383,24 @@ SUBROUTINE PLOT_Z_CRP3D(this,npoints,xyz,L,filename)
    ndelta=npoints-1
    delta=L/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(3) = zmin
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(3)=zmin+(DFLOAT(i)*delta)
-      CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(3),v,dvdu(:)
-   END DO
+      call this%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(3),v,dvdu(:)
+   end do
    ! Final value
    r(3) = zmax
-   CALL this%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT_Z_CRP3D
+   call this%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT_Z_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_DIRECTION1D_SMOOTH_CRP3D ############################
 !#######################################################################
@@ -2415,25 +2424,25 @@ END SUBROUTINE PLOT_Z_CRP3D
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D(this,filename,npoints,angle,z,L)
-   IMPLICIT NONE
+subroutine PLOT_DIRECTION1D_SMOOTH_CRP3D(this,filename,npoints,angle,z,L)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP3D),INTENT(IN) :: this
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*), INTENT(IN) :: filename
-   REAL*8, INTENT(IN) :: z, angle
+   class(CRP3D),intent(in) :: this
+   integer, intent(in) :: npoints
+   character(len=*), intent(in) :: filename
+   real*8, intent(in) :: z, angle
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL*8 :: delta,L,v,s,alpha
-   REAL*8 :: xmax, xmin, ymax, ymin 
-   REAL*8, DIMENSION(3) :: r, dvdu
-   INTEGER :: i ! Counter
-   CHARACTER(LEN=24), PARAMETER :: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   integer :: inpoints, ndelta
+   real*8 :: delta,L,v,s,alpha
+   real*8 :: xmax, xmin, ymax, ymin 
+   real*8, dimension(3) :: r, dvdu
+   integer :: i ! Counter
+   character(len=24), parameter :: routinename = "PLOT_DIRECTION1D_CRP3D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT_DIRECTION1D_CRP3D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    ! Change alpha to radians
    alpha = angle * PI / 180.D0
    !
@@ -2447,30 +2456,30 @@ SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D(this,filename,npoints,angle,z,L)
    ndelta=npoints-1
    delta=L/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(1) = xmin
    r(2) = ymin
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-   CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(1)=xmin+(DFLOAT(i)*delta)*DCOS(alpha)
       r(2)=ymin+(DFLOAT(i)*delta)*DSIN(alpha)
       s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-      CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
-   END DO
+      call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) s, v , dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   end do
    ! Final value
    r(1) = xmax
    r(2) = ymax
    s = DSQRT(r(1)**2.D0+r(2)**2.D0)
-   CALL this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) s, v, dvdu(1), dvdu(2), DCOS(alpha)*dvdu(1)+DSIN(alpha)*dvdu(2)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT_DIRECTION1D_SMOOTH_CRP3D
 !###########################################################
 !# SUBROUTINE: PLOT_INTERPOL_SYMMPOINT 
 !###########################################################
@@ -2481,17 +2490,17 @@ END SUBROUTINE PLOT_DIRECTION1D_SMOOTH_CRP3D
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE PLOT_INTERPOL_SYMMPOINT(this,npoints,filename)
+subroutine PLOT_INTERPOL_SYMMPOINT(this,npoints,filename)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(Symmpoint),INTENT(IN):: this
-   INTEGER(KIND=4),INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
+   class(Symmpoint),intent(in):: this
+   integer(kind=4),intent(in) :: npoints
+   character(len=*),intent(in) :: filename
    ! Run section
-   CALL this%interz%PLOT(npoints,filename)
-   RETURN
-END SUBROUTINE PLOT_INTERPOL_SYMMPOINT
+   call this%interz%PLOT(npoints,filename)
+   return
+end subroutine PLOT_INTERPOL_SYMMPOINT
 !###########################################################
 !# SUBROUTINE: PLOT_PAIRPOTS_CRP3D 
 !###########################################################
@@ -2505,26 +2514,26 @@ END SUBROUTINE PLOT_INTERPOL_SYMMPOINT
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE PLOT_PAIRPOTS_CRP3D(this,npoints)
+subroutine PLOT_PAIRPOTS_CRP3D(this,npoints)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(IN)::this
-   INTEGER(KIND=4),INTENT(IN) :: npoints
+   class(CRP3D),intent(in)::this
+   integer(kind=4),intent(in) :: npoints
    ! Local variables
-   INTEGER(KIND=4) :: i ! counters
-   INTEGER(KIND=4) :: npairpots
-   CHARACTER(LEN=12) :: stringbase
-   CHARACTER(LEN=13) :: filename
+   integer(kind=4) :: i ! counters
+   integer(kind=4) :: npairpots
+   character(len=12) :: stringbase
+   character(len=13) :: filename
    ! Run section
    npairpots=size(this%all_pairpots)
-   WRITE(stringbase,'(A12)') "-pairpot.dat"
-   DO i = 1, npairpots
-      WRITE(filename,'(I1,A12)') i,stringbase
-      CALL this%all_pairpots(i)%PLOT(npoints,filename)
-   END DO
-   RETURN
-END SUBROUTINE PLOT_PAIRPOTS_CRP3D
+   write(stringbase,'(A12)') "-pairpot.dat"
+   do i = 1, npairpots
+      write(filename,'(I1,A12)') i,stringbase
+      call this%all_pairpots(i)%PLOT(npoints,filename)
+   end do
+   return
+end subroutine PLOT_PAIRPOTS_CRP3D
 !###########################################################
 !# SUBROUTINE: PLOT_SITIOS_CRP3D 
 !###########################################################
@@ -2538,56 +2547,56 @@ END SUBROUTINE PLOT_PAIRPOTS_CRP3D
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE PLOT_SITIOS_CRP3D(this,npoints)
+subroutine PLOT_SITIOS_CRP3D(this,npoints)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(IN)::this
-   INTEGER(KIND=4),INTENT(IN) :: npoints
+   class(CRP3D),intent(in)::this
+   integer(kind=4),intent(in) :: npoints
    ! Local variables
-   INTEGER(KIND=4) :: i ! counters
-   INTEGER(KIND=4) :: nsitios
-   CHARACTER(LEN=10) :: stringbase
-   CHARACTER(LEN=11) :: filename
+   integer(kind=4) :: i ! counters
+   integer(kind=4) :: nsitios
+   character(len=10) :: stringbase
+   character(len=11) :: filename
    ! Run section
    nsitios=size(this%all_sites)
-   WRITE(stringbase,'(A10)') "-sitio.dat"
-   DO i = 1, nsitios
-      WRITE(filename,'(I1,A10)') i,stringbase
-      CALL this%all_sites(i)%PLOT(npoints,filename)
-   END DO
-   RETURN
-END SUBROUTINE PLOT_SITIOS_CRP3D
+   write(stringbase,'(A10)') "-sitio.dat"
+   do i = 1, nsitios
+      write(filename,'(I1,A10)') i,stringbase
+      call this%all_sites(i)%PLOT(npoints,filename)
+   end do
+   return
+end subroutine PLOT_SITIOS_CRP3D
 !###########################################################
 !# FUNCTION: is_allowed_CRP3D
 !###########################################################
 !> @brief
 !! Determines if the potential can be calculated in this point
 !-----------------------------------------------------------
-LOGICAL FUNCTION is_allowed_CRP3D(this,x) 
+logical function is_allowed_CRP3D(this,x) 
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP3D),INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
+   class(CRP3D),intent(in) :: this
+   real(kind=8),dimension(:),intent(in) :: x
    ! Local variables
-   REAL(KIND=8) :: xmin,xmax
+   real(kind=8) :: xmin,xmax
    ! Run section
    xmin=this%all_sites(1)%z(1)
    xmax=this%all_sites(1)%z(this%all_sites(1)%n)
-   SELECT CASE(size(x)/=3)
-      CASE(.TRUE.)
-         WRITE(0,*) "is_allowed_CRP3D ERR: array doesn't have 3 dimensions: 3"
-         CALL EXIT(1)
-      CASE(.FALSE.)
+   select case(size(x)/=3)
+      case(.true.)
+         write(0,*) "is_allowed_CRP3D ERR: array doesn't have 3 dimensions: 3"
+         call EXIT(1)
+      case(.false.)
          ! do nothing
-   END SELECT
-   SELECT CASE( x(3)<xmin )
-      CASE(.TRUE.)
-         is_allowed_CRP3D=.FALSE.
-      CASE(.FALSE.)
-         is_allowed_CRP3D=.TRUE.
-   END SELECT
-   RETURN
-END FUNCTION is_allowed_CRP3D
-END MODULE CRP3D_MOD
+   end select
+   select case( x(3)<xmin )
+      case(.true.)
+         is_allowed_CRP3D=.false.
+      case(.false.)
+         is_allowed_CRP3D=.true.
+   end select
+   return
+end function is_allowed_CRP3D
+end module CRP3D_MOD
