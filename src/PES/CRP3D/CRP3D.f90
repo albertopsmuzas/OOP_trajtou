@@ -94,7 +94,7 @@ type :: SymmPoint
    type(Csplines),public:: interz 
    contains
       procedure,public:: initializeRaw => initializeRaw_SymmPoint
-      procedure,public:: GET_SYMM_RAW => GET_SYMMETRIZED_RAW_INPUT
+      procedure,public:: printSymmetrizedRawInput => printSymmetrizedRawInput_SymmPoint
       procedure,public:: PLOT_DATA => PLOT_DATA_SYMMPOINT
       procedure,public:: PLOT => PLOT_INTERPOL_SYMMPOINT
 end type Symmpoint
@@ -713,45 +713,45 @@ end subroutine READ_STANDARD_SITIO
 !
 !> @see symmetrize, maths_mod, units_mod
 !--------------------------------------------------------------------
-subroutine GET_SYMMETRIZED_RAW_INPUT(symmraw,zero,vtop,filename)
+subroutine printSymmetrizedRawInput_SymmPoint(this,zero,vtop,filename)
 	implicit none
 	! I/O variable ---------------------------
-	class(Symmpoint),intent(inout) :: symmraw
-   type(Length),intent(inout) :: zero
-	type(Energy),intent(inout) :: vtop
-	character(len=*),intent(in) :: filename 
+	class(SymmPoint),intent(inout):: this
+   type(Length),intent(inout):: zero
+	type(Energy),intent(inout):: vtop
+	character(len=*),intent(in):: fileName
 	! Local variable -------------------------
-	real(kind=8),dimension(:),allocatable :: x,v
-	integer :: n
-	integer :: i ! Counter
-   character(len=27),parameter :: routinename="GEN_SYMMETRIZED_RAW_INPUT: "
+	real(kind=8),dimension(:),allocatable:: x,v
+	integer(kind=4):: n
+	integer(kind=4):: i ! Counter
+   character(len=*),parameter:: routineName="printSymmetrizedRawInput_Symmpoint: "
 	! GABBA GABBA HEY! ------------------------
 	call zero%TO_STD()
 	call vtop%TO_STD()
-	call SYMMETRIZE(symmraw%n,symmraw%z,symmraw%v,zero%getvalue(),vtop%getvalue(),n,x,v)
-	deallocate(symmraw%z)
-	deallocate(symmraw%v)
-	symmraw%n = n
-	allocate(symmraw%z(1:symmraw%n))
-	allocate(symmraw%v(1:symmraw%n))
-	do i=1, symmraw%n
-		symmraw%z(i)=x(i)
-		symmraw%v(i)=v(i)
+	call symmetrize(this%n,this%z,this%v,zero%getvalue(),vtop%getvalue(),n,x,v)
+	deallocate(this%z)
+	deallocate(this%v)
+	this%n = n
+	allocate(this%z(this%n))
+	allocate(this%v(this%n))
+	do i=1, this%n
+		this%z(i)=x(i)
+		this%v(i)=v(i)
 	end do
 	! Store data in filename ----------------
-	open(11,file=filename,status="replace")
-	write(11,*) symmraw%x, symmraw%y, ' au    <----(X,Y) location in a.u.'
-	write(11,*) symmraw%n , " SYMM job with V(z) > (a.u.) ", vtop%getvalue()
+	open(11,file=fileName,status="replace")
+	write(11,*) this%x, this%y, ' au    <----(X,Y) location in a.u.'
+	write(11,*) this%n , " SYMM job with V(z) > (a.u.) ", vtop%getvalue()
 	write(11,*) "au         au       <---- everything in a.u."
-	do i=1, symmraw%n
-		write(11,*) symmraw%z(i), symmraw%v(i)
+	do i=1, this%n
+		write(11,*) this%z(i), this%v(i)
 	end do
 	close(11)
 #ifdef DEBUG
-   call VERBOSE_WRITE(routinename,"Symmetrized input generated: ",filename)
+   call verbose_write(routinename,"Symmetrized input generated: ",filename)
 #endif
 	return
-end subroutine GET_SYMMETRIZED_RAW_INPUT
+end subroutine printSymmetrizedRawInput_SymmPoint
 !###########################################################
 !# SUBROUTINE: READ_CRP3D
 !###########################################################

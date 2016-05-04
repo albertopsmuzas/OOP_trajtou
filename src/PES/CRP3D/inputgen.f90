@@ -49,6 +49,8 @@ type NewInput3d
    character(len=50),dimension(:),allocatable,private:: inputPairpotList
    character(len=50),dimension(:),allocatable,private:: outputSitioList
    character(len=50),dimension(:),allocatable,private:: outputPairpotList
+   character(len=50),dimension(:),allocatable,private:: sitioNameList
+   character(len=50),dimension(:),allocatable,private:: pairpotNameList
    type(SymmPoint),dimension(:),allocatable,private:: protoSitios
    type(SymmPoint),dimension(:),allocatable,private:: protoPairpots
    ! public section
@@ -188,12 +190,14 @@ subroutine initialize_NewInput3d(this,fileName)
    allocate(this%inputSitioList(this%nFiles))
    allocate(this%outputSitioList(this%nFiles))
    allocate(this%protoSitios(this%nFiles))
+   allocate(this%sitioNameList(this%nFiles))
    do i=1,this%nFiles
       call aot_table_open(L=conf, parent=tab_files, thandle=tab_subFile, pos=i)
       call aot_get_val(L=conf,errCode=iErr,thandle=tab_subFile,key='inp',val=this%inputSitioList(i))
       call aot_get_val(L=conf,errCode=iErr,thandle=tab_subFile,key='out',val=this%outputSitioList(i))
+      call aot_get_val(L=conf,errCode=iErr,thandle=tab_subFile,key='name',val=this%sitioNameList(i))
       call this%protoSitios(i)%initializeRaw( fileName=trim(this%inputSitioList(i)) )
-      call this%printSitio(symmRaw=this%protoSitios(i), fileName=trim(this%outputSitioList(i)))
+      call this%printSitio(symmRaw=this%protoSitios(i),sitioName=trim(this%sitioNameList(i)), fileName=trim(this%outputSitioList(i)))
       call aot_table_close(L=conf,thandle=tab_subFile)
    enddo
    call aot_table_close(L=conf, thandle=tab_files)
@@ -211,12 +215,14 @@ subroutine initialize_NewInput3d(this,fileName)
    allocate(this%inputPairpotList(this%nRumpling))
    allocate(this%outputPairpotList(this%nRumpling))
    allocate(this%protoPairpots(this%nRumpling))
+   allocate(this%pairpotNameList(this%nRumpling))
    do i=1,this%nRumpling
       call aot_table_open(L=conf, parent=tab_files, thandle=tab_subFile, pos=i)
       call aot_get_val(L=conf,errCode=iErr,thandle=tab_subFile,key='inp',val=this%inputPairpotList(i))
       call aot_get_val(L=conf,errCode=iErr,thandle=tab_subFile,key='out',val=this%outputPairpotList(i))
+      call aot_get_val(L=conf,errCode=iErr,thandle=tab_subFile,key='name',val=this%pairpotNameList(i))
       call this%protoPairpots(i)%initializeRaw( fileName=trim(this%inputPairpotList(i)) )
-      call this%printPairpot(symmRaw=this%protoPairpots(i),rumplingID=i,fileName=trim(this%outputPairpotList(i)))
+      call this%printPairpot(symmRaw=this%protoPairpots(i),rumplingID=i,pairpotName=trim(this%pairpotNameList(i)),fileName=trim(this%outputPairpotList(i)))
       call aot_table_close(L=conf,thandle=tab_subFile)
    enddo
    call aot_table_close(L=conf, thandle=tab_files)
@@ -253,10 +259,10 @@ subroutine printStatus_NewInput3d(this)
       print *, header//'Rumpling value (bohr): ',this%rumpling(i),' Zero pos: ',this%zeroPos(i)
    enddo
    do i=1,this%nRumpling
-      print *, header//'Pairpot: input: '//trim(this%inputPairpotList(i))//' | output: '//trim(this%outputPairpotList(i))
+      print *, header//'Pairpot: input: '//trim(this%inputPairpotList(i))//' | output: '//trim(this%outputPairpotList(i))//' with Name: '//trim(this%pairpotNameList(i))
    enddo
    do i=1,this%nFiles
-      print *, header//'Sitio: input: '//trim(this%inputSitioList(i))//' | output: '//trim(this%outputSitioList(i))
+      print *, header//'Sitio: input: '//trim(this%inputSitioList(i))//' | output: '//trim(this%outputSitioList(i))//' with Name: '//trim(this%sitioNameList(i))
    enddo
    return
 end subroutine printStatus_NewInput3d
@@ -269,9 +275,10 @@ end subroutine printStatus_NewInput3d
 !> @details
 !! - The purpose is to generate a set of CRP pairpots inputs from "raw" ones.
 !
+!> @param[in] this - Newinput variable that contains information about the grid and stuff
 !> @param[in] symmRaw - Symmpoint variable whose information will be used in the input generation
-!> @param[in] interpol - Newinput variable that contains information about the grid and stuff
-!> @param[in] rump_control - Integer(>=0) to select which rumpling correction we want to use 
+!> @param[in] rumplingID - Integer(>=0) to select which rumpling correction we want to use
+!> @param[in] pairpotName - string to identify this pairpot
 !> @param[in] fileName - Name of the output file
 !
 !> @warning
@@ -286,13 +293,14 @@ end subroutine printStatus_NewInput3d
 !
 !> @see symmRaw, newinput
 !--------------------------------------------------------------------
-subroutine printPairpot_NewInput3d(this,symmRaw,rumplingID,fileName)
+subroutine printPairpot_NewInput3d(this,symmRaw,rumplingID,pairpotName,fileName)
    ! Initial declarations.
    implicit none
    ! I/O Variables ------------------------------
    class(NewInput3d),intent(in):: this
    class(SymmPoint),intent(inout):: symmRaw
 	integer,intent(in):: rumplingID ! 0 if there is not rumpling
+   character(len=*),intent(in):: pairpotName
    character(len=*),intent(in):: fileName
    ! Local variables ----------------------------
 	character(len=:),parameter:: routineName = "PRINTPAIRPOT_NEWINPUT3D: "
@@ -317,6 +325,7 @@ subroutine printPairpot_NewInput3d(this,symmRaw,rumplingID,fileName)
 	open(unit=11,file=fileName,status="replace")
 	write(11,*) "# This input file was generated by printPairpot_NewInput3d"
 	write(11,*) "# Do not modify anything. Everything is in a.u."
+	write(11,*) pairpotName
 	write(11,*) this%vasint, '     VASINT'
 	dz1=symmRaw%interz%getderiv(this%zgrid(this%zeropos(rumplingID)))
 	dz2=0.d0
@@ -350,6 +359,7 @@ end subroutine printPairpot_NewInput3d
 !
 !> @param[in] interpol - Newinput variable that contains information about the grid and stuff
 !> @param[in] symmRaw - Symmpoint variable whose information will be used in the input generation
+!> @param[in] sitioName - String to identify this sitio
 !> @param[in] fileName - Name of the output file
 !
 !> @warning
@@ -364,12 +374,13 @@ end subroutine printPairpot_NewInput3d
 !
 !> @see symmRaw, newinput
 !--------------------------------------------------------------------
-subroutine printSitio_NewInput3d(this,symmRaw,fileName)
+subroutine printSitio_NewInput3d(this,symmRaw,sitioName,fileName)
 	implicit none
 	! I/O variables --------------------
 	class(NewInput3d),intent(in):: this
 	class(SymmPoint),intent(inout):: symmRaw
 	character(len=*),intent(in):: fileName
+	character(len=*),intent(in):: sitioName
 	! Local variables -------------------
 	character(len=:),parameter:: routineName = "GEN_INPUT_SITIO: "
 	integer(kind=4):: i ! Counter
@@ -384,6 +395,7 @@ subroutine printSitio_NewInput3d(this,symmRaw,fileName)
 	open(11,file=fileName,status="replace")
 	write(11,*) "# Input file generated by GEN_INPUT_SITIO"
 	write(11,*) "# Do not modify anything. Everything is in a.u."
+	write(11,*) sitioName
 	write(11,*) symmRaw%x, symmRaw%y, ' <----(X,Y) location in a.u.'
 	write(11,*) this%nzgrid, '   NZ'
 	dz1=symmRaw%interz%getderiv(this%zgrid(1))
