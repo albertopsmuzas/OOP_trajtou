@@ -212,6 +212,7 @@ type,extends(PES) :: CRP3D
       procedure,public:: PLOT_SITIOS => PLOT_SITIOS_CRP3D
       procedure,public:: PLOT_PAIRPOTS => PLOT_PAIRPOTS_CRP3D
       procedure,public:: PLOT_Z => PLOT_Z_CRP3D
+      procedure,public:: plot_z_smooth => plot_z_smooth_CRP3D
 end type CRP3D
 !///////////////////////////////////////////////////////////////////////////
 contains
@@ -2401,6 +2402,71 @@ subroutine PLOT_Z_CRP3D(this,npoints,xyz,L,filename)
    write(*,*) routinename, "file created ",filename
    close(11)
 end subroutine PLOT_Z_CRP3D
+!#######################################################################
+! SUBROUTINE: PLOT_Z_CRP3D #############################################
+!#######################################################################
+!> @brief
+!! Creates a file with name "filename" with a 1D cut along z direction
+!
+!> @param[in] this - CRP3D PES used
+!> @param[in] filename - Name of the output file
+!> @param[in] npoints - Number of points in the graphic. npoints>=2
+!!                    cut. It should be given in degrees.
+!> @param[in] xyz - Initial point
+!> @param[in] L - Length of the graphic
+!
+!> @author A.S. Muzas - alberto.muzas@uam.es
+!> @date 09/Feb/2014
+!> @version 1.0
+!----------------------------------------------------------------------
+subroutine plot_z_smooth_CRP3D(this,npoints,xyz,L,filename)
+   implicit none
+   ! I/O variables -------------------------------
+   class(CRP3D),intent(in):: this
+   integer,intent(in):: npoints
+   character(len=*),intent(in):: filename
+   real(kind=8),dimension(3),intent(in):: xyz
+   ! Local variables -----------------------------
+   integer :: inpoints, ndelta
+   real(kind=8):: delta,L
+   real(kind=8):: zmax, zmin
+   real(kind=8),dimension(3):: r, dvdu
+   real(kind=8):: v
+   integer:: i ! Counter
+   character(len=*),parameter:: routinename = "PLOT_DIRECTION1D_CRP3D: "
+   ! HE HO ! LET'S GO ----------------------------
+   if (npoints.lt.2) then
+      write(0,*) "PLOT_Z_CRP3D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
+   !
+   r(1)=xyz(1)
+   r(2)=xyz(2)
+   zmin=xyz(3)
+   zmax=xyz(3)+L
+   !
+   inpoints=npoints-2
+   ndelta=npoints-1
+   delta=L/dfloat(ndelta)
+   !
+   open(11,file=filename,status="replace")
+   ! Initial value
+   r(3) = zmin
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)
+   ! cycle for inpoints
+   do i=1, inpoints
+      r(3)=zmin+(DFLOAT(i)*delta)
+      call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(3),v,dvdu(:)
+   end do
+   ! Final value
+   r(3) = zmax
+   call this%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine plot_z_smooth_CRP3D
 !#######################################################################
 ! SUBROUTINE: PLOT_DIRECTION1D_SMOOTH_CRP3D ############################
 !#######################################################################

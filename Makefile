@@ -54,7 +54,8 @@ joblist = test_inicond3dInput.x\
 			 trajtouGetGraph_vacuumPotShifted.x\
 			 trajtouXYcut_crp3d.x\
 			 trajtouGenerateCRP3DInput.x\
-			 trajtouSymmetrizeCRP3DInput.x
+			 trajtouSymmetrizeCRP3DInput.x\
+			 trajtouCheckCRP3DInterpol.x
 # Rules 
 trajtouJobs: trajtouSrc $(joblist) 
 trajtouSrc:
