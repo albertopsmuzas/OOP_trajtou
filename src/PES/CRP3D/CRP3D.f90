@@ -525,6 +525,8 @@ subroutine initializeRaw_SymmPoint(this,fileName)
       read(10,*) aux_r1,aux_r2,units1
       call x%READ(aux_r1,units1)
       call y%READ(aux_r2,units1)
+      call x%to_std()
+      call y%to_std()
       this%x = x%getvalue()
       this%y = y%getvalue()
       ! ------
@@ -950,7 +952,7 @@ end subroutine READ_CRP3D
 !!   pair potentials, read from files previously
 !! - At least one pair potential should've defined in the CRP3D variable
 !! - Obviously, @ this should contain reliable data
-!! - Only modifies things inside @b interz
+!! - Modifies things inside @b interz and @b z
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 04/Feb/2014
@@ -978,6 +980,7 @@ subroutine EXTRACT_VASINT_CRP3D(this)
       end if
       do j = 1, this%all_pairpots(i)%n
          this%all_pairpots(i)%interz%f(j)=this%all_pairpots(i)%interz%f(j)-this%all_pairpots(i)%vasint
+         this%all_pairpots(i)%v(j)=this%all_pairpots(i)%v(j)-this%all_pairpots(i)%vasint
       end do
 #ifdef DEBUG
       call DEBUG_WRITE(routinename,"Vasint extracted from pair potential ",i)
@@ -987,6 +990,7 @@ subroutine EXTRACT_VASINT_CRP3D(this)
    do i = 1, nsites
       do j = 1, this%all_sites(i)%n
          this%all_sites(i)%interz%f(j)=this%all_sites(i)%interz%f(j)-this%all_pairpots(1)%vasint
+         this%all_sites(i)%v(j)=this%all_sites(i)%v(j)-this%all_pairpots(1)%vasint
       end do
 #ifdef DEBUG
       call DEBUG_WRITE(routinename,"Vasint extracted from pair site ",i)
@@ -1741,17 +1745,19 @@ subroutine GET_V_AND_DERIVS_SMOOTH_CRP3D(this,X,v,dvdu)
    npairpots = size(this%all_pairpots)
    nsites = size(this%all_sites)
    ! GABBA, GABBA HEY! ----------------------
-   if (X(3).gt.zmax) then
+   select case( x(3) > zmax )
+   case(.true.)
       dvdu = 0.D0
       v = 0.D0
       return
-   end if
+
+   case(.false.)
+      ! do nothing
+   end select
    !
-   v = 0.D0 ! Initialization value
-   forall(i=1:3) 
-      dvdu(i) = 0.D0 ! Initialization value
-      deriv(i) = 0.D0 ! Initialization value
-   end forall 
+   v = 0.d0 ! Initialization value
+   dvdu(:)=0.d0
+   deriv(:)=0.d0
    ! Let's get v and derivatives from xy interpolation of the corrugationless function
    ! f(1,i) ==> v values interpolated for Z at site "i"
    ! f(2,i) ==> dvdz values interpolated for Z at site "i"
@@ -1872,7 +1878,7 @@ subroutine PLOT_DATA_SYMMPOINT(this,filename)
       write(11,*) this%z(i),this%v(i)
    end do
    close (11)
-   write(*,*) "PLOT_DATA_SYMMPOINT: ",this%alias,filename," file created"
+   write(*,*) "PLOT_DATA_SYMMPOINT: "//this%alias//': '//filename," file created"
 end subroutine PLOT_DATA_SYMMPOINT
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_CRP3D

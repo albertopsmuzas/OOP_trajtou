@@ -41,8 +41,12 @@ do i=1,size(thisPes%all_sites)
    write(auxString,'(I10)') i
    call thisPes%plot_z(npoints=nPoints, xyz=xyz(:), L=L, filename='sitio'//trim(adjustL(auxString))//'.fullInterpolation.dat')
    call thisPes%plot_z_smooth(npoints=nPoints, xyz=xyz(:), L=L, filename='sitio'//trim(adjustL(auxString))//'.smoothInterpolation.dat')
+enddo
+do i=1,size(thisPes%all_sites)
+   write(auxString,'(I10)') i
    call thisPes%all_sites(i)%plot_data(filename='sitio'//trim(adjustL(auxString))//'.dat')
 enddo
+
 call etime(timeArr,timer)
 ! Last step, verbose messages
 call verbose_write("****************** RUN TIME ***************************")
