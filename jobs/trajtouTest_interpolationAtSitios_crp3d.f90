@@ -1,7 +1,13 @@
 !############################################
-! PROGRAM: trajtouCheckCRP3DInterpol
+! PROGRAM: trajtouCheck_interpol_crp3d
 !
+!> @brief
+!! Prints sitio graphs as read from the input in conjunction with
+!! the crp3d and the smooth potential (for each sitio)
 !
+!> @details
+!! Useful to check that sitio inputs and the interpolated potential
+!! have the same values.
 !--------------------------------------------
 program trajtouCheckCRP3DInterpol
 ! Initial declarations
