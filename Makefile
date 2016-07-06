@@ -59,12 +59,12 @@ joblist = test_inicond3dInput.x\
 # Rules 
 trajtouJobs: trajtouSrc $(joblist) 
 trajtouSrc:
-	cd src && make default
+	cd $(OOPTRAJTOUPATH)/src && make default
 
 %.x: %.f90 libtrajtou.a libaotus.a
-	$(LF) -o bin/$@ $< lib/libtrajtou.a lib/libaotus.a
+	$(LF) -o $(OOPTRAJTOUPATH)/bin/$@ $< $(OOPTRAJTOUPATH)/lib/libtrajtou.a $(OOPTRAJTOUPATH)/lib/libaotus.a
 
 %.a:
-	cd src && make $@ 
+	cd $(OOPTRAJTOUPATH)/src && make $@ 
 clean:
-	rm -f mod/*.mod lib/*.a bin/*.x bin/*.o
+	rm -f $(OOPTRAJTOUPATH)/mod/*.mod $(OOPTRAJTOUPATH)/lib/*.a $(OOPTRAJTOUPATH)/bin/*.x $(OOPTRAJTOUPATH)/bin/*.o

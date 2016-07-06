@@ -1,0 +1,12 @@
+##############################################################################
+# MAKE_FILE FOR EXTERNAL FILES COMPILED WITH OOP TRAJTOU #####################
+##############################################################################
+ifeq ($(OOPTRAJTOUPATH),) 
+	export OOPTRAJTOUPATH=$(PWD)
+endif
+include $(OOPTRAJTOUPATH)/make.compiler.inc
+include $(OOPTRAJTOUPATH)/include/make.general.inc
+vpath %.f90 .
+
+%.x: %.f90 
+	$(LF) -o ./$@ $< $(OOPTRAJTOUPATH)/lib/libtrajtou.a $(OOPTRAJTOUPATH)/lib/libaotus.a
