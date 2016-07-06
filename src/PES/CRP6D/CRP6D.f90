@@ -2010,6 +2010,8 @@ SUBROUTINE PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    INTEGER :: yinpoints, nydelta
    INTEGER :: i, j ! counters
    REAL(KIND=8) :: v ! potential
+   ! Parameters section:
+   character(len=*),parameter:: routineName='PLOT_XYMAP_CRP6D: '
    ! GABBA, GABBA HEY! ---------
    xmin = init_point(1)
    ymin = init_point(2)
@@ -2070,6 +2072,7 @@ SUBROUTINE PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
    WRITE(11,*) r(1:2),v,dvdu(:)
    CLOSE(11)
+   write(*,*) routineName//'Graph created: '//fileName
    RETURN
 END SUBROUTINE PLOT_XYMAP_CRP6D
 !######################################################################################
@@ -2194,8 +2197,9 @@ SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    INTEGER :: yinpoints, nydelta
    INTEGER :: i, j ! counters
    REAL(KIND=8) :: v ! potential
-   ! write unit
-   integer(kind=4),parameter:: wunit=11
+   ! Parameter section
+   character(len=*),parameter:: routineName='PLOT_RZMAP_CRP6D: '
+   integer(kind=4),parameter:: wunit=11 ! write unit
    ! GABBA, GABBA HEY! ---------
    xmin = init_point(4)
    ymin = init_point(3)
@@ -2259,6 +2263,7 @@ SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
    WRITE(wunit,*) r(4),r(3),v,dvdu(:)
    CLOSE(wunit)
+   write(*,*) routineName//'Graph created: '//fileName
    RETURN
 END SUBROUTINE PLOT_RZMAP_CRP6D
 !#######################################################################
@@ -2300,6 +2305,8 @@ SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,
    REAL(KIND=8),DIMENSION(6) :: atomicx
    REAL(KIND=8),DIMENSION(6) :: dvdu
    INTEGER :: i, j ! counters
+   ! parameters
+   character(len=*),parameter:: routineName='PLOT_ATOMIC_INTERAC_RZ_CRP6D: '
    ! GABBA, GABBA HEY! ---------
    xmin = init_point(4)
    ymin = init_point(3)
@@ -2359,6 +2366,7 @@ SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,
    CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
    WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
    CLOSE(11)
+   write(*,*) routineName//'Graph created: '//fileName
    RETURN
 END SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D
 !###########################################################

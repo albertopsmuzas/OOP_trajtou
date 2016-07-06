@@ -55,7 +55,7 @@ END SUBROUTINE INTERPOL_INTERPOLGRID2D
 !> @param[out] this - interpol 2D object to be set up
 !> @param[in] x(:) - X grid
 !> @param[in] y(:) - Y grid
-!> @param[in] f(:,:) - stores F falues for each point in the grid
+!> @param[in] f(:,:) - stores F values for each point in the grid
 !
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date 17/Feb/2014
@@ -105,6 +105,8 @@ SUBROUTINE PLOTDATA_INTERPOLGRID2D(this,filename)
    ! Local variables
    INTEGER(KIND=4) :: nx,ny
    INTEGER(KIND=4) :: i,j ! counters
+   ! Parameter section
+   character(len=*),parameter:: routineName='PLOTDATA_INTERPOLGRID2D: '
    ! Run section
    nx=size(this%x)
    ny=size(this%y)
@@ -114,6 +116,7 @@ SUBROUTINE PLOTDATA_INTERPOLGRID2D(this,filename)
          WRITE(10,*) this%x(i),this%y(j),this%fgrid(i,j)
       END DO
    END DO
+   write(*,*) routineName//'Graph created: '//fileName
    RETURN
 END SUBROUTINE PLOTDATA_INTERPOLGRID2D
 END MODULE INTERPOLGRID2D_MOD
