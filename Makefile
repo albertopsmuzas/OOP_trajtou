@@ -15,7 +15,6 @@ joblist = test_inicond3dInput.x\
 			 test_CRP6D_cuts.x\
 			 get_CRP6D_smoothvalue.x\
 			 get_CRP6D_rawvalue.x\
-			 cheat_CRP6D_cartwheelinput.x\
 			 cart2surf.x\
 			 drawtraj6d.x\
 			 test_inicond6dInput.x\
@@ -55,7 +54,8 @@ joblist = test_inicond3dInput.x\
 			 trajtouGenerateCRP3DInput.x\
 			 trajtouSymmetrizeCRP3DInput.x\
 			 trajtouTest_interpolationAtSitios_crp3d.x\
-			 trajtouTest_interpolationAt2dCuts_crp6d.x
+			 trajtouTest_interpolationAt2dCuts_crp6d.x\
+			 trajtouTest_cheatCartwheelInput_crp6d.x
 # Rules 
 trajtouJobs: trajtouSrc $(joblist) 
 trajtouSrc:

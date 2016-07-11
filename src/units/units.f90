@@ -312,6 +312,7 @@ subroutine LENGTH_AU(this)
       case default
          write(0,*) "TO_ANGST ERR: incorrect units"
          write(0,*) "Supported ones: angst, au"
+         write(0,*) 'Encountered one: '//this%units
          call EXIT(1)
    end select
    return

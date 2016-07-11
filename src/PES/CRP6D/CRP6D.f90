@@ -198,12 +198,22 @@ END SUBROUTINE SET_SMOOTH_CRP6D
 !###########################################################
 !> @brief
 !! This subroutine changes data from a raw cut2d input by the
-!! value interpolated from atomic potentials. Only data too close
+!! value interpolated from atomic potentials. Only data close
 !! to the plane @f$ \pi: z=\over{r}{2}+rumpling@f$
 !
+!> param[in] wyckoff - Wyckoff ID site
+!> param[in] cut2d   - Cut2d ID (depends on the chosen Wyckoff ID)
+!> param[in] topTye  - ID of top site chosen. This value is used
+!!                     to correctly apply a given rumpling value.
+!!                     This ID depends on which order the repulsive
+!!                     crp3d potentials were declared in the input.
+!> param[in] dmax    - Points are only modified if they are closer
+!!                     to the plane @f$ \pi: z=\over{r}{2}+rumpling@f$
+!!                     than this value. Should be given in bohr radius.
+!
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date May/2014
-!> @version 1.0
+!> @date Jul/2016
+!> @version 2.0
 !-----------------------------------------------------------
 SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D(this,wyckoff,cut2d,toptype,dmax)
    ! Initial declarations   
