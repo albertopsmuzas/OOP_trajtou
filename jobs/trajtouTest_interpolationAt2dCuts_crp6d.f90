@@ -52,7 +52,7 @@ do i=1,thispes%nsites
       pos(5)=thispes%wyckoffsite(i)%zrcut(j)%theta
       pos(6)=thispes%wyckoffsite(i)%zrcut(j)%phi
       ! Print interpolations performed at wyckoff sites
-      fileName=trim(adjustL(auxString1))//"-"//trim(adjustL(auxString2))//"-RZ-crp6d_on_cut2d.dat"
+      fileName=trim(adjustL(auxString1))//"-"//trim(adjustL(auxString2))//"-RZ-smoothCut2d.dat"
       call thispes%wyckoffsite(i)%zrcut(j)%interrz%PLOT_XYMAP(trim(fileName),(/r1,z1/),100,100,r2-r1,z2-z1)
       ! Print interpolations from final potential
       fileName=trim(adjustL(auxString1))//"-"//trim(adjustL(auxString2))//"-RZ-crp6d_finalPot.dat"

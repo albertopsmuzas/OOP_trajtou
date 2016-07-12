@@ -1336,7 +1336,7 @@ END SUBROUTINE READ_CRP6D
 !> @param[in] thispes - CRP6D PES used
 !> @param[in] filename - Name of the output file
 !> @param[in] npoints - Number of points in the graphic. npoints>=2
-!> @param[in] x - array with X,Y,Z,R,THETA,PHI values
+!> @param[in] x - array with X,Y,Z,R,THETA,PHI values.
 !
 !> @warning
 !! - The graph starts always at 0,0. Initial PHI value in X array is ignored

@@ -50,6 +50,8 @@ joblist = test_inicond3dInput.x\
 			 trajtouGetGraph_XYcut_crp3d.x\
 			 trajtouGetGraph_Zcut_crp3d.x\
 			 trajtouGetGraph_Zcut_crp6d.x\
+			 trajtouGetGraph_Phicut_crp6d.x\
+			 trajtouGetGraph_Thetacut_crp6d.x\
 			 trajtouGetGraph_ZRcut_crp6d.x\
 			 trajtouGenerateCRP3DInput.x\
 			 trajtouSymmetrizeCRP3DInput.x\
