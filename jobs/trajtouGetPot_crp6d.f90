@@ -22,12 +22,12 @@ TYPE(CRP6D):: thispes
 REAL(KIND=4):: timer
 CHARACTER(LEN=1024):: luafile
 CHARACTER(LEN=1024):: auxstring
-integer(kind=4):: i,loop
+integer(kind=4):: i
 ! GABBA GABBA HEY! ===============================
 !
 ! STEP 1: INITIALIZE SYSTEM VIA LUA CONFIG FILE
 SELECT CASE(command_argument_count())
-   CASE(8)
+   CASE(7)
       CALL GET_COMMAND_ARGUMENT(1,luafile)
       CALL GET_COMMAND_ARGUMENT(2,auxstring)
       READ(auxstring,*) x(1)
@@ -41,8 +41,6 @@ SELECT CASE(command_argument_count())
       READ(auxstring,*) x(5)
       CALL GET_COMMAND_ARGUMENT(7,auxstring)
       READ(auxstring,*) x(6)
-      call get_command_argument(8,auxString)
-      read(auxString,*) loop
    CASE DEFAULT
       WRITE(0,*) "ERR: Bad number of arguments: ",command_argument_count()
       WRITE(0,*) "Seven arguments needed: lua config file, 6 real numbers"
@@ -51,12 +49,10 @@ END SELECT
 CALL ETIME(timearr,timer)
 CALL INITIALIZE_SYSTEM(trim(luafile))
 CALL thispes%INITIALIZE()
-do i=1,loop
-   CALL thispes%GET_V_AND_DERIVS(x,v,dvdx)
-   CALL VERBOSE_WRITE('Potential calculated at:',x(:))
-   WRITE(*,*) "Potential (a.u.): ", v
-   WRITE(*,*) "Derivatives (X,Y,Z,r,theta,phi) (a.u./rad.): ", dvdx(:)
-enddo
+CALL thispes%GET_V_AND_DERIVS(x,v,dvdx)
+CALL VERBOSE_WRITE('Potential calculated at:',x(:))
+WRITE(*,*) "Potential (a.u.): ", v
+WRITE(*,*) "Derivatives (X,Y,Z,r,theta,phi) (a.u./rad.): ", dvdx(:)
 CALL ETIME(timearr,timer)
 ! STEP 2: GET VALUES
 !CALL VERBOSE_WRITE('Potential calculated at:',x(:))
