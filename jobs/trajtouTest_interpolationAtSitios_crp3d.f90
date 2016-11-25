@@ -60,5 +60,4 @@ call verbose_write('',"User time: ",real(timearr(1),kind=8))
 call verbose_write('',"System time: ",real(timearr(2),kind=8))
 call verbose_write('',"Total time: ",real(timer,kind=8))
 call verbose_write("******************************************************")
-return
 end program trajtouCheckCRP3DInterpol
