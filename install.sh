@@ -127,16 +127,18 @@ cat << EOF > $filename
 #%Module 1.0
 # Module for OOPtrajtou program
 #
-append-path    PATH               $defaultPath/bin
-append-path    PATH               $defaultPath/scripts
-append-path    LD_LIBRARY_PATH    $defaultPath/lib
-append-path    MANPATH            $defaultPath/doc/man
-setenv         OOPTRAJTOUPATH     $defaultPath
-setenv         OOPTRAJTOUPES      $pesPath
+set                       INSTALLPATH       $defaultPath
+set                       PESPATH           $pesPath
+prepend-path --delim ":"  PATH              \$INSTALLPATH/bin
+prepend-path --delim ":"  PATH              \$INSTALLPATH/scripts
+prepend-path --delim ":"  LD_LIBRARY_PATH   \$INSTALLPATH/lib
+prepend-path --delim ":"  MANPATH           \$INSTALLPATH/doc/man
+prepend-path --delim ";"  LUA_PATH          \$INSTALLPATH/lib/lua/?.lua
+setenv         OOPTRAJTOUPATH     \$INSTALLPATH
+setenv         OOPTRAJTOUPES      \$PESPATH
 setenv         OOPTRAJTOU_DEBUG   $debugmode
 setenv         OOPTRAJTOUCOMPILER $compiler
-setenv         LUA_PATH           $defaultPath/lib/lua/?.lua
-module-whatis  "Sets OOPTRAJTOUPATH environmental variable and adds paths so that OOPTRAJTOU libraries and binaries can be used"
+module-whatis  "OOP_trajtou program installed"
 EOF
 #------- end file -----------------------------
 		;;
@@ -155,7 +157,7 @@ export OOPTRAJTOUPATH=$defaultPath
 export OOPTRAJTOUPES=$pesPath
 export OOPTRAJTOU_DEBUG=$debugmode
 export OOPTRAJTOUCOMPILER=$compiler
-export LUA_PATH=$LUA_PATH:$defaultPath/lib/lua/?.lua
+export LUA_PATH=$LUA_PATH;$defaultPath/lib/lua/?.lua
 EOF
 #------- end file -----------------------------
 		echo In order to use source file, type:
