@@ -316,13 +316,17 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
 #endif
       READ(10,*) surf%symmlabel
       select case( trim(surf%symmlabel) )
-      case('p4mm')
+      case('p4mm','P4MM')
         surf%order=4
-      case('p3')
+      case('p2mg','P2MG')
+        surf%order=4
+      case('p3','P3')
         surf%order=6
       case default
          write(0,*) routinename//'ERR surface not implemented'
+         write(0,*) 'Given symmlabel: "'//trim(surf%symmLabel)//'"'
          write(0,*) 'Implemented ones: p4mm'
+         write(0,*) 'p3 and p2gm are just implemented as dummy flags'
          call exit(1)
       end select
       aux_r=transpose(aux_r)
