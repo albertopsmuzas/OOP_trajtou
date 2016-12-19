@@ -15,16 +15,16 @@ IMPLICIT NONE
 !> @brief
 !! General object prepared to perform dynamics simulation. It can be an atom, molecule, etc.
 !
-!> @param E - Energy of the object
-!> @param init_r - Initial position
-!> @param init_p - Initial momentum
+!> @param E             - Energy of the object
+!> @param init_r        - Initial position
+!> @param init_p        - Initial momentum
 !> @param turning_point - Classic turning point
-!> @param r - Actual position of the object
-!> @param p - Actial momentum of the object
-!> @param stat - String that defines the state of this object
-!> @param ireb - Number of bouncings in Z direction
-!> @param ixyboun - Number of bouncings in XY direction
-!> @param id - Integer ID number
+!> @param r             - Actual position of the object
+!> @param p             - Actual momentum of the object
+!> @param stat          - String that defines the state of this object
+!> @param ireb          - Number of bouncings in Z direction
+!> @param ixyboun       - Number of bouncings in XY direction
+!> @param id            - Integer ID number
 !--------------------------------------------------------
 TYPE,ABSTRACT::  Dynobject
    REAL(KIND=8):: E
@@ -42,7 +42,7 @@ TYPE,ABSTRACT::  Dynobject
    INTEGER(KIND=4):: ixyboun
    CHARACTER(LEN=10):: stat 
    CONTAINS
-      PROCEDURE(INITIALIZE_DYNOBJECT),DEFERRED,PUBLIC:: INITIALIZE
+      procedure(INITIALIZE_DYNOBJECT),deferred,public:: INITIALIZE
       procedure,public:: forceStatus => forceStatus_DYNOBJECT
 END TYPE Dynobject
 ABSTRACT INTERFACE
@@ -59,12 +59,12 @@ END INTERFACE
 !> @brief
 !! Stores information to create general initial conditions
 !
-!> @param alias - Human friendly name
+!> @param alias       - Human friendly name
 !> @param kind
-!> @param input_file - Input file
+!> @param input_file  - Input file
 !> @param output_file - Output file
-!> @param ntraj - Final trajectory id
-!> @param nstart - Initial trajectory id
+!> @param ntraj       - Final trajectory id
+!> @param nstart      - Initial trajectory id
 !-------------------------------------------------------------
 TYPE,ABSTRACT:: Inicond
    CHARACTER(LEN=:),ALLOCATABLE:: alias
@@ -101,13 +101,12 @@ ABSTRACT INTERFACE
 END INTERFACE
 !////////////////////////////////////////////////////////
 contains
-!####################################################
+!##################################################################
 !# SUBROUTINE: forceStatus_DYNOBJECT
-!####################################################
+!##################################################################
 !> @brief
-!! Standard set procedure. Sets "stat" atribute of DynObject
-!! class
-!----------------------------------------------------
+!! Standard set procedure. Sets "stat" atribute of DynObject class
+!------------------------------------------------------------------
 subroutine forceStatus_DYNOBJECT(this,string)
    implicit none
    class(DynObject),intent(inout):: this

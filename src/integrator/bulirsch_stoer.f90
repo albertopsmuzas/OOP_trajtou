@@ -26,14 +26,14 @@ IMPLICIT NONE
 !
 !> @see FORTRAN 77 numerical recipes
 !----------------------------------------------------------------
-TYPE,EXTENDS(Integrator_o1) :: Bulirsch_Stoer_integrator
-CONTAINS
-   PROCEDURE,PUBLIC :: STEP => STEP_BS
-   PROCEDURE,PUBLIC :: MMID => MMID_BS
-   PROCEDURE,PUBLIC :: POLINOM_EXTRAPOL => PZEXTR_BS
-   PROCEDURE,PUBLIC :: RATIONAL_EXTRAPOL => RZEXTR_BS
-   PROCEDURE,PUBLIC :: INTEGRATE => INTEGRATE_BS
-END TYPE Bulirsch_Stoer_integrator
+type,extendS(Integrator_o1) :: Bulirsch_Stoer_integrator
+contains
+   procedure,publiC :: STEP              => STEP_BS
+   procedure,publiC :: MMID              => MMID_BS
+   procedure,publiC :: POLINOM_EXTRAPOL  => PZEXTR_BS
+   procedure,publiC :: RATIONAL_EXTRAPOL => RZEXTR_BS
+   procedure,publiC :: INTEGRATE         => INTEGRATE_BS
+end type Bulirsch_Stoer_integrator
 !/////////////////////////////////////////////////////////////////
 CONTAINS
 !########################################################################
@@ -148,13 +148,13 @@ END SUBROUTINE MMID_BS
 !! Bulirsch-Stoer step with monitoring of local truncation error to ensure accuracy and adjust
 !! stepsize. 
 !
-!> @param[in,out] y(:) - @b real(kind=8) @b array. Function to integrate.
-!!                       @f$ f(x), f:\mathbb{R}\rightarrow\mathbb{R}^{N} @f$
-!> @param[in] dydx(:) - @b real(kind=8) @b array. Function derivatives.
-!!                      @f$ \over{df}{dx}(x), \over{df}{dx}:\mathbb{R}\rightarrow\mathbb{R}^{N} @f$
-!> @param[in,out] x - @b real(kind=8). Value at which @f$f@f$ and @f$\over{df}{dx}@f$ are evaluated.
-!> @param[out] hdid - @b real(kind=8). Time step actually accomplished.
-!> @param[out] hnext - @b real(kind=8). Estimated next step size.
+!> @param[in,out] y(:)   - @b real(kind=8) @b array. Function to integrate.
+!!                         @f$ f(x), f:\mathbb{R}\rightarrow\mathbb{R}^{N} @f$
+!> @param[in] dydx(:)    - @b real(kind=8) @b array. Function derivatives.
+!!                         @f$ \over{df}{dx}(x), \over{df}{dx}:\mathbb{R}\rightarrow\mathbb{R}^{N} @f$
+!> @param[in,out] x      - @b real(kind=8). Value at which @f$f@f$ and @f$\over{df}{dx}@f$ are evaluated.
+!> @param[out] hdid      - @b real(kind=8). Time step actually accomplished.
+!> @param[out] hnext     - @b real(kind=8). Estimated next step size.
 !> @param[in,out] switch - @b logical. .TRUE. if there was a problem calculating the potential.
 !
 !------------------------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ SUBROUTINE STEP_BS(this,y,dydx,x,hdid,hnext,DERIV,switch)
 	LOGICAL,INTENT(INOUT):: switch
 	REAL(KIND=8),INTENT(OUT):: hdid
 	REAL(KIND=8),INTENT(OUT):: hnext
-   EXTERNAL :: DERIV
+   EXTERNAL:: DERIV
    ! Parameters for this routine
 	REAL(KIND=8),PARAMETER:: SAFE1 = 0.25D0 ! Safety factor
 	REAL(KIND=8),PARAMETER:: SAFE2 = 0.7D0  ! Safety factor
@@ -202,29 +202,29 @@ SUBROUTINE STEP_BS(this,y,dydx,x,hdid,hnext,DERIV,switch)
          ALLOCATE(yerr(this%getnv()))
    END SELECT
    switch = .FALSE.
-	IF (this%geterr()/=epsold) THEN !A new tolerance, so reinitialize.
-		hnext = -1.D29  ! Impossible values.
-		xnew  = -1.D29
-		eps1 = SAFE1*this%geterr()
-		a(1)=nseq(1)+1  ! Compute work coecients Ak.
-		DO k=1,KMAXX
-			a(k+1)=a(k)+nseq(k+1)
-		END DO
-		DO iq=2,KMAXX ! Compute alpha(k,q)
-			DO k=1,iq-1
-				alf(k,iq)=eps1**((a(k+1)-a(iq+1))/((a(iq+1)-a(1)+1.)*(2*k+1)))
-			END DO
-		END DO
-		epsold = this%geterr()
-		DO kopt=2,KMAXX-1 ! Determine optimal row number for convergence
-			if(a(kopt+1)>a(kopt)*alf(kopt-1,kopt)) goto 1 
-		END DO
+   IF (this%geterr()/=epsold) THEN !A new tolerance, so reinitialize.
+      hnext = -1.D29  ! Impossible values.
+      xnew  = -1.D29
+      eps1 = SAFE1*this%geterr()
+      a(1)=nseq(1)+1  ! Compute work coecients Ak.
+      DO k=1,KMAXX
+         a(k+1)=a(k)+nseq(k+1)
+      END DO
+      DO iq=2,KMAXX ! Compute alpha(k,q)
+         DO k=1,iq-1
+            alf(k,iq)=eps1**((a(k+1)-a(iq+1))/((a(iq+1)-a(1)+1.)*(2*k+1)))
+         END DO
+      END DO
+      epsold = this%geterr()
+      DO kopt=2,KMAXX-1 ! Determine optimal row number for convergence
+         if(a(kopt+1)>a(kopt)*alf(kopt-1,kopt)) goto 1 
+      END DO
 1 kmax = kopt
-	END IF
-	h = this%gettimestep_next()
-	DO i=1,this%getnv() ! Save the starting values.
-		ysav(i) = y(i)
-	END DO
+   END IF
+   h = this%gettimestep_next()
+   DO i=1,this%getnv() ! Save the starting values.
+      ysav(i) = y(i)
+   END DO
    ! A new stepsize or a new integration: re-establish the order window
    SELECT CASE(h/=hnext .OR. x/=xnew)
       CASE(.TRUE.)
@@ -233,7 +233,7 @@ SUBROUTINE STEP_BS(this,y,dydx,x,hdid,hnext,DERIV,switch)
       CASE(.FALSE.)
          ! Do nothing
    END SELECT
-	reduct=.false.
+   reduct=.false.
 2 DO k=1,kmax   ! Evaluate the sequence of modified midpoint integrations
       xnew=x+h
       CALL this%MMID(ysav,dydx,x,h,nseq(k),yseq,DERIV,switch)
@@ -265,36 +265,36 @@ SUBROUTINE STEP_BS(this,y,dydx,x,hdid,hnext,DERIV,switch)
          CASE(.FALSE.)
             ! Do nothing
       END SELECT
-		IF(k.NE.1.AND.(k.GE.kopt-1.OR.first)) THEN ! In order window.
-			IF(errmax.lt.1.) GO TO 4  ! Converged.
-			IF (k==kmax .OR. k==kopt+1) THEN ! Check for possible stepsize reduction.
-				red=SAFE2/err(km)
-				GO TO 3
-			ELSE IF (k.EQ.kopt) THEN
-				IF(alf(kopt-1,kopt)<err(km)) THEN
-					red=1./err(km)
-					GO TO 3
-				END IF
-			ELSE IF(kopt.EQ.kmax) THEN
-				IF(alf(km,kmax-1)<err(km)) THEN
-					red=alf(km,kmax-1)*SAFE2/err(km)
-					GO TO 3
-				END IF
-			ELSE IF (alf(km,kopt)<err(km)) THEN
-				red=alf(km,kopt-1)/err(km)
-				GO TO 3
-			END IF
-		END IF
-	END DO
+      IF(k.NE.1.AND.(k.GE.kopt-1.OR.first)) THEN ! In order window.
+         IF(errmax.lt.1.) GO TO 4  ! Converged.
+         IF (k==kmax .OR. k==kopt+1) THEN ! Check for possible stepsize reduction.
+            red=SAFE2/err(km)
+            GO TO 3
+         ELSE IF (k.EQ.kopt) THEN
+            IF(alf(kopt-1,kopt)<err(km)) THEN
+               red=1./err(km)
+               GO TO 3
+            END IF
+         ELSE IF(kopt.EQ.kmax) THEN
+            IF(alf(km,kmax-1)<err(km)) THEN
+               red=alf(km,kmax-1)*SAFE2/err(km)
+               GO TO 3
+            END IF
+         ELSE IF (alf(km,kopt)<err(km)) THEN
+            red=alf(km,kopt-1)/err(km)
+            GO TO 3
+         END IF
+      END IF
+   END DO
 3 red=min(red,REDMIN)  ! Reduce stepsize by at least REDMIN and at
-	red=max(red,REDMAX) ! most REDMAX.
-	h=h*red
-	reduct=.TRUE.
-	GO TO 2 ! Try again.
+   red=max(red,REDMAX) ! most REDMAX.
+   h=h*red
+   reduct=.TRUE.
+   GO TO 2 ! Try again.
 4 x=xnew ! Successful step taken.
-	hdid=h
-	first=.FALSE.
-	wrkmin=1.D35 ! Compute optimal row for convergence and
+   hdid=h
+   first=.FALSE.
+   wrkmin=1.D35 ! Compute optimal row for convergence and
    DO kk=1,km   ! corresponding stepsize.
       fact= max(err(kk),SCALMX)
       work=fact*a(kk+1)

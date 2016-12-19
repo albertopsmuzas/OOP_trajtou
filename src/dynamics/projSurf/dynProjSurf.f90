@@ -17,13 +17,13 @@ IMPLICIT NONE
 !! Stores information for a dynamics job with atoms
 !
 !> @param extrapol - Method to extrapol stepsize in differential equations (Polinomi,Rational)
-!> @param scaling - Method to scale differential equations (Equal,Smart)
-!> @param eps - Precission of equations of motion. This is a factor.
-!> @param zstop - Trajectories are stopped when Z is in between zstop and zstop+dzstop
-!> @param dzstop - Tolerance value zstop
-!> @param zscatt - Z value to consider a trajectory to be scattered
-!> @param zads - Z for adsorbed atoms
-!> @param zabs - Z for absorbed atoms
+!> @param scaling  - Method to scale differential equations (Equal,Smart)
+!> @param eps      - Accuracy of equations of motion. This is a factor.
+!> @param zstop    - Trajectories are stopped when Z is in between zstop and zstop+dzstop
+!> @param dzstop   - Tolerance value zstop
+!> @param zscatt   - Z value to consider a trajectory to be scattered
+!> @param zads     - Z for adsorbed atoms
+!> @param zabs     - Z for absorbed atoms
 !----------------------------------------------------------
 TYPE,EXTENDS(Dynamics) :: DynDiatomic
    CHARACTER(LEN=:),ALLOCATABLE:: extrapol
@@ -56,17 +56,17 @@ TYPE,EXTENDS(Dynamics) :: DynDiatomic
    integer(kind=4),private:: wure=909 ! write unit for reacted trajs
    CONTAINS
      ! Initialization block
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_DYNDIATOMIC
+      PROCEDURE,PUBLIC::  INITIALIZE           => INITIALIZE_DYNDIATOMIC
       ! Tools block
-      PROCEDURE,PUBLIC:: RUN => RUN_DYNDIATOMIC
+      PROCEDURE,PUBLIC::  RUN                  => RUN_DYNDIATOMIC
       procedure,private:: openFileTurningPoint => openFileTurningPoint_DYNDIATOMIC
       ! Private block
-      PROCEDURE,PRIVATE:: DO_DYNAMICS => DO_DYNAMICS_DYNDIATOMIC
-      PROCEDURE,PRIVATE:: TIME_DERIVS => TIME_DERIVS_SPHERICAL_DYNDIATOMIC
-      PROCEDURE,PRIVATE:: MMID => MMID_DYNDIATOMIC
-      PROCEDURE,PRIVATE:: BSSTEP => BSSTEP_DYNDIATOMIC
-      PROCEDURE,PRIVATE:: POLINOM_EXTRAPOL => PZEXTR_DYNDIATOMIC
-      PROCEDURE,PRIVATE:: RATIONAL_EXTRAPOL => RZEXTR_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: DO_DYNAMICS          => DO_DYNAMICS_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: TIME_DERIVS          => TIME_DERIVS_SPHERICAL_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: MMID                 => MMID_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: BSSTEP               => BSSTEP_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: POLINOM_EXTRAPOL     => PZEXTR_DYNDIATOMIC
+      PROCEDURE,PRIVATE:: RATIONAL_EXTRAPOL    => RZEXTR_DYNDIATOMIC
 END TYPE DynDiatomic
 !//////////////////////////////////////////////////////////
 CONTAINS

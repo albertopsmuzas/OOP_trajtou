@@ -1,4 +1,4 @@
-!#########################################################
+!###################################################################
 ! MODULE: INTEGRATOR_O1_MOD
 !> @brief
 !! Contains an abstract type for integration of first order
@@ -7,33 +7,33 @@
 !! - Any system of ordinary differential
 !!   equations can be reduced to a set of first order differential
 !!   equations.
-!##########################################################
+!###################################################################
 MODULE INTEGRATOR_O1_MOD
 ! Initial declarations
 IMPLICIT NONE
-!/////////////////////////////////////////////////////////////////
+!////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ! TYPE: INTEGRATOR_O1
 !> @brief
 !! Generic type to implement different integration schemes
 !
-!> @param nv - @b integer(kind=4). Number of dimensions of the function to integrate. It is size(errscal) by definition.
-!> @param dt - @b real(kind=8). Time step to be used in the next integration. Mandatory to set it before integration
-!> @param dt_old - @b real(kind=8). Time step used in the previous integration
-!> @param err - @b real(kind=8). Error threshold during integration. Mandatory to set it before integration.
-!> @param errscal(:) - @b real(kind=8) @b array. Array against which the integration error is scaled. This 
-!!                     parameter can be used to scale in a different way errors in each component of the function
-!!                     to integrate. Mandatory to set it before integration.
-!> @param realparam(:) - @b real(kind=8) @b array. Real internal parameters of the integrator. Its meaning can change
-!!                       from each specific implementation.
-!> @param intparam(:) - @b integer(kind=8) @b array. Integer internal parameters of the integrator. Its meaning can change
-!!                      from each specific implementation.
+!> @param nv             - @b integer(kind=4). Number of dimensions of the function to integrate. It is size(errscal) by definition.
+!> @param dt             - @b real(kind=8). Time step to be used in the next integration. Mandatory to set it before integration
+!> @param dt_old         - @b real(kind=8). Time step used in the previous integration
+!> @param err            - @b real(kind=8). Error threshold during integration. Mandatory to set it before integration.
+!> @param errscal(:)     - @b real(kind=8) array. Array against which the integration error is scaled. This 
+!!                         parameter can be used to scale in a different way errors in each component of the function
+!!                         to integrate. Mandatory to set it before integration.
+!> @param realparam(:)   - @b real(kind=8) @b array. Real internal parameters of the integrator. Its meaning can change
+!!                         from each specific implementation.
+!> @param intparam(:)    - @b integer(kind=8) @b array. Integer internal parameters of the integrator. Its meaning can change
+!!                         from each specific implementation.
 !> @param stringparam(:) - @b character(len=*) @b array. String internal parameters of the integrator.
 !!                         Its meaning can change from each specific implementation. Max number of characters: 20.
 !!
 !> @author A.S. Muzas - alberto.muzas@uam.es
 !> @date Dec/2014
 !> @version 1.0
-!----------------------------------------------------------------
+!----------------------------------------------------------------------------------------------------------------------------------------
 TYPE,ABSTRACT :: Integrator_o1
    PRIVATE
    INTEGER(KIND=4):: nv
@@ -48,17 +48,17 @@ CONTAINS
    ! Set block
    PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_TIMESTEP_NEXT => SET_TIMESTEP_NEXT_INTEGRATOR_O1 ! Mandatory
    PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_TIMESTEP_USED => SET_TIMESTEP_USED_INTEGRATOR_O1 ! Mandatory
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_TIMESTEP => SET_TIMESTEP_INTEGRATOR_O1
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ERROR => SET_ERR_INTEGRATOR_O1 ! Mandatory
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ERRSCALING => SET_ERRSCAL_INTEGRATOR_O1 ! Mandatory
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_REALPARAM => SET_REALPARAM_INTEGRATOR_O1
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_INTPARAM => SET_INTPARAM_INTEGRATOR_O1
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_STRINGPARAM => SET_STRINGPARAM_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_TIMESTEP      => SET_TIMESTEP_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ERROR         => SET_ERR_INTEGRATOR_O1           ! Mandatory
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_ERRSCALING    => SET_ERRSCAL_INTEGRATOR_O1       ! Mandatory
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_REALPARAM     => SET_REALPARAM_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_INTPARAM      => SET_INTPARAM_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: SET_STRINGPARAM   => SET_STRINGPARAM_INTEGRATOR_O1
    ! Get block
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getnv => getnv_INTEGRATOR_O1
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: geterr => geterr_INTEGRATOR_O1
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: gettimestep_next => gettimestep_next_INTEGRATOR_O1
-   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: gettimestep_used => gettimestep_used_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: getnv             => getnv_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: geterr            => geterr_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: gettimestep_next  => gettimestep_next_INTEGRATOR_O1
+   PROCEDURE,PUBLIC,NON_OVERRIDABLE:: gettimestep_used  => gettimestep_used_INTEGRATOR_O1
    ! Tools block
    PROCEDURE(INTEGRATE_INTEGRATOR_O1),PUBLIC,DEFERRED:: INTEGRATE ! Deferred subroutine!!!!!
 END TYPE Integrator_o1

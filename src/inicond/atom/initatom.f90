@@ -76,22 +76,7 @@ END SUBROUTINE INITIALIZE_ATOM
 !> @param[in] filename - Name of the input file
 !
 !> @warning
-!! - Input file syntax:
-!!    -# line 1: character(len=30); human friendly alias 
-!!    -# line 2: character(len=10); kind of input. "Atoms" is the only available label
-!!    -# line 3: integer(kind=4); initial trajectory
-!!    -# line 4: integer(kind=4); final trajectory
-!!    -# line 5: real(kind=8),character(len=10); mass, units
-!!    -# line 6: real(kind=8),character(len=10); initial perpendicular energy, units
-!!    -# line 7: real(kind=8),character(len=10); angle of velocity respect to surface plane, units
-!!    -# line 8: real(kind=8),character(len=10); angle of velocity respect to surface vector S1, units
-!!    -# line 9: real(kind=8),character(len=10); initial Z, units
-!!    -# line 10: logical,logical; random seed generation in X and Y?
-!!    -# line 11: real(kind=8); initial X parameter in surface coordinates 1<= x >= 0
-!!    -# line 12: real(kind=8); initial Y parameter in surface coordinates 1<= x >= 0
-!!    -# line 13: logical; Create output file?
-!!    -# line 14: character(len=30); name of the output file
-!!    -# line 15: logical; read seed from INseed.inp?
+!! - Input file syntax: lua
 !
 !> @author A.S. Muzas alberto.muzas@uam.es
 !> @date 10/Feb/2014
