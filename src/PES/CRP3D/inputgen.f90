@@ -250,7 +250,7 @@ subroutine printStatus_NewInput3d(this)
    ! I/O variables
    class(NewInput3d),intent(in):: this
    ! Local variables
-   character(:),parameter:: header='NEWINPUT3D status: '
+   character(len=*),parameter:: header='NEWINPUT3D status: '
    integer(kind=4):: i ! counters
    ! Hey Oh, let's go
    print *, header//'Vasint is (au): ',this%vasint
@@ -303,7 +303,7 @@ subroutine printPairpot_NewInput3d(this,symmRaw,rumplingID,pairpotName,fileName)
    character(len=*),intent(in):: pairpotName
    character(len=*),intent(in):: fileName
    ! Local variables ----------------------------
-	character(len=:),parameter:: routineName = "PRINTPAIRPOT_NEWINPUT3D: "
+	character(len=*),parameter:: routineName = "PRINTPAIRPOT_NEWINPUT3D: "
 	integer:: i ! Counter
 	real(kind=8):: dz1, dz2
    ! HEY HO! LET'S GO! --------------------------
@@ -382,7 +382,7 @@ subroutine printSitio_NewInput3d(this,symmRaw,sitioName,fileName)
 	character(len=*),intent(in):: fileName
 	character(len=*),intent(in):: sitioName
 	! Local variables -------------------
-	character(len=:),parameter:: routineName = "GEN_INPUT_SITIO: "
+	character(len=*),parameter:: routineName = "GEN_INPUT_SITIO: "
 	integer(kind=4):: i ! Counter
 	real(kind=8):: dz1,dz2
 	! FIRE IN THE HOLE ! ----------------
