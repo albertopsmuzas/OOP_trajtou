@@ -79,20 +79,20 @@ contains
    ! Initiallize
    PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_SURFACE
    ! Operations block
-   PROCEDURE,PUBLIC:: surf2cart => surf2cart_SURFACE
-   PROCEDURE,PUBLIC:: cart2surf => cart2surf_SURFACE
-   PROCEDURE,PUBLIC:: surfunit2cart => surfunit2cart_SURFACE
-   PROCEDURE,PUBLIC:: cart2surfunit => cart2surfunit_SURFACE
-   PROCEDURE,PUBLIC:: recip2cart => recip2cart_SURFACE
-   PROCEDURE,PUBLIC:: cart2recip => cart2recip_SURFACE
+   PROCEDURE,PUBLIC:: surf2cart        => surf2cart_SURFACE
+   PROCEDURE,PUBLIC:: cart2surf        => cart2surf_SURFACE
+   PROCEDURE,PUBLIC:: surfunit2cart    => surfunit2cart_SURFACE
+   PROCEDURE,PUBLIC:: cart2surfunit    => cart2surfunit_SURFACE
+   PROCEDURE,PUBLIC:: recip2cart       => recip2cart_SURFACE
+   PROCEDURE,PUBLIC:: cart2recip       => cart2recip_SURFACE
    PROCEDURE,PUBLIC:: project_unitcell => project_unitcell_SURFACE
-   PROCEDURE,PUBLIC:: project_iwscell => project_iwscell_SURFACE
+   PROCEDURE,PUBLIC:: project_iwscell  => project_iwscell_SURFACE
    ! Get block
    PROCEDURE,PUBLIC:: getsymmlabel => getsymmlabel_SURFACE
-   PROCEDURE,PUBLIC:: getfilename => getfilename_SURFACE
+   PROCEDURE,PUBLIC:: getfilename  => getfilename_SURFACE
    ! Tools block
    PROCEDURE,PUBLIC:: PRINT_PATTERN => PRINT_PATTERN_SURFACE
-   PROCEDURE,PUBLIC:: MOVE_PATTERN => MOVE_PATTERN_SURFACE
+   PROCEDURE,PUBLIC:: MOVE_PATTERN  => MOVE_PATTERN_SURFACE
    ! Enquire block
    PROCEDURE,PUBLIC:: is_initialized => is_initialized_SURFACE
 end type
