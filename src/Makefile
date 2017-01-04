@@ -110,7 +110,7 @@ libtrajtou.a: $(objectlist)
 # Static library: aotus --------------------------------------------------------------
 libaotus.a: 
 	cd utils/haraldkl-aotus-707f4da5293b;\
-	./waf configure build --check-fortran-compiler=$(F);\
+	./waf configure build --check-fortran-compiler=$(F) --check-c-compiler=$(CC);\
 	mv build/*.a ../../../lib/.;\
 	mv build/*.mod ../../../mod/.;\
 	mv build/lua ../../../bin/lua
