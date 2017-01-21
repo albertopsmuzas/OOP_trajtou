@@ -6,7 +6,7 @@
 !! CRP-6D interpolation job. This method only works systematically with diatomic
 !! molecules
 !#######################################################
-MODULE CRP6D_MOD
+module CRP6D_MOD
 ! Massive name spaces
 use SYSTEM_MOD
 use LINK_FUNCTION1D_MOD
@@ -24,73 +24,73 @@ use AOT_TABLE_MODULE,       only: AOT_TABLE_OPEN, AOT_TABLE_CLOSE, AOT_TABLE_LEN
 #if DEBUG
 use DEBUG_MOD, only: verbose_write, debug_write
 #endif
-IMPLICIT NONE
+implicit none
 !/////////////////////////////////////////////////
 ! TYPE: CRP6D
 !
 !-------------------------------------------------
-TYPE,EXTENDS(PES):: CRP6D
-   INTEGER(KIND=4):: nsites
-   INTEGER(KIND=4):: natomic
-   LOGICAL:: is_interpolated=.FALSE.
-   LOGICAL:: is_homonucl=.FALSE.
-   LOGICAL:: is_smooth=.FALSE.
-   LOGICAL:: is_shifted=.FALSE.
-   LOGICAL:: is_resized=.FALSE.
-   REAL(KIND=8):: zvacuum
-   INTEGER(KIND=4),DIMENSION(2):: grid=[0,0]
-   CLASS(Wyckoffsitio),DIMENSION(:),ALLOCATABLE:: wyckoffsite
-   TYPE(CRP3D),DIMENSION(:),ALLOCATABLE:: atomiccrp
-   TYPE(Vacuumpot):: farpot
-   CLASS(Function1d),ALLOCATABLE:: dumpfunc
-   CHARACTER(LEN=30):: extrapol2vac_flag
-   INTEGER(KIND=4),DIMENSION(:,:),ALLOCATABLE:: kListXY
+type,extends(PES):: CRP6D
+   integer(kind=4):: nsites
+   integer(kind=4):: natomic
+   logical:: is_interpolated=.false.
+   logical:: is_homonucl=.false.
+   logical:: is_smooth=.false.
+   logical:: is_shifted=.false.
+   logical:: is_resized=.false.
+   real(kind=8):: zvacuum
+   integer(kind=4),dimension(2):: grid=[0,0]
+   class(Wyckoffsitio),dimension(:),allocatable:: wyckoffsite
+   type(CRP3D),dimension(:),allocatable:: atomiccrp
+   type(Vacuumpot):: farpot
+   class(Function1d),allocatable:: dumpfunc
+   character(len=30):: extrapol2vac_flag
+   integer(kind=4),dimension(:,:),allocatable:: kListXY
    character(len=1),dimension(:),allocatable:: parityListXY
    character(len=2),dimension(:),allocatable:: irrepListXY
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: kListAngle
+   integer(kind=4),dimension(:),allocatable:: kListAngle
    character(len=1),dimension(:),allocatable:: parityListAngle
    character(len=2),dimension(:),allocatable:: irrepListAngle
    integer(kind=4):: totalTerms=0
 
-   CONTAINS
+   contains
       ! Initialization block
-      PROCEDURE,PUBLIC:: READ => READ_CRP6D
-      PROCEDURE,PUBLIC:: INITIALIZE => INITIALIZE_CRP6D
+      procedure,public:: READ => READ_CRP6D
+      procedure,public:: INITIALIZE => INITIALIZE_CRP6D
       ! Set block
-      PROCEDURE,PUBLIC:: SET_SMOOTH => SET_SMOOTH_CRP6D
+      procedure,public:: SET_SMOOTH => SET_SMOOTH_CRP6D
       ! Get block
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_CRP6D
-      PROCEDURE,PUBLIC:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_CRP6D
+      procedure,public:: GET_V_AND_DERIVS => GET_V_AND_DERIVS_CRP6D
+      procedure,public:: GET_V_AND_DERIVS_PURE => GET_V_AND_DERIVS_PURE_CRP6D
+      procedure,public:: GET_V_AND_DERIVS_SMOOTH => GET_V_AND_DERIVS_SMOOTH_CRP6D
+      procedure,public:: GET_ATOMICPOT_AND_DERIVS => GET_ATOMICPOT_AND_DERIVS_CRP6D
       ! Tools block
-      PROCEDURE,PUBLIC:: SMOOTH => SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: SMOOTH_EXTRA => SMOOTH_EXTRA_CRP6D
-      PROCEDURE,PUBLIC:: INTERPOL => INTERPOL_CRP6D
-      PROCEDURE,PUBLIC:: RAWINTERPOL => RAWINTERPOL_CRP6D
-      PROCEDURE,PUBLIC:: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
-      PROCEDURE,PUBLIC:: ADD_VACUUMSURF => ADD_VACUUMSURF_CRP6D
-      PROCEDURE,PUBLIC:: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
-      PROCEDURE,PUBLIC:: CHEAT_CARTWHEEL_ONTOP => CHEAT_CARTWHEEL_ONTOP_CRP6D
+      procedure,public:: SMOOTH => SMOOTH_CRP6D
+      procedure,public:: SMOOTH_EXTRA => SMOOTH_EXTRA_CRP6D
+      procedure,public:: INTERPOL => INTERPOL_CRP6D
+      procedure,public:: RAWINTERPOL => RAWINTERPOL_CRP6D
+      procedure,public:: EXTRACT_VACUUMSURF => EXTRACT_VACUUMSURF_CRP6D
+      procedure,public:: ADD_VACUUMSURF => ADD_VACUUMSURF_CRP6D
+      procedure,public:: INTERPOL_NEW_RZGRID => INTERPOL_NEW_RZGRID_CRP6D
+      procedure,public:: CHEAT_CARTWHEEL_ONTOP => CHEAT_CARTWHEEL_ONTOP_CRP6D
       ! Plot toolk
-      PROCEDURE,PUBLIC:: PLOT1D_THETA => PLOT1D_THETA_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_PHI => PLOT1D_PHI_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_R => PLOT1D_R_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_Z => PLOT1D_Z_CRP6D
-      PROCEDURE,PUBLIC:: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_XYMAP => PLOT_XYMAP_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_SMOOTH_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_RZMAP => PLOT_RZMAP_CRP6D
-      PROCEDURE,PUBLIC:: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
+      procedure,public:: PLOT1D_THETA => PLOT1D_THETA_CRP6D
+      procedure,public:: PLOT1D_THETA_SMOOTH => PLOT1D_THETA_SMOOTH_CRP6D
+      procedure,public:: PLOT1D_ATOMIC_INTERAC_THETA => PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
+      procedure,public:: PLOT1D_PHI => PLOT1D_PHI_CRP6D
+      procedure,public:: PLOT1D_PHI_SMOOTH => PLOT1D_PHI_SMOOTH_CRP6D
+      procedure,public:: PLOT1D_ATOMIC_INTERAC_PHI => PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
+      procedure,public:: PLOT1D_R => PLOT1D_R_CRP6D
+      procedure,public:: PLOT1D_R_SMOOTH => PLOT1D_R_SMOOTH_CRP6D
+      procedure,public:: PLOT1D_Z => PLOT1D_Z_CRP6D
+      procedure,public:: PLOT1D_Z_SMOOTH => PLOT1D_Z_SMOOTH_CRP6D
+      procedure,public:: PLOT_XYMAP => PLOT_XYMAP_CRP6D
+      procedure,public:: PLOT_XYMAP_SMOOTH => PLOT_XYMAP_SMOOTH_CRP6D
+      procedure,public:: PLOT_RZMAP => PLOT_RZMAP_CRP6D
+      procedure,public:: PLOT_ATOMIC_INTERAC_RZ => PLOT_ATOMIC_INTERAC_RZ_CRP6D
       ! Enquire block
-      PROCEDURE,PUBLIC:: is_allowed => is_allowed_CRP6D
-END TYPE CRP6D
-CONTAINS
+      procedure,public:: is_allowed => is_allowed_CRP6D
+end type CRP6D
+contains
 !###########################################################
 !# SUBROUTINE: INITIALIZE_CRP6D 
 !###########################################################
@@ -101,36 +101,36 @@ CONTAINS
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INITIALIZE_CRP6D(this,filename,tablename)
+subroutine INITIALIZE_CRP6D(this,filename,tablename)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(OUT)::this
-   CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: filename,tablename
+   class(CRP6D),intent(out)::this
+   character(len=*),optional,intent(in):: filename,tablename
    ! Local variables
-   CHARACTER(LEN=:),ALLOCATABLE:: auxstring
+   character(len=:),allocatable:: auxstring
    ! Run section
-   SELECT CASE(allocated(system_inputfile) .or. .not.present(filename))
-      CASE(.TRUE.)
+   select case(allocated(system_inputfile) .or. .not.present(filename))
+      case(.true.)
          auxstring=system_inputfile
-      CASE(.FALSE.)
+      case(.false.)
          auxstring=filename
-   END SELECT
-   SELECT CASE(present(tablename))
-      CASE(.TRUE.)
-         CALL this%READ(filename=auxstring,tablename=tablename)
-      CASE(.FALSE.)
-         CALL this%READ(filename=auxstring,tablename='pes')
-   END SELECT
-   CALL this%INTERPOL()
-   SELECT CASE(this%is_resized)
-      CASE(.TRUE.)
-         CALL this%INTERPOL_NEW_RZGRID(this%grid(1),this%grid(2))
-      CASE(.FALSE.)
+   end select
+   select case(present(tablename))
+      case(.true.)
+         call this%READ(filename=auxstring,tablename=tablename)
+      case(.false.)
+         call this%READ(filename=auxstring,tablename='pes')
+   end select
+   call this%INTERPOL()
+   select case(this%is_resized)
+      case(.true.)
+         call this%INTERPOL_NEW_RZGRID(this%grid(1),this%grid(2))
+      case(.false.)
          ! do nothing
-   END SELECT
-   RETURN
-END SUBROUTINE INITIALIZE_CRP6D
+   end select
+   return
+end subroutine INITIALIZE_CRP6D
 !###########################################################
 !# SUBROUTINE: GET_ATOMICPOT_AND_DERIVS_CRP6D 
 !###########################################################
@@ -141,30 +141,30 @@ END SUBROUTINE INITIALIZE_CRP6D
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
+subroutine GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(6),INTENT(IN):: molecx
-   REAL(KIND=8),DIMENSION(2),INTENT(OUT):: v
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT):: dvdu
-   REAL(KIND=8),DIMENSION(6),INTENT(OUT):: atomicx
+   class(CRP6D),intent(in):: this
+   real(kind=8),dimension(6),intent(in):: molecx
+   real(kind=8),dimension(2),intent(out):: v
+   real(kind=8),dimension(6),intent(out):: dvdu
+   real(kind=8),dimension(6),intent(out):: atomicx
    ! Local variables
-   REAL(KIND=8):: vcorra,vcorrb
+   real(kind=8):: vcorra,vcorrb
    ! Run section
    atomicx(:)=from_molecular_to_atomic(molecx)
-   SELECT CASE(this%natomic)
-      CASE(1)
-         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),v(1),dvdu(1:3))
-         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),v(2),dvdu(4:6))
-      CASE(2)
-         CALL this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),v(1),dvdu(1:3))
-         CALL this%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),v(2),dvdu(4:6))
-      CASE DEFAULT
-         WRITE(0,*) "GET_ATOMICPOT_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
-         CALL EXIT(1)
-   END SELECT
+   select case(this%natomic)
+      case(1)
+         call this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),v(1),dvdu(1:3))
+         call this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(4:6),v(2),dvdu(4:6))
+      case(2)
+         call this%atomiccrp(1)%GET_V_AND_DERIVS(atomicx(1:3),v(1),dvdu(1:3))
+         call this%atomiccrp(2)%GET_V_AND_DERIVS(atomicx(4:6),v(2),dvdu(4:6))
+      case default
+         write(0,*) "GET_ATOMICPOT_AND_DERIVS_CRP6D ERR: wrong number of atomic potentials"
+         call EXIT(1)
+   end select
    vcorra=this%dumpfunc%getvalue(atomicx(3))
    vcorrb=this%dumpfunc%getvalue(atomicx(6))
    dvdu(1)=dvdu(1)*vcorra
@@ -175,24 +175,24 @@ SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D(this,molecx,atomicx,v,dvdu)
    dvdu(6)=dvdu(6)*vcorrb+v(2)*this%dumpfunc%getderiv(atomicx(6))
    v(1)=v(1)*vcorra
    v(2)=v(2)*vcorrb
-   RETURN
-END SUBROUTINE GET_ATOMICPOT_AND_DERIVS_CRP6D
+   return
+end subroutine GET_ATOMICPOT_AND_DERIVS_CRP6D
 !###########################################################
 !# SUBROUTINE: SET_SMOOTH_CRP6D
 !###########################################################
 !> @brief
 !! Common set function. Sets is_smooth atribute
 !-----------------------------------------------------------
-SUBROUTINE SET_SMOOTH_CRP6D(this,is_smooth)
+subroutine SET_SMOOTH_CRP6D(this,is_smooth)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(INOUT):: this
-   LOGICAL,INTENT(IN) :: is_smooth
+   class(CRP6D),intent(inout):: this
+   logical,intent(in) :: is_smooth
    ! Run section
    this%is_smooth=is_smooth
-   RETURN
-END SUBROUTINE SET_SMOOTH_CRP6D
+   return
+end subroutine SET_SMOOTH_CRP6D
 !###########################################################
 !# SUBROUTINE: CHEAT_CARTWHEEL_ONTOP_CRP6D 
 !###########################################################
@@ -215,21 +215,21 @@ END SUBROUTINE SET_SMOOTH_CRP6D
 !> @date Jul/2016
 !> @version 2.0
 !-----------------------------------------------------------
-SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D(this,wyckoff,cut2d,toptype,dmax)
+subroutine CHEAT_CARTWHEEL_ONTOP_CRP6D(this,wyckoff,cut2d,toptype,dmax)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O 
-   CLASS(CRP6D),INTENT(INOUT) :: this
-   INTEGER(KIND=4),INTENT(IN) :: wyckoff,cut2d,toptype
-   REAL(KIND=8),INTENT(IN) :: dmax
+   class(CRP6D),intent(inout) :: this
+   integer(kind=4),intent(in) :: wyckoff,cut2d,toptype
+   real(kind=8),intent(in) :: dmax
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
-   REAL(KIND=8) :: r,z,rump,interac
-   REAL(KIND=8) :: x,y ! x,y position
-   REAL(KIND=8) :: m1, m2 ! masses
-   REAL(KIND=8) :: dist ! distance to the plane
-   INTEGER(KIND=4) :: nr,nz
-   REAL(KIND=8),DIMENSION(3) :: pos1,pos2
+   integer(kind=4) :: i,j ! counters
+   real(kind=8) :: r,z,rump,interac
+   real(kind=8) :: x,y ! x,y position
+   real(kind=8) :: m1, m2 ! masses
+   real(kind=8) :: dist ! distance to the plane
+   integer(kind=4) :: nr,nz
+   real(kind=8),dimension(3) :: pos1,pos2
    ! Run section
    nr=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridsizeR()
    nz=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridsizeZ()
@@ -238,29 +238,29 @@ SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D(this,wyckoff,cut2d,toptype,dmax)
    m1=system_mass(1)
    m2=system_mass(2)
    rump=this%atomiccrp(1)%getrumpling(toptype)
-   DO i = 1, nr
-      DO j = 1, nz
+   do i = 1, nr
+      do j = 1, nz
         r=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridvalueR(i)
         z=this%wyckoffsite(wyckoff)%zrcut(cut2d)%getgridvalueZ(j)
         dist=(2.D0/sqrt(5.D0))*(z+rump-r/2.D0)
         pos1=(/x,y,z+(m2/(m1+m2))*r/)
         pos2=(/x,y,z-(m1/(m1+m2))*r/)
-        SELECT CASE(dist <= dmax) 
-           CASE(.TRUE.)
-              SELECT CASE(this%is_homonucl)
-                 CASE(.TRUE.)
+        select case(dist <= dmax) 
+           case(.true.)
+              select case(this%is_homonucl)
+                 case(.true.)
                     interac=this%atomiccrp(1)%getpot(pos1)+this%atomiccrp(1)%getpot(pos2)!+this%farpot%getpot(r)
-                 CASE(.FALSE.)
+                 case(.false.)
                     interac=this%atomiccrp(1)%getpot(pos1)+this%atomiccrp(2)%getpot(pos2)!+this%farpot%getpot(r)
-              END SELECT
-              CALL this%wyckoffsite(wyckoff)%zrcut(cut2d)%CHANGEPOT_AT_GRIDPOINT(i,j,interac)
-           CASE(.FALSE.)
+              end select
+              call this%wyckoffsite(wyckoff)%zrcut(cut2d)%CHANGEPOT_AT_GRIDPOINT(i,j,interac)
+           case(.false.)
               ! do nothing
-        END SELECT
-      END DO
-   END DO
-   RETURN
-END SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D
+        end select
+      end do
+   end do
+   return
+end subroutine CHEAT_CARTWHEEL_ONTOP_CRP6D
 !###########################################################
 !# SUBROUTINE: INTERPOL_NEW_RZGRID_CRP6D 
 !###########################################################
@@ -271,22 +271,22 @@ END SUBROUTINE CHEAT_CARTWHEEL_ONTOP_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D(this,nRpoints,nZpoints)
+subroutine INTERPOL_NEW_RZGRID_CRP6D(this,nRpoints,nZpoints)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(INOUT) :: this
-   INTEGER(KIND=4),INTENT(IN) :: nrpoints,nzpoints
+   class(CRP6D),intent(inout) :: this
+   integer(kind=4),intent(in) :: nrpoints,nzpoints
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
+   integer(kind=4) :: i,j ! counters
    ! Run section
-   DO i = 1, this%nsites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
-         CALL this%wyckoffsite(i)%zrcut(j)%interrz%INTERPOL_NEWGRID(nrpoints,nzpoints)
-      END DO
-   END DO
-   RETURN
-END SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D
+   do i = 1, this%nsites
+      do j = 1, this%wyckoffsite(i)%n2dcuts
+         call this%wyckoffsite(i)%zrcut(j)%interrz%INTERPOL_NEWGRID(nrpoints,nzpoints)
+      end do
+   end do
+   return
+end subroutine INTERPOL_NEW_RZGRID_CRP6D
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_PURE_CRP6D 
 !###########################################################
@@ -306,37 +306,37 @@ END SUBROUTINE INTERPOL_NEW_RZGRID_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
+subroutine GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),TARGET,INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
-   REAL(KIND=8),INTENT(OUT):: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
+   class(CRP6D),target,intent(in):: this
+   real(kind=8),dimension(:),intent(in):: x
+   real(kind=8),intent(out):: v
+   real(kind=8),dimension(:),intent(out):: dvdu
    ! Local variables
-   INTEGER(KIND=4):: i,j,h ! counters
-   REAL(KIND=8):: ma,mb
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xyList
+   integer(kind=4):: i,j,h ! counters
+   real(kind=8):: ma,mb
+   real(kind=8),dimension(:,:),allocatable:: f ! smooth function and derivs
+   real(kind=8),dimension(:,:),allocatable:: xyList
    real(kind=8),dimension(:),allocatable:: phiList
    real(kind=8),dimension(:,:),allocatable:: completeGeomList
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
-   REAL(KIND=8),DIMENSION(6):: atomicx
-   REAL(KIND=8),DIMENSION(2):: atomic_v
-   REAL(KIND=8),DIMENSION(6):: atomic_dvdu
-   REAL(KIND=8),DIMENSION(3):: dvdu_atomicA,dvdu_atomicB
-   TYPE(Fourier3d_p4mm):: fouInterpol
-   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP6D: "
+   real(kind=8),dimension(:),allocatable:: aux1
+   real(kind=8),dimension(:,:),allocatable:: aux2
+   real(kind=8),dimension(6):: atomicx
+   real(kind=8),dimension(2):: atomic_v
+   real(kind=8),dimension(6):: atomic_dvdu
+   real(kind=8),dimension(3):: dvdu_atomicA,dvdu_atomicB
+   type(Fourier3d_p4mm):: fouInterpol
+   character(len=*),parameter:: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
-   SELECT CASE(this%is_smooth)
-      CASE(.TRUE.)
+   select case(this%is_smooth)
+      case(.true.)
          ! do nothing
-      CASE(.FALSE.)
-         WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH())"
-         CALl EXIT(1)
-   END SELECT
+      case(.false.)
+         write(0,*) "GET_V_AND_DERIVS_CRP6D ERR: smooth the PES first (CALL thispes%SMOOTH())"
+         call EXIT(1)
+   end select
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
    ! f(3,:) smooth dvdr
@@ -364,7 +364,7 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    call fouInterpol%setKlist( kListXY=this%kListXY,kListAngle=this%kListAngle )
    call fouInterpol%setParityList( parityListXY=this%parityListXY,parityListAngle=this%parityListAngle )
    call fouInterpol%setIrrepList( irrepListXY=this%irrepListXY,irrepListAngle=this%irrepListAngle )
-   CALL fouInterpol%interpol()
+   call fouInterpol%interpol()
    allocate(aux1(4))
    allocate(aux2(4,3))
    call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
@@ -380,37 +380,37 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux2(1,3) ! dvdphi
-   CALL DEBUG_WRITE(routinename,"Smooth V at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(1,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(2,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(3,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(4,:))
-   CALL DEBUG_WRITE(routinename,"Smooth interpolated values:")
-   CALL DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
-   CALL DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
-   CALL DEBUG_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
-   CALL DEBUG_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
-   CALL DEBUG_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
-   CALL DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
-   CALL DEBUG_WRITE(routinename,"dvdphi: ",aux2(1,3))   ! dvdphi
+   call DEBUG_WRITE(routinename,"Smooth V at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(1,:))
+   call DEBUG_WRITE(routinename,"Smooth dv/dz at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(2,:))
+   call DEBUG_WRITE(routinename,"Smooth dv/dr at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(3,:))
+   call DEBUG_WRITE(routinename,"Smooth dv/dtheta at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(4,:))
+   call DEBUG_WRITE(routinename,"Smooth interpolated values:")
+   call DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
+   call DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
+   call DEBUG_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
+   call DEBUG_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
+   call DEBUG_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
+   call DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
+   call DEBUG_WRITE(routinename,"dvdphi: ",aux2(1,3))   ! dvdphi
 #endif
    !--------------------------------------
    ! Results for the real potential
    !-------------------------------------
-   CALL this%GET_ATOMICPOT_AND_DERIVS(x,atomicx,atomic_v,atomic_dvdu)
+   call this%GET_ATOMICPOT_AND_DERIVS(x,atomicx,atomic_v,atomic_dvdu)
    dvdu_atomicA=atomic_dvdu(1:3)
    dvdu_atomicB=atomic_dvdu(4:6)
 #ifdef DEBUG
-   CALL DEBUG_WRITE(routinename,"Contributions of the atomic potential: ")
-   CALL DEBUG_WRITE(routinename, "Position Atom A: ",atomicx(1:3))
-   CALL DEBUG_WRITE(routinename,"Va: ",atomic_v(1))
-   CALL DEBUG_WRITE(routinename,"dVa/dxa; dVa/dya: ",dvdu_atomicA)
-   CALL DEBUG_WRITE(routinename, "Position Atom B: ",atomicx(4:6))
-   CALL DEBUG_WRITE(routinename,"Vb: ",atomic_v(2))
-   CALL DEBUG_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
+   call DEBUG_WRITE(routinename,"Contributions of the atomic potential: ")
+   call DEBUG_WRITE(routinename, "Position Atom A: ",atomicx(1:3))
+   call DEBUG_WRITE(routinename,"Va: ",atomic_v(1))
+   call DEBUG_WRITE(routinename,"dVa/dxa; dVa/dya: ",dvdu_atomicA)
+   call DEBUG_WRITE(routinename, "Position Atom B: ",atomicx(4:6))
+   call DEBUG_WRITE(routinename,"Vb: ",atomic_v(2))
+   call DEBUG_WRITE(routinename,"dVa/dxa; dVb/dyb: ",dvdu_atomicB)
 #endif
    v=aux1(1)+sum(atomic_v)
 
@@ -438,8 +438,8 @@ SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D(this,x,v,dvdu)
       +(mb/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicA(2)*dcos(x(6))&
       +(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(1)*dsin(x(6))&
       -(ma/(ma+mb))*x(4)*dsin(x(5))*dvdu_atomicB(2)*dcos(x(6))
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D
+   return
+end subroutine GET_V_AND_DERIVS_PURE_CRP6D
 !###########################################################
 !# SUBROUTINE: GET_V AND DERIVS_CRP6D 
 !###########################################################
@@ -449,125 +449,187 @@ END SUBROUTINE GET_V_AND_DERIVS_PURE_CRP6D
 !! - Extrapolation region zcrp to zvacuum
 !! - Vacuum region: further than zvacuum
 !
+!> @param[in]  this     CRP6D potential used
+!> @param[in]  x        Geometry array (x,y,z,r,theta,phi)
+!> @param[out] v        Potential energy in hartrees
+!> @param[out] dvdu     Derivatives array (dvdx,dvdy,dvdz,dvdr,dvdtheta,dvdphi) @b x geometry
+!> @param[out] errCode  Optional error code to know the status of energy evaluation
+
+!> @details
+!! ERROR CODE GENERATION
+!! errCode ==  0  => Everithing is OK
+!! errCode == -1  => r > rCRPmax. Then, we used r=rCRPmax
+!! errCode == -2  => r < rCRPmin. Then, we used r=rCRPmin
+!! errCode == -3  => z < zCRPmin. Then, we used z=zCRPmin
+!! errCode == -10 => The geometry was unclassificable (beware of this problem >_< )
+!
 !> @author A.S. Muzas - alberto.muzas@uam.es
-!> @date ! type a date
-!> @version 1.0
+!> @date Apr/2014, Jan/2014
+!> @version 1.2
 !-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu,errCode)
+subroutine GET_V_AND_DERIVS_CRP6D(this,X,v,dvdu,errCode)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),TARGET,INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
-   REAL(KIND=8),INTENT(OUT) :: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT) :: dvdu
+   class(CRP6D),target,intent(in):: this
+   real(kind=8),dimension(:),intent(in):: x
+   real(kind=8),intent(out):: v
+   real(kind=8),dimension(:),intent(out):: dvdu
    integer(kind=1),optional,intent(out):: errCode
    ! Local variables
-   REAL(KIND=8) :: zcrp, zvac ! last CRP6D z value and Z infinity
-   REAL(KIND=8) :: vzcrp, vzvac ! potentials at zcrp and zvac
-   REAL(KIND=8),DIMENSION(6) :: dvducrp ! derivatives at zcrp
-   REAL(KIND=8),DIMENSION(6) :: dvduvac ! derivatives at vacuum
-   REAL(KIND=8) :: alpha,beta,gama ! parameters
-   CLASS(Function1d),ALLOCATABLE:: extrapolfunc
-   INTEGER(KIND=4) :: i !counter
+   real(kind=8),dimension(6):: geom             !< @var auxiliar geometry that may change respect to @b x
+   real(kind=8):: zCrpMin                       !< @var Minimum z value at which the potential is defined
+   real(kind=8):: zCrpMax                       !< @var Maximum z value at which the potential is defined
+   real(kind=8):: zVac                          !< @var Z infinity
+   real(kind=8):: rCrpMin                       !< @var Minimum r value at which the potential is defined
+   real(kind=8):: rCrpMax                       !< @var Maximum r value at which the potential is defined
+   real(kind=8):: vzCrpMax                      !< @var Potential at (x,y,zCrpMax,r,theta,phi)
+   real(kind=8):: vzvac                         !< @var Potential at (x,y,zVac,r,theta,phi)
+   real(kind=8),dimension(6):: dvducrp          !< @var Derivatives at zcrp
+   real(kind=8),dimension(6):: dvduvac          !< @var Derivatives at vacuum
+   real(kind=8):: alpha,beta,gama               !< @var Internal parameters
+   class(Function1d),allocatable:: extrapolfunc !< @var Function used to extrapolate potential between zcrp and zvac
+   integer:: error                              !< @var Internal error code that may be inherit by @b errCode if present
+   integer(kind=4):: i !counter
    ! Local Parameter
-   REAL(KIND=8),PARAMETER :: zero=0.D0 ! what we will consider zero (a.u.)
-   REAL(KIND=8),PARAMETER :: dz=0.5D0 ! 0.25 Angstroems approx
+   real(kind=8),parameter:: zero=0.D0 ! what we will consider zero (a.u.)
+   real(kind=8),parameter:: dz=0.5D0  ! 0.25 Angstroems approx
    character(len=*),parameter:: routinename='GET_V_AND_DERIVS_CRP6D: '
    ! Run section
-   zcrp=this%wyckoffsite(1)%zrcut(1)%getlastZ()
+   zCrpMin=this%wyckoffSite(1)%zrcut(1)%getFirstZ()
+   zCrpMax=this%wyckoffSite(1)%zrcut(1)%getLastZ()
    zvac=this%zvacuum
-   ! Check if we are in the pure CRP6D region
-   SELECT CASE(x(3)<= zcrp) !easy
-      CASE(.TRUE.)
-         call this%get_v_and_derivs_pure(x,v,dvdu)
-         RETURN
-      CASE(.FALSE.)
-         ! do nothing, next switch
-   END SELECT
-   ! Check if we are in the extrapolation region
-   SELECT CASE(x(3)>zcrp .AND. x(3)<zvac)
-      CASE(.TRUE.) ! uff
+   rCrpMin=this%wyckoffSite(1)%zrcut(1)%getFirstR()
+   rCrpMax=this%wyckoffSite(1)%zrcut(1)%getLastR()
+   geom(:)=x(1:6)
+   ! Check if the energy evaluation  is outside of the boundaries defined by PES files. Choose an error code when appropriate.
+   error=0
+   select case( geom(4)>rCrpMax )
+   case(.true.)
+      geom(4)=rCrpMax
+      error=-1
+   case(.false.)
+      ! do nothing
+   end select
+
+   select case( geom(4)<rCrpMin )
+   case(.true.)
+      geom(4)=rCrpMin
+      error=-2
+   case(.false.)
+      ! do nothing
+   end select
+
+   select case( geom(3)<zCrpMin )
+   case(.true.)
+      geom(3)=zCrpMin
+      error=-3
+   case(.false.)
+      ! do nothing
+   end select
+
+   ! *************************************************************************
+   ! SWITCH 1: Check if we are inside Z's range
+   select case( geom(3) >= zCrpMin .and. geom(3)<= zCrpMax ) !easy
+   case(.true.)
+      call this%get_v_and_derivs_pure(geom,v,dvdu)
+      return
+   case(.false.)
+      ! do nothing, next switch
+   end select
+
+   ! *************************************************************************
+   ! SWITCH 2: Check if we are inside the extrapolation region
+   select case(geom(3)>zCrpMax .and. geom(3)<zvac)
+      case(.true.) ! uff
          ! Set potential and derivs
-         vzvac=this%farpot%getpot(x(4))
-         CALL this%GET_V_AND_DERIVS_PURE([x(1),x(2),zcrp,x(4),x(5),x(6)],vzcrp,dvducrp)
+         vzvac=this%farpot%getpot( geom(4) )
+         call this%GET_V_AND_DERIVS_PURE([geom(1),geom(2),zCrpMax,geom(4),geom(5),geom(6)],vzCrpMax,dvducrp)
          dvduvac(1:3)=zero
-         dvduvac(4)=this%farpot%getderiv(x(4))
+         dvduvac(4)=this%farpot%getderiv(geom(4))
          dvduvac(5:6)=zero
          ! Check kind of extrapolation
-         SELECT CASE(this%extrapol2vac_flag)
-            CASE("Xexponential")
-               ALLOCATE(Xexponential_func::extrapolfunc)
+         select case(this%extrapol2vac_flag)
+            case("Xexponential")
+               allocate(Xexponential_func::extrapolfunc)
                ! Extrapol potential
                beta=-1.D0/zvac
-               alpha=(vzcrp-vzvac)/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+               alpha=(vzCrpMax-vzvac)/(zCrpMax*dexp(beta*zCrpMax)-zvac*dexp(beta*zvac))
                gama=vzvac-alpha*zvac*dexp(beta*zvac)
-               CALL extrapolfunc%READ([alpha,beta])
-               v=extrapolfunc%getvalue(x(3))+gama
-               dvdu(3)=extrapolfunc%getderiv(x(3))
+               call extrapolfunc%READ([alpha,beta])
+               v=extrapolfunc%getvalue(geom(3))+gama
+               dvdu(3)=extrapolfunc%getderiv(geom(3))
                ! Extrapol derivatives
-               DO i = 1, 6
-                  SELECT CASE(i)
-                     CASE(3)
+               do i = 1, 6
+                  select case(i)
+                     case(3)
                         ! Skip dvdz
-                     CASE DEFAULT
+                     case default
                         beta=-1.D0/zvac
-                        alpha=(dvducrp(i)-dvduvac(i))/(zcrp*dexp(beta*zcrp)-zvac*dexp(beta*zvac))
+                        alpha=(dvducrp(i)-dvduvac(i))/(zCrpMax*dexp(beta*zCrpMax)-zvac*dexp(beta*zvac))
                         gama=dvduvac(i)-alpha*zvac*dexp(beta*zvac)
-                        CALL extrapolfunc%READ([alpha,beta])
-                        dvdu(i)=extrapolfunc%getvalue(x(3))+gama
-                  END SELECT
-               END DO
-               DEALLOCATE(extrapolfunc)
-               RETURN
+                        call extrapolfunc%READ([alpha,beta])
+                        dvdu(i)=extrapolfunc%getvalue(geom(3))+gama
+                  end select
+               end do
+               deallocate(extrapolfunc)
+               return
 
-            CASE("Linear")
-               ALLOCATE(Linear_func::extrapolfunc)
+            case("Linear")
+               allocate(Linear_func::extrapolfunc)
                ! Extrapol potential
-               beta=(vzcrp*zvac-vzvac*zcrp)/(zvac-zcrp)
+               beta=(vzCrpMax*zvac-vzvac*zCrpMax)/(zvac-zCrpMax)
                alpha=(vzvac-beta)/zvac
-               CALL extrapolfunc%READ([alpha,beta])
-               v=extrapolfunc%getvalue(x(3))
-               dvdu(3)=extrapolfunc%getderiv(x(3))
+               call extrapolfunc%READ([alpha,beta])
+               v=extrapolfunc%getvalue(geom(3))
+               dvdu(3)=extrapolfunc%getderiv(geom(3))
                ! Extrapol derivatives
-               DO i = 1, 6
-                  SELECT CASE(i)
-                     CASE(3)
+               do i = 1, 6
+                  select case(i)
+                     case(3)
                         ! do nothing
-                     CASE DEFAULT
-                        beta=(dvducrp(i)*zvac-dvduvac(i)*zcrp)/(zvac-zcrp)
+                     case default
+                        beta=(dvducrp(i)*zvac-dvduvac(i)*zcrpmax)/(zvac-zcrpmax)
                         alpha=(dvduvac(i)-beta)/zvac
-                        CALL extrapolfunc%READ([alpha,beta])
-                        dvdu(i)=extrapolfunc%getvalue(x(3))
-                  END SELECT
-               END DO
-               DEALLOCATE(extrapolfunc)
-               RETURN
+                        call extrapolfunc%READ([alpha,beta])
+                        dvdu(i)=extrapolfunc%getvalue(geom(3))
+                  end select
+               end do
+               deallocate(extrapolfunc)
+               return
 
-            CASE DEFAULT
-               WRITE(0,*) "GET_V_AND_DERIVS_CRP6D ERR: type of extrapolation function isn't implemented yet"
-               WRITE(0,*) "Implemented ones: Linear, Xexponential, None"
-               CALL EXIT(1)
-         END SELECT
-      CASE(.FALSE.)
+            case default
+               write(0,*) "GET_V_AND_DERIVS_CRP6D ERR: type of extrapolation function isn't implemented yet"
+               write(0,*) "Implemented ones: Linear, Xexponential, None"
+               call EXIT(1)
+         end select
+      case(.false.)
          ! do nothing
-   END SELECT
-   ! Check if we are in the Vacuum region
-   SELECT CASE(x(3)>=zvac) !easy
-      CASE(.TRUE.)
-         v=this%farpot%getpot(x(4))
-         dvdu(1:3)=0.D0
-         dvdu(4)=this%farpot%getderiv(x(4))
-         dvdu(5:6)=0.D0
-      CASE(.FALSE.) ! this's the last switch!
+   end select
+   ! *************************************************************************
+   ! SWITCH 3: Check if we are inside the Vacuum region
+   select case(geom(3)>=zvac) !easy
+      case(.true.)
+         v=this%farpot%getpot(geom(4))
+         dvdu(1:3)=0.d0
+         dvdu(4)=this%farpot%getderiv(geom(4))
+         dvdu(5:6)=0.d0
+      case(.false.) ! this's the last switch!
+         error=-10
 #ifdef DEBUG
          call debug_write(routinename,'Unclassificable point')
-         call debug_write(routinename,'Asking potential at Z: ',x(3))
+         call debug_write(routinename,'Asking potential at Z: ',geom(3))
 #endif
-          errCode=1_1
-   END SELECT
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_CRP6D
+   end select
+   ! Set error Code if present
+   select case(present(errCode))
+   case(.true.)
+      errCode = error
+   case(.false.)
+      ! do nothing
+   end select
+   return
+end subroutine GET_V_AND_DERIVS_CRP6D
 !###########################################################
 !# SUBROUTINE: GET_V_AND_DERIVS_SMOOTH_CRP6D 
 !###########################################################
@@ -592,24 +654,24 @@ END SUBROUTINE GET_V_AND_DERIVS_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
+subroutine GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),TARGET,INTENT(IN):: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN):: x
-   REAL(KIND=8),INTENT(OUT):: v
-   REAL(KIND=8),DIMENSION(:),INTENT(OUT):: dvdu
+   class(CRP6D),target,intent(in):: this
+   real(kind=8),dimension(:),intent(in):: x
+   real(kind=8),intent(out):: v
+   real(kind=8),dimension(:),intent(out):: dvdu
    ! Local variables
-   INTEGER(KIND=4):: i,j,h ! counters
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: f ! smooth function and derivs
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: xyList
+   integer(kind=4):: i,j,h ! counters
+   real(kind=8),dimension(:,:),allocatable:: f ! smooth function and derivs
+   real(kind=8),dimension(:,:),allocatable:: xyList
    real(kind=8),dimension(:),allocatable:: phiList
    real(kind=8),dimension(:,:),allocatable:: completeGeomList
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: aux1
-   REAL(KIND=8),DIMENSION(:,:),ALLOCATABLE:: aux2
-   TYPE(Fourier3d_p4mm):: fouInterpol
-   CHARACTER(LEN=*),PARAMETER:: routinename="GET_V_AND_DERIVS_CRP6D: "
+   real(kind=8),dimension(:),allocatable:: aux1
+   real(kind=8),dimension(:,:),allocatable:: aux2
+   type(Fourier3d_p4mm):: fouInterpol
+   character(len=*),parameter:: routinename="GET_V_AND_DERIVS_CRP6D: "
    ! Run section
    ! f(1,:) smooth potential values
    ! f(2,:) smooth dvdz
@@ -638,7 +700,7 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    call fouInterpol%setKlist( kListXY=this%kListXY,kListAngle=this%kListAngle )
    call fouInterpol%setParityList( parityListXY=this%parityListXY,parityListAngle=this%parityListAngle )
    call fouInterpol%setIrrepList( irrepListXY=this%irrepListXY,irrepListAngle=this%irrepListAngle )
-   CALL fouInterpol%interpol()
+   call fouInterpol%interpol()
    allocate(aux1(4))
    allocate(aux2(4,3))
    call fouInterpol%get_allFuncs_and_derivs( x=[x(1),x(2),x(6)],f=aux1,dfdx=aux2 )
@@ -653,22 +715,22 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    ! dvdu(4)=aux1(3)   ! dvdr
    ! dvdu(5)=aux1(4)   ! dvdtheta
    ! dvdu(6)=aux2(1,3) ! dvdphi
-   CALL DEBUG_WRITE(routinename,"Smooth V at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(1,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dz at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(2,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dr at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(3,:))
-   CALL DEBUG_WRITE(routinename,"Smooth dv/dtheta at each thetaCut:")
-   CALL DEBUG_WRITE(routinename,f(4,:))
-   CALL DEBUG_WRITE(routinename,"Smooth interpolated values:")
-   CALL DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
-   CALL DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
-   CALL DEBUG_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
-   CALL DEBUG_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
-   CALL DEBUG_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
-   CALL DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
-   CALL DEBUG_WRITE(routinename,"dvdphi: ",aux2(1,3))   ! dvdphi
+   call DEBUG_WRITE(routinename,"Smooth V at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(1,:))
+   call DEBUG_WRITE(routinename,"Smooth dv/dz at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(2,:))
+   call DEBUG_WRITE(routinename,"Smooth dv/dr at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(3,:))
+   call DEBUG_WRITE(routinename,"Smooth dv/dtheta at each thetaCut:")
+   call DEBUG_WRITE(routinename,f(4,:))
+   call DEBUG_WRITE(routinename,"Smooth interpolated values:")
+   call DEBUG_WRITE(routinename,"v: ",aux1(1))   ! v
+   call DEBUG_WRITE(routinename,"dvdx: ",aux2(1,1)) ! dvdx
+   call DEBUG_WRITE(routinename,"dvdy: ",aux2(1,2)) ! dvdy
+   call DEBUG_WRITE(routinename,"dvdz: ",aux1(2))   ! dvdz
+   call DEBUG_WRITE(routinename,"dvdr: ",aux1(3))   ! dvdr
+   call DEBUG_WRITE(routinename,"dvdtheta: ",aux1(4))   ! dvdtheta
+   call DEBUG_WRITE(routinename,"dvdphi: ",aux2(1,3))   ! dvdphi
 #endif
    v=aux1(1)
    dvdu(1)=aux2(1,1)
@@ -677,8 +739,8 @@ SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D(this,x,v,dvdu)
    dvdu(4)=aux1(3)
    dvdu(5)=aux1(4)
    dvdu(6)=aux2(1,3)
-   RETURN
-END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D
+   return
+end subroutine GET_V_AND_DERIVS_SMOOTH_CRP6D
 !###########################################################
 !# SUBROUTINE: INTERPOL_CRP6D 
 !###########################################################
@@ -689,25 +751,25 @@ END SUBROUTINE GET_V_AND_DERIVS_SMOOTH_CRP6D
 !> @date ! type a date
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE INTERPOL_CRP6D(this)
+subroutine INTERPOL_CRP6D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(INOUT)::this
+   class(CRP6D),intent(inout)::this
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
+   integer(kind=4) :: i,j ! counters
    ! Run section
-   CALL this%EXTRACT_VACUUMSURF()   
-   CALL this%SMOOTH()
+   call this%EXTRACT_VACUUMSURF()   
+   call this%SMOOTH()
    !CALL this%SMOOTH_EXTRA()
-   DO i = 1, this%nsites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
-         CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL()
-      END DO
-   END DO
-   this%is_interpolated=.TRUE.
-   RETURN
-END SUBROUTINE INTERPOL_CRP6D
+   do i = 1, this%nsites
+      do j = 1, this%wyckoffsite(i)%n2dcuts
+         call this%wyckoffsite(i)%zrcut(j)%INTERPOL()
+      end do
+   end do
+   this%is_interpolated=.true.
+   return
+end subroutine INTERPOL_CRP6D
 !###########################################################
 !# SUBROUTINE: RAWINTERPOL_CRP6D 
 !###########################################################
@@ -718,23 +780,23 @@ END SUBROUTINE INTERPOL_CRP6D
 !> @date ! type a date
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE RAWINTERPOL_CRP6D(this)
+subroutine RAWINTERPOL_CRP6D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(INOUT)::this
+   class(CRP6D),intent(inout)::this
    ! Local variables
-   INTEGER(KIND=4) :: i,j ! counters
+   integer(kind=4) :: i,j ! counters
    ! Run section
-   CALL this%EXTRACT_VACUUMSURF()   
-   DO i = 1, this%nsites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
-         CALL this%wyckoffsite(i)%zrcut(j)%INTERPOL()
-      END DO
-   END DO
-   this%is_interpolated=.TRUE.
-   RETURN
-END SUBROUTINE RAWINTERPOL_CRP6D
+   call this%EXTRACT_VACUUMSURF()   
+   do i = 1, this%nsites
+      do j = 1, this%wyckoffsite(i)%n2dcuts
+         call this%wyckoffsite(i)%zrcut(j)%INTERPOL()
+      end do
+   end do
+   this%is_interpolated=.true.
+   return
+end subroutine RAWINTERPOL_CRP6D
 !###########################################################
 !# SUBROUTINE: SMOOTH_CRP6D
 !###########################################################
@@ -745,41 +807,41 @@ END SUBROUTINE RAWINTERPOL_CRP6D
 !> @date 25/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SMOOTH_CRP6D(this)
+subroutine SMOOTH_CRP6D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-    CLASS(CRP6D),INTENT(INOUT):: this
+    class(CRP6D),intent(inout):: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6):: molcoord,atomcoord,dummy
-   INTEGER(KIND=4):: nr,nz
-   INTEGER(KIND=4):: i,j,k,l ! counters
-   CHARACTER(LEN=*),PARAMETER:: routinename="SMOOTH_CRP6D: "
-   REAL(KIND=8):: newpot
-   REAL(KIND=8),DIMENSION(2):: atomic_v
+   real(kind=8),dimension(6):: molcoord,atomcoord,dummy
+   integer(kind=4):: nr,nz
+   integer(kind=4):: i,j,k,l ! counters
+   character(len=*),parameter:: routinename="SMOOTH_CRP6D: "
+   real(kind=8):: newpot
+   real(kind=8),dimension(2):: atomic_v
    ! Run section
-   DO i = 1, this%nsites ! cycle wyckoff sites
+   do i = 1, this%nsites ! cycle wyckoff sites
       molcoord(1)=this%wyckoffsite(i)%x
       molcoord(2)=this%wyckoffsite(i)%y
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
+      do j = 1, this%wyckoffsite(i)%n2dcuts
          molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
          molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
          nr=this%wyckoffsite(i)%zrcut(j)%getgridsizeR()
          nz=this%wyckoffsite(i)%zrcut(j)%getgridsizeZ()
-         DO k = 1, nr
-            DO l = 1, nz
+         do k = 1, nr
+            do l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
-               CALL this%GET_ATOMICPOT_AND_DERIVS(molcoord,atomcoord,atomic_v,dummy)
+               call this%GET_ATOMICPOT_AND_DERIVS(molcoord,atomcoord,atomic_v,dummy)
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)-sum(atomic_v)
-               CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-            END DO
-         END DO
-      END DO
-   END DO
-   this%is_smooth=.TRUE.
-   RETURN
-END SUBROUTINE SMOOTH_CRP6D
+               call this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+            end do
+         end do
+      end do
+   end do
+   this%is_smooth=.true.
+   return
+end subroutine SMOOTH_CRP6D
 !###########################################################
 !# SUBROUTINE: ROUGH_CRP6D
 !###########################################################
@@ -790,59 +852,59 @@ END SUBROUTINE SMOOTH_CRP6D
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE ROUGH_CRP6D(this)
+subroutine ROUGH_CRP6D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-    CLASS(CRP6D),INTENT(INOUT):: this
+    class(CRP6D),intent(inout):: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6):: molcoord,atomcoord
-   INTEGER(KIND=4):: nr,nz
-   INTEGER(KIND=4):: i,j,k,l ! counters
-   REAL(KIND=8):: newpot
+   real(kind=8),dimension(6):: molcoord,atomcoord
+   integer(kind=4):: nr,nz
+   integer(kind=4):: i,j,k,l ! counters
+   real(kind=8):: newpot
    ! Parameters
-   CHARACTER(LEN=*),PARAMETER:: routinename="ROUGH_CRP6D: "
+   character(len=*),parameter:: routinename="ROUGH_CRP6D: "
    ! Run section
-   DO i = 1, this%nsites ! cycle wyckoff sites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
+   do i = 1, this%nsites ! cycle wyckoff sites
+      do j = 1, this%wyckoffsite(i)%n2dcuts
          molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
          molcoord(2)=this%wyckoffsite(i)%zrcut(j)%y
          molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
          molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
          nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
          nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
-         DO k = 1, nr
-            DO l = 1, nz
+         do k = 1, nr
+            do l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
                atomcoord(:)=from_molecular_to_atomic(molcoord)
 #ifdef DEBUG
-               CALL DEBUG_WRITE(routinename,"Molecular coords:")
-               CALL DEBUG_WRITE(routinename,molcoord)
-               CALL DEBUG_WRITE(routinename,"Atomic coords:")
-               CALL DEBUG_WRITE(routinename,atomcoord)
+               call DEBUG_WRITE(routinename,"Molecular coords:")
+               call DEBUG_WRITE(routinename,molcoord)
+               call DEBUG_WRITE(routinename,"Atomic coords:")
+               call DEBUG_WRITE(routinename,atomcoord)
 #endif
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
-               SELECT CASE(this%natomic)
-                  CASE(1)
+               select case(this%natomic)
+                  case(1)
                      newpot=newpot+this%atomiccrp(1)%getpot(atomcoord(1:3))+&
                         this%atomiccrp(1)%getpot(atomcoord(4:6))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE(2)
+                     call this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  case(2)
                      newpot=newpot+this%atomiccrp(1)%getpot(atomcoord(1:3))+&
                         this%atomiccrp(2)%getpot(atomcoord(4:6))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE DEFAULT
-                     WRITE(0,*) "SMOOTH_CRP6D ERR: Something is wrong with number of atomic crp potentials"
-                     CALL EXIT(1)
-               END SELECT
-            END DO
-         END DO
-      END DO
-   END DO
-   this%is_smooth=.FALSE.
-   RETURN
-END SUBROUTINE ROUGH_CRP6D
+                     call this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  case default
+                     write(0,*) "SMOOTH_CRP6D ERR: Something is wrong with number of atomic crp potentials"
+                     call EXIT(1)
+               end select
+            end do
+         end do
+      end do
+   end do
+   this%is_smooth=.false.
+   return
+end subroutine ROUGH_CRP6D
 !###########################################################
 !# SUBROUTINE: SMOOTH_EXTRA_CRP6D
 !###########################################################
@@ -854,59 +916,59 @@ END SUBROUTINE ROUGH_CRP6D
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE SMOOTH_EXTRA_CRP6D(this)
+subroutine SMOOTH_EXTRA_CRP6D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-    CLASS(CRP6D),INTENT(INOUT) :: this
+    class(CRP6D),intent(inout) :: this
    ! Local variables
-   REAL(KIND=8),DIMENSION(6) :: molcoord,atomcoord
-   INTEGER(KIND=4) :: nr,nz
-   INTEGER(KIND=4) :: i,j,k,l ! counters
-   CHARACTER(LEN=20),PARAMETER :: routinename="SMOOTH_EXTRA_CRP6D: "
-   REAL(KIND=8) :: newpot
+   real(kind=8),dimension(6) :: molcoord,atomcoord
+   integer(kind=4) :: nr,nz
+   integer(kind=4) :: i,j,k,l ! counters
+   character(len=20),parameter :: routinename="SMOOTH_EXTRA_CRP6D: "
+   real(kind=8) :: newpot
    ! Run section
-   DO i = 1, this%nsites ! cycle wyckoff sites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
+   do i = 1, this%nsites ! cycle wyckoff sites
+      do j = 1, this%wyckoffsite(i)%n2dcuts
          molcoord(1)=this%wyckoffsite(i)%zrcut(j)%x
          molcoord(2)=this%wyckoffsite(i)%zrcut(j)%y
          molcoord(5)=this%wyckoffsite(i)%zrcut(j)%theta
          molcoord(6)=this%wyckoffsite(i)%zrcut(j)%phi
          nr=this%wyckoffsite(i)%zrcut(j)%getgridsizer()
          nz=this%wyckoffsite(i)%zrcut(j)%getgridsizez()
-         DO k = 1, nr
-            DO l = 1, nz
+         do k = 1, nr
+            do l = 1, nz
                molcoord(3)=this%wyckoffsite(i)%zrcut(j)%getgridvalueZ(l)
                molcoord(4)=this%wyckoffsite(i)%zrcut(j)%getgridvalueR(k)
                atomcoord(:)=from_molecular_to_atomic(molcoord)
 #ifdef DEBUG
-               CALL DEBUG_WRITE(routinename,"Molecular coords:")
-               CALL DEBUG_WRITE(routinename,molcoord)
-               CALL DEBUG_WRITE(routinename,"Atomic coords:")
-               CALL DEBUG_WRITE(routinename,atomcoord)
+               call DEBUG_WRITE(routinename,"Molecular coords:")
+               call DEBUG_WRITE(routinename,molcoord)
+               call DEBUG_WRITE(routinename,"Atomic coords:")
+               call DEBUG_WRITE(routinename,atomcoord)
 #endif
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
-               SELECT CASE(this%natomic)
-                  CASE(1)
+               select case(this%natomic)
+                  case(1)
                      newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))&
                         -this%atomiccrp(1)%getpot(atomcoord(4:6))-this%farpot%getpot(molcoord(4))&
                         -0.8*dexp(-molcoord(4))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE(2)
+                     call this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  case(2)
                      newpot=newpot-this%atomiccrp(1)%getpot(atomcoord(1:3))-&
                         this%atomiccrp(2)%getpot(atomcoord(4:6))-this%farpot%getpot(molcoord(4))
-                     CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-                  CASE DEFAULT
-                     WRITE(0,*) "SMOOTH_EXTRA_CRP6D ERR: Something is wrong with number of atomic crp potentials"
-                     CALL EXIT(1)
-               END SELECT
-            END DO
-         END DO
-      END DO
-   END DO
-   this%is_smooth=.TRUE.
-   RETURN
-END SUBROUTINE SMOOTH_EXTRA_CRP6D
+                     call this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+                  case default
+                     write(0,*) "SMOOTH_EXTRA_CRP6D ERR: Something is wrong with number of atomic crp potentials"
+                     call EXIT(1)
+               end select
+            end do
+         end do
+      end do
+   end do
+   this%is_smooth=.true.
+   return
+end subroutine SMOOTH_EXTRA_CRP6D
 !###########################################################
 !# SUBROUTINE: EXTRACT_VACUUMSURF_CRP6D
 !###########################################################
@@ -918,37 +980,37 @@ END SUBROUTINE SMOOTH_EXTRA_CRP6D
 !> @date 25/Mar/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE EXTRACT_VACUUMSURF_CRP6D(this)
+subroutine EXTRACT_VACUUMSURF_CRP6D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-    CLASS(CRP6D),INTENT(INOUT) :: this
+    class(CRP6D),intent(inout) :: this
    ! Local variables
-   INTEGER(KIND=4) :: nr,nz
-   INTEGER(KIND=4) :: i,j,k,l ! counters
-   REAL(KIND=8) :: newpot
-   CHARACTER(LEN=26),PARAMETER :: routinename="EXTRACT_VACUUMSURF_CRP6D: "
+   integer(kind=4) :: nr,nz
+   integer(kind=4) :: i,j,k,l ! counters
+   real(kind=8) :: newpot
+   character(len=26),parameter :: routinename="EXTRACT_VACUUMSURF_CRP6D: "
    ! Run section
-   DO i = 1, this%nsites ! cycle wyckoff sites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
+   do i = 1, this%nsites ! cycle wyckoff sites
+      do j = 1, this%wyckoffsite(i)%n2dcuts
          nr=this%wyckoffsite(i)%zrcut(j)%getgridsizeR()
          nz=this%wyckoffsite(i)%zrcut(j)%getgridsizeZ()
-         DO k = 1, nr
-            DO l = 1, nz
+         do k = 1, nr
+            do l = 1, nz
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
                newpot=newpot-this%farpot%getscalefactor()
-               CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-            END DO
-         END DO
-      END DO
-   END DO
-   CALL this%farpot%SHIFTPOT()
+               call this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+            end do
+         end do
+      end do
+   end do
+   call this%farpot%SHIFTPOT()
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Potential shifted: ",this%farpot%getscalefactor())
+   call VERBOSE_WRITE(routinename,"Potential shifted: ",this%farpot%getscalefactor())
 #endif
-   this%is_shifted=.TRUE.
-   RETURN
-END SUBROUTINE EXTRACT_VACUUMSURF_CRP6D
+   this%is_shifted=.true.
+   return
+end subroutine EXTRACT_VACUUMSURF_CRP6D
 !###########################################################
 !# SUBROUTINE: ADD_VACUUMSURF_CRP6D
 !###########################################################
@@ -960,249 +1022,249 @@ END SUBROUTINE EXTRACT_VACUUMSURF_CRP6D
 !> @date May/2014
 !> @version 1.0
 !-----------------------------------------------------------
-SUBROUTINE ADD_VACUUMSURF_CRP6D(this)
+subroutine ADD_VACUUMSURF_CRP6D(this)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-    CLASS(CRP6D),INTENT(INOUT) :: this
+    class(CRP6D),intent(inout) :: this
    ! Local variables
-   INTEGER(KIND=4) :: nr,nz
-   INTEGER(KIND=4) :: i,j,k,l ! counters
-   REAL(KIND=8) :: newpot
-   CHARACTER(LEN=22),PARAMETER :: routinename="ADD_VACUUMSURF_CRP6D: "
+   integer(kind=4) :: nr,nz
+   integer(kind=4) :: i,j,k,l ! counters
+   real(kind=8) :: newpot
+   character(len=22),parameter :: routinename="ADD_VACUUMSURF_CRP6D: "
    ! Run section
-   DO i = 1, this%nsites ! cycle wyckoff sites
-      DO j = 1, this%wyckoffsite(i)%n2dcuts
+   do i = 1, this%nsites ! cycle wyckoff sites
+      do j = 1, this%wyckoffsite(i)%n2dcuts
          nr=this%wyckoffsite(i)%zrcut(j)%getgridsizeR()
          nz=this%wyckoffsite(i)%zrcut(j)%getgridsizeZ()
-         DO k = 1, nr
-            DO l = 1, nz
+         do k = 1, nr
+            do l = 1, nz
                newpot=this%wyckoffsite(i)%zrcut(j)%getpotatgridpoint(k,l)
                newpot=newpot+this%farpot%getscalefactor()
-               CALL this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
-            END DO
-         END DO
-      END DO
-   END DO
-   CALL this%farpot%SHIFTPOT_UNDO()
+               call this%wyckoffsite(i)%zrcut(j)%CHANGEPOT_AT_GRIDPOINT(k,l,newpot)
+            end do
+         end do
+      end do
+   end do
+   call this%farpot%SHIFTPOT_UNDO()
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Potential re-shifted: ",this%farpot%getscalefactor())
+   call VERBOSE_WRITE(routinename,"Potential re-shifted: ",this%farpot%getscalefactor())
 #endif
-   this%is_shifted=.FALSE.
-   RETURN
-END SUBROUTINE ADD_VACUUMSURF_CRP6D
+   this%is_shifted=.false.
+   return
+end subroutine ADD_VACUUMSURF_CRP6D
 !###########################################################
 !# SUBROUTINE: READ_CRP6D 
 !###########################################################
 !> @brief
 !! Sets up a CRP6D Object
 !-----------------------------------------------------------
-SUBROUTINE READ_CRP6D(this,filename,tablename)
+subroutine READ_CRP6D(this,filename,tablename)
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(OUT):: this
-   CHARACTER(LEN=*),INTENT(IN):: filename,tablename
+   class(CRP6D),intent(out):: this
+   character(len=*),intent(in):: filename,tablename
    ! Local variables
-   INTEGER(KIND=4):: i,j,k,n ! counters
-   REAL(KIND=8),DIMENSION(:),ALLOCATABLE:: param_damp
+   integer(kind=4):: i,j,k,n ! counters
+   real(kind=8),dimension(:),allocatable:: param_damp
    ! Wyckoff variables
-   CHARACTER(LEN=1),DIMENSION(:),ALLOCATABLE:: wyckoff_letters
-   CHARACTER(LEN=1024),DIMENSION(:),ALLOCATABLE:: cuts2d_files
-   INTEGER(KIND=4),DIMENSION(:),ALLOCATABLE:: thetablocks_data
+   character(len=1),dimension(:),allocatable:: wyckoff_letters
+   character(len=1024),dimension(:),allocatable:: cuts2d_files
+   integer(kind=4),dimension(:),allocatable:: thetablocks_data
    type(TermsInfo),dimension(:),allocatable:: phiTerms
    type(TermsInfo):: thetaTerms
-   INTEGER(KIND=4):: n2dcuts
-   INTEGER(KIND=4):: nthetablocks
+   integer(kind=4):: n2dcuts
+   integer(kind=4):: nthetablocks
    real(kind=8),dimension(:),allocatable:: phiList
 
    ! Lua specifications
-   TYPE(flu_State):: conf
-   INTEGER(KIND=4):: ierr
-   INTEGER(KIND=4):: pes_table,crp3d_table,vacfunc_table,dampfunc_table,param_table,extrapol_table
-   INTEGER(KIND=4):: resize_table,wyckoff_table,inwyckoff_table,cut2d_table,files_table,kpoints_table
+   type(flu_State):: conf
+   integer(kind=4):: ierr
+   integer(kind=4):: pes_table,crp3d_table,vacfunc_table,dampfunc_table,param_table,extrapol_table
+   integer(kind=4):: resize_table,wyckoff_table,inwyckoff_table,cut2d_table,files_table,kpoints_table
    integer(kind=4):: phi_table,term_table,theta_table,fourier_table,magnitude_table,phiList_table
-   INTEGER(KIND=4):: inkpoints_table
+   integer(kind=4):: inkpoints_table
    ! Auxiliar, dummy variables
-   INTEGER(KIND=4):: auxInt,auxInt2
-   REAL(KIND=8):: auxReal
-   CHARACTER(LEN=1024):: auxString,auxString2
-   TYPE(Length):: len
+   integer(kind=4):: auxInt,auxInt2
+   real(kind=8):: auxReal
+   character(len=1024):: auxString,auxString2
+   type(Length):: len
    type(Angle):: angl
    ! Parameters
-   CHARACTER(LEN=*),PARAMETER:: routinename="READ_CRP6D: "
+   character(len=*),parameter:: routinename="READ_CRP6D: "
    ! Run section -----------------------
    ! Open Lua config file
-   CALL OPEN_CONFIG_FILE(L=conf,ErrCode=ierr,filename=filename)
+   call OPEN_CONFIG_FILE(L=conf,ErrCode=ierr,filename=filename)
    ! Open PES table
-   CALL AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
+   call AOT_TABLE_OPEN(L=conf,thandle=pes_table,key=tablename)
    ! get pes.kind
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
-   CALL this%SET_PESTYPE(trim(auxstring))
-   SELECT CASE(trim(auxstring))
-      CASE('CRP6D')
+   call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='kind',val=auxstring)
+   call this%SET_PESTYPE(trim(auxstring))
+   select case(trim(auxstring))
+      case('CRP6D')
          ! do nothing
-      CASE DEFAULT
-         WRITE(0,*) 'READ CRP6D ERR: wrong kind of PES. Expected: CRP6D. Encountered: '//trim(auxstring)
-   END SELECT
+      case default
+         write(0,*) 'READ CRP6D ERR: wrong kind of PES. Expected: CRP6D. Encountered: '//trim(auxstring)
+   end select
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'PES type: '//trim(auxstring))
+   call VERBOSE_WRITE(routinename,'PES type: '//trim(auxstring))
 #endif
    ! get pes.name
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
-   CALL this%SET_ALIAS(trim(auxstring))
+   call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='name',val=auxstring)
+   call this%SET_ALIAS(trim(auxstring))
 #ifdef DEBUG
-   CALl VERBOSE_WRITE(routinename,'PES name: '//trim(auxstring))
+   call VERBOSE_WRITE(routinename,'PES name: '//trim(auxstring))
 #endif
    ! get pes.dimensions
-   CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
-   CALL this%SET_DIMENSIONS(auxint)
+   call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=pes_table,key='dimensions',val=auxint)
+   call this%SET_DIMENSIONS(auxint)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
+   call VERBOSE_WRITE(routinename,'PES dimensions: ',auxint)
 #endif
    ! get crp3d subpes
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=crp3d_table,key='crp3dPes')
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=crp3d_table,key='crp3dPes')
    this%natomic=aot_table_length(L=conf,thandle=crp3d_table)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Atomic potentials found: ",this%natomic)
+   call VERBOSE_WRITE(routinename,"Atomic potentials found: ",this%natomic)
 #endif
-   SELECT CASE(this%natomic)
-      CASE(1)
-         this%is_homonucl=.TRUE.
+   select case(this%natomic)
+      case(1)
+         this%is_homonucl=.true.
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,'This PES is for homonuclear projectiles')
+         call VERBOSE_WRITE(routinename,'This PES is for homonuclear projectiles')
 #endif         
-      CASE(2)
-         this%is_homonucl=.FALSE.
+      case(2)
+         this%is_homonucl=.false.
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,'This PES is for heteronuclear projectiles')
+         call VERBOSE_WRITE(routinename,'This PES is for heteronuclear projectiles')
 #endif         
-      CASE DEFAULT 
-         WRITE(0,*) "READ_CRP6D ERR: Wrong number of atomic potentials. Allowed number: 1 or 2."
-         CALL EXIT(1)
-   END SELECT
-   ALLOCATE(this%atomiccrp(this%natomic))
-   DO i = 1, this%natomic
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=crp3d_table,pos=i,val=auxstring)
+      case default 
+         write(0,*) "READ_CRP6D ERR: Wrong number of atomic potentials. Allowed number: 1 or 2."
+         call EXIT(1)
+   end select
+   allocate(this%atomiccrp(this%natomic))
+   do i = 1, this%natomic
+      call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=crp3d_table,pos=i,val=auxstring)
 #ifdef DEBUG
-      CALl VERBOSE_WRITE(routinename,'Atomic potential keyword: '//trim(auxstring))
+      call VERBOSE_WRITE(routinename,'Atomic potential keyword: '//trim(auxstring))
 #endif
-      CALL this%atomiccrp(i)%INITIALIZE(filename=filename,tablename=trim(auxstring))
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=crp3d_table)
+      call this%atomiccrp(i)%INITIALIZE(filename=filename,tablename=trim(auxstring))
+   end do
+   call AOT_TABLE_CLOSE(L=conf,thandle=crp3d_table)
    ! get pes.vacuumFunction
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=vacfunc_table,key='vacuumFunction')
-   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='kind',val=auxstring)
-   SELECT CASE(trim(auxstring))
-      CASE('Numerical')
-         CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='source',val=auxstring)
-         CALL this%farpot%INITIALIZE(trim(auxstring))
-      CASE DEFAULT
-         WRITE(0,*) 'READ_CRP6D ERR: wrong kind of vacuuum function: '//trim(auxstring)
-         WRITE(0,*) 'Implemented ones: Numerical'
-         WRITE(0,*) 'Case sensitive'
-         CALL EXIT(1)
-   END SELECT
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=vacfunc_table)
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=vacfunc_table,key='vacuumFunction')
+   call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='kind',val=auxstring)
+   select case(trim(auxstring))
+      case('Numerical')
+         call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=vacfunc_table,key='source',val=auxstring)
+         call this%farpot%INITIALIZE(trim(auxstring))
+      case default
+         write(0,*) 'READ_CRP6D ERR: wrong kind of vacuuum function: '//trim(auxstring)
+         write(0,*) 'Implemented ones: Numerical'
+         write(0,*) 'Case sensitive'
+         call EXIT(1)
+   end select
+   call AOT_TABLE_CLOSE(L=conf,thandle=vacfunc_table)
    ! get pes.dampFunction
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=dampfunc_table,key='dampFunction')
-   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=dampfunc_table,key='kind',val=auxstring)
-   SELECT CASE(trim(auxstring))
-      CASE("Logistic")
-         ALLOCATE(Logistic_func::this%dumpfunc)
-         ALLOCATE(param_damp(2))
-         CALL AOT_TABLE_OPEN(L=conf,parent=dampfunc_table,thandle=param_table,key='param')
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=dampfunc_table,key='dampFunction')
+   call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=dampfunc_table,key='kind',val=auxstring)
+   select case(trim(auxstring))
+      case("Logistic")
+         allocate(Logistic_func::this%dumpfunc)
+         allocate(param_damp(2))
+         call AOT_TABLE_OPEN(L=conf,parent=dampfunc_table,thandle=param_table,key='param')
          auxint=aot_table_length(L=conf,thandle=param_table)
-         SELECT CASE(auxint)
-            CASE(2)
+         select case(auxint)
+            case(2)
                ! do nothing
-            CASE DEFAULT
-               WRITE(0,*) 'READ_CRP6D ERR: incorrect number of parameters in damp function: ',auxint
-               CALL EXIT(1)
-         END SELECT
-         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=1,val=param_damp(1))
-         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=2,val=param_damp(2))
-         CALL AOT_TABLE_CLOSE(L=conf,thandle=param_table)
-         CALL this%dumpfunc%READ(param_damp)
-      CASE("fullCRP") 
-         ALLOCATE(One_func::this%dumpfunc)
-      CASE("fullRaw") 
-         ALLOCATE(Zero_func::this%dumpfunc)
-      CASE DEFAULT
-         WRITE(0,*) "READ_CRP6D ERR: Keyword for dumping function needed"
-         WRITE(*,*) "Currently implemented: Logistic, fullCRP, fullRaw"
-         CALL EXIT(1)
-   END SELECT
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
+            case default
+               write(0,*) 'READ_CRP6D ERR: incorrect number of parameters in damp function: ',auxint
+               call EXIT(1)
+         end select
+         call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=1,val=param_damp(1))
+         call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=2,val=param_damp(2))
+         call AOT_TABLE_CLOSE(L=conf,thandle=param_table)
+         call this%dumpfunc%READ(param_damp)
+      case("fullCRP") 
+         allocate(One_func::this%dumpfunc)
+      case("fullRaw") 
+         allocate(Zero_func::this%dumpfunc)
+      case default
+         write(0,*) "READ_CRP6D ERR: Keyword for dumping function needed"
+         write(*,*) "Currently implemented: Logistic, fullCRP, fullRaw"
+         call EXIT(1)
+   end select
+   call AOT_TABLE_CLOSE(L=conf,thandle=dampfunc_table)
    ! get pes.extrapolFunction
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=extrapol_table,key='extrapolFunction')
-   CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=extrapol_table,key='kind',val=auxstring)
-   SELECT CASE(trim(auxstring))
-      CASE("Xexponential","Linear")
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=extrapol_table,key='extrapolFunction')
+   call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=extrapol_table,key='kind',val=auxstring)
+   select case(trim(auxstring))
+      case("Xexponential","Linear")
          this%extrapol2vac_flag=trim(auxstring)
-         CALL AOT_TABLE_OPEN(L=conf,parent=extrapol_table,thandle=param_table,key='upToZ')
+         call AOT_TABLE_OPEN(L=conf,parent=extrapol_table,thandle=param_table,key='upToZ')
          auxint=aot_table_length(L=conf,thandle=param_table)
-         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=1,val=auxreal)
-         CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=2,val=auxstring)
-         CALL len%READ(auxreal,trim(auxstring))
-         CALL len%TO_STD()
+         call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=1,val=auxreal)
+         call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=param_table,pos=2,val=auxstring)
+         call len%READ(auxreal,trim(auxstring))
+         call len%TO_STD()
          this%zvacuum=len%getvalue()
-         CALl AOT_TABLE_CLOSE(L=conf,thandle=param_table)
-      CASE("None")
+         call AOT_TABLE_CLOSE(L=conf,thandle=param_table)
+      case("None")
          this%zvacuum=0.D0
-      CASE DEFAULT
-         WRITE(0,*) "READ_CRP6D ERR: Keyword for extrapolation function needed"
-         WRITE(0,*) "Currently implemented: None, Xexponential, Linear"
-         WRITE(0,*) "Case sensitive."
-         CALL EXIT(1)
-   END SELECT
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=extrapol_table)
+      case default
+         write(0,*) "READ_CRP6D ERR: Keyword for extrapolation function needed"
+         write(0,*) "Currently implemented: None, Xexponential, Linear"
+         write(0,*) "Case sensitive."
+         call EXIT(1)
+   end select
+   call AOT_TABLE_CLOSE(L=conf,thandle=extrapol_table)
 #ifdef DEBUG
-   CALL VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
+   call VERBOSE_WRITE(routinename,"Z vacuum: ",this%zvacuum)
 #endif
    ! get pes.resize
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=resize_table,key='resize')
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=resize_table,key='resize')
    auxint=aot_table_length(L=conf,thandle=resize_table)
-   SELECT CASE(auxint)
-      CASE(0)
+   select case(auxint)
+      case(0)
          ! do nothing, resize is not required
-      CASE DEFAULT
-         CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=resize_table,key='r',val=auxint)
+      case default
+         call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=resize_table,key='r',val=auxint)
          this%grid(1)=auxint
-         CALL AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=resize_table,key='z',val=auxint)
+         call AOT_TABLE_GET_VAL(L=conf,ErrCode=ierr,thandle=resize_table,key='z',val=auxint)
          this%grid(2)=auxint
          if( this%grid(1)/=0 .and. this%grid(2)/=0 ) this%is_resized=.true.
-   END SELECT
+   end select
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,'New grid (R,Z):',this%grid(:))
+         call VERBOSE_WRITE(routinename,'New grid (R,Z):',this%grid(:))
          call verbose_write(routinename,'Is this PES going to be resized?: ',this%is_resized)
 #endif
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=resize_table)
+   call AOT_TABLE_CLOSE(L=conf,thandle=resize_table)
    ! get wyckoff sites
-   CALL AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=wyckoff_table,key='wyckoffSite')
+   call AOT_TABLE_OPEN(L=conf,parent=pes_table,thandle=wyckoff_table,key='wyckoffSite')
    this%nsites=aot_table_length(L=conf,thandle=wyckoff_table)
-   ALLOCATE(wyckoff_letters(this%nsites))
-   SELECT CASE(this%nsites)
-      CASE(0)
-         WRITE(0,*) "CRP3D_READ ERR: there aren't Wyckoff sites"
-         CALL EXIT(1)
-      CASE DEFAULT
+   allocate(wyckoff_letters(this%nsites))
+   select case(this%nsites)
+      case(0)
+         write(0,*) "CRP3D_READ ERR: there aren't Wyckoff sites"
+         call EXIT(1)
+      case default
          ! do nothing
-   END SELECT
+   end select
    ! Allocate with the correct type (symmetry) all wyckoff sites
-   SELECT CASE(system_surface%getsymmlabel())
-      CASE("p4mm")
-         ALLOCATE(Wyckoffp4mm::this%wyckoffsite(this%nsites))
+   select case(system_surface%getsymmlabel())
+      case("p4mm")
+         allocate(Wyckoffp4mm::this%wyckoffsite(this%nsites))
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,"Allocated p4mm Wyckoff sites")
+         call VERBOSE_WRITE(routinename,"Allocated p4mm Wyckoff sites")
 #endif
-      CASE DEFAULT
-         WRITE(0,*) "READ_CRP6D ERR: surface symmetry is not implemented yet"
-         WRITE(0,*) "Good luck!"
-         CALL EXIT(1)
-   END SELECT
-   DO i = 1, this%nsites
-      CALL AOT_TABLE_OPEN(L=conf,parent=wyckoff_table,thandle=inwyckoff_table,pos=i)
+      case default
+         write(0,*) "READ_CRP6D ERR: surface symmetry is not implemented yet"
+         write(0,*) "Good luck!"
+         call EXIT(1)
+   end select
+   do i = 1, this%nsites
+      call AOT_TABLE_OPEN(L=conf,parent=wyckoff_table,thandle=inwyckoff_table,pos=i)
       call aot_table_open( L=conf,parent=inWyckoff_table,thandle=phiList_table,key='phiList' )
       allocate( phiList(aot_table_length(L=conf,thandle=phiList_table)) )
       do k=1,size(phiList)
@@ -1215,11 +1277,11 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          call aot_table_close( L=conf,thandle=magnitude_table )
       enddo
       call aot_table_close( L=conf,thandle=phiList_table )
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='kind',val=wyckoff_letters(i))
-      CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='n2dcuts',val=n2dcuts)
-      ALLOCATE(cuts2d_files(n2dcuts))
+      call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='kind',val=wyckoff_letters(i))
+      call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=inwyckoff_table,key='n2dcuts',val=n2dcuts)
+      allocate(cuts2d_files(n2dcuts))
       nthetablocks=aot_table_length(L=conf,thandle=inwyckoff_table)-7
-      ALLOCATE(thetablocks_data(nthetablocks))
+      allocate(thetablocks_data(nthetablocks))
       call aot_table_open(L=conf,parent=inwyckoff_table,thandle=theta_table,key='thetaFourierTerms')
       do k=1,nThetaBlocks
          call aot_table_open( L=conf,parent=theta_table,thandle=term_table,pos=k )
@@ -1231,41 +1293,41 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
       enddo
       call aot_table_close(L=conf,thandle=theta_table)
 #ifdef DEBUG
-      CALL VERBOSE_WRITE( routinename,'Wyckoff Site number: ',i)
-      CALL VERBOSE_WRITE( routinename,'Wyckoff Letter: '//trim(wyckoff_letters(i)))
-      CALL VERBOSE_WRITE( routinename,'Wyckoff number of cut2ds: ',n2dcuts)
-      CALl VERBOSE_WRITE( routinename,'Wyckoff number of theta blocks: ',nthetablocks)
+      call VERBOSE_WRITE( routinename,'Wyckoff Site number: ',i)
+      call VERBOSE_WRITE( routinename,'Wyckoff Letter: '//trim(wyckoff_letters(i)))
+      call VERBOSE_WRITE( routinename,'Wyckoff number of cut2ds: ',n2dcuts)
+      call VERBOSE_WRITE( routinename,'Wyckoff number of theta blocks: ',nthetablocks)
       call verbose_write( routinename,'Wyckoff theta terms irreps: ',thetaTerms%irrepList(:) )
       call verbose_write( routinename,'Wyckoff theta terms parities: ',thetaTerms%parityList(:) )
       call verbose_write( routinename,'Wyckoff theta terms kpoints: ',thetaTerms%kpointList(:) )
 #endif
       allocate( phiTerms(nThetaBlocks) )
-      DO j = 1, nThetaBlocks
-         CALL AOT_TABLE_OPEN(L=conf,parent=inwyckoff_table,thandle=cut2d_table,pos=j)
-         CALL AOT_TABLE_OPEN(L=conf,parent=cut2d_table,thandle=files_table,key='files')
+      do j = 1, nThetaBlocks
+         call AOT_TABLE_OPEN(L=conf,parent=inwyckoff_table,thandle=cut2d_table,pos=j)
+         call AOT_TABLE_OPEN(L=conf,parent=cut2d_table,thandle=files_table,key='files')
          thetablocks_data(j)=aot_table_length(L=conf,thandle=files_table)
 #ifdef DEBUG
-         CALL VERBOSE_WRITE(routinename,'Wyckoff thetablock: ',j)
-         CALL VERBOSE_WRITE(routinename,'Wyckoff cut2d inside: ',thetablocks_data(j))
+         call VERBOSE_WRITE(routinename,'Wyckoff thetablock: ',j)
+         call VERBOSE_WRITE(routinename,'Wyckoff cut2d inside: ',thetablocks_data(j))
 #endif
-         SELECT CASE(j)
-            CASE(1)
+         select case(j)
+            case(1)
                auxint=1
                auxint2=thetablocks_data(1)
-            CASE DEFAULT
+            case default
                auxint=sum(thetablocks_data(1:j-1))+1
                auxint2=sum(thetablocks_data(1:j-1))+thetablocks_data(j)
-         END SELECT
+         end select
          n=0
-         DO k = auxint, auxint2
+         do k = auxint, auxint2
             n=n+1
-            CALL AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=files_table,pos=n,val=cuts2d_files(k))
+            call AOT_GET_VAL(L=conf,ErrCode=ierr,thandle=files_table,pos=n,val=cuts2d_files(k))
 #ifdef DEBUG
-            CALL VERBOSE_WRITE(routinename,'Wyckoff pos array: ',k)
-            CALL VERBOSE_WRITE(routinename,'Wyckoff cut2d filename: '//trim(cuts2d_files(k)))
+            call VERBOSE_WRITE(routinename,'Wyckoff pos array: ',k)
+            call VERBOSE_WRITE(routinename,'Wyckoff cut2d filename: '//trim(cuts2d_files(k)))
 #endif
-         END DO
-         CALL AOT_TABLE_CLOSE(L=conf,thandle=files_table)
+         end do
+         call AOT_TABLE_CLOSE(L=conf,thandle=files_table)
          call aot_table_open( L=conf,parent=cut2d_table,thandle=phi_table,key='phiFourierTerms' )
          do k=1,thetaBlocks_data(j)
             call aot_table_open( L=conf,parent=phi_table,thandle=term_table,pos=k )
@@ -1281,19 +1343,19 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
          call verbose_write( routinename,'Wyckoff phi terms kpoints: ', phiTerms(j)%kpointList(:) )
 #endif
          call aot_table_close(L=conf,thandle=phi_table)
-         CALL AOT_TABLE_CLOSE(L=conf,thandle=cut2d_table)
-      END DO
-      CALL this%wyckoffsite(i)%INITIALIZE(mynumber=i,letter=wyckoff_letters(i),nphipoints=thetablocks_data(:),&
+         call AOT_TABLE_CLOSE(L=conf,thandle=cut2d_table)
+      end do
+      call this%wyckoffsite(i)%INITIALIZE(mynumber=i,letter=wyckoff_letters(i),nphipoints=thetablocks_data(:),&
                                           filenames=cuts2d_files(:),phiTerms=phiTerms,thetaTerms=thetaTerms,  &
                                           phiList=phiList(:) )
-      CALL AOT_TABLE_CLOSE(L=conf,thandle=inwyckoff_table)
+      call AOT_TABLE_CLOSE(L=conf,thandle=inwyckoff_table)
       deallocate(cuts2d_files)
       deallocate(thetablocks_data)
       deallocate(phiTerms)
       deallocate(phiList)
       call thetaTerms%reboot()
-   END DO
-   CALL AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
+   end do
+   call AOT_TABLE_CLOSE(L=conf,thandle=wyckoff_table)
    ! Get kpoints for Fourier interpolation
    call aot_table_open( L=conf,parent=pes_table,thandle=fourier_table,key='fourierTerms' )
    this%totalTerms=aot_table_length( L=conf,thandle=fourier_table )
@@ -1324,9 +1386,9 @@ SUBROUTINE READ_CRP6D(this,filename,tablename)
    enddo
    call aot_table_close( L=conf,thandle=fourier_table )
    ! ENDDDDDD!!!!!!
-   CALL CLOSE_CONFIG(conf)
-   RETURN
-END SUBROUTINE READ_CRP6D
+   call CLOSE_CONFIG(conf)
+   return
+end subroutine READ_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_PHI_CRP6D #######################################
 !#######################################################################
@@ -1345,25 +1407,25 @@ END SUBROUTINE READ_CRP6D
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER,INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer,intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin 
-   REAL(KIND=8),DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin 
+   real(kind=8),dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=18),parameter :: routinename = "PLOT1D_PHI_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = 0.D0
    xmax = 2.D0*PI
@@ -1373,24 +1435,24 @@ SUBROUTINE PLOT1D_PHI_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=2.D0*PI/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(6)=xmin
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(6),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(6),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(6)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(6),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(6),v,dvdu(:)
+   end do
    ! Final value
    r(6) = xmax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(6),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_PHI_CRP6D
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(6),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_PHI_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_ATOMIC_INTERAC_PHI_CRP6D #######################################
 !#######################################################################
@@ -1410,26 +1472,26 @@ END SUBROUTINE PLOT1D_PHI_CRP6D
 !> @date Jun/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_ATOMIC_INTERAC_PHI_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER,INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer,intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta
-   REAL(KIND=8),DIMENSION(2) :: v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8),DIMENSION(6) :: r, dvdu, ratom
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=18),PARAMETER :: routinename = "PLOT1D_PHI_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta
+   real(kind=8),dimension(2) :: v
+   real(kind=8) :: xmax, xmin
+   real(kind=8),dimension(6) :: r, dvdu, ratom
+   integer(kind=4) :: i ! Counter
+   character(len=18),parameter :: routinename = "PLOT1D_PHI_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = 0.D0
    xmax = 2.D0*PI
@@ -1439,24 +1501,24 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=2.D0*PI/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(6)=xmin
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
-   WRITE(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   write(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(6)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
-      WRITE(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
-   END DO
+      call thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+      write(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
+   end do
    ! Final value
    r(6) = xmax
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
-   WRITE(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   write(11,*) r(6),sum(v),v(1),v(2),ratom(:),dvdu(:)  
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_PHI_SMOOTH_CRP6D #######################################
 !#######################################################################
@@ -1475,25 +1537,25 @@ END SUBROUTINE PLOT1D_ATOMIC_INTERAC_PHI_CRP6D
 !> @date 09/Feb/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_PHI_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER,INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer,intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin 
-   REAL(KIND=8),DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=25),PARAMETER :: routinename = "PLOT1D_PHI_SMOOTH_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin 
+   real(kind=8),dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=25),parameter :: routinename = "PLOT1D_PHI_SMOOTH_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_PHI_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = 0.D0
    xmax = 2.D0*PI
@@ -1503,24 +1565,24 @@ SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=2.D0*PI/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(6)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(6),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(6),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(6)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(6),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(6),v,dvdu(:)
+   end do
    ! Final value
    r(6) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(6),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(6),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_PHI_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_THETA_CRP6D #########################################
 !#######################################################################
@@ -1539,25 +1601,25 @@ END SUBROUTINE PLOT1D_PHI_SMOOTH_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer, intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin 
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=20),PARAMETER :: routinename = "PLOT1D_THETA_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin 
+   real(kind=8), dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=20),parameter :: routinename = "PLOT1D_THETA_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = 0.D0
    xmax = 2.D0*PI
@@ -1568,24 +1630,24 @@ SUBROUTINE PLOT1D_THETA_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=2.D0*PI/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(5)=xmin
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(5),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(5),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(5)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(5),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(5),v,dvdu(:)
+   end do
    ! Final value
    r(5) = xmax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(5),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_THETA_CRP6D
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(5),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_THETA_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_ATOMIC_INTERAC_THETA_CRP6D ########################
 !#######################################################################
@@ -1604,26 +1666,26 @@ END SUBROUTINE PLOT1D_THETA_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_ATOMIC_INTERAC_THETA_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer, intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r,dvdu,ratom
-   REAL(KIND=8),DIMENSION(2) :: v
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=20),PARAMETER :: routinename = "PLOT1D_THETA_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta
+   real(kind=8) :: xmax, xmin
+   real(kind=8), dimension(6) :: r,dvdu,ratom
+   real(kind=8),dimension(2) :: v
+   integer(kind=4) :: i ! Counter
+   character(len=20),parameter :: routinename = "PLOT1D_THETA_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = 0.D0
    xmax = 2.D0*PI
@@ -1634,25 +1696,25 @@ SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=2.D0*PI/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(5)=xmin
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
-   WRITE(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)  
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   write(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)  
 
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(5)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
-      WRITE(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)
-   END DO
+      call thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+      write(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)
+   end do
    ! Final value
    r(5) = xmax
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
-   WRITE(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)  
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,ratom,v,dvdu)
+   write(11,*) r(5),sum(v),v(:),ratom(:),dvdu(:)  
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_THETA_SMOOTH_CRP6D #########################################
 !#######################################################################
@@ -1671,25 +1733,25 @@ END SUBROUTINE PLOT1D_ATOMIC_INTERAC_THETA_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_THETA_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer, intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=27),PARAMETER :: routinename = "PLOT1D_THETA_SMOOTH_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin
+   real(kind=8), dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=27),parameter :: routinename = "PLOT1D_THETA_SMOOTH_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_THETA_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = 0.D0
    xmax = 2.D0*PI
@@ -1700,24 +1762,24 @@ SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=2.D0*PI/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(5)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(5),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(5),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(5)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(5),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(5),v,dvdu(:)
+   end do
    ! Final value
    r(5) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(5),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(5),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_THETA_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_R_CRP6D #########################################
 !#######################################################################
@@ -1736,25 +1798,25 @@ END SUBROUTINE PLOT1D_THETA_SMOOTH_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_R_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_R_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer, intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_R_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin
+   real(kind=8), dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=16),parameter :: routinename = "PLOT1D_R_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_R_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_R_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstr()
    xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastr()
@@ -1765,24 +1827,24 @@ SUBROUTINE PLOT1D_R_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=(xmax-xmin)/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(4)=xmin
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(4),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(4),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(4)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(4),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(4),v,dvdu(:)
+   end do
    ! Final value
    r(4) = xmax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(4),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_R_CRP6D
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(4),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_R_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_R_SMOOTH_CRP6D #########################################
 !#######################################################################
@@ -1801,25 +1863,25 @@ END SUBROUTINE PLOT1D_R_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_R_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_R_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer, intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_R_SMOOTH_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin
+   real(kind=8), dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=23),parameter :: routinename = "PLOT1D_R_SMOOTH_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_R_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_R_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstr()
    xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastr()
@@ -1830,24 +1892,24 @@ SUBROUTINE PLOT1D_R_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=(xmax-xmin)/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(4)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(4),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(4),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(4)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(4),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(4),v,dvdu(:)
+   end do
    ! Final value
    r(4) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(4),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_R_SMOOTH_CRP6D
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(4),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_R_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_Z_CRP6D #########################################
 !#######################################################################
@@ -1867,26 +1929,26 @@ END SUBROUTINE PLOT1D_R_SMOOTH_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,L,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_Z_CRP6D(thispes,npoints,X,L,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
-   REAL(KIND=8),INTENT(IN) :: L
+   class(CRP6D),intent(in) :: thispes
+   integer, intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
+   real(kind=8),intent(in) :: L
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=16),PARAMETER :: routinename = "PLOT1D_Z_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin
+   real(kind=8), dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=16),parameter :: routinename = "PLOT1D_Z_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   IF (npoints.lt.2) THEN
-      WRITE(0,*) "PLOT1D_Z_CRP6D ERR: Less than 2 points"
-      CALL EXIT(1)
-   END IF
+   if (npoints.lt.2) then
+      write(0,*) "PLOT1D_Z_CRP6D ERR: Less than 2 points"
+      call EXIT(1)
+   end if
    !
    xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstz()
    xmax = xmin+L
@@ -1897,24 +1959,24 @@ SUBROUTINE PLOT1D_Z_CRP6D(thispes,npoints,X,L,filename)
    ndelta=npoints-1
    delta=(xmax-xmin)/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(3)=xmin
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(3)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(3),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(3),v,dvdu(:)
+   end do
    ! Final value
    r(3) = xmax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_Z_CRP6D
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_Z_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT1D_Z_SMOOTH_CRP6D #########################################
 !#######################################################################
@@ -1933,28 +1995,28 @@ END SUBROUTINE PLOT1D_Z_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D(thispes,npoints,X,filename)
-   IMPLICIT NONE
+subroutine PLOT1D_Z_SMOOTH_CRP6D(thispes,npoints,X,filename)
+   implicit none
    ! I/O variables -------------------------------
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   INTEGER, INTENT(IN) :: npoints
-   CHARACTER(LEN=*),INTENT(IN) :: filename
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: X
+   class(CRP6D),intent(in) :: thispes
+   integer, intent(in) :: npoints
+   character(len=*),intent(in) :: filename
+   real(kind=8),dimension(6),intent(in) :: X
    ! Local variables -----------------------------
-   INTEGER :: inpoints, ndelta
-   REAL(KIND=8) :: delta,v
-   REAL(KIND=8) :: xmax, xmin
-   REAL(KIND=8), DIMENSION(6) :: r, dvdu
-   INTEGER(KIND=4) :: i ! Counter
-   CHARACTER(LEN=23),PARAMETER :: routinename = "PLOT1D_Z_SMOOTH_CRP6D: "
+   integer :: inpoints, ndelta
+   real(kind=8) :: delta,v
+   real(kind=8) :: xmax, xmin
+   real(kind=8), dimension(6) :: r, dvdu
+   integer(kind=4) :: i ! Counter
+   character(len=23),parameter :: routinename = "PLOT1D_Z_SMOOTH_CRP6D: "
    ! HE HO ! LET'S GO ----------------------------
-   SELECT CASE(npoints)
-      CASE(: 1)
-         WRITE(0,*) "PLOT1D_Z_CRP6D ERR: Less than 2 points"
-         CALL EXIT(1)
-      CASE DEFAULT
+   select case(npoints)
+      case(: 1)
+         write(0,*) "PLOT1D_Z_CRP6D ERR: Less than 2 points"
+         call EXIT(1)
+      case default
          ! do nothing
-   END SELECT
+   end select
    !
    xmin = thispes%wyckoffsite(1)%zrcut(1)%getfirstz()
    xmax = thispes%wyckoffsite(1)%zrcut(1)%getlastz()
@@ -1965,24 +2027,24 @@ SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D(thispes,npoints,X,filename)
    ndelta=npoints-1
    delta=(xmax-xmin)/dfloat(ndelta)
    !
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    ! Initial value
    r(3)=xmin
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)  
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)  
    ! cycle for inpoints
-   DO i=1, inpoints
+   do i=1, inpoints
       r(3)=xmin+DFLOAT(i)*delta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(3),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(3),v,dvdu(:)
+   end do
    ! Final value
    r(3) = xmax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(3),v,dvdu(:)
-   WRITE(*,*) routinename, "file created ",filename
-   CLOSE(11)
-END SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(3),v,dvdu(:)
+   write(*,*) routinename, "file created ",filename
+   close(11)
+end subroutine PLOT1D_Z_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT_XYMAP_CRP6D
 !#######################################################################
@@ -2004,22 +2066,22 @@ END SUBROUTINE PLOT1D_Z_SMOOTH_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
-   IMPLICIT NONE
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: init_point ! Initial position to start the scan (in a.u. and radians)
-   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
-   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
-   REAL(KIND=8),INTENT(IN) :: Lx ! Length of X axis 
-   REAL(KIND=8),INTENT(IN) :: Ly ! Length of X axis 
+subroutine PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
+   implicit none
+   class(CRP6D),intent(in) :: thispes
+   real(kind=8),dimension(6),intent(in) :: init_point ! Initial position to start the scan (in a.u. and radians)
+   integer,intent(in) :: nxpoints, nypoints ! number of points in XY plane
+   character(len=*),intent(in) :: filename ! filename
+   real(kind=8),intent(in) :: Lx ! Length of X axis 
+   real(kind=8),intent(in) :: Ly ! Length of X axis 
    ! Local variables
-   REAL(KIND=8) :: xmin, ymin, xmax, ymax
-   REAL(KIND=8),DIMENSION(6) :: r,dvdu
-   REAL(KIND=8) :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta
-   INTEGER :: yinpoints, nydelta
-   INTEGER :: i, j ! counters
-   REAL(KIND=8) :: v ! potential
+   real(kind=8) :: xmin, ymin, xmax, ymax
+   real(kind=8),dimension(6) :: r,dvdu
+   real(kind=8) :: xdelta, ydelta
+   integer :: xinpoints, nxdelta
+   integer :: yinpoints, nydelta
+   integer :: i, j ! counters
+   real(kind=8) :: v ! potential
    ! Parameters section:
    character(len=*),parameter:: routineName='PLOT_XYMAP_CRP6D: '
    ! GABBA, GABBA HEY! ---------
@@ -2037,54 +2099,54 @@ SUBROUTINE PLOT_XYMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    r(1) = xmin
    r(2) = ymin
    r(3:6)=init_point(3:6)
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
-   DO i =1, yinpoints
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+   end do
    r(2) = ymax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
    ! inpoints in XY
-   DO i = 1, xinpoints
+   do i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
       r(3:6) = init_point(3:6)
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-      DO j = 1, yinpoints
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+      do j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
-         CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-         WRITE(11,*) r(1:2),v,dvdu(:)
-      END DO
+         call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+         write(11,*) r(1:2),v,dvdu(:)
+      end do
       r(2) = ymax
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+   end do
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
    r(3:6) = init_point(3:6)
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
-   DO i =1, yinpoints
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+   end do
    r(2) = ymax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
-   CLOSE(11)
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
+   close(11)
    write(*,*) routineName//'Graph created: '//fileName
-   RETURN
-END SUBROUTINE PLOT_XYMAP_CRP6D
+   return
+end subroutine PLOT_XYMAP_CRP6D
 !######################################################################################
 ! SUBROUTINE: PLOT_XYMAP_SMOOTH_CRP6D
 !######################################################################################
@@ -2092,22 +2154,22 @@ END SUBROUTINE PLOT_XYMAP_CRP6D
 !! Same as plot_xymap_crp6d but calling get_v_and_derivs_smooth, i.e. potential
 !! and derivatives are not corrected. Thus, we get smooth corrugationless potential.
 !-------------------------------------------------------------------------------------
-SUBROUTINE PLOT_XYMAP_SMOOTH_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
-   IMPLICIT NONE
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: init_point ! Initial position to start the scan (in a.u. and radians)
-   INTEGER,INTENT(IN) :: nxpoints, nypoints ! number of points in XY plane
-   CHARACTER(LEN=*),INTENT(IN) :: filename ! filename
-   REAL(KIND=8),INTENT(IN) :: Lx ! Length of X axis
-   REAL(KIND=8),INTENT(IN) :: Ly ! Length of X axis
+subroutine PLOT_XYMAP_SMOOTH_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
+   implicit none
+   class(CRP6D),intent(in) :: thispes
+   real(kind=8),dimension(6),intent(in) :: init_point ! Initial position to start the scan (in a.u. and radians)
+   integer,intent(in) :: nxpoints, nypoints ! number of points in XY plane
+   character(len=*),intent(in) :: filename ! filename
+   real(kind=8),intent(in) :: Lx ! Length of X axis
+   real(kind=8),intent(in) :: Ly ! Length of X axis
    ! Local variables
-   REAL(KIND=8) :: xmin, ymin, xmax, ymax
-   REAL(KIND=8),DIMENSION(6) :: r,dvdu
-   REAL(KIND=8) :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta
-   INTEGER :: yinpoints, nydelta
-   INTEGER :: i, j ! counters
-   REAL(KIND=8) :: v ! potential
+   real(kind=8) :: xmin, ymin, xmax, ymax
+   real(kind=8),dimension(6) :: r,dvdu
+   real(kind=8) :: xdelta, ydelta
+   integer :: xinpoints, nxdelta
+   integer :: yinpoints, nydelta
+   integer :: i, j ! counters
+   real(kind=8) :: v ! potential
    ! GABBA, GABBA HEY! ---------
    xmin = init_point(1)
    ymin = init_point(2)
@@ -2123,53 +2185,53 @@ SUBROUTINE PLOT_XYMAP_SMOOTH_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,fi
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go!
    ! 1st XY point
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    r(1) = xmin
    r(2) = ymin
    r(3:6)=init_point(3:6)
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
-   DO i =1, yinpoints
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+   end do
    r(2) = ymax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
    ! inpoints in XY
-   DO i = 1, xinpoints
+   do i = 1, xinpoints
       r(1) = xmin+DFLOAT(i)*xdelta
       r(2) = ymin
       r(3:6) = init_point(3:6)
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-      DO j = 1, yinpoints
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+      do j = 1, yinpoints
          r(2) = ymin + DFLOAT(j)*ydelta
-         CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-         WRITE(11,*) r(1:2),v,dvdu(:)
-      END DO
+         call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+         write(11,*) r(1:2),v,dvdu(:)
+      end do
       r(2) = ymax
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+   end do
    ! Last point in XY plane
    r(1) = xmax
    r(2) = ymax
    r(3:6) = init_point(3:6)
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
-   DO i =1, yinpoints
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
+   do i =1, yinpoints
       r(2) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-      WRITE(11,*) r(1:2),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+      write(11,*) r(1:2),v,dvdu(:)
+   end do
    r(2) = ymax
-   CALL thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
-   WRITE(11,*) r(1:2),v,dvdu(:)
-   CLOSE(11)
-   RETURN
-END SUBROUTINE PLOT_XYMAP_SMOOTH_CRP6D
+   call thispes%GET_V_AND_DERIVS_SMOOTH(r,v,dvdu)
+   write(11,*) r(1:2),v,dvdu(:)
+   close(11)
+   return
+end subroutine PLOT_XYMAP_SMOOTH_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT_RZMAP_CRP6D
 !#######################################################################
@@ -2191,22 +2253,22 @@ END SUBROUTINE PLOT_XYMAP_SMOOTH_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
-   IMPLICIT NONE
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: init_point 
-   INTEGER,INTENT(IN) :: nxpoints, nypoints 
-   CHARACTER(LEN=*),INTENT(IN) :: filename 
-   REAL(KIND=8),INTENT(IN) :: Lx
-   REAL(KIND=8),INTENT(IN) :: Ly
+subroutine PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
+   implicit none
+   class(CRP6D),intent(in) :: thispes
+   real(kind=8),dimension(6),intent(in) :: init_point 
+   integer,intent(in) :: nxpoints, nypoints 
+   character(len=*),intent(in) :: filename 
+   real(kind=8),intent(in) :: Lx
+   real(kind=8),intent(in) :: Ly
    ! Local variables
-   REAL(KIND=8) :: xmin, ymin, xmax, ymax
-   REAL(KIND=8),DIMENSION(6) :: r,dvdu
-   REAL(KIND=8) :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta
-   INTEGER :: yinpoints, nydelta
-   INTEGER :: i, j ! counters
-   REAL(KIND=8) :: v ! potential
+   real(kind=8) :: xmin, ymin, xmax, ymax
+   real(kind=8),dimension(6) :: r,dvdu
+   real(kind=8) :: xdelta, ydelta
+   integer :: xinpoints, nxdelta
+   integer :: yinpoints, nydelta
+   integer :: i, j ! counters
+   real(kind=8) :: v ! potential
    ! Parameter section
    character(len=*),parameter:: routineName='PLOT_RZMAP_CRP6D: '
    integer(kind=4),parameter:: wunit=11 ! write unit
@@ -2225,7 +2287,7 @@ SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   OPEN(unit=wunit,file=filename,status="replace")
+   open(unit=wunit,file=filename,status="replace")
    write(wunit,*) '# Initial geometry: ',init_point(:)
    write(wunit,*) '# X length (bohr): ',Lx
    write(wunit,*) '# Y length (bohr): ',Ly
@@ -2234,48 +2296,48 @@ SUBROUTINE PLOT_RZMAP_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
    r(3) = ymin
    r(1:2)=init_point(1:2)
    r(5:6)=init_point(5:6)
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(11,*) r(4),r(3),v,dvdu(:)
-   DO i =1, yinpoints
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(11,*) r(4),r(3),v,dvdu(:)
+   do i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(wunit,*) r(4),r(3),v,dvdu(:)
+   end do
    r(3) = ymax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(wunit,*) r(4),r(3),v,dvdu(:)
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(wunit,*) r(4),r(3),v,dvdu(:)
    ! inpoints in XY
-   DO i = 1, xinpoints
+   do i = 1, xinpoints
       r(4) = xmin+DFLOAT(i)*xdelta
       r(3) = ymin
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
-      DO j = 1, yinpoints
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(wunit,*) r(4),r(3),v,dvdu(:)
+      do j = 1, yinpoints
          r(3) = ymin + DFLOAT(j)*ydelta
-         CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-         WRITE(wunit,*) r(4),r(3),v,dvdu(:)
-      END DO
+         call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+         write(wunit,*) r(4),r(3),v,dvdu(:)
+      end do
       r(3) = ymax
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(wunit,*) r(4),r(3),v,dvdu(:)
+   end do
    ! Last point in XY plane
    r(4) = xmax
    r(3) = ymax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(wunit,*) r(4),r(3),v,dvdu(:)
-   DO i =1, yinpoints
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(wunit,*) r(4),r(3),v,dvdu(:)
+   do i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-      WRITE(wunit,*) r(4),r(3),v,dvdu(:)
-   END DO
+      call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+      write(wunit,*) r(4),r(3),v,dvdu(:)
+   end do
    r(3) = ymax
-   CALL thispes%GET_V_AND_DERIVS(r,v,dvdu)
-   WRITE(wunit,*) r(4),r(3),v,dvdu(:)
-   CLOSE(wunit)
+   call thispes%GET_V_AND_DERIVS(r,v,dvdu)
+   write(wunit,*) r(4),r(3),v,dvdu(:)
+   close(wunit)
    write(*,*) routineName//'Graph created: '//fileName
-   RETURN
-END SUBROUTINE PLOT_RZMAP_CRP6D
+   return
+end subroutine PLOT_RZMAP_CRP6D
 !#######################################################################
 ! SUBROUTINE: PLOT_ATOMIC_INTERAC_RZ_CRP6D
 !#######################################################################
@@ -2297,24 +2359,24 @@ END SUBROUTINE PLOT_RZMAP_CRP6D
 !> @date Apr/2014
 !> @version 1.0
 !----------------------------------------------------------------------
-SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
-   IMPLICIT NONE
-   CLASS(CRP6D),INTENT(IN) :: thispes
-   REAL(KIND=8),DIMENSION(6),INTENT(IN) :: init_point 
-   INTEGER,INTENT(IN) :: nxpoints, nypoints 
-   CHARACTER(LEN=*),INTENT(IN) :: filename 
-   REAL(KIND=8),INTENT(IN) :: Lx
-   REAL(KIND=8),INTENT(IN) :: Ly
+subroutine PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,Ly,filename)
+   implicit none
+   class(CRP6D),intent(in) :: thispes
+   real(kind=8),dimension(6),intent(in) :: init_point 
+   integer,intent(in) :: nxpoints, nypoints 
+   character(len=*),intent(in) :: filename 
+   real(kind=8),intent(in) :: Lx
+   real(kind=8),intent(in) :: Ly
    ! Local variables
-   REAL(KIND=8) :: xmin, ymin, xmax, ymax
-   REAL(KIND=8),DIMENSION(6) :: r
-   REAL(KIND=8) :: xdelta, ydelta
-   INTEGER :: xinpoints, nxdelta
-   INTEGER :: yinpoints, nydelta
-   REAL(KIND=8),DIMENSION(2) :: v
-   REAL(KIND=8),DIMENSION(6) :: atomicx
-   REAL(KIND=8),DIMENSION(6) :: dvdu
-   INTEGER :: i, j ! counters
+   real(kind=8) :: xmin, ymin, xmax, ymax
+   real(kind=8),dimension(6) :: r
+   real(kind=8) :: xdelta, ydelta
+   integer :: xinpoints, nxdelta
+   integer :: yinpoints, nydelta
+   real(kind=8),dimension(2) :: v
+   real(kind=8),dimension(6) :: atomicx
+   real(kind=8),dimension(6) :: dvdu
+   integer :: i, j ! counters
    ! parameters
    character(len=*),parameter:: routineName='PLOT_ATOMIC_INTERAC_RZ_CRP6D: '
    ! GABBA, GABBA HEY! ---------
@@ -2332,53 +2394,53 @@ SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D(thispes,init_point,nxpoints,nypoints,Lx,
    ydelta=(ymax-ymin)/DFLOAT(nydelta)
    ! Let's go! 
    ! 1st XY point
-   OPEN(11,file=filename,status="replace")
+   open(11,file=filename,status="replace")
    r(4) = xmin
    r(3) = ymin
    r(1:2)=init_point(1:2)
    r(5:6)=init_point(5:6)
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-   DO i =1, yinpoints
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   write(11,*) r(4),r(3),sum(v),v(1),v(2)
+   do i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-   END DO
+      call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      write(11,*) r(4),r(3),sum(v),v(1),v(2)
+   end do
    r(3) = ymax
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   write(11,*) r(4),r(3),sum(v),v(1),v(2)
    ! inpoints in XY
-   DO i = 1, xinpoints
+   do i = 1, xinpoints
       r(4) = xmin+DFLOAT(i)*xdelta
       r(3) = ymin
-      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-      DO j = 1, yinpoints
+      call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      write(11,*) r(4),r(3),sum(v),v(1),v(2)
+      do j = 1, yinpoints
          r(3) = ymin + DFLOAT(j)*ydelta
-         CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-         WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-      END DO
+         call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+         write(11,*) r(4),r(3),sum(v),v(1),v(2)
+      end do
       r(3) = ymax
-      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-   END DO
+      call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      write(11,*) r(4),r(3),sum(v),v(1),v(2)
+   end do
    ! Last point in XY plane
    r(4) = xmax
    r(3) = ymax
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-   DO i =1, yinpoints
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   write(11,*) r(4),r(3),sum(v),v(1),v(2)
+   do i =1, yinpoints
       r(3) = ymin + DFLOAT(i)*ydelta
-      CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-      WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-   END DO
+      call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+      write(11,*) r(4),r(3),sum(v),v(1),v(2)
+   end do
    r(3) = ymax
-   CALL thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
-   WRITE(11,*) r(4),r(3),sum(v),v(1),v(2)
-   CLOSE(11)
+   call thispes%GET_ATOMICPOT_AND_DERIVS(r,atomicx,v,dvdu)
+   write(11,*) r(4),r(3),sum(v),v(1),v(2)
+   close(11)
    write(*,*) routineName//'Graph created: '//fileName
-   RETURN
-END SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D
+   return
+end subroutine PLOT_ATOMIC_INTERAC_RZ_CRP6D
 !###########################################################
 !# FUNCTION: is_allowed_CRP6D 
 !###########################################################
@@ -2389,32 +2451,32 @@ END SUBROUTINE PLOT_ATOMIC_INTERAC_RZ_CRP6D
 !> @date Jun/2014
 !> @version 1.0
 !-----------------------------------------------------------
-LOGICAL FUNCTION is_allowed_CRP6D(this,x) 
+logical function is_allowed_CRP6D(this,x) 
    ! Initial declarations   
-   IMPLICIT NONE
+   implicit none
    ! I/O variables
-   CLASS(CRP6D),INTENT(IN) :: this
-   REAL(KIND=8),DIMENSION(:),INTENT(IN) :: x
+   class(CRP6D),intent(in) :: this
+   real(kind=8),dimension(:),intent(in) :: x
    ! Local variables
-   REAL(KIND=8) :: zmin, rmin, rmax
+   real(kind=8) :: zmin, rmin, rmax
    ! Run section
    zmin=this%wyckoffsite(1)%zrcut(1)%getfirstZ()
    rmin=this%wyckoffsite(1)%zrcut(1)%getfirstR()
    rmax=this%wyckoffsite(1)%zrcut(1)%getlastR()
-   SELECT CASE(size(x)/=6)
-      CASE(.TRUE.)
-         WRITE(0,*) "is_allowed_CRP6D ERR: wrong number of dimensions"
-         CALL EXIT(1)
-      CASE(.FALSE.)
+   select case(size(x)/=6)
+      case(.true.)
+         write(0,*) "is_allowed_CRP6D ERR: wrong number of dimensions"
+         call EXIT(1)
+      case(.false.)
          ! do nothing
-   END SELECT
-   SELECT CASE(x(3)<zmin .OR. x(4)<rmin .OR. x(4)>rmax)
-      CASE(.TRUE.)
-         is_allowed_CRP6D=.FALSE.
-      CASE(.FALSE.)
-         is_allowed_CRP6D=.TRUE.
-   END SELECT
-   RETURN
-END FUNCTION is_allowed_CRP6D
+   end select
+   select case(x(3)<zmin .or. x(4)<rmin .or. x(4)>rmax)
+      case(.true.)
+         is_allowed_CRP6D=.false.
+      case(.false.)
+         is_allowed_CRP6D=.true.
+   end select
+   return
+end function is_allowed_CRP6D
 
-END MODULE CRP6D_MOD
+end module CRP6D_MOD
