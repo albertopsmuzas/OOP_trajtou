@@ -322,6 +322,8 @@ SUBROUTINE INITIALIZE_SURFACE(surf,filename)
         surf%order=4
       case('p3','P3')
         surf%order=6
+      case('p3m1','P3M1')
+        surf%order=6
       case default
          write(0,*) routinename//'ERR surface not implemented'
          write(0,*) 'Given symmlabel: "'//trim(surf%symmLabel)//'"'

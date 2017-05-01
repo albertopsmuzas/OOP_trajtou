@@ -30,7 +30,7 @@ select case(command_argument_count())
 
    case default
       write(0,*) "ERR: Bad number of arguments: ",command_argument_count()
-      write(0,*) "FOUR arguments needed: lua config file, dJ, morseEd, morseWidth"
+      write(0,*) "ONE argument needed: lua config file"
       call exit(1)
 end selecT
 ! Time
