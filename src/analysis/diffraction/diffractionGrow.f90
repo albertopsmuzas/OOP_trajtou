@@ -197,17 +197,22 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    integer(kind=4):: peakId
    integer(kind=4):: i ! counters
    integer(kind=4):: id
+   integer(kind=4):: stat
    real(kind=8):: mtot, mu
    ! Auxiliar variables
 	real(kind=8),dimension(2):: auxReal
    integer(kind=4),dimension(2):: auxInt
+   integer(kind=1):: controlSurfDyn
    character(len=4):: auxString
+   character(len=1):: controlChar
    ! Some parameters
    character(len=*),parameter:: routinename = "assigtTrajsToPeaks_ALLOWEDPEAKSCVRP6D: "
    character(len=*),parameter:: formatUnmap='(I6," ---> ",5(I5))'        ! Id/--->/n/m/v,J,mJ
    ! Read/write units
    integer(kind=4),parameter:: wuUnmap=13
    integer(kind=4),parameter:: ruScatt=14
+   integer(kind=4),parameter:: ruStat=9
+   integer(kind=4),parameter:: ruSurfdyn=8
    ! RUN SECTION -------------------------
    a=system_surface%norm_s1
    b=system_surface%norm_s2
@@ -216,6 +221,42 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
    gama=system_surface%angle
    ! binning parameters (only Morse implemented)
    !---------
+   ioErr=0
+
+   open(unit=ruStat,file='OUT_INTERPSUMMARY',status='old',action='read')
+   do while( ioErr == 0 )
+      read(ruStat,*,iostat=ioErr) id,auxReal(1),auxInt(:),stat,auxReal(:),auxReal(:),controlChar
+      if (ioErr==0) then
+         select case(controlChar)
+         case('X')
+            ! as expected, yeah
+         case default
+            write(0,*) routinename//'ERR: Reading OUT_INTERPSUMMARY: need X as final character'
+            call exit(1)
+         end select
+         select case(stat)
+         case(12)
+            this%inicond%trajs(id)%stat='Scattered'
+         case(-1,-2,-12)
+            this%inicond%trajs(id)%stat='React'
+         case default
+            this%inicond%trajs(id)%stat='Unknown'
+         end select
+      endif
+   enddo
+   close(ruStat)
+   
+   ioErr=0
+   open(unit=ruSurfdyn,file='IN_SURFDYN',status='old',action='read',iostat=ioErr)
+   select case(ioErr)
+   case(0)
+      read(ruSurfdyn,*)
+      read(ruSurfdyn,*) controlSurfDyn
+   case default
+      controlSurfDyn=0   
+   end select
+   close(unit=ruSurfdyn,iostat=ioErr)
+
    open(unit=wuUnmap,file=this%fileNameUnmapped,status='replace',action='write')
    write(wuUnmap,'("# *************** LIST OF UNMAPPED TRAJS ***************")')
    write(wuUnmap,'("# Format: id/n,m/v,J,mJ")')
@@ -230,9 +271,11 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
       read(ruScatt,*,iostat=ioErr) auxString,auxString,auxString,auxString,id
       read(ruScatt,*,iostat=ioErr) r(1:3)
       read(ruScatt,*,iostat=ioErr) r(4:6)
+      if(controlSurfDyn==1) read(ruScatt,*,iostat=ioErr) 
       read(ruScatt,*,iostat=ioErr)
       read(ruScatt,*,iostat=ioErr) p(1:3)
       read(ruScatt,*,iostat=ioErr) p(4:6)
+      if(controlSurfDyn==1) read(ruScatt,*,iostat=ioErr) 
       ! correct momenta
       p(1:3)=system_mass(1)*p(1:3)/dsqrt(pmass2au)
       p(4:6)=system_mass(2)*p(4:6)/dsqrt(pmass2au)
@@ -241,12 +284,6 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
       phaseSpaceVect(:)=from_atomic_to_molecular_phaseSpace(atomcoord=phaseSpaceVect)
       r(:)=phaseSpaceVect(1:6)
       p(:)=phaseSpaceVect(7:12)
-      select case( r(3) >= this%inicond%trajs(id)%init_r(3) )
-      case(.true.)
-         this%inicond%trajs(id)%stat='Scattered'
-      case(.false.)
-         this%inicond%trajs(id)%stat='SmallZ'
-      end select
       select case( ioErr==0 .and. this%inicond%trajs(id)%stat=='Scattered' )
       case(.true.) ! secure to operate
          dp(:) = p(1:2)-this%inicond%trajs(id)%init_p(1:2)
@@ -279,7 +316,7 @@ subroutine assignTrajsToPeaks_ALLOWEDPEAKSGROW(this)
          end select
       case(.false.) ! not secure to operate, next switch
          select case( ioErr )
-         case(-1)
+         case(-1,5001)
             ! do nothing, EOF reached, let it break the cycle
          case(0)
             ! just ignore it
@@ -385,6 +422,7 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    integer(kind=4):: i ! counters
    character(len=10):: stat
 	real(kind=8),dimension(6):: p,r
+   real(kind=8):: dpz
 	real(kind=8),dimension(2):: dp ! variation of momentum
 	real(kind=8),dimension(2):: dk ! variation of momentum in rec. space coord
    integer(kind=4),dimension(2):: g
@@ -392,16 +430,24 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    integer(kind=4):: ioErr
    integer(kind=4),dimension(3):: rovibrState
    character(len=4):: auxString
+   character(len=1):: controlChar
 	real(kind=8),dimension(12):: phaseSpaceVect
    real(kind=8):: psi,Theta,thetaout,beta
 	real(kind=8):: gama,a,b,Etot,dE
    real(kind=8),dimension(2,2):: mtrx
    real(kind=8):: mtot, mu
+   real(kind=8),dimension(2):: auxReal
+   integer(kind=4),dimension(2):: auxInt
    integer(kind=4):: id
+   integer(kind=4):: trajStat
+   integer(kind=1):: controlSurfDyn
+   real(kind=8):: dL,Evibr
    ! Open units
    integer(kind=4),parameter:: wuFinal=12
    integer(kind=4),parameter:: ruScatt=11
-   character(len=*),parameter:: formatFinal='(I6,1X,6(I4,1X),2(F10.5,1X),3(F10.5,1X),3(F10.5,1X))'
+   integer(kind=4),parameter:: ruStat=9
+   integer(kind=4),parameter:: ruSurfDyn=8
+   character(len=*),parameter:: formatFinal='(7(I4,1X),12(F10.5,1X))'
    character(len=*),parameter:: routinename = "print_labmomenta_and_angles_ALLOWEDPEAKSGROW6D: "
    ! RUN !! --------------------------
    beta=this%inicond%vpar_angle%getvalue()
@@ -412,10 +458,46 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
    mtot=sum( system_mass(:) )
    mu=product( system_mass(:) )/mtot
    gama=system_surface%angle
+   ioErr=0
+
+   open(unit=ruStat,file='OUT_INTERPSUMMARY',status='old',action='read')
+   do while( ioErr == 0 )
+      read(ruStat,*,iostat=ioErr) id,auxReal(1),auxInt(:),trajStat,auxReal(:),auxReal(:),controlChar
+      if (ioErr==0) then
+         select case(controlChar)
+         case('X')
+            ! as expected, yeah
+         case default
+            write(0,*) routinename//'ERR: Reading OUT_INTERPSUMMARY: need X as final character'
+            call exit(1)
+         end select
+         select case(trajStat)
+         case(12)
+            this%inicond%trajs(id)%stat='Scattered'
+         case(-1,-2,-12)
+            this%inicond%trajs(id)%stat='React'
+         case default
+            this%inicond%trajs(id)%stat='Unknown'
+         end select
+      endif
+   enddo
+   close(ruStat)
+
+   ioErr=0
+   open(unit=ruSurfdyn,file='IN_SURFDYN',status='old',action='read',iostat=ioErr)
+   select case(ioErr)
+   case(0)
+      read(ruSurfdyn,*)
+      read(ruSurfdyn,*) controlSurfDyn
+   case default
+      controlSurfDyn=0   
+   end select
+   close(unit=ruSurfdyn,iostat=ioErr)
+
    open(unit=wuFinal,file="OUTANA6Dfinalpandangles.out",status="replace",action='write')
-   write(wuFinal,'("# ***** FINAL MOMENTA AND EXIT ANGLES *****")')
-   write(wuFinal,'("# Format: id/diffOrder,n,m,v,J,mJ/dpx,dpy/Ppar,Pperp,Pnorm(a.u.)/Azimuthal,Polar,Deflection(rad)")')
-   write(wuFinal,'("# -----------------------------------------------------------------------")')
+   write(wuFinal,'("# ******************************** FINAL MOMENTA AND EXIT ANGLES **************************************************")')
+   write(wuFinal,'("# Format: id/diffOrder,n,m,v,J,mJ/dpx,dpy,dppar,dpz/dL,Evibr/Ppar,Pperp,Pnorm(a.u.)/Azimuthal,Polar,Deflection(rad)")')
+   write(wuFinal,'("# -----------------------------------------------------------------------------------------------------------------")')
    open(unit=ruScatt,file="OUT_FINALCV",status="old",action='read')
    ioErr=0
    do while( ioErr == 0 )
@@ -423,9 +505,11 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
       read(ruScatt,*,iostat=ioErr) auxString,auxString,auxString,auxString,id
       read(ruScatt,*,iostat=ioErr) r(1:3)
       read(ruScatt,*,iostat=ioErr) r(4:6)
+      if(controlSurfDyn==1) read(ruScatt,*,iostat=ioErr)
       read(ruScatt,*,iostat=ioErr)
       read(ruScatt,*,iostat=ioErr) p(1:3)
       read(ruScatt,*,iostat=ioErr) p(4:6)
+      if(controlSurfDyn==1) read(ruScatt,*,iostat=ioErr)
       ! correct momenta
       p(1:3)=system_mass(1)*p(1:3)/dsqrt(pmass2au)
       p(4:6)=system_mass(2)*p(4:6)/dsqrt(pmass2au)
@@ -435,16 +519,16 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
       r(:)=phaseSpaceVect(1:6)
       p(:)=phaseSpaceVect(7:12)
 
-      select case( r(3) >= this%inicond%trajs(id)%init_r(3) )
-      case(.true.)
-         this%inicond%trajs(id)%stat='Scattered'
-      case(.false.)
-         this%inicond%trajs(id)%stat='SmallZ'
-      end select
       select case( ioErr==0 .and. this%inicond%trajs(id)%stat=='Scattered' )
       case(.true.) ! secure to operate
          dp(:) = p(1:2)-this%inicond%trajs(id)%init_p(1:2)
+         dpz=p(3)+this%inicond%trajs(id)%init_p(3)
+         dL=dsqrt(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)-dsqrt(&
+            this%inicond%trajs(id)%init_p(5)**2.d0&
+            +this%inicond%trajs(id)%init_p(6)**2.d0&
+            *dsin(this%inicond%trajs(id)%init_r(5))**(-2.d0))
          g(:) = this%quantizeDiffState( dp )
+         Evibr=this%inicond%vibrPot%getPot( r(4) )+(0.5d0/mu)*p(4)**2.d0
          Etot=0.5d0*dot_product(p(1:3),p(1:3))/mtot+&                      ! Kinetic energy
               0.5d0*(p(4)**2.d0)/mu+&                                      ! Internal kinetic energy (1)
               0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+& ! Internal kinetic energy (2)
@@ -455,13 +539,14 @@ subroutine PRINT_LABMOMENTA_AND_ANGLES_ALLOWEDPEAKSGROW(this)
          psi = datan(plab(2)/plab(1))
          Theta = datan(plab(2)/plab(3))
          thetaout=datan(plab(3)/dsqrt(plab(1)**2.D0+plab(2)**2.D0))
-         write(wuFinal,formatFinal) id,getDiffOrder(g=g),g(:),rovibrState(:),dp(1:2),plab(:),psi,Theta,thetaout
+         write(wuFinal,formatFinal) id,getDiffOrder(g=g),g(:),rovibrState(:),dp(1:2),norm2(dp(1:2)),dpz,dL,Evibr,plab(:),psi,Theta,thetaout
+         
       case(.false.) ! not secure to operate, next switch
          select case( ioErr )
-         case(-1,0)
+         case(-1,0,5001)
             ! do nothing, EOF reached, let it break the cycle
          case default
-            write(0,*) routinename//'ERR: unexpected error encountered. Error Code: ',ioErr
+            write(0,*) routinename//'ERR: unexpected error encountered while reading OUT_FINALCV. Error Code: ',ioErr
             call exit(1)
          end select
       end select

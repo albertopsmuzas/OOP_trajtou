@@ -68,6 +68,7 @@ CONTAINS
 !#################################################################################
 !> @brief
 !! Initializes trajectories Initdiatomic from a Grow output file. (init.raw.dat)
+!! Takes into account IN_SURFDYN.
 !
 !> @param[in] this - Initial conditions for molecules to be used
 !--------------------------------------------------------------------
@@ -83,8 +84,16 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW(this,fileName)
    ! Local variables
    INTEGER :: i ! counters
    real(kind=8),dimension(12):: phaseSpaceVect
+   real(kind=8):: L2
    REAL(KIND=8):: delta,alpha,Enorm,masa,mu,Eint,Epar
    real(kind=8),dimension(6):: p,r
+   integer(kind=1):: controlSurfDyn
+   integer(kind=4):: nsurfdofs
+   real(kind=8),dimension(:),allocatable:: surfdofs
+   integer(kind=4):: ioErr
+   real(kind=8),dimension(:),allocatable:: auxReal
+   integer(kind=4),dimension(:),allocatable:: auxInt
+   integer(kind=4):: nsuperCellx,nsuperCelly,nactiveAtoms
    ! Parameters
    character(len=*),parameter:: formatFile='("# Format: id/Etot/X,Y,Z,R(a.u.)/THETA,PHI(rad)/Px,Py,Pz,pr,ptheta,pphi(a.u.)")'
    character(len=*),parameter:: routinename = "GENERATE_TRAJS_ATOMS: "
@@ -97,6 +106,39 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW(this,fileName)
    Epar = Enorm/(dtan(alpha)**2.d0)
    Eint = this%evirot%getvalue()
    ALLOCATE(DiatomicGrow::this%trajs(this%ntraj))
+
+   ioErr=0
+   open(unit=runit,file='IN_SURFDYN',status='old',action='read',iostat=ioErr)
+
+   select case(ioErr)
+   case(0)
+      read(runit,*)
+      read(runit,*) controlSurfDyn
+   case default
+      controlSurfDyn=0
+   end select
+
+   select case(controlSurfDyn)
+   case(0)
+      ! nothing to do here
+   case(1)
+      read(runit,*)
+      read(runit,*) nsuperCellx,nsuperCelly
+      read(runit,*)
+      read(runit,*) nactiveAtoms
+      read(runit,*)
+      read(runit,*)
+      read(runit,*)
+      allocate(auxInt(3*nactiveAtoms))
+      read(runit,*) auxInt(:)
+      nsurfdofs=nsuperCellx*nsuperCelly*sum(auxInt(:))
+      deallocate(auxInt)
+      allocate(surfdofs(nsurfdofs))
+   case default
+      write(0,*) routineName//'ERR: controlSurfDyn has an unexpected value:',controlSurfDyn
+      call exit(0)
+   end select
+   close(unit=runit,iostat=ioErr)
    open(unit=runit,file=fileName,status='old',action='read')
    do i=1,this%ntraj
       call this%trajs(i)%initialize()
@@ -109,6 +151,14 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW(this,fileName)
       read(runit,*)
       read(runit,*) this%trajs(i)%init_p(1:3) ! velocities!
       read(runit,*) this%trajs(i)%init_p(4:6) ! velocities!
+      if(controlSurfDyn==1) then
+         read(runit,*)
+         read(runit,*)
+         read(runit,*)
+         read(runit,*) surfdofs(:)
+         read(runit,*)
+         read(runit,*) surfdofs(:)
+      endif
       this%trajs(i)%init_p(1:3)=this%trajs(i)%init_p(1:3)*system_mass(1)/dsqrt(pmass2au)
       this%trajs(i)%init_p(4:6)=this%trajs(i)%init_p(4:6)*system_mass(2)/dsqrt(pmass2au)
       phaseSpaceVect(1:6)=this%trajs(i)%init_r(:)
@@ -118,9 +168,12 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW(this,fileName)
       this%trajs(i)%init_p(:)=phaseSpaceVect(7:12)
       p(:)=this%trajs(i)%init_p(:)
       r(:)=this%trajs(i)%init_r(:)
+      L2=p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0
+      this%trajs(i)%E =(0.5d0/masa)*sum(p(1:3)**2.d0)+(0.5d0/mu)*(p(4)**2.d0+L2/(r(4)**2.d0))+this%vibrPot%getPot(r(4))
       !write(*,*) 0.5d0*(p(4)**2.d0)/mu+0.5d0*(p(5)**2.d0+(p(6)/dsin(r(5)))**2.d0)/(mu*r(4)**2.d0)+this%vibrPot%getPot(r(4))
    enddo
    close(runit)
+   if(controlSurfDyn==1) deallocate(surfdofs)
    ! Print if the option was given
    SELECT CASE(this%control_out)
       CASE(.TRUE.)
@@ -138,7 +191,7 @@ SUBROUTINE GENERATE_TRAJS_FROM_FILE_INITSURFACEGROW(this,fileName)
          WRITE(wunit,'("# Parallel velocity direction (deg): ",F10.5)') delta*180.D0/PI
          WRITE(wunit,'("# =======================================================================================================")')
          DO i=this%nstart,this%ntraj
-            WRITE(wunit,'(1X,I10,F16.7,2(6F16.7))') i,this%trajs(i)%E,this%trajs(i)%init_r,this%trajs(i)%init_p
+            WRITE(wunit,'(1X,I10,1X,13(F10.5,1X))') i,this%trajs(i)%E,this%trajs(i)%init_r,this%trajs(i)%init_p
          END DO
          CLOSE(wunit)
 #ifdef DEBUG
