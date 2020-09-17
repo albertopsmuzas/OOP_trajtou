@@ -8,6 +8,7 @@ This implementation adds a logistic function that controls the "amount" of CRP i
 1. Program for **PES** interpolation using the **CRP method**.
 2. It can carry out **classical hamiltonian dynamics simulations**, adapted to scattering processes on **periodic surfaces**.
 3. As the CRP method is only applicable to **monoatomic and diatomic projectiles**, the dynamics integrator has been implemented only for these two cases.
+4. Currently, the code can only deal with p4mm wallpaper symmetry surfaces. However, new symmetries can be implemented easily due to the modular form of the code.
 
 ## Installation
 1. Execute install.sh script and follow the instructions. You may edit that script to add new compiler compatibilities.
