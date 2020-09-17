@@ -252,7 +252,7 @@ subroutine READ_CRP3D_details(this,filename)
    this%vasint=en%getvalue()
    read(runit,*) this%nrumpling
    allocate(this%rumpling(this%nrumpling))
-   this%dfin = 0.D0
+   this%dfin = 0
    do i=1,this%nrumpling
       read(runit,*) raux,units
       call len%READ(raux,units)
@@ -401,22 +401,20 @@ subroutine GET_REPUL_CORRECTIONS_CRP3D(this,P,v,dvdz,dvdx,dvdy)
    ! Initial declarations   
    implicit none
    ! I/O variables
-   class(CRP3D),intent(in) :: this
-   real(kind=8),dimension(3),intent(in) :: P
-   real(kind=8),dimension(:),intent(out) :: v
+   class(CRP3D),intent(in):: this
+   real(kind=8),dimension(3),intent(in)::  P
+   real(kind=8),dimension(:),intent(out):: v
    real(kind=8),dimension(:),intent(out):: dvdx,dvdy,dvdz ! corrections to the derivatives
    ! Local variables
-   integer(kind=4) :: npairpots
-   integer(kind=4) :: l,k ! counters
-   real(kind=8) :: aux1,aux2,aux3,aux4
+   integer(kind=4):: npairpots
+   integer(kind=4):: l,k ! counters
+   real(kind=8):: aux1,aux2,aux3,aux4
    ! Run section
    npairpots=size(this%all_pairpots)
-   forall(l=1:npairpots)
-      v(l)=0.D0
-      dvdz(l)=0.D0
-      dvdx(l)=0.D0
-      dvdy(l)=0.D0
-   end forall
+   v(1:npairpots)   =0
+   dvdx(1:npairpots)=0
+   dvdy(1:npairpots)=0
+   dvdz(1:npairpots)=0
    do l = 1, npairpots
       do k = 0, this%max_order
          call INTERACTION_AENV(k,P,this%all_pairpots(l),this%dampfunc,aux1,aux2,aux3,aux4)
@@ -1173,7 +1171,7 @@ subroutine INTERACTION_AP(A,P,pairpot,dampfunc,interac,dvdz_corr,dvdx_corr,dvdy_
    character(len=*),parameter:: routinename = "INTERACTION_AP: "
    ! GABBA, GABBA HEY! ----------------------------------------
    ! Find the distance between A and P, in a.u.
-   r=dsqrt((A(1)-P(1))**2.D0+(A(2)-P(2))**2.D0+(A(3)-P(3))**2.D0)
+   r=dsqrt((A(1)-P(1))**2+(A(2)-P(2))**2+(A(3)-P(3))**2)
    call pairpot%GET_V_AND_DERIVS(r,v,aux)
    interac=v*dampfunc%getvalue(r)
    pre=aux*dampfunc%getvalue(r)+v*dampfunc%getderiv(r)
@@ -1245,15 +1243,14 @@ subroutine INTERACTION_AENV_OCTA(n,A,pairpot,dampfunc,interac,dvdz_term,dvdx_ter
    character(len=18), parameter :: routinename = "INTERACTION_AENV: "
    ! SUSY IS A HEADBANGER !!!! -------------------
    ! Defining some aliases to make the program simpler:
-   pairid = pairpot%id
-   interac=0.D0
-   dvdz_term=0.D0
-   dvdx_term=0.D0
-   dvdy_term=0.D0
+   pairid    = pairpot%id
+   interac   = 0
+   dvdz_term = 0
+   dvdx_term = 0
+   dvdy_term = 0
    ! ghost A definition
    ghost_A(1:2)=system_surface%project_unitcell(A(1:2))
    ghost_A(3)=A(3)
-
    select case(n)
       case(0)
          do i=1, system_surface%atomtype(pairid)%n
