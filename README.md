@@ -12,5 +12,8 @@ This implementation adds a logistic function that controls the "amount" of CRP i
 ## Installation
 1. Execute install.sh script and follow the instructions. You may edit that script to add new compiler compatibilities.
 
+## Contact
+As many other research-oriented codes produced during a PhD., OOP_trajtou lacks a concise documentation. Luckily, there is a lot of comments in doxygen format that could guide a potential user, but if that is not enough, I am glad to help. Contact me at albertopsmuzas@gmail.com.
+
 ## References
 [1] H. F. Busnengo, A. Salin and W. Dong, J. Chem. Phys. 112.17 (May 2000)
